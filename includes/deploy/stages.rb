@@ -5,7 +5,7 @@ task :development do
   set :deploy_to,  "/var/apps/#{application}"
   
   # Remote GIT repository (ex: git://github.com/drupal/drupal.git)
-  set :repository, "git@bitbucket.org:twinbit/tim_estero.git"
+  set :repository, "git@bitbucket.org:twinbit/edgeryders-3.git"
   set :branch, "dev"
   
   # Remote WEB [IP|HOST][:PORT] (ex: 127.0.0.1:8888 or twinbitlabs.com:8888)
