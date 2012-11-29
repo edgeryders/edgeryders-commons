@@ -205,9 +205,9 @@ $databases = array (
   array (
     'default' => 
     array (
-      'database' => 'drupal7_edgeryders_commons3',
+      'database' => 'edgeryders_lote2_commons3',
       'username' => 'root',
-      'password' => 'root',
+      'password' => 'edgeryders81!',
       'host' => 'localhost',
       'port' => '',
       'driver' => 'mysql',
