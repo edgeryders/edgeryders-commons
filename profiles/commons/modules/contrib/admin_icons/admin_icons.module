@@ -1,0 +1,23 @@
+<?php
+/**
+ * @file
+ * Icon fonts library definitions.
+ */
+
+/**
+ * Implements hook_library().
+ */
+function admin_icons_library() {
+  $libraries['spark_icons'] = array(
+    'title' => 'Spark icon font library',
+    'website' => 'http://drupal.org/project/admin_icons',
+    'version' => '1.0',
+    'css' => array(
+      drupal_get_path('module', 'admin_icons') . '/spark_icons.css' => array(
+        'type' => 'file',
+        'media' => 'screen',
+      ),
+    ),
+  );
+  return $libraries;
+}

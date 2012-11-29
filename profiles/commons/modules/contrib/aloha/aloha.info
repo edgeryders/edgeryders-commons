@@ -1,0 +1,18 @@
+name = Aloha Editor
+description = WYSIWYG editing for rich text fields using Aloha Editor.
+package = User interface
+core = 7.x
+php = 5.3
+
+dependencies[] = filter_true_wysiwyg
+
+dependencies[] = admin_icons
+; We need jQuery 1.7! Use jquery_update 2.x-dev or >=2.3 and configure it to use 1.7, not the default 1.5.
+dependencies[] = jquery_update
+
+; Information added by drupal.org packaging script on 2012-10-31
+version = "7.x-2.0-alpha1+16-dev"
+core = "7.x"
+project = "aloha"
+datestamp = "1351686842"
+

@@ -1,0 +1,312 @@
+<?php
+
+/**
+ * @file
+ * Proposed modifications to Drupal core's filter module.
+ */
+
+
+
+
+/**
+ * @defgroup filter_modifications Proposed modified Filter API.
+ *
+ * @see http://drupal.org/node/807996#comment-6302188
+ *
+ * @{
+ */
+
+/**
+ * HTML generator filters -- MUST generate HTML.
+ *
+ * Formats using filters of this type may not be able to use WYSIWYG editors.
+ *
+ * WYSIWYG use case: ability to detect non-HTML formats, such as Markdown, where
+ * no WYSIWYG editor should be used because it would be impossible to go back to
+ * the original text format.
+ */
+define('FILTER_TYPE_HTML_GENERATOR', 'html generator');
+
+/**
+ * Security filters -- strip HTML tags that the user MAY NOT use.
+ *
+ * WYSIWYG use case: all filters of this type MUST be applied, the user MAY NOT
+ * be presented processed text without all filters of this type. Security
+ * exploits might otherwise occur.
+ */
+define('FILTER_TYPE_SECURITY', 'security');
+
+/**
+ * DOM transformation filters -- DOM-based, reliably reversible transformations.
+ *
+ * Filters SHOULD NOT use regular expressions when they can use DOM manipulation
+ * instead. This makes filters as robust as possible.
+ *
+ * WYSIWYG use case: these filters MUST NOT be applied when feeding a piece of
+ * text into the WYSIWYG editor. Instead, they MAY be re-implemented in
+ * JavaScript for each supported WYSIWYG editor.
+ * E.g. `<img data-caption="Druplicon">` may be (reversibly!) transformed to
+ * `<figure><img><figcaption>Druplicon</figcaption></figure>`.
+ */
+define('FILTER_TYPE_TRANSFORM_DOM', 'DOM transformation');
+
+/**
+ * Text transformation filters -- text-based, irreversible transformations.
+ *
+ * WYSIWYG use case: these filters MUST NOT be applied when feeding a piece of
+ * text into the WYSIWYG editor. Furthermore, they MUST NOT be re-implemented
+ * in JavaScript.
+ * E.g.: the Typogrify filter would transform `WYSIWYG` and `I said "foo"!` into
+ * `<span class="caps">WYSIWYG</span>` and `I said “foo”!`, respectively. Text
+ * link ad systems would transform `fancy car` into something like
+ * `<a href="http://fancycar.com">fancy car</a>`. Neither of those text-based
+ * transformations make sense when doing WYSIWYG editing, nor is it possible to
+ * reliably reverse them.
+ */
+define('FILTER_TYPE_TRANSFORM_TEXT', 'text transformation');
+
+/**
+ * All of the above implies:
+ * - if a format uses >=1 filters of type FILTER_TYPE_HTML_GENERATOR, no WYSIWYG
+ *   editor can be used.
+ * - if a format uses >=1 filters of type FILTER_TYPE_SECURITY, and a user saves
+ *   modified text through his WYSIWYG editor, any disallowed tags will be lost.
+ *   This seems like a minor annoyance and appears acceptable.
+ * - if a format uses >=1 filters of type FILTER_TYPE_TRANSFORM_TEXT, these
+ *   transformations will not be visible while editing, but will be visible when
+ *   viewing.
+ * - if a format uses >=1 filters of type FILTER_TYPE_TRANSFORM_DOM, these
+ *   transformations may not be visible while editing (it is up to the filter to
+ *   implement support for the WYSIWYG editor, by re-implementing the filtering
+ *   in JavaScript), but will be visible when viewing.
+ */
+
+/**
+ * Implements hook_filter_info_alter().
+ */
+function filter_true_wysiwyg_filter_info_alter(&$info) {
+  // There's only one filter in core that limits the allowed tags.
+  $info['filter_html']['allowed tags setting'] = 'allowed_html';
+
+  /* CORE */
+  if (module_exists('php')) {
+    // php.module
+    $info['php_code']['type'] = FILTER_TYPE_HTML_GENERATOR;
+  }
+  // filter.module
+  $info['filter_autop'         ]['type'] = FILTER_TYPE_HTML_GENERATOR;
+  $info['filter_url'           ]['type'] = FILTER_TYPE_HTML_GENERATOR;
+  $info['filter_html_escape'   ]['type'] = FILTER_TYPE_HTML_GENERATOR;
+  $info['filter_html'          ]['type'] = FILTER_TYPE_SECURITY;
+  $info['filter_htmlcorrector' ]['type'] = FILTER_TYPE_SECURITY; // This filter would be implicit in the proposed solution.
+
+  /* CONTRIB */
+  $contrib_filter_type = array(
+    // image_resize_filter.module
+    'image_resize_filter' => FILTER_TYPE_TRANSFORM_DOM,
+    'filter_markdown' => FILTER_TYPE_HTML_GENERATOR,
+    // typogrify.module
+    'typogrify' => FILTER_TYPE_TRANSFORM_TEXT,
+  );
+
+  foreach ($contrib_filter_type as $filter => $type) {
+    if (empty($info[$filter])) {
+      continue;
+    }
+    $info[$filter]['type'] = $type;
+  }
+}
+
+/**
+ * Identical to check_markup() with the exception of the new ability to *skip*
+ * filters that match any filter type in a list of filter types
+ *
+ * @param array $filter_types_to_skip
+ *   An array of filter types to skip, or the empty array (default) to skip no
+ *   filter types. All of the format's filters will be applied, except for
+ *   filters of the types that are marked to be skipped. FILTER_TYPE_SECURITY is
+ *   the only type that cannot be skipped.
+ *
+ * @see aloha.module/aloha_filter_info_alter()
+ */
+function check_markup2($text, $format_id = NULL, $langcode = '', $cache = FALSE, $filter_types_to_skip = array()) {
+  if (!isset($format_id)) {
+    $format_id = filter_fallback_format();
+  }
+  // If the requested text format does not exist, the text cannot be filtered.
+  if (!$format = filter_format_load($format_id)) {
+    watchdog('filter', 'Missing text format: %format.', array('%format' => $format_id), WATCHDOG_ALERT);
+    return '';
+  }
+
+  // Prevent FILTER_TYPE_SECURITY from being skipped.
+  if (in_array(FILTER_TYPE_SECURITY, $filter_types_to_skip)) {
+    $filter_types_to_skip = array_diff($filter_types_to_skip, array(FILTER_TYPE_SECURITY));
+  }
+
+  // When certain filters should be skipped, don't perform caching.
+  if ($filter_types_to_skip) {
+    $cache = FALSE;
+  }
+
+  // Check for a cached version of this piece of text.
+  $cache = $cache && !empty($format->cache);
+  $cache_id = '';
+  if ($cache) {
+    $cache_id = $format->format . ':' . $langcode . ':' . hash('sha256', $text);
+    if ($cached = cache('filter')->get($cache_id)) {
+      return $cached->data;
+    }
+  }
+
+  // Convert all Windows and Mac newlines to a single newline, so filters only
+  // need to deal with one possibility.
+  $text = str_replace(array("\r\n", "\r"), "\n", $text);
+
+  // Get a complete list of filters, ordered properly.
+  $filters = filter_list_format($format->format);
+  $filter_info = filter_get_filters();
+
+  // Give filters the chance to escape HTML-like data such as code or formulas.
+  foreach ($filters as $name => $filter) {
+    // If necessary, skip filters of a certain type.
+    if ($filter->status && $filter_types_to_skip && isset($filter_info[$name]['type']) && in_array($filter_info[$name]['type'], $filter_types_to_skip)) {
+      continue;
+    }
+    if ($filter->status && isset($filter_info[$name]['prepare callback']) && function_exists($filter_info[$name]['prepare callback'])) {
+      $function = $filter_info[$name]['prepare callback'];
+      $text = $function($text, $filter, $format, $langcode, $cache, $cache_id);
+    }
+  }
+
+  // Perform filtering.
+  foreach ($filters as $name => $filter) {
+    // If necessary, skip filters of a certain type.
+    if ($filter->status && $filter_types_to_skip && isset($filter_info[$name]['type']) && in_array($filter_info[$name]['type'], $filter_types_to_skip)) {
+      continue;
+    }
+    if ($filter->status && isset($filter_info[$name]['process callback']) && function_exists($filter_info[$name]['process callback'])) {
+      $function = $filter_info[$name]['process callback'];
+      $text = $function($text, $filter, $format, $langcode, $cache, $cache_id);
+    }
+  }
+
+  // Cache the filtered text. This cache is infinitely valid. It becomes
+  // obsolete when $text changes (which leads to a new $cache_id). It is
+  // automatically flushed when the text format is updated.
+  // @see filter_format_save()
+  if ($cache) {
+    cache('filter')->set($cache_id, $text);
+  }
+
+  return $text;
+}
+
+/**
+ * @} End of "defgroup filter_modifications".
+ */
+
+
+
+
+/**
+ * @defgroup filter_wysiwyg Extensions to the Filter API to accommodate "true WYSIWYG" editors.
+ * @{
+ */
+
+/**
+ * Retrieves all filter types that are used in a given text format.
+ *
+ * @param string $format_id
+ *   A text format ID.
+ * @return array
+ *   All filter types used by filters of a given text format.
+ */
+function filter_get_filter_types_by_format($format_id) {
+  $filter_types = array();
+
+  $filters = filter_list_format($format_id);
+
+  // Ignore filters that are disabled.
+  $filters = array_filter($filters, function($filter) {
+    return $filter->status;
+  });
+
+  $filters_metadata = filter_get_filters();
+  foreach ($filters as $filter) {
+    // @todo: Remove the fallback for when no filter type is defined. We don't
+    // fail, we just ignore these right now.
+    $type = FALSE;
+    if (empty($filters_metadata[$filter->name]['type'])) {
+      drupal_set_message(t('Filter !filter has no type specified!', array('!filter' => $filter->name)), 'error');
+    }
+    else {
+      $type = $filters_metadata[$filter->name]['type'];
+    }
+    if ($type && !in_array($type, $filter_types)) {
+      $filter_types[] = $type;
+    }
+  }
+
+  return $filter_types;
+}
+
+/**
+ * Retrieve all tags that are allowed by a given text format.
+ *
+ * @param string $format_id
+ *   A text format ID.
+ * @return array|TRUE
+ *   An array of HTML tags (in "p", not "<p>" format) that are allowed by the
+ *   text format. The empty array implies no tags are allowed. TRUE implies all
+ *   tags are allowed.
+ */
+function filter_get_allowed_tags_by_format($format_id) {
+  $filters = filter_list_format($format_id);
+
+  // Ignore filters that are disabled or don't have an "allowed tags" setting.
+  $filters = array_filter($filters, function($filter) {
+    if (!$filter->status) {
+      return FALSE;
+    }
+
+    $filters_metadata = filter_get_filters();
+    if (!empty($filters_metadata[$filter->name]['allowed tags setting'])) {
+      return TRUE;
+    }
+  });
+
+  if (empty($filters)) {
+    return TRUE;
+  }
+  else {
+    // From the set of remaining filters (they were filtered by array_filter()
+    // above), collect the list of tags that is allowed by *all* filters, i.e.
+    // the intersection of all allowed tags.
+    $allowed_tags = array_reduce($filters, function($result, $filter) {
+      $allowed_tags = array();
+      $filters_metadata = filter_get_filters();
+
+      $setting_name = $filters_metadata[$filter->name]['allowed tags setting'];
+      $allowed_tags = preg_split('/\s+|<|>/', $filter->settings[$setting_name], -1, PREG_SPLIT_NO_EMPTY);
+
+      // The first filter with an "allowed tags" setting provides the initial
+      // set.
+      if (!isset($result)) {
+        return $allowed_tags;
+      }
+      // Subsequent filters with an "allowed tags" setting must be intersected
+      // with the existing set, to ensure we only end up with the tags that are
+      // allowed by *all* filters with an "allowed tags" setting.
+      else {
+        return array_intersect($result, $allowed_tags);
+      }
+    }, NULL);
+
+    return $allowed_tags;
+  }
+}
+
+/**
+ * @} End of "defgroup filter_wysiwyg".
+ */

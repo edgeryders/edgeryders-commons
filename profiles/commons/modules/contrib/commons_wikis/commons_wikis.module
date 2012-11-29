@@ -1,0 +1,138 @@
+<?php
+/**
+ * @file
+ * Code for the Commons Wikis feature.
+ */
+
+include_once 'commons_wikis.features.inc';
+
+/**
+* Implements hook_module_implements_alter().
+*/
+function commons_wikis_module_implements_alter(&$implementations, $hook) {
+  // We need to override access control for revision view callbacks
+  // in order to give all users permission to view wiki node revisions.
+  if ($hook == 'menu_alter') {
+    $group = $implementations['commons_wikis'];
+    unset($implementations['commons_wikis']);
+    $implementations['commons_wikis'] = $group;
+  }
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function commons_wikis_menu_alter(&$items) {
+  // Find all menu items that are related to viewing a revision and change the
+  // access callback to our custom one.
+  foreach ($items as $route => $info) {
+    if (strpos($route, 'revisions') !== FALSE
+      && strpos($route, 'revert') === FALSE
+      && strpos($route, 'delete') === FALSE) {
+      $items[$route]['access arguments'][] = $items[$route]['access callback'];
+      $items[$route]['access callback'] = 'commons_wikis_user_revision_access';
+    }
+  }
+}
+
+/**
+ * Custom access callback for viewing revision info.
+ */
+function commons_wikis_user_revision_access($node = NULL, $old_callback = '_node_revision_access') {
+  if ($node->type == 'wiki') {
+    return TRUE;
+  }
+  else {
+    return node_access('view', $node) && $old_callback($node, 'view');
+  }
+}
+
+/**
+* Implements hook_og_user_access_alter().
+*/
+function commons_wikis_og_user_access_alter(&$temp_perm, $context) {
+  // Grant access to non-group members to be able to edit wiki nodes.
+  // where the group node is public and content is public within the group.
+  $commons_groups_enabled_node_types = commons_groups_get_enabled_node_types();
+  $group_content_restricted = (bool) (isset($context['group']->group_content_access[LANGUAGE_NONE][0]['value']) && $context['group']->group_content_access[LANGUAGE_NONE][0]['value'] == 2);
+  // @TODO: Consider using a static here.
+  $user_is_member = (bool)og_is_member('node', $context['group']->nid, 'user', $context['account']);
+  foreach ($commons_groups_enabled_node_types as $type => $status) {
+    if ($context['string'] == "update any wiki content" && (!$group_content_restricted || $user_is_member)) {
+      $temp_perm["update any wiki content"] = TRUE;
+    }
+  }
+}
+
+
+/**
+ * Implements hook_commons_bw_group_widget().
+ */
+function commons_wikis_commons_bw_group_widget() {
+  return array(
+    'commons_wikis' => array(
+      'title' => t('Wikis'),
+      'type' => 'view',
+      'vid' => 'commons_bw_wikis',
+      'display' => 'default',
+      'weight' => 8,
+    ),
+  );
+}
+
+/**
+* Implements hook_views_pre_render().
+*/
+function commons_wikis_views_pre_render(&$view) {
+  // Add a "Create a wiki" link for users who have access.
+  if ($view->name == 'commons_bw_wikis') {
+    $group_id = $view->args[0];
+    if (og_user_access('node', $group_id, 'create wiki content') && node_access('create', 'wiki')) {
+      $view->attachment_before = l('Create a wiki', 'node/add/wiki', array('query' => array('og_group_ref' => $group_id)));
+    }
+  }
+}
+
+/**
+* Implements hook_strongarm_alter().
+*/
+ function commons_wikis_strongarm_alter(&$items) {
+  // Expose the Post content type for 'liking' via the Commons_like module
+  // by altering the configuration for the Rate.module widget that it provides.
+  if (!empty($items['rate_widgets']->value)) {
+    foreach($items['rate_widgets']->value as $key => $widget) {
+      if ($widget->name == 'commons_like') {
+        if (!in_array('wiki', $items['rate_widgets']->value[$key]->node_types)) {
+          $items['rate_widgets']->value[$key]->node_types[] = 'wiki';
+        }
+        if (!in_array('wiki', $items['rate_widgets']->value[$key]->comment_types)) {
+          $items['rate_widgets']->value[$key]->comment_types[] = 'wiki';
+        }
+      }
+    }
+  }
+  // Expose the post content type for integration with Commons Radioactivity
+  // and Commons Groups.
+  foreach (array('commons_radioactivity_entity_types', 'commons_groups_entity_types') as $key) {
+    if (isset($items[$key])) {
+      $items[$key]->value['node']['wiki'] = 1;
+    }
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function commons_wikis_node_update($node) {
+  if ($node->type == 'wiki' && module_exists('message')) {
+    $account = user_load($node->uid);
+    $message = message_create('commons_wikis_wiki_updated', array('uid' => $account->uid, 'timestamp' => REQUEST_TIME));
+    $wrapper = entity_metadata_wrapper('message', $message);
+    // Save reference to the node in the node reference field.
+    // We use a multiple value field in case we wish to use the same
+    // field for grouping messages in the future
+    // (eg http://drupal.org/node/1757060).
+    $wrapper->field_target_nodes[] = $node;
+    $wrapper->save();
+  }
+}

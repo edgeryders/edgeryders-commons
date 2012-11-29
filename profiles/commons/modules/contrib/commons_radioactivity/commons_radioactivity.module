@@ -1,0 +1,116 @@
+<?php
+/**
+ * @file
+ * Code for the Commons Radioactivity feature.
+ */
+
+// Include files contain hook implementations for the corresponding modules.
+include_once 'commons_radioactivity.features.inc';
+include_once 'includes/incidents/commons_radioactivity.incidents_comment.inc';
+include_once 'includes/incidents/commons_radioactivity.incidents_flag.inc';
+include_once 'includes/incidents/commons_radioactivity.incidents_votingapi.inc';
+
+
+// Define constants for Commons Radioactivity incidents.
+// These could be changed to variables and made more configurable.
+define('COMMONS_RADIOACTIVITY_COMMENT', 2);
+define('COMMONS_RADIOACTIVITY_LIKE', 4);
+define('COMMONS_RADIOACTIVITY_NODE_IN_GROUP', 4);
+define('COMMONS_RADIOACTIVITY_FLAG_NODE', 6);
+
+
+
+/**
+* Implements hook_system_info_alter().
+*/
+function commons_radioactivity_system_info_alter(&$info, $file, $type) {
+  // Commons Radioactivity dynamically adds field_radioactivity to
+  // content types that implement commons_radioactivity_field.
+  // We must add a corresponding line for each field instance
+  // to commons_radioactivity.info so that Features is aware of the instance
+  // and can sucessfully revert the field_instance component back
+  // to its default state.
+  if ($file->name == 'commons_radioactivity') {
+    $commons_radioactivity_entity_types = variable_get('commons_radioactivity_entity_types', array());
+    if (!empty($commons_radioactivity_entity_types['node'])) {
+      foreach ($commons_radioactivity_entity_types['node'] as $type => $status) {
+        if ($status) {
+          $info['features']['field_instance'][] = "node-$type-field_radioactivity";
+        }
+      }
+    }
+  }
+}
+
+
+/**
+* Helper function to create Radioactivity incidents for nodes.
+*/
+function commons_radioactivity_incident_node($node, $value) {
+  $profile = radioactivity_get_field_profile('node', $node->type, 'field_radioactivity');
+  if ($profile && $profile->storageObject) {
+    $profile->storageObject->addIncident(new RadioactivityIncident('node', $node->type, 'field_radioactivity', LANGUAGE_NONE, $node->nid, $value, time()));
+  }
+  // If this node is a member of groups, generate an incident for each group.
+  if (!empty($node->og_group_ref)) {
+    commons_radioactivity_incident_groups($node, $value);
+  }
+}
+
+/**
+* Helper function to create Radioactivity incidents for groups
+* to which a node belongs.
+*/
+function commons_radioactivity_incident_groups($node, $value) {
+  foreach ($node->og_group_ref[LANGUAGE_NONE] as $field) {
+    $gids[] = $field['target_id'];
+  }
+  // @Todo: We may wish to instead simply select the types of these groups.
+  $groups = node_load_multiple($gids);
+  foreach ($groups as $group) {
+    commons_radioactivity_incident_node($group, $value);
+  }
+}
+
+/**
+* When a node is moved between groups, create incidents that offset
+* the change in radioactivity for the former and newly containing groups.
+*/
+function commons_radioactivity_process_node_group_membership_change($node) {
+  $groups_removed = array();
+  $groups_added = array();
+  // Collect any gids from the original node.
+  if (!empty($node->original->og_group_ref[LANGUAGE_NONE])) {
+    foreach ($node->original->og_group_ref[LANGUAGE_NONE] as $key => $field) {
+      $gids_original[] = $field['target_id'];
+    }
+  }
+  // Collect any gids from the updated node.
+  if (!empty($node->og_group_ref[LANGUAGE_NONE])) {
+    foreach ($node->og_group_ref[LANGUAGE_NONE] as $key => $field) {
+      $gids_updated[] = $field['target_id'];
+    }
+  }
+
+  // Find the gids that are being removed from the node with this update.
+  $gids_removed = array_diff($gids_original, $gids_updated);
+  // Find the gids that are being added to the node with this update.
+  $gids_added = array_diff($gids_updated, $gids_original);
+
+  if (!empty($gids_removed)) {
+    $groups_removed = entity_load_multiple_by_name('node', $gids_removed);
+    // Add negative incidents for groups that are no longer associated
+    // with this node.
+    foreach ($groups_removed as $key => $group) {
+      // We create an incident equal to the negative current value of this node.
+      commons_radioactivity_incident_node($group, -1 * $node->field_radioactivity[LANGUAGE_NONE][0]['radioactivity_energy']);
+    }
+  }
+  // Add positive incidents for groups that are newly associated with this node.
+  if (!empty($gids_added)) {
+    $groups_added = entity_load_multiple_by_name('node', $gids_added);
+    foreach ($groups_added as $key => $group) {
+      commons_radioactivity_incident_node($group, $node->field_radioactivity[LANGUAGE_NONE][0]['radioactivity_energy']);
+    }
+  }
+}

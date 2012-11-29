@@ -1,0 +1,12 @@
+name = Filter — "true WYSIWYG"
+description = Proposed modifications to Drupal core's filter module. Necessary to support "true WYSIWYG" editors.
+package = User interface
+core = 7.x
+php = 5.3
+
+; Information added by drupal.org packaging script on 2012-10-31
+version = "7.x-2.0-alpha1+16-dev"
+core = "7.x"
+project = "aloha"
+datestamp = "1351686842"
+

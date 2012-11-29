@@ -1,0 +1,11 @@
+name = Caption
+description = Create captions and align images.
+package = Input filters
+core = 7.x
+
+; Information added by drupal.org packaging script on 2012-10-31
+version = "7.x-2.0-alpha1+16-dev"
+core = "7.x"
+project = "aloha"
+datestamp = "1351686842"
+

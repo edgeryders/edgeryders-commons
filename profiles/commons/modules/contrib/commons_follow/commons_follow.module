@@ -1,0 +1,167 @@
+<?php
+
+include_once 'commons_follow.features.inc';
+
+
+/**
+ * Get all node IDs relevant to what the user ordered.
+ *
+ * @param $account
+ *   The user being checked. Defaults to the current user.
+ * @param $options
+ *   Array. Includes options to alter the query. Options available are used
+ *   within the hook implementations.
+ *
+ * @return
+ *   Array of node IDs.
+ */
+function commons_follow_get_nids($account = NULL, $options = array()) {
+  if (empty($account)) {
+    global $user;
+    $account = clone $user;
+  }
+
+  $nids = array();
+  // We don't use module_invoke_all() is we want to retain the array keys,
+  // which are the user IDs.
+  foreach (module_implements('commons_follow_get_nids') as $module) {
+    $function = $module . '_commons_follow_get_nids';
+    $result = $function($account, $options);
+    if (empty($result)) {
+      return $nids;
+    }
+    foreach ($result as $nid) {
+      $nids[$nid] = $nid;
+    }
+  }
+  return $nids;
+}
+
+
+
+/**
+ * Get subscriptions flag IDs.
+ *
+ * @param $content_type
+ *   Optional. The type of content for which to load the flags. Usually 'node'.
+ * @param $content_subtype
+ *   Optional. The node type for which to load the flags.
+ * @param $account
+ *   Optional. The user accont to filter available flags. If not set, all
+ *   flags for will this node will be returned.
+ * @param $reset
+ *   Optional. Reset the internal query cache.
+ *
+ * @return $flags
+ *   An array of the structure [fid] = flag_object.
+ *
+ * @see flag_get_flags()
+ */
+function commons_follow_get_subscription_flags_ids($content_type = NULL, $content_subtype = NULL, $account = NULL, $reset = FALSE) {
+  if (!module_exists('message_subscribe')) {
+    // Requires message_subscribe module.
+    return;
+  }
+  $flags = message_subscribe_flag_get_flags($content_type, $content_subtype, $account, $reset);
+
+  $flag_ids = array();
+  foreach ($flags as $flag) {
+    $flag_ids[] = $flag->fid;
+  }
+  return $flag_ids;
+}
+
+///////////////////
+
+/**
+ * Implementation of hook_views_api().
+ */
+function commons_follow_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'commons_follow') . '/includes/views',
+  );
+}
+
+/**
+* Returns a list of Commons Follow Flag objects.
+*/
+function commons_follow_get_flags() {
+  $flags = flag_get_flags();
+  foreach ($flags as $key => $flag) {
+    if (substr($key, 0, 14) != 'commons_follow') {
+      unset($flags[$key]);
+    }
+  }
+  return $flags;
+}
+
+/**
+* Returns an array of Commons Follow flags keyed on the numeric flag ID.
+*/
+function commons_follow_get_flag_ids() {
+  $flag_ids = array();
+  $flags = commons_follow_get_flags();
+  foreach ($flags as $key => $flag) {
+    $flag_ids[$flag->fid] = $key;
+  }
+  return $flag_ids;
+}
+
+/**
+* Returns a single flag ID based on a flag machine name.
+*/
+function commons_follow_get_flag_id($name) {
+  $flag = flag_get_flag($name);
+  $return = $flag->fid;
+  return $flag->fid;
+}
+/**
+ * Get a list of all content that a user is following.
+ * @return
+ *  An array keyed on the flag name with values corresponding to the IDs
+ *  of the flagged entities.
+ */
+function commons_follow_get_followed_content($account = array()) {
+  if (empty($account)) {
+    global $user;
+    $account = $user;
+  }
+  $results = array();
+  $flag_ids = commons_follow_get_flag_ids();
+  // Get a list of everything that the user is following.
+  $result = db_query("SELECT fid, content_id FROM {flag_content} WHERE fid IN (:fids) AND uid = :uid", array(':fids' => array_keys($flag_ids), ':uid' => $account->uid));
+  foreach ($result as $this_result) {
+    $results[$flag_ids[$this_result->fid]][] = $this_result->content_id;
+  }
+
+  return $results;
+}
+
+/**
+* Find a list of message IDs that correspond to events that the current user
+* is following.
+*/
+function commons_follow_get_followed_message_ids($account = NULL) {
+  $followed_mids = array();
+  // Allow the module with this flag namespace to return a list of
+  // followed MIDs.
+  $followed_content = commons_follow_get_followed_content($account);
+  $followed_mids = array();
+  foreach ($followed_content as $key => $content) {
+    $function = $key . '_commons_follow_get_message_ids';
+    if (function_exists($function)) {
+      $function($followed_mids, $followed_content);
+    }
+  }
+  return $followed_mids;
+}
+
+function commons_follow_get_following_uids(&$following_uids = array(), $message) {
+  $following_uids = array();
+  foreach (module_implements('commons_follow_get_following_uids') as $module) {
+    $function = $module . '_commons_follow_get_following_uids';
+    $function($following_uids, $message);
+  }
+  //Todo: Somebody probably wants to drupal_alter() this.
+}

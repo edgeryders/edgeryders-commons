@@ -1,0 +1,271 @@
+<?php
+/**
+ * @file
+ * Drupal Commons Events feature.
+ */
+
+include_once 'commons_events.features.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function commons_events_menu() {
+  $items = array();
+  $items['node/%node/attendees'] = array(
+    'title' => 'Attendees',
+    'page callback' => 'commons_events_event_attendees_page',
+    'page arguments' => array(1),
+    'access callback' => 'commons_events_attendee_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Access callback for showing the Attendees tab.
+ */
+function commons_events_attendee_access($event_node) {
+  if ($event_node->type == 'event') {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Page callback for full event attendee listing.
+ */
+function commons_events_event_attendees_page($event_node) {
+  return theme('commons_events_event_attendees',
+    array(
+      'event_nid' => $event_node->nid,
+      'display' => 'full',
+    ));
+}
+
+/**
+ * Implements hook_theme().
+ */
+function commons_events_theme($existing, $type, $theme, $path) {
+  return array(
+    'commons_events_attending_event' => array(
+      'variables' => array(
+        'event' => NULL,
+      ),
+      'file' => '/includes/commons_events.theme.inc',
+    ),
+    'commons_events_event_attendees' => array(
+      'variables' => array(
+        'display' => NULL,
+        'event_nid' => NULL,
+      ),
+      'file' => '/includes/commons_events.theme.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_entity_view_alter().
+ */
+function commons_events_entity_view_alter(&$build, $type) {
+  if ($build['#entity_type'] == 'node' && $build['#bundle'] == 'event') {
+    $build['attending'] = array(
+      0 => theme('commons_events_attending_event', array('event' => $build['#node'])),
+      '#weight' => -10,
+    );
+    $vars = array(
+      'event_nid' => $build['#node']->nid,
+    );
+    // Don't show the address if the event location is only online.
+    $field_location = field_view_field('node', $build['#node'], 'field_location');
+    $field_location = $field_location['#items']['0']['value'];
+    if ($field_location == 'online') {
+      unset($build['field_address']);
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter();
+ */
+function commons_events_form_node_form_alter(&$form, &$form_state) {
+  if ($form_state['node']->type == 'event') {
+    $form['#attached']['css'] = array(
+      drupal_get_path('module', 'commons_events') . '/css/commons_events.css',
+    );
+    $form['#attached']['js'] = array(
+      drupal_get_path('module', 'commons_events') . '/js/commons_events.js',
+    );
+    // Remove the '-None-' option from all the dropdowns.
+    unset($form['field_location'][$form['field_location']['#language']]['#options']['_none']);
+    unset($form['field_registration_type'][$form['field_registration_type']['#language']]['#options']['_none']);
+    // Hide the Registration type field.
+    $form['field_registration']['#type'] = 'hidden';
+    // Address field should be hidden if event is only online.
+    $form['field_address']['#states'] = array(
+      'invisible' => array(
+        ':input[name^="field_location"]' => array('value' => 'online'),
+      ),
+    );
+    // Status and attendee limit are shown if registration is onsite.
+    $node_registration_status = 0;
+    if (isset($form_state['node']->nid)) {
+      $settings = registration_entity_settings('node', $form_state['node']->nid);
+      $node_registration_status = $settings['status'];
+    }
+    $form['field_status'] = array(
+      '#type' => 'select',
+      '#title' => t('Status'),
+      '#options' => array(
+        1 => t('Open to new attendees'),
+        0 => t('Closed'),
+      ),
+      '#default_value' => $node_registration_status,
+      '#states' => array(
+        'visible' => array(
+          ':input[name^="field_registration_type"]' => array('value' => 'onsite'),
+        ),
+      ),
+      '#weight' => 10,
+    );
+    $form['field_number_of_attendees']['#states'] = $form['field_status']['#states'];
+    $form['field_number_of_attendees']['#states']['invisible'][':input[name="field_status"]'] = array(
+      'value' => 0,
+    );
+    $form['field_number_of_attendees']['#weight'] = 11;
+    $form['field_topics']['#weight'] = 12;
+    // URL field shown if registration is offsite only.
+    $form['field_offsite_url']['#states'] = array(
+      'visible' => array(
+        ':input[name^="field_registration_type"]' => array('value' => 'external'),
+      ),
+    );
+    $form['#validate'] = array_merge(array('commons_events_node_form_validate'), $form['#validate']);
+    $form['#submit'][] = 'commons_events_node_form_submit';
+    // Create a container for registration settings, topics, and revision info.
+    $form['events_sidebar'] = array(
+      '#type' => 'container',
+    );
+    // Move registration settings into a fieldset so we can move the group.
+    $form['events_sidebar']['event_registration_settings'] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+      '#title' => t('Registration settings'),
+    );
+    $form['events_sidebar']['event_registration_settings']['field_registration_type'] = $form['field_registration_type'];
+    $form['events_sidebar']['event_registration_settings']['field_status'] = $form['field_status'];
+    $form['events_sidebar']['event_registration_settings']['field_number_of_attendees'] = $form['field_number_of_attendees'];
+    $form['events_sidebar']['event_topics'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Topics'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+    $form['events_sidebar']['event_topics']['field_topics'] = $form['field_topics'];
+    unset($form['field_topics']);
+    unset($form['field_registration_type']);
+    unset($form['field_status']);
+    unset($form['field_number_of_attendees']);
+  }
+}
+
+/**
+ * Custom node form validation handler.
+ */
+function commons_events_node_form_validate($form, &$form_state) {
+  $lng = (isset($form_state['language']) ? $form_state['language'] : LANGUAGE_NONE);
+  switch ($form_state['values']['field_registration_type'][$lng]['0']['value']) {
+    case 'onsite':
+      // Max attendees must be entered if the registration status is open and
+      // registration is done onsite.
+      if ((int) $form_state['values']['field_status'] == 1
+        && (!is_numeric($form_state['values']['field_number_of_attendees'][$lng]['0']['value']))) {
+          form_set_error('field_number_of_attendees',
+            t('Maximum number of attendees must be set for registrations to be accepted.'));
+          return FALSE;
+        }
+      break;
+    case 'external':
+      // Must have entered a URL to the offsite registration page.
+      if (empty($form_state['values']['field_offsite_url'][$lng]['0']['value'])
+        || !valid_url($form_state['values']['field_offsite_url'][$lng]['0']['value'])) {
+        form_set_error('field_offsite_url', t('A valid URL is required for offsite registration.'));
+        return FALSE;
+      }
+      break;
+  }
+  return TRUE;
+}
+
+/**
+ * Custom node form submit handler.
+ */
+function commons_events_node_form_submit($form, $form_state) {
+  $node = $form_state['node'];
+  $lng = (isset($form_state['language']) ? $form_state['language'] : LANGUAGE_NONE);
+  if (isset($node->nid)) {
+    $settings = registration_entity_settings('node', $node->nid);
+    $settings['status'] = (int) $form_state['values']['field_status'];
+    if (!empty($form_state['values']['field_number_of_attendees'][$lng]['0']['value'])
+      && is_numeric($form_state['values']['field_number_of_attendees'][$lng]['0']['value'])) {
+      $settings['capacity'] = (int) $form_state['values']['field_number_of_attendees'][$lng]['0']['value'];
+    }
+    $settings['settings'] = serialize($settings['settings']);
+    registration_update_entity_settings('node', $node->nid, $settings);
+  }
+}
+
+/**
+ * Implements hook_token_info().
+ */
+function commons_events_token_info_alter(&$tokens) {
+  $tokens['tokens']['node']['attend-form'] = array(
+    'name' => t('Attending event form'),
+    'description' => t('Displays the appropriate form for attending or cancelling event attendance'),
+  );
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function commons_events_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  if ($type == 'node' && !empty($data['node'])) {
+    $event = $data['node'];
+    foreach ($tokens as $name => $original) {
+      if ($name == 'attend-form') {
+        $replacements[$original] = theme('commons_events_attending_event', array('event' => $event));
+      }
+    }
+  }
+  return $replacements;
+}
+
+/**
+* Implements hook_strongarm_alter().
+*/
+ function commons_events_strongarm_alter(&$items) {
+  // Expose the Post content type for 'liking' via the Commons_like module
+  // by altering the configuration for the Rate.module widget that it provides.
+  if (!empty($items['rate_widgets']->value)) {
+    foreach($items['rate_widgets']->value as $key => $widget) {
+      if ($widget->name == 'commons_like') {
+        if (!in_array('event', $items['rate_widgets']->value[$key]->node_types)) {
+          $items['rate_widgets']->value[$key]->node_types[] = 'event';
+        }
+        if (!in_array('event', $items['rate_widgets']->value[$key]->comment_types)) {
+          $items['rate_widgets']->value[$key]->comment_types[] = 'event';
+        }
+      }
+    }
+  }
+  // Expose the post content type for integration with Commons Radioactivity
+  // and Commons Groups.
+  foreach (array('commons_radioactivity_entity_types', 'commons_groups_entity_types') as $key) {
+    if (isset($items[$key])) {
+      $items[$key]->value['node']['event'] = 1;
+    }
+  }
+}
+

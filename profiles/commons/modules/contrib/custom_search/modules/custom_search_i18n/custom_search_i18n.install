@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the custom search module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function custom_search_i18n_install() {
+  db_update('system')
+    ->fields(array('weight' => 110))
+    ->condition('name', 'custom_search_i18n')
+    ->execute();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function custom_search_i18n_uninstall() {
+	variable_del('custom_search_i18n_search_language');
+  if (module_exists('custom_search_blocks')) {
+  	$blocks = variable_get('custom_search_blocks_number', 1);
+    for ($delta=1 ; $delta<=$blocks ; $delta++) {
+      variable_del('custom_search_i18n_' . $delta . '_search_language');
+    }
+ 	}
+}

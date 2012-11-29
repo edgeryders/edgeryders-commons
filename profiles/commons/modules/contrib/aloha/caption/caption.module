@@ -1,0 +1,285 @@
+<?php
+
+/**
+ * @file
+ * Provides ability to caption and align images through data- attributes.
+ */
+
+/**
+ * Implements hook_library().
+ */
+function caption_library() {
+  $path = drupal_get_path('module', 'caption');
+
+  $libraries['caption'] = array(
+    'title' => 'Captions for images and alignments',
+    'version' => VERSION,
+    'css' => array(
+      $path . '/css/caption.css',
+    ),
+  );
+
+  /* @aloha */
+  if (module_exists("aloha")) {
+    $libraries['caption.aloha'] = array(
+      'title' => 'Aloha integration for the Caption module',
+      'version' => VERSION,
+      'js' => array(
+        $path . '/js/caption-aloha.js' => array(),
+        array(
+          'type' => 'setting',
+          'data' => array('aloha' => array('settings' => array(
+            'plugins' => array(
+              'load' => array('extra/captioned-image'),
+              'captionedImage' => array(
+                // Formatting is prevented in the "sanitize" content handler,
+                // <br>s and <p>s are prevented here.
+                'allowLineBreak'      => FALSE,
+                // Apply image captions to every <img> tag.
+                'selector'            => 'img',
+                // Don't load the default CSS.
+                'defaultCss'          => FALSE,
+                // Don't add classes to images that are captioned.
+                'captionedImageClass' => '',
+                // Specify a custom class for CaptionedImage Aloha Blocks, so that
+                // we can target it with our custom CSS.
+                'blockClass'          => 'caption-captioned-image-block',
+                // Function callback, gets set in `js/caption-aloha.js`.
+                // 'render' => function() {}, 
+              ),
+            ),
+            'contentHandler' => array(
+              'handler' => array(
+                'sanitize' => array(
+                  // Prevent formatting in captions.
+                  '.aloha-captioned-image-caption' => array('elements' => array()),
+                ),
+              ),
+            ),
+            // Specify the location of the CaptionedImage buttons in the toolbar.
+            'toolbar' => array(
+              'tabs' => array(
+                array(
+                  'label' => 'Image',
+                  'showOn' => array('scope' => '__hidden__'),
+                  'components' => array(
+                    'imgAlignLeft',
+                    'imgAlignRight',
+                    'imgAlignCenter',
+                    'imgAlignClear',
+                  ),
+                )
+              )
+            ),
+          ))),
+        ),
+      ),
+      'css' => array(
+        $path . '/css/caption-aloha.css',
+      ),
+      'dependencies' => array(
+        array('caption', 'caption'),
+        // The CaptionedImage plug-in is an Aloha Block implementation.
+        array('aloha', 'aloha.common/block'),
+      ),
+    );
+  }
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_library_alter().
+ */
+function caption_library_alter(&$libraries, $module) {
+  /* @aloha */
+  // Add caption.aloha to the list of dependencies; this will ensure that the
+  // "extra/captioned-image" plug-in (which ships with Aloha Editor) gets loaded
+  // by Aloha Editor.
+  if ($module == 'aloha') {
+    $libraries['aloha']['dependencies'][] = array('caption', 'caption.aloha');
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function caption_init() {
+  // @todo: we should only add this when the caption filter was actually used,
+  // but there is currently no elegant way to do this in Drupal 7 or 8.
+  drupal_add_library('caption', 'caption', TRUE);
+}
+
+/**
+ * Implements hook_filter_info().
+ */
+function caption_filter_info() {
+  $filters['caption'] = array(
+    'title'            => t('Caption'),
+    'description'      => t('Transforms <code>data-caption</code> attributes on <code>&lt;img&gt;</code> tags into captions.'),
+    'process callback' => 'caption_process_filter',
+    'tips callback'    => 'caption_filter_tips',
+  );
+
+  /* @aloha */
+  if (module_exists('aloha') && module_exists('filter_true_wysiwyg')) {
+    $filters['caption']['type'] = FILTER_TYPE_TRANSFORM_DOM;
+  }
+
+  return $filters;
+}
+
+/**
+ * Filter process callback. Expands images with a data-caption attribute into
+ * images with captions.
+ */
+function caption_process_filter($text, $filter, $format, $langcode, $cache, $cache_id) {
+  $search = array();
+  $replace = array();
+
+  // Prevent useless processing if there are no data-caption attributes at all.
+  if (stristr($text, 'data-caption') !== FALSE || stristr($text, 'data-align') !== FALSE) {
+    // Iterate over all images that have data-caption and/or data-align
+    // attributes. Remove these attributes and wrap the image in a caption.
+    $pattern = "#(?:(?:<img\s+|<img\s+[^>]*\s+)(?:data-caption|data-align)\s*.*(?:\s*>|\s*/>|\s*></img>))#i";
+    if (preg_match_all($pattern, $text, $matches)) {
+      foreach ($matches[0] as $image_html) {
+        $dom = filter_dom_load($image_html);
+        $image_node = $dom->getElementsByTagName('img')->item(0);
+        $caption = NULL;
+        $align = NULL;
+
+        // Retrieve, then remove the data-caption and data-align attributes.
+        if ($image_node->hasAttribute('data-caption')) {
+          $caption = $image_node->getAttribute('data-caption');
+          $image_node->removeAttribute('data-caption');
+        }
+        if ($image_node->hasAttribute('data-align')) {
+          $align = $image_node->getAttribute('data-align');
+          $image_node->removeAttribute('data-align');
+        }
+
+        // Given the updated image node, caption, alignment and width: re-render
+        // the image with a caption.
+        $altered_image_html = theme('caption', array(
+          'image'   => $image_node->C14N(),
+          'caption' => $caption,
+          'align'   => $align,
+          'width'   => _caption_get_width($image_node),
+        ));
+
+        // Load the new HTML into a new DOMDocument.
+        $dom2 = filter_dom_load($altered_image_html);
+
+        // Locate the snippet of HTML we're interested in.
+        $dom2_image_node = $dom2->getElementsByTagName('body')->item(0)
+                                ->childNodes->item(0);
+        // Import the new "image" node from the second DOMDocument into the main
+        // one, importing also the child nodes of the new "image" node.
+        $new_image_node = $dom->importNode($dom2_image_node, TRUE);
+        // Finally, replace the original image node with the new image node!
+        $image_node->parentNode->replaceChild($new_image_node, $image_node);
+
+        $search[] = $image_html;
+        $replace[] = filter_dom_serialize($dom);
+      }
+    }
+  }
+
+  return str_replace($search, $replace, $text);
+}
+
+/**
+ * Determines the width of the image tag that is being captioned.
+ *
+ * @param DOMNode $image_node
+ *   A DOMNode for an image tag from a DOMDocument. @see filter_dom_load().
+ *
+ * @return string
+ *   The CSS declaration for the image's width, typically a number with "px"
+ *   appended to it; possibly "auto" or even a percentage.
+ */
+function _caption_get_width(DOMNode $image_node) {
+  // Retrieve the width attribute, or calculate the width directly from
+  // the image.
+  if ($image_node->hasAttribute('width')) {
+    $width = $image_node->getAttribute('width');
+  }
+  else {
+    if ($image_node->hasAttribute('src')) {
+      list($width) = getimagesize($image_node->getAttribute('src'));
+    }
+    else {
+      // We cannot determine the width so just set it to the default CSS value.
+      $width = 'auto';
+    }
+  }
+
+  // We need to append the 'px' to any numeric widths.
+  if (is_numeric($width)) {
+    $width = $width . 'px';
+  }
+
+  return $width;
+}
+
+/**
+ * Filter tips callback.
+ */
+function caption_filter_tips($filter, $format, $long = FALSE) {
+  if ($long) {
+    return t('
+      <p><strong>Caption</strong></p>
+      <p>You may wrap images with a caption using the <code>data-caption</code> attribute.</p>
+      <p>Examples:</p>
+      <ul>
+        <li>Caption an image:<br /><code><img src="" data-caption="This is a caption" /></code></li>
+        <li>Caption & align an image:<br /><code><img src="" data-caption="This is another caption" data-align="right" /></code></li>
+      </ul>');
+  }
+  else {
+    return t('Captions may be specified with a <code>data-caption="Image caption"</code> attribute. Images can be aligned with <code>data-align="left"</code>.');
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function caption_theme() {
+  return array(
+    'caption' => array(
+      'variables' => array(
+        'image'   => NULL,
+        'caption' => NULL,
+        'align'   => NULL,
+        'width'   => NULL,
+      )
+    )
+  );
+}
+
+/**
+ * Returns HTML for a captioned image.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - image: The complete image tag whose image is being captioned.
+ *   - caption: The caption text, or NULL.
+ *   - align: The alignment: 'left', 'center', 'right' or NULL.
+ *   - width: The width of the image.
+ *
+ * @see caption.js/Drupal.theme.prototype.caption()
+ *
+ * @ingroup themeable
+ */
+function theme_caption($variables) {
+  $image   = $variables['image'];
+  $caption = $variables['caption'];
+  $align   = $variables['align'];
+  $width   = $variables['width'];
+  return '<div class="caption caption-' . $align . '">' .
+         '<div class="caption-inner" style="width: ' . $width . ';">'.
+         $image .
+         '<div class="caption-text">' . $caption . '</div>' .
+         '</div></div>';
+}

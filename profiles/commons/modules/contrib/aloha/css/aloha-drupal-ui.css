@@ -1,0 +1,448 @@
+/**
+ * @file
+ * Styles for Drupal's Aloha Editor UI.
+ */
+
+/**
+ * Aloha Editor core.
+ */
+
+.aloha-surface {
+  font-size: 13px;
+}
+
+.tab-handles {
+  line-height: 1.6;
+}
+
+.aloha-surface,
+.aloha-surface .ui-widget,
+.aloha.ui-tooltip {
+  font-family: 'Droid sans', 'Lucida Grande', sans-serif;
+}
+
+.aloha-editable {
+  outline: none;
+}
+
+.aloha-textarea {
+  overflow: hidden;
+  border: 1px solid #aaa;
+  padding: 2px;
+  overflow: auto;
+}
+
+.aloha-surface .aloha-toolbar :focus {
+  outline: none;
+}
+
+.aloha-surface .aloha-toolbar * {
+  -webkit-user-select: none;
+   -khtml-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+       -o-user-select: none;
+          user-select: none;
+}
+
+.aloha-surface .aloha-toolbar .ui-autocomplete-input {
+  -webkit-user-select: text;
+   -khtml-user-select: text;
+     -moz-user-select: text;
+      -ms-user-select: text;
+       -o-user-select: text;
+          user-select: text;
+}
+
+.aloha-surface .ui-helper-hidden-accessible { position: absolute !important; clip: rect(1px 1px 1px 1px); clip: rect(1px,1px,1px,1px); }
+
+/**
+ * General UI.
+ */
+
+.aloha-drupal-ui-state-hidden {
+  opacity: 0;
+  display: none !important;
+}
+
+.aloha-drupal-ui-state-disabled {
+  opacity: .3;
+}
+
+.aloha-drupal-ui-state-default {
+  opacity: 1;
+}
+
+.aloha-toolbar-handles,
+.aloha-drupal-ui-tab-handle,
+.aloha-drupal-ui-tab-handle *,
+.aloha-toolbar-panels button {
+  -webkit-transition: all .2s ease;
+   -khtml-transition: all .2s ease;
+     -moz-transition: all .2s ease;
+      -ms-transition: all .2s ease;
+       -o-transition: all .2s ease;
+          transition: all .2s ease;
+}
+
+.aloha.ui-tooltip {
+  font-size: 10px;
+  line-height: 1.2em;
+  padding: 4px 6px;
+  border: 1px solid #777;
+  background: #fff;
+  color: #222;
+  position: absolute;
+  z-index: 999999;
+  -webkit-border-radius: 4px;
+   -khtml-border-radius: 4px;
+     -moz-border-radius: 4px;
+       -o-border-radius: 4px;
+          border-radius: 4px;
+  -webkit-box-shadow: 0 0 5px #aaa;
+   -khtml-box-shadow: 0 0 5px #aaa;
+     -moz-box-shadow: 0 0 5px #aaa;
+       -o-box-shadow: 0 0 5px #aaa;
+          box-shadow: 0 0 5px #aaa;
+}
+
+/**
+ * Toolbar tabs.
+ */
+
+.aloha-surface .aloha-toolbar-handles {
+  display: block;
+  height: 35px;
+}
+
+.aloha-surface .aloha-toolbar-handles ul {
+  display: inline-block;
+  float: left; /* LTR */
+  border-left: 1px solid #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+.aloha-surface .aloha-toolbar-handles ul li {
+  list-style: none;
+  float: left; /* LTR */
+}
+
+.aloha-surface .aloha-toolbar-handles ul li a {
+  display: block;
+  color: #5a5a5a;
+  min-width: 40px;
+  text-align: center;
+  padding: 7px 12px;
+  border: 1px solid #aaa;
+  border-left: 0;
+  border-bottom: 0;
+  text-decoration: none;
+  margin: 0;
+  -webkit-border-radius: 0;
+   -khtml-border-radius: 0;
+     -moz-border-radius: 0;
+       -o-border-radius: 0;
+          border-radius: 0;
+}
+
+.aloha-surface .aloha-toolbar-handles ul li.aloha-drupal-ui-state-active a {
+  background-color: #eee;
+  color: black;
+}
+
+/**
+ * Toolbar panels.
+ */
+
+.aloha-surface .aloha-toolbar-panels {
+  display: block;
+  height: auto;
+  border: 1px solid #aaa;
+  border-bottom: none; /* The border of the AE textarea will already be there. */
+  color: #5a5a5a;
+  font-size: 15px;
+}
+
+.aloha-surface .aloha-toolbar-panels:after {
+  visibility: hidden;
+  display: block;
+  clear: both;
+  height: 0;
+  font-size: 0;
+  content: " ";
+}
+
+.aloha-surface .aloha-toolbar-panels button .ui-button-text {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+}
+
+.aloha-surface .aloha-toolbar-panels button .spark-icon {
+  font-size: 15px;
+}
+
+.aloha-surface .aloha-toolbar-panels button {
+  border: none;
+  background: inherit;
+  color: inherit;
+  width: 31px;
+  height: 30px;
+  padding: 5px 0 4px;
+  display: block;
+  float: left; /* LTR */
+  border-right: 1px solid #aaa; /* LTR */
+  text-align: center;
+  -webkit-border-radius: 0;
+   -khtml-border-radius: 0;
+     -moz-border-radius: 0;
+       -o-border-radius: 0;
+          border-radius: 0;
+  margin: 0;
+}
+
+.aloha-surface .aloha-toolbar-panels,
+.aloha-surface .aloha-toolbar-panels button.ui-state-default {
+  background: -webkit-gradient(
+    linear,
+    color-stop(0, rgb(239, 239, 239)),
+    color-stop(1, rgb(245, 245, 245))
+  );
+  background: -webkit-linear-gradient(rgb(239, 239, 239) 0%, rgb(245, 245, 245) 100%);
+  background:    -moz-linear-gradient(rgb(239, 239, 239) 0%, rgb(245, 245, 245) 100%);
+  background:      -o-linear-gradient(rgb(239, 239, 239) 0%, rgb(245, 245, 245) 100%);
+  background:         linear-gradient(rgb(239, 239, 239) 0%, rgb(245, 245, 245) 100%);
+}
+
+.aloha-surface .aloha-toolbar-panels button.ui-state-hover {
+  color: #444;
+  background: -webkit-gradient(
+    linear,
+    color-stop(0, rgb(255, 255, 255)),
+    color-stop(1, #eee)
+  );
+  background: -webkit-linear-gradient(rgb(255, 255, 255) 0%, #eee 100%);
+  background:    -moz-linear-gradient(rgb(255, 255, 255) 0%, #eee 100%);
+  background:      -o-linear-gradient(rgb(255, 255, 255) 0%, #eee 100%);
+  background:         linear-gradient(rgb(255, 255, 255) 0%, #eee 100%);
+}
+
+.aloha-surface .aloha-toolbar-panels button.aloha-button-active {
+  color: #353535;
+  background: -webkit-gradient(
+    linear,
+    color-stop(0, rgb(170, 170, 170)),
+    color-stop(1, rgb(238, 238, 238))
+  );
+  background: -webkit-linear-gradient(rgb(170, 170, 170) 0%, rgb(238, 238, 238) 100%);
+  background:    -moz-linear-gradient(rgb(170, 170, 170) 0%, rgb(238, 238, 238) 100%);
+  background:      -o-linear-gradient(rgb(170, 170, 170) 0%, rgb(238, 238, 238) 100%);
+  background:         linear-gradient(rgb(170, 170, 170) 0%, rgb(238, 238, 238) 100%);
+}
+
+.aloha-surface .aloha-toolbar-panels button.ui-state-active {
+  color: #222;
+  background: -webkit-gradient(
+    linear,
+    color-stop(0, rgb(136, 136, 136)),
+    color-stop(1, rgb(204, 204, 204))
+  );
+  background: -webkit-linear-gradient(rgb(136, 136, 136) 0%, rgb(204, 204, 204) 100%);
+  background:    -moz-linear-gradient(rgb(136, 136, 136) 0%, rgb(204, 204, 204) 100%);
+  background:      -o-linear-gradient(rgb(136, 136, 136) 0%, rgb(204, 204, 204) 100%);
+  background:         linear-gradient(rgb(136, 136, 136) 0%, rgb(204, 204, 204) 100%);
+}
+
+.aloha-surface .aloha-toolbar-panels .ui-autocomplete-input {
+  font-size: .85em;
+  font-size: 2px 4px;
+  padding: 2px 4px;
+  margin: 3px 4px 1px;
+  border: 1px solid #aaa;
+  height: 20px;
+}
+
+/**
+ * Format dropdown (multisplit).
+ */
+
+.aloha-surface .aloha-ui-menubutton-menu {
+  z-index: 1;
+}
+
+.aloha-surface .aloha-toolbar-panels button.aloha-ui-menubutton {
+  position: relative;
+  width: 40px;
+  overflow: visible;
+}
+
+.aloha-surface .aloha-toolbar-panels button.aloha-ui-menubutton .ui-button-icon-primary,
+.aloha-surface .aloha-toolbar-panels button.aloha-ui-menubutton .ui-button-icon-secondary {
+  float: left; /* LTR */
+  padding: 0 1px;
+}
+
+.aloha-surface .aloha-toolbar-panels button.aloha-ui-menubutton .ui-button-icon-primary {
+  padding: 0 4px;
+}
+
+.aloha-surface .aloha-toolbar-panels button.aloha-ui-menubutton .ui-icon-triangle-1-s:before {
+  font-family: 'spark_icons';
+  content: "\e024";
+  speak: none;
+  font-size: 8px;
+  vertical-align: 30%;
+  padding: 0 1px;
+}
+
+.aloha-surface .aloha-toolbar-panels button.aloha-ui-menubutton ul {
+  background: #fff;
+  position: absolute;
+  top: 31px;
+  width: 130px;
+  -webkit-box-shadow: 0 0 8px #999;
+   -khtml-box-shadow: 0 0 8px #999;
+     -moz-box-shadow: 0 0 8px #999;
+       -o-box-shadow: 0 0 8px #999;
+          box-shadow: 0 0 8px #999;
+  margin: 0;
+  padding: 0;
+  -webkit-border-radius: 4px;
+   -khtml-border-radius: 4px;
+     -moz-border-radius: 4px;
+       -o-border-radius: 4px;
+          border-radius: 4px;
+}
+
+.aloha-surface .aloha-toolbar-panels button.aloha-ui-menubutton ul li {
+  list-style: none;
+  text-align: left; /* LTR */
+}
+
+.aloha-surface .aloha-toolbar-panels button.aloha-ui-menubutton ul li a {
+  display: block;
+  padding: 4px 8px;
+  color: #000;
+  text-decoration: none;
+  font-size: 13px;
+  width: 115px;
+  height: auto;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  -webkit-border-radius: 4px;
+   -khtml-border-radius: 4px;
+     -moz-border-radius: 4px;
+       -o-border-radius: 4px;
+          border-radius: 4px;
+}
+
+.aloha-surface .aloha-toolbar-panels button.aloha-ui-menubutton ul li a.ui-state-focus {
+  background-color: #4a92e4;
+  color: #fff;
+}
+
+/**
+ * Auto-complete widget.
+ */
+
+.aloha .ui-autocomplete.ui-widget-content {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 3px;
+  list-style: none;
+  margin: 0;
+  display: block;
+  outline: none;
+  max-width: 322px;
+  -webkit-box-shadow: 1px 2px 20px rgba(0, 0, 0, .25);
+   -khtml-box-shadow: 1px 2px 20px rgba(0, 0, 0, .25);
+     -moz-box-shadow: 1px 2px 20px rgba(0, 0, 0, .25);
+       -o-box-shadow: 1px 2px 20px rgba(0, 0, 0, .25);
+          box-shadow: 1px 2px 20px rgba(0, 0, 0, .25);
+  -webkit-border-radius: 0;
+   -khtml-border-radius: 0;
+     -moz-border-radius: 0;
+       -o-border-radius: 0;
+          border-radius: 0;
+}
+
+.aloha .ui-autocomplete .ui-menu-item {
+  margin: 0;
+  padding: 0;
+  zoom: 1;
+  width: 100%;
+}
+
+.aloha .ui-autocomplete .ui-menu-item a {
+  text-decoration: none;
+  display: block;
+  padding: 2px .4em;
+  line-height: 1.5;
+  zoom: 1;
+  font-weight: normal;
+  text-align: left;
+  font-size: 12px;
+  border-color: transparent;
+  color: #222;
+  -webkit-border-radius: 0;
+   -khtml-border-radius: 0;
+     -moz-border-radius: 0;
+       -o-border-radius: 0;
+          border-radius: 0;
+}
+
+.aloha .ui-autocomplete .ui-menu-item a.ui-state-focus {
+  background: #3b73d7;
+  color: #fff;
+}
+
+/**
+ * Custom UI for common/block.
+ */
+
+/* @todo Temporarily disable Aloha Blocks' handles, because the CaptionedImage
+         plug-in can't deal yet with dragging images into an alignment. */
+.aloha-block-handle {
+  background: none;
+  border: none;
+}
+
+.aloha-editable-active .aloha-block,
+.aloha-block.aloha-block-highlighted {
+  -webkit-box-shadow: none;
+   -khtml-box-shadow: none;
+     -moz-box-shadow: none;
+       -o-box-shadow: none;
+          box-shadow: none;
+}
+
+.aloha-block.aloha-block-active,
+.aloha-block.aloha-block-active:hover,
+.aloha-image-box-active {
+  -webkit-box-shadow: 0 0 1px 1px #0199ff;
+   -khtml-box-shadow: 0 0 1px 1px #0199ff;
+     -moz-box-shadow: 0 0 1px 1px #0199ff;
+       -o-box-shadow: 0 0 1px 1px #0199ff;
+          box-shadow: 0 0 1px 1px #0199ff;
+}
+
+
+/**
+ * Custom UI for common/image.
+ */
+
+.aloha-ui-component-group > div {
+  display: none;
+}
+
+.aloha-image-input-label {
+  display: inline-block;
+}
+
+.aloha-image-input-label .aloha-ui-label-text {
+  font-weight: normal;
+  font-size: 12px;
+  padding: .5em;
+}

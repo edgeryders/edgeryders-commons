@@ -1,0 +1,25 @@
+/**
+ * @file
+ * Styles for Aloha Editor UI when used by the Edit module.
+ */
+
+/**
+ * Ensures multi-row toolbars work well.
+ *
+ * This indeed implies that it is broken on the back-end ('aloha-for-textareas')
+ * so it warrants a todo. However, it's not a trivial problem to solve: on the
+ * back-end the common case is to have a very wide, single-row AE toolbar.
+ * Because there is no box-shadow around it, we need a border. But a bottom-
+ * border for buttons and a bottom-border for the .aloha-toolbar-panels
+ * container implies *double* borders, which is ugly. For now I've chosen to
+ * have a pretty common case on the back-end, at the cost of a broken multi-row
+ * experience (lack of bottom border).
+ *
+ * @todo See above. CSS wizardry needed.
+ */
+
+.edit-toolbar .aloha-toolbar-panels button {
+  border: 1px solid #aaa;
+  border-top: 0;
+  border-left: 0; /* LTR */
+}

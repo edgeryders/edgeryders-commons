@@ -1,0 +1,18 @@
+name = Commons Location
+description = Provide a field definition for locations.
+package = Commons - Building Blocks
+core= 7.x
+
+dependencies[] = features
+dependencies[] = addressfield
+dependencies[] = field_sql_storage
+
+features[features_api][] = api:1
+features[field_base][] = field_address
+
+
+; Information added by drush on 2012-11-15
+version = ""
+project = "commons_location"
+datestamp = "1353011134"
+

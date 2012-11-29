@@ -1,0 +1,17 @@
+@font-face {
+  font-family: 'spark_icons';
+  src: url('fonts/spark_icons.eot');
+  src: url('fonts/spark_icons.eot?#iefix') format('embedded-opentype'),
+    url('fonts/spark_icons.svg#spark_icons') format('svg'),
+    url('fonts/spark_icons.woff') format('woff'),
+    url('fonts/spark_icons.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.spark-icon[data-icon]:before,
+[data-icon]:before {
+  font-family: 'spark_icons';
+  content: attr(data-icon);
+  speak: none;
+}

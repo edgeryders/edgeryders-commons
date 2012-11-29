@@ -1,0 +1,11 @@
+name = Icon fonts
+description = Icon font library for use with other modules and themes. 
+core = 7.x
+
+
+; Information added by drupal.org packaging script on 2012-10-01
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "admin_icons"
+datestamp = "1349049710"
+

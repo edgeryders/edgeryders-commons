@@ -1,0 +1,45 @@
+name = Commons Documents
+core = 7.x
+package = Commons - Content types
+php = 5.2.4
+project = commons_documents
+dependencies[] = commons_body
+dependencies[] = commons_groups
+dependencies[] = commons_topics
+dependencies[] = ctools
+dependencies[] = entityreference
+dependencies[] = features
+dependencies[] = file
+dependencies[] = og_ui
+dependencies[] = strongarm
+dependencies[] = views
+features[ctools][] = strongarm:strongarm:1
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:1
+features[field_base][] = field_document_file
+features[field_instance][] = node-document-body
+features[field_instance][] = node-document-field_document_file
+features[field_instance][] = node-document-field_topics
+features[field_instance][] = node-document-og_group_ref
+features[node][] = document
+features[variable][] = comment_anonymous_document
+features[variable][] = comment_default_mode_document
+features[variable][] = comment_default_per_page_document
+features[variable][] = comment_document
+features[variable][] = comment_form_location_document
+features[variable][] = comment_preview_document
+features[variable][] = comment_subject_field_document
+features[variable][] = field_bundle_settings_node__document
+features[variable][] = menu_options_document
+features[variable][] = menu_parent_document
+features[variable][] = node_options_document
+features[variable][] = node_preview_document
+features[variable][] = node_submitted_document
+features[views_view][] = commons_bw_documents
+
+
+; Information added by drush on 2012-11-15
+version = ""
+project = "commons_documents"
+datestamp = "1353011137"
+

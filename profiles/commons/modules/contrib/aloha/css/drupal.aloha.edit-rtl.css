@@ -1,0 +1,9 @@
+/**
+ * @file
+ * RTL styles for Aloha Editor UI when used by the Edit module.
+ */
+
+.edit-toolbar .aloha-toolbar-panels button {
+  border-left: inherit;
+  border-right: 0;
+}
