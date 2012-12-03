@@ -206,8 +206,8 @@ $databases = array (
     'default' => 
     array (
       'database' => 'edgeryders_lote2_commons3',
-      'username' => 'root',
-      'password' => 'edgeryders81!',
+      'username' => 'edgeryders',
+      'password' => 'NBRMaSvETqqA95aF',
       'host' => 'localhost',
       'port' => '',
       'driver' => 'mysql',
