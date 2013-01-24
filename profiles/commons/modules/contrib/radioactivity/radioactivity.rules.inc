@@ -35,6 +35,38 @@ function radioactivity_rules_action_info() {
     ),
   );
 
+
+  // Emit energy
+  $items['radioactivity_add_emitter'] = $defaults + array(
+    'label' => t('Add an ajax emitter on page'),
+    'base' => 'radioactivity_rules_action_add_emitter',
+    'parameter' => array(
+      'data' => array(
+        'type' => '*',
+        'label' => t('Radioactivity field'),
+        'description' => t('The radioactivity field which will be added to the page as an emitter'),
+        'restriction' => 'selector',
+        'wrapped' => TRUE,
+        'allow null' => TRUE,
+      ),
+      'energy' => array(
+        'type' => 'decimal',
+        'label' => t('Energy'),
+        'description' => t('The variable which contains the amount of energy to emit'),
+        'allow null' => FALSE,
+        'optional' => FALSE,
+      ),
+      'accuracy' => array(
+        'type' => 'decimal',
+        'label' => t('Accuracy'),
+        'description' => t('The variable which contains the accuracy of this emitter'),
+        'allow null' => FALSE,
+        'optional' => FALSE,
+      ),
+    ),
+  );
+
+
   // Set energy
   $items['radioactivity_set'] = $defaults + array(
     'label' => t('Set the energy of a field'),
@@ -154,6 +186,38 @@ function radioactivity_rules_action_set($field, $energy) {
   );
 
   field_cache_clear();
+}
+
+/**
+ * Action: Add emitter on page
+ */
+function radioactivity_rules_action_add_emitter($field, $energy, $accuracy) {
+
+  $info        = $field->info();
+  $field_id    = $info['name'];
+  $entity      = $info['parent'];
+  $entity_type = $entity->type();
+  $bundle      = $entity->getBundle();
+  $entity_id   = $entity->getIdentifier();
+
+  $lang = LANGUAGE_NONE;
+
+  if ($info['translatable']) {
+    global $language;
+    $lang = $language->language;
+  }
+
+  $settings = array(
+    'accuracy' => $accuracy,
+    'energy' => $energy,
+    'type' => 'energy',
+  );
+
+  $profile = radioactivity_get_field_profile($entity_type, $bundle, $field_id);
+  _radioactivity_register_emitter($profile->storage, $entity_type, $bundle, $field_id, $lang, $entity_id, $settings);
+
+  radioactivity_update_emitters();
+
 }
 
 /**

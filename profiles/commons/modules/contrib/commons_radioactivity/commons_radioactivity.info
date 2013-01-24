@@ -16,17 +16,13 @@ features[ctools][] = strongarm:strongarm:1
 features[ctools][] = views:views_default:3.0
 features[features_api][] = api:1
 features[field_base][] = field_radioactivity
-features[field_instance][] = node-event-field_radioactivity
-features[field_instance][] = node-group-field_radioactivity
-features[field_instance][] = node-post-field_radioactivity
-features[field_instance][] = node-wiki-field_radioactivity
 features[radioactivity_decay_profile][] = commons_ra_node
 features[variable][] = commons_radioactivity_entity_types
 features[views_view][] = commons_radioactivity_admin
 
-
-; Information added by drush on 2012-11-15
-version = ""
+; Information added by drupal.org packaging script on 2012-12-18
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_radioactivity"
-datestamp = "1353011133"
+datestamp = "1355791654"
 

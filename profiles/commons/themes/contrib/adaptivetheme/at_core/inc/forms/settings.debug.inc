@@ -4,7 +4,6 @@
  * @file
  * Generate settings for the Debuggers form.
  */
-
 function at_core_debug_form(&$form) {
   $form['at-settings']['debug'] = array(
     '#type' => 'fieldset',

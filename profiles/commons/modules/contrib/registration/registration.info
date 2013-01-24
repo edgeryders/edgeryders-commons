@@ -9,9 +9,9 @@ files[] = registration.test
 files[] = includes/registration.entity.inc
 
 
-; Information added by drupal.org packaging script on 2012-11-15
-version = "7.x-1.0-beta3+17-dev"
+; Information added by drupal.org packaging script on 2013-01-22
+version = "7.x-1.0-beta3+52-dev"
 core = "7.x"
 project = "registration"
-datestamp = "1352943470"
+datestamp = "1358861455"
 

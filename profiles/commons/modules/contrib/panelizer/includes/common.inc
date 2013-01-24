@@ -137,6 +137,10 @@ function panelizer_settings_form_submit(&$form, &$form_state) {
   $panelizer->css = $form_state['values']['css'];
   $panelizer->css_id = $form_state['values']['css_id'];
   $panelizer->pipeline = $form_state['values']['pipeline'];
+  // Behind an if because this value does not always exist.
+  if (isset($form_state['values']['link_to_entity'])) {
+    $panelizer->link_to_entity = $form_state['values']['link_to_entity'];
+  }
   if (!empty($form_state['has title'])) {
     $panelizer->title = $form_state['values']['title'];
   }

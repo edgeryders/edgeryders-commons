@@ -14,19 +14,20 @@
  *
  * @return bool
  */
-function hook_registration_access($op, $registration = NULL, $account = NULL, $entity_type) {
+function hook_registration_access($op, $entity_type, $registration = NULL, $account = NULL) {
   if ($registration->user_uid == $account->uid) {
     return TRUE;
   }
 }
 
 /**
- * Provide a form API element exposed as a Registration enttity setting.
+ * Provide a form API element exposed as a Registration entity setting.
  *
  * @param array $settings
  *   Existing settings values.
  *
  * @return array
+ *   A FAPI array for a registration setting.
  */
 function hook_registration_entity_settings($settings) {
   return array(
@@ -35,7 +36,7 @@ function hook_registration_entity_settings($settings) {
       '#title' => t('Roles'),
       '#description' => t('Override default access control settings by selecting which roles can register for this event.'),
       '#options' => user_roles(),
-      '#default_value' => isset($settings['settings']['registration_entity_access_roles']) ? $settings['settings']['registration_entity_access_roles'] : NULL
-    )
+      '#default_value' => isset($settings['settings']['registration_entity_access_roles']) ? $settings['settings']['registration_entity_access_roles'] : NULL,
+    ),
   );
 }

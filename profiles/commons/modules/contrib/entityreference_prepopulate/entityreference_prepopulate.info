@@ -4,9 +4,11 @@ core = 7.x
 package = Fields
 dependencies[] = entityreference
 
-; Information added by drupal.org packaging script on 2012-09-19
-version = "7.x-1.1"
+files[] = entityreference_prepopulate.test
+
+; Information added by drupal.org packaging script on 2013-01-16
+version = "7.x-1.2"
 core = "7.x"
 project = "entityreference_prepopulate"
-datestamp = "1348075166"
+datestamp = "1358362310"
 

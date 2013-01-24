@@ -501,11 +501,45 @@ html.js fieldset.collapsible fieldset .fieldset-legend {
   display: block;
   position: static;
 }
+
+
 #edit-context-regions fieldset .fieldset-wrapper {
   padding: 30px 15px 15px 1px;
 }
+
+#edit-context-regions fieldset fieldset .fieldset-wrapper {
+  padding: 0 15px 0 1px;
+}
+
 .admin-theme-adaptivetheme-admin #edit-context-regions fieldset .fieldset-wrapper {
   padding-left: 15px;
+}
+.detection {
+  color: green;
+}
+.no-detection {
+  color: red;
+}
+
+div[class*=form-item-unset-region-options],
+div[class*=form-item-move-region-options],
+fieldset[id*=edit-region-options] .form-type-select {
+  border-left: 13px solid #ddd;
+  margin: 0;
+  padding: 0 0 0 10px;
+}
+
+fieldset[id*=edit-region-options] .form-type-select {
+  padding: 10px 0 0 10px;
+}
+
+#edit-context-regions fieldset fieldset legend,
+div[class*=form-item-unset-region-options] label:first-child,
+div[class*=form-item-move-region-options] label:first-child {
+  clip: rect(1px 1px 1px 1px);
+  clip: rect(1px, 1px, 1px, 1px);
+  position: absolute;
+  overflow: 0;
 }
 
 

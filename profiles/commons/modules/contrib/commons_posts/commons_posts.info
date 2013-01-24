@@ -13,6 +13,7 @@ dependencies[] = features
 dependencies[] = og_ui
 dependencies[] = strongarm
 dependencies[] = views
+dependencies[] = views_litepager
 features[ctools][] = strongarm:strongarm:1
 features[ctools][] = views:views_default:3.0
 features[features_api][] = api:1
@@ -35,8 +36,8 @@ features[variable][] = node_submitted_post
 features[views_view][] = commons_bw_posts
 
 
-; Information added by drush on 2012-11-15
+; Information added by drush on 2013-01-23
 version = ""
 project = "commons_posts"
-datestamp = "1353011133"
+datestamp = "1358983944"
 

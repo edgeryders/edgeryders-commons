@@ -10,6 +10,10 @@ include_once 'commons_site_homepage.features.inc';
 * Implements hook_form_alter().
 */
 function commons_site_homepage_form_alter(&$form, &$form_state, $form_id) {
+  // Redirect users to the site homepage after login or registration.
+  if ($form_id == 'user_register_form' || $form_id == 'user_login') {
+    $form['#submit'][] = 'commons_homepage_user_register_login_submit';
+  }
   if ($form_id == 'views_exposed_form' && $form['#id'] == 'views-exposed-form-commons-homepage-content-panel-pane-1') {
     // We customize the text inside the exposed filter form elements
     // to allow for them to form a sentence, such as:
@@ -20,10 +24,14 @@ function commons_site_homepage_form_alter(&$form, &$form_state, $form_id) {
     $form['sort_by']['#title'] = t('sorted by');
     foreach ($form['type']['#options'] as $type => $name) {
       if ($type != 'All') {
-        $form['type']['#options'][$type] = t(lcfirst($name . 's'));
+        $form['type']['#options'][$type] = t(strtolower(substr($name, 0, 1)) . substr($name,1) . 's');
       }
     }
   }
+}
+
+function commons_homepage_user_register_login_submit($form, &$form_state) {
+  $form_state['redirect'] = 'home';
 }
 
 /**
@@ -45,9 +53,9 @@ function commons_site_homepage_block_info() {
 function commons_site_homepage_block_view() {
   $block['content'] = '';
   if (variable_get('user_register', USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL)) {
-    $block['content'] .= l(t('Signup'), 'user/register', array('attributes' => array('title' => t('Sign up')))) . ' ';
+    $block['content'] .= l(t('Signup'), 'user/register', array('attributes' => array('class' => 'commons-sign-up', 'title' => t('Sign up')))) . ' ';
   }
-  $block['content'] .= l(t('Login'), 'user/login');
+  $block['content'] .= l(t('Login'), 'user/login', array('attributes' => array('class' => 'commons-login')));
   $block['subject'] = '';
   return $block;
 }

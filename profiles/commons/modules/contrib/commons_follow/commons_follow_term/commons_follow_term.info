@@ -1,30 +1,24 @@
 name = Commons Follow (Taxonomy terms)
 description = Lets users follow individual taxonomy terms
 core = 7.x
-package = "Commons - Building blocks"
-version = 7.x-3.0-alpha1
-project = commons_follow_term
+package = Commons - Building blocks
+php = 5.2.4
+version = 7.x-3.x-dev
+project = commons_follow
 dependencies[] = flag
+dependencies[] = views
+dependencies[] = views_litepager
+datestamp = 1356630025
+features[ctools][] = views:views_default:3.0
 features[features_api][] = api:1
 features[flag][] = commons_follow_term
+features[flag][] = email_term
+features[views_view][] = commons_follow_taxonomy_term
+features_exclude[dependencies][ctools] = ctools
 
-
-; Information added by drush on 2012-08-21
-version = ""
-project = "commons_follow_term"
-datestamp = "1345573856"
-
-
-
-; Information added by drush on 2012-11-08
-version = ""
+; Information added by drupal.org packaging script on 2012-12-28
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_follow"
-datestamp = "1352387638"
-
-
-
-; Information added by drush on 2012-11-15
-version = ""
-project = "commons_follow"
-datestamp = "1353011136"
+datestamp = "1356655518"
 

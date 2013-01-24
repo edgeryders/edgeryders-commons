@@ -16,6 +16,7 @@ function radioactivity_field_info() {
       'default_widget' => RADIOACTIVITY_BASIC_WIDGET,
       'default_formatter' => RADIOACTIVITY_COMBO_FORMATTER,
       'property_type' => 'decimal',
+      'microdata' => TRUE,
     ),
   );
 }
@@ -44,8 +45,14 @@ function radioactivity_field_instance_settings_form($field, $instance) {
       '#options' => $profiles,
     );
 
-    if (count($profiles) == 0) {
+    if (isset($profiles['none'])) {
       $form['profile']['#disabled'] = TRUE;
+      $form['profile']['#description'] = t(
+        'It seems that you have not created any profiles yet. You can create and edit decay profiles !here.',
+        array(
+          "!here" => l("here", "admin/structure/radioactivity/profiles"),
+        )
+      );
     }
   }
 
@@ -58,7 +65,7 @@ function radioactivity_field_instance_settings_form($field, $instance) {
 function radioactivity_field_widget_info() {
   return array(
     RADIOACTIVITY_BASIC_WIDGET => array(
-      'label' => t('Basic text field to edit radioactivity'),
+      'label' => t('Default text field'),
       'field types' => array(RADIOACTIVITY_FIELD_TYPE),
     ),
   );
@@ -72,17 +79,30 @@ function radioactivity_field_formatter_info() {
       'settings' => array(
         'energy' => 10,
         'type' => 'none',
+        'accuracy' => '100',
       ),
     ),
   );
 }
 
-function _radioactivity_register_emitter($storage = NULL, $entity_type = NULL, $bundle = NULL, $field_name = NULL, $language = NULL, $entity_id = NULL, $energy = NULL) {
+function _radioactivity_register_emitter($storage = NULL, $entity_type = NULL, $bundle = NULL, $field_name = NULL, $language = NULL, $entity_id = NULL, $settings = NULL) {
   static $cache = array();
   if ($storage == NULL) {
     return $cache;
+  } else if ($storage == 'RESET') {
+    $cache = array();
+    return;
   }
-  @$cache[$storage][$entity_type][$bundle][$field_name][$language][$entity_id] = $energy;
+
+  $incident = $settings + array(
+    'storage'     => $storage,
+    'entity_type' => $entity_type,
+    'bundle'      => $bundle,
+    'field_name'  => $field_name,
+    'language'    => $language,
+    'entity_id'   => $entity_id,
+  );
+  @$cache['emitDefault'][] = _radioactivity_prepare_incident($incident);
 }
 
 /**
@@ -114,7 +134,7 @@ function radioactivity_field_formatter_view($entity_type, $entity, $field, $inst
 
           $profile = radioactivity_get_field_profile($entity_type, $instance['bundle'], $field['field_name']);
           if ($profile && $profile->storageObject) {
-            _radioactivity_register_emitter($profile->storage, $entity_type, $instance['bundle'], $field['field_name'], $language, $entity_id, $settings['energy']);
+            _radioactivity_register_emitter($profile->storage, $entity_type, $instance['bundle'], $field['field_name'], $language, $entity_id, $settings);
           }
           else {
             watchdog(
@@ -131,6 +151,7 @@ function radioactivity_field_formatter_view($entity_type, $entity, $field, $inst
 
       if (isset($settings['type'])) {
         switch ($settings['type']) {
+
           case 'none':
             break;
 
@@ -204,6 +225,16 @@ function radioactivity_field_formatter_settings_form($field, $instance, $view_mo
           '#options' => radioactivity_combo_field_types(),
           '#required' => TRUE,
         );
+
+        $form['accuracy'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Accuracy'),
+          '#default_value' => $settings['accuracy'],
+          '#required' => TRUE,
+          '#element_validate' => array('_element_validate_number'),
+          '#description' => t('Value from 1 to 100 describing the statistic accuracy of this emitter. If value of 80 is given then 80% of field views trigger an emit. Actual energy of this emitter is then corrected by shifting the amount of energy emitted e.g. if incident energy is 10 and accuracy 80, the actual amount of energy emitted per view is 10 / 80 * 100.'),
+        );
+
         break;
     }
   }
@@ -211,6 +242,9 @@ function radioactivity_field_formatter_settings_form($field, $instance, $view_mo
   return $form;
 }
 
+/**
+ * Get radioactivity widget formatter types
+ */
 function radioactivity_combo_field_types() {
   return array(
     'none' => t('Do not display energy'),
@@ -218,6 +252,17 @@ function radioactivity_combo_field_types() {
     'popularity' => t('Percentage'),
     'gauge' => t('Hotness gauge'),
   );
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function radioactivity_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['#field']['type'] == 'radioactivity') {
+    // Hide the 'required' and 'multi value' field settings
+    $form['field']['#access'] = FALSE;
+    $form['instance']['required']['#access'] = FALSE;
+  }
 }
 
 /**
@@ -230,24 +275,29 @@ function radioactivity_field_formatter_settings_summary($field, $instance, $view
   $types = radioactivity_combo_field_types();
 
   if ($settings['type'] != 'none') {
-    $summary = t("Energy display: @type.", array("@type" => $types[$settings['type']]));
+    $summary = t('Energy display: @type.', array("@type" => $types[$settings['type']]));
   }
   else {
-    $summary = t("Energy display is disabled.");
+    $summary = t('Energy display is disabled.');
   }
 
   if ($settings['energy'] != 0) {
-    $summary .= " " . t('Emit @energy when visible.', array(
+    $summary .= ' '  . t('Emit @energy when visible.', array(
         '@energy' => $settings['energy'],
       ));
   }
   else {
-    $summary .= " " . t('Emitter is disabled');
+    $summary .= ' '  . t('Emitter is disabled');
   }
+
+  $summary .= ' ' .t('Accuracy is @accu.', array('@accu' => $settings['accuracy']));
 
   return $summary;
 }
 
+/**
+ * Implements hook_page_alter()
+ */
 function radioactivity_page_alter($page) {
   radioactivity_update_emitters();
 }
@@ -260,22 +310,22 @@ function radioactivity_update_emitters() {
   // foreach emitters emitter->emit();
   $register = _radioactivity_register_emitter();
   module_load_include("inc", "radioactivity", "radioactivity-bootstrap");
-
   $path = base_path() . drupal_get_path('module', 'radioactivity') . '/emit.php';
 
-  $fp = array(
-    'enabled' => variable_get('radioactivity_flood_protection', FALSE),
-    'timeout' => variable_get('radioactivity_flood_timeout', 15),
+  $config = array(
+    'emitPath' => $path,
+    'fpEnabled' => variable_get('radioactivity_flood_protection', FALSE),
+    'fpTimeout' => variable_get('radioactivity_flood_timeout', 15),
   );
 
   if (count($register) > 0) {
-    $register = serialize($register);
-    $translated[$path] = _radioactivity_prepare_payload($register);
     drupal_add_library('system', 'jquery.cookie');
     drupal_add_js(drupal_get_path('module', 'radioactivity') . '/js/radioactivity.js');
-    drupal_add_js(array('radioactivity' => array('emitters' => $translated)), 'setting');
-    drupal_add_js(array('radioactivity' => array('flood_protection' => $fp)), 'setting');
+    drupal_add_js(array('radioactivity' => array('emitters' => $register)), 'setting');
+    drupal_add_js(array('radioactivity' => array('config' => $config)), 'setting');
   }
+
+  _radioactivity_register_emitter('RESET');
 }
 
 /**

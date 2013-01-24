@@ -117,7 +117,7 @@ function custom_search_form_alter(&$form, &$form_state, $form_id) {
           foreach ($vocabularies as $voc) {
             if (!variable_get('custom_search_advanced_voc' . $voc->vid . '_display', TRUE)) unset($form['advanced']['category']['#options'][$voc->name]);
           }
-          if (isset($form['advanced']['category']) && !count($form['advanced']['category']['#options'])) $form['advanced']['category']['#type'] = 'hidden';
+          if (isset($form['advanced']['category']) && !count($form['advanced']['category']['#options'])) unset($form['advanced']['category']['#type']);
         }
 
         // Content types
@@ -125,16 +125,18 @@ function custom_search_form_alter(&$form, &$form_state, $form_id) {
         foreach ($names as $name) {
           if (!variable_get('custom_search_advanced_type_' . $name . '_display', TRUE)) unset($form['advanced']['type']['#options'][$name]);
         }
-        if (!count($form['advanced']['type']['#options'])) $form['advanced']['type']['#type'] = 'hidden';
+        if (!count($form['advanced']['type']['#options'])) unset($form['advanced']['type']['#type']);
 
         if (!variable_get('custom_search_results_search', TRUE)) {
-          // If basic search is hidden, original search terms are imported into advanced search.
-          $original_keys = $form['basic']['keys']['#default_value'];
-          $temp_keys = explode(' ', $original_keys);
-          foreach ($temp_keys as $value) {
-            if (drupal_substr($value, 0, 5) != 'type:' && drupal_substr($value, 0, 5) != 'term:') $keys[] = $value;
+          if (isset($form['basic']['keys'])) {
+            // If basic search is hidden, original search terms are imported into advanced search.
+            $original_keys = $form['basic']['keys']['#default_value'];
+            $temp_keys = explode(' ', $original_keys);
+            foreach ($temp_keys as $value) {
+              if (drupal_substr($value, 0, 5) != 'type:' && drupal_substr($value, 0, 5) != 'term:') $keys[] = $value;
+            }
+            $form['advanced']['keywords']['or']['#default_value'] = implode(' ', $keys);
           }
-          $form['advanced']['keywords']['or']['#default_value'] = implode(' ', $keys);
           if (!isset($GLOBALS['custom_search_nb_results']) || (isset($GLOBALS['custom_search_nb_results']) && !$GLOBALS['custom_search_nb_results'])) $form['advanced']['#collapsed'] = FALSE;
           $form['basic']['#prefix'] = '<div class="element-invisible">';
           $form['basic']['#suffix'] = '</div>';
@@ -343,8 +345,13 @@ function custom_search_submit($form, &$form_state) {
   }
 
   $search_types = module_implements('search_info');
-  if (in_array(current($types), $search_types)) $type = current($types);
+  if (in_array(current($types), $search_types)) {
+    $type = current($types);
+    $info = module_invoke($type, 'search_info');
+    $path = (isset($info['path'])) ? $info['path'] : $type;
+  }
   else {
+    $path = $type;
     if (isset($form_state['values']['custom_search_criteria_or']) && trim($form_state['values']['custom_search_criteria_or']) != '') $keys .= ' ' . str_replace(' ', ' OR ', trim($form_state['values']['custom_search_criteria_or']));
     if (isset($form_state['values']['custom_search_criteria_negative']) && trim($form_state['values']['custom_search_criteria_negative']) != '') $keys .= ' -' . str_replace(' ', ' -', trim($form_state['values']['custom_search_criteria_negative']));
     if (isset($form_state['values']['custom_search_criteria_phrase']) && trim($form_state['values']['custom_search_criteria_phrase']) != '') $keys .= ' "' . trim($form_state['values']['custom_search_criteria_phrase']) . '"';
@@ -368,12 +375,18 @@ function custom_search_submit($form, &$form_state) {
     }
   }
   $search_path = array(
-    'path'  => 'search/' . $type . '/' . $keys,
+    'path'  => 'search/' . $path . '/' . $keys,
     'query' => array(),
   );
 
   // Integrates other search modules
   if (module_exists('apachesolr_search')) {
+    for ($i=0; $i<count($types); $i++) {
+      // Remove the item from the array if it's not a content type.
+      if (!in_array($types[$i], array_keys(node_type_get_types()))) {
+        unset($types[$i]);
+      }
+    }
     $search_path = _custom_search_apachesolr_search(array(
       'keywords'  => $original_keywords,
       'types'     => $types,

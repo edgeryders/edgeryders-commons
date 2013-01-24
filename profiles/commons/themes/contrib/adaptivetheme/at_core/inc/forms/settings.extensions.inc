@@ -4,7 +4,6 @@
  * @file
  * Generate settings for the Extensions form.
  */
-
 function at_core_extensions_form(&$form) {
   // Enable Extensions
   $form['at-settings']['extend'] = array(

@@ -10,9 +10,9 @@ dependencies[] = field_sql_storage
 features[features_api][] = api:1
 features[field_base][] = field_address
 
-
-; Information added by drush on 2012-11-15
-version = ""
+; Information added by drupal.org packaging script on 2013-01-08
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_location"
-datestamp = "1353011134"
+datestamp = "1357606032"
 

@@ -80,11 +80,23 @@ function commons_events_strongarm() {
       'search_result' => array(
         'custom_settings' => FALSE,
       ),
+      'token' => array(
+        'custom_settings' => FALSE,
+      ),
     ),
     'extra_fields' => array(
       'form' => array(
         'title' => array(
           'weight' => '0',
+        ),
+        'metatags' => array(
+          'weight' => '15',
+        ),
+        'path' => array(
+          'weight' => '14',
+        ),
+        'redirect' => array(
+          'weight' => '13',
         ),
       ),
       'display' => array(),
@@ -114,7 +126,6 @@ function commons_events_strongarm() {
   $strongarm->name = 'node_options_event';
   $strongarm->value = array(
     0 => 'status',
-    1 => 'promote',
   );
   $export['node_options_event'] = $strongarm;
 
@@ -140,13 +151,13 @@ function commons_events_strongarm() {
     'status' => 1,
     'view modes' => array(
       'page_manager' => array(
-        'status' => 0,
-        'default' => 0,
+        'status' => 1,
+        'default' => 1,
         'choice' => 0,
       ),
       'default' => array(
-        'status' => 1,
-        'default' => 1,
+        'status' => 0,
+        'default' => 0,
         'choice' => 0,
       ),
       'teaser' => array(

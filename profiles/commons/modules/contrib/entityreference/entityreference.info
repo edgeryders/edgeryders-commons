@@ -22,9 +22,9 @@ files[] = tests/entityreference.handlers.test
 files[] = tests/entityreference.taxonomy.test
 files[] = tests/entityreference.admin.test
 
-; Information added by drupal.org packaging script on 2012-11-13
-version = "7.x-1.0-rc5+11-dev"
+; Information added by drupal.org packaging script on 2013-01-01
+version = "7.x-1.0+3-dev"
 core = "7.x"
 project = "entityreference"
-datestamp = "1352768169"
+datestamp = "1357044976"
 

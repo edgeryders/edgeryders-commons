@@ -87,15 +87,6 @@ class RadioactivityFileIncidentStorage extends RadioactivityIncidentStorage {
   }
 
   /**
-   * Default emitter processing via ajax callback path
-   */
-  public function processEmitters() {
-    if (count(self::$fileEmitters) > 0) {
-      radioactivity_emitter_callback_data('file', self::$fileEmitters);
-    }
-  }
-
-  /**
    * Does this require boostrapping?
    */
   public function requiresBootstrap() {

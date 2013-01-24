@@ -2,16 +2,12 @@ name = "Commons Follow (User interface)"
 description = "User interface for the Commons Follow functionality"
 core = 7.x
 package = Commons
-
-; Information added by drush on 2012-11-08
-version = ""
+dependencies[] = commons_follow
+dependencies[] = message_subscribe_ui
+dependencies[] = quicktabs
+; Information added by drupal.org packaging script on 2012-12-28
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_follow"
-datestamp = "1352387638"
-
-
-
-; Information added by drush on 2012-11-15
-version = ""
-project = "commons_follow"
-datestamp = "1353011136"
+datestamp = "1356655518"
 

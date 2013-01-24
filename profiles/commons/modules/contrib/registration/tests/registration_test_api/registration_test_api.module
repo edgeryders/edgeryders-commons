@@ -18,7 +18,7 @@ function registration_test_api_registration_status_alter(&$status, &$context) {
 /**
  * Implements hook_registration_access().
  */
-function registration_test_api_registration_access($op, $registration, $account, $entity_type) {
+function registration_test_api_registration_access($op, $entity_type, $registration, $account) {
   if (isset($registration->hook_registration_access)) {
     return $registration->hook_registration_access;
   }

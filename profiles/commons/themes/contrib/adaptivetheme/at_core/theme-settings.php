@@ -7,12 +7,6 @@
  * @param $form: Nested array of form elements that comprise the form.
  * @param $form_state: A keyed array containing the current state of the form.
  */
-
-
-
-/**
- * Implements hook_form_system_theme_settings_alter().
- */
 function adaptivetheme_form_system_theme_settings_alter(&$form, &$form_state, $form_id = NULL) {
   // Get our plugin system functions.
   require_once(drupal_get_path('theme', 'adaptivetheme') . '/inc/plugins.inc');
@@ -80,18 +74,25 @@ function adaptivetheme_form_system_theme_settings_alter(&$form, &$form_state, $f
   // Include all the default settings forms.
   require_once($path_to_at_core . '/inc/forms/settings.pagelayout.inc');
   at_core_page_layout_form($form, $theme_name);
+
   require_once($path_to_at_core . '/inc/forms/settings.responsivepanels.inc');
   at_core_responsive_panels_form($form, $theme_name);
+
   require_once($path_to_at_core . '/inc/forms/settings.global.inc');
   at_core_global_form($form, $theme_name);
+
   require_once($path_to_at_core . '/inc/forms/settings.polyfills.inc');
   at_core_polyfills_form($form, $theme_name);
+
   require_once($path_to_at_core . '/inc/forms/settings.metatags.inc');
   at_core_metatags_form($form);
+
   require_once($path_to_at_core . '/inc/forms/settings.debug.inc');
   at_core_debug_form($form);
+
   require_once($path_to_at_core . '/inc/forms/settings.extensions.inc');
   at_core_extensions_form($form);
+
   // EXTENSIONS
   $enable_extensions = isset($form_state['values']['enable_extensions']);
   if (($enable_extensions && $form_state['values']['enable_extensions'] == 1) || (!$enable_extensions && $form['at-settings']['extend']['enable_extensions']['#default_value'] == 1)) {
@@ -116,7 +117,7 @@ function adaptivetheme_form_system_theme_settings_alter(&$form, &$form_state, $f
     $enable_font_settings = isset($form_state['values']['enable_font_settings']);
     if (($enable_font_settings && $form_state['values']['enable_font_settings'] == 1) || (!$enable_font_settings && $form['at-settings']['extend']['enable']['enable_font_settings']['#default_value'] == 1)) {
       require_once($path_to_at_core . '/inc/forms/settings.fonts.inc');
-      at_fonts_form($form);
+      at_core_fonts_form($form);
     }
 
     // Heading styles
@@ -130,7 +131,7 @@ function adaptivetheme_form_system_theme_settings_alter(&$form, &$form_state, $f
     $enable_image_settings = isset($form_state['values']['enable_image_settings']);
     if (($enable_image_settings && $form_state['values']['enable_image_settings'] == 1) || (!$enable_image_settings && $form['at-settings']['extend']['enable']['enable_image_settings']['#default_value'] == 1)) {
       require_once($path_to_at_core . '/inc/forms/settings.images.inc');
-      at_images_form($form);
+      at_core_images_form($form);
     }
 
     // Exclude CSS
@@ -225,6 +226,7 @@ function adaptivetheme_form_system_theme_settings_alter(&$form, &$form_state, $f
       $form_settings($form, $form_state);
     }
   }
+
   // Include custom form validation and submit functions
   require_once(drupal_get_path('theme', 'adaptivetheme') . '/inc/forms/at_core.validate.inc');
   require_once(drupal_get_path('theme', 'adaptivetheme') . '/inc/forms/at_core.submit.inc');
@@ -233,4 +235,3 @@ function adaptivetheme_form_system_theme_settings_alter(&$form, &$form_state, $f
   $form['#validate'][] = 'at_core_settings_validate';
   $form['#submit'][] = 'at_core_settings_submit';
 }
-

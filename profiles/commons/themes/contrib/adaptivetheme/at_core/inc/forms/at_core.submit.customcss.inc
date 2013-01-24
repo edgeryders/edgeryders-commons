@@ -4,7 +4,6 @@
  * @file
  * Save custom CSS to file
  */
-
 function at_core_submit_custom_css($form_state, $theme_name) {
   $values = $form_state['values'];
   $path = $values['path'];

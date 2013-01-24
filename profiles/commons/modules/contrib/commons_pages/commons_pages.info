@@ -23,10 +23,10 @@ features[variable][] = menu_parent_page
 features[variable][] = node_options_page
 features[variable][] = node_preview_page
 features[variable][] = node_submitted_page
-
-
-; Information added by drush on 2012-11-15
-version = ""
+features[variable][] = pathauto_node_page_pattern
+; Information added by drupal.org packaging script on 2013-01-08
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_pages"
-datestamp = "1353011133"
+datestamp = "1357606052"
 

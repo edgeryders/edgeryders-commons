@@ -103,4 +103,17 @@ class PanelizerEntityUser extends PanelizerEntityDefault {
     }
   }
 
+  /**
+   * Fetch the entity out of a build for hook_entity_view.
+   *
+   * @param $build
+   *   The render array that contains the entity.
+   */
+  public function get_entity_view_entity($build) {
+    $element = '#account';
+    if (isset($build[$element])) {
+      return $build[$element];
+    }
+  }
+
 }

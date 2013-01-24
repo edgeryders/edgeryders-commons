@@ -10,9 +10,12 @@
  * Preprocess variables for all templates.
  */
 function adaptivetheme_preprocess(&$vars) {
-  // Provide a variable to all templates to test for a mobile context, this
-  // requires the Browscap module and returns TRUE or FALSE.
-  $vars['is_mobile'] = at_get_browser();
+  // Provide variables to all templates to test for a mobile and tablet context, this
+  // requires the Mobile Detect or Browscap modules.  TRUE/FALSE mean the feature
+  // was detected; NULL means the feature could not be properly detected.
+  $browser = at_get_browser(); 
+  $vars['is_mobile'] = $browser['is_mobile'];
+  $vars['is_tablet'] = $browser['is_tablet'];
 }
 
 /**
@@ -126,9 +129,10 @@ function adaptivetheme_preprocess_page(&$vars) {
     if (empty($vars['site_logo'])) {
       $logo_path = check_url($vars['logo']);
       $logo_alt = check_plain(variable_get('site_name', t('Site logo')));
+      $logo_title = at_get_setting('logo_title') ? $logo_alt : t('Home page');
       $logo_vars = array('path' => $logo_path, 'alt' => $logo_alt, 'attributes' => array('class' => 'site-logo'));
       $vars['logo_img'] = theme('image', $logo_vars);
-      $vars['site_logo'] = $vars['logo_img'] ? l($vars['logo_img'], '<front>', array('attributes' => array('title' => t('Home page')), 'html' => TRUE)) : '';
+      $vars['site_logo'] = $vars['logo_img'] ? l($vars['logo_img'], '<front>', array('attributes' => array('title' => $logo_title), 'html' => TRUE)) : '';
     }
     // Maintain backwards compatibility with 7.x-2.x sub-themes
     $vars['linked_site_logo'] = $vars['site_logo'];
@@ -381,9 +385,9 @@ function adaptivetheme_preprocess_block(&$vars) {
     $vars['tag'] = 'div';
   }
 
-  // Initialize and populate the inner wrapper variables
-  $vars['inner_prefix'] = '<div class="block-inner clearfix">';
-  $vars['inner_suffix'] = '</div>';
+  // Block inner attributes
+  $vars['block_inner_attributes_array']['class'][] = 'block-inner';
+  $vars['block_inner_attributes_array']['class'][] = 'clearfix';
 
   // Use nav element for menu blocks and provide a suggestion for all of them
   $nav_blocks = array('navigation', 'main-menu', 'management', 'user-menu');
@@ -651,7 +655,6 @@ function adaptivetheme_preprocess_node(&$vars) {
   // Classes and attributes
   $vars['title_attributes_array']['class'][] = 'node-title';
   $vars['content_attributes_array']['class'][] = 'node-content';
-  $vars['title_attributes_array']['rel'][] = 'bookmark';
 
   // header, submitted and links wrappers have their own attributes
   $vars['header_attributes_array']['class'][] = 'node-header';

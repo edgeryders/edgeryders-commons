@@ -1,12 +1,6 @@
 # Ignore configuration files that may contain sensitive information.
-sites/default
 sites/*/settings*.php
-sites/sites.php
-*.sql
-*.bz2
-*.tar.gz
+
 # Ignore paths that contain user-generated content.
 sites/*/files
 sites/*/private
-sites/*/tmp
-

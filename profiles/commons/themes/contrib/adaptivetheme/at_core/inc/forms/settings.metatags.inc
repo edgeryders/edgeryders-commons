@@ -4,7 +4,6 @@
  * @file
  * Generate form elments for the Metatags for Mobile settings.
  */
-
 function at_core_metatags_form(&$form) {
   $form['at-settings']['meta'] = array(
     '#type' => 'fieldset',

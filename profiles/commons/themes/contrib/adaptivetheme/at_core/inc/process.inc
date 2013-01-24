@@ -156,6 +156,13 @@ function adaptivetheme_process_block(&$vars) {
   // and classes not being flattened untill we hit process.
   $vars['outer_prefix'] = '<' . $vars['tag'] . ' id="' . $vars['block_html_id'] . '" class="' . $vars['classes'] . '" ' . $vars['attributes'] . '>';
   $vars['outer_suffix'] = '</' . $vars['tag'] . '>';
+  
+  // Block inner attributes
+  $vars['block_inner_attributes'] = empty($vars['block_inner_attributes_array']) ? '' : drupal_attributes($vars['block_inner_attributes_array']);
+  
+  // Populate the default inner wrappers
+  $vars['inner_prefix'] = '<div' . $vars['block_inner_attributes'] . '>';
+  $vars['inner_suffix'] = '</div>';
 
   // Wrap the content variable in a div with attributes
   $vars['content_processed'] = '<div' . $vars['content_attributes'] . '>' . $vars['content'] . '</div>';

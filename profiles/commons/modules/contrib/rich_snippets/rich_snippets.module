@@ -1,0 +1,402 @@
+<?php
+
+/**
+ * @file
+ * Overrides the standard search results templates and CSS to display results
+ * similar to major search engines.
+ */
+
+/**
+ * Machine name of the image style used in the search results.
+ */
+define('RICH_SNIPPETS_STYLE_NAME', 'rich_snippets_thumbnail');
+
+/**
+ * Implements hook_theme().
+ */
+function rich_snippets_theme() {
+  return array(
+    'rich_snippets_date' => array(
+      'arguments' => array('date' => NULL),
+      'file' => 'rich_snippets.theme.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_image_default_styles().
+ */
+function rich_snippets_image_default_styles() {
+  $styles = array();
+
+  $styles[RICH_SNIPPETS_STYLE_NAME] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale',
+        'data' => array('width' => 50, 'height' => 50, 'upscale' => 1),
+      ),
+    )
+  );
+
+  return $styles;
+}
+
+/**
+ * Implements hook_date_formats().
+ */
+function rich_snippets_date_formats() {
+  return array(
+    array(
+      'type' => 'rich_snippets_published_date',
+      'format' => 'M j, Y',
+      'locales' => array(),
+    ),
+    array(
+      'type' => 'rich_snippets_event_date',
+      'format' => 'D, M j, Y',
+      'locales' => array(),
+    ),
+  );
+}
+
+/**
+ * Implements hook_date_format_types().
+ */
+function rich_snippets_date_format_types() {
+  return array(
+    'rich_snippets_published_date' => t('Rich snippet published date'),
+    'rich_snippets_event_date' => t('Rich snippet event date'),
+  );
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * Uses our custom search templates in favor of the core Search module's
+ * templates.
+ */
+function rich_snippets_theme_registry_alter(&$theme_registry) {
+  $path = drupal_get_path('module', 'rich_snippets');
+
+  $theme_registry['search_result']['path'] = $path;
+  $theme_registry['search_result']['theme path'] = $path;
+  $theme_registry['search_result']['template'] = 'search-result';
+
+  $theme_registry['search_results']['path'] = $path;
+  $theme_registry['search_results']['theme path'] = $path;
+  $theme_registry['search_results']['template'] = 'search-results';
+}
+
+/**
+ * Implements hook_rich_snippets_preprocessors().
+ */
+function rich_snippets_rich_snippets_preprocessors() {
+  return array(
+    'apachesolr' => array(
+      'class' => 'Drupal_RichSnippets_Apachesolr_ApachesolrSchemaPreprocessor',
+    ),
+    'node' => array(
+      'class' => 'Drupal_RichSnippets_Node_NodeSchemaPreprocessor',
+    ),
+  );
+}
+
+/**
+ * Implements hook_rich_snippets_get_schema().
+ *
+ * Implemented on behalf of the Apache Solr Search Integration module.
+ *
+ * @return string|FALSE
+ */
+function apachesolr_search_result_schema($result) {
+  return rich_snippets_get_result_schema($result['entity_type'], $result['bundle']);
+}
+
+/**
+ * Implements hook_rich_snippets_get_schema().
+ *
+ * Implemented on behalf of the Node module.
+ *
+ * @return string|FALSE
+ */
+function node_search_result_schema($result) {
+  return rich_snippets_get_result_schema('node', $result['node']->type);
+}
+
+/**
+ * Gathers all preprocessor definitions.
+ *
+ * @return array
+ *   An array of preprocessor definitions.
+ */
+function rich_snippets_get_preprocessors() {
+  $preprocessors = &drupal_static(__FUNCTION__);
+  if (NULL === $preprocessors) {
+    $preprocessors = module_invoke_all('rich_snippets_preprocessors');
+  }
+  return $preprocessors;
+}
+
+/**
+ * Loads the preprocessor for a given module.
+ *
+ * @param string $module
+ *   The module that the preprocessor is getting loaded for.
+ * @param array &$variables
+ *   An array of template variables.
+ *
+ * @return Drupal_RichSnippets_SchemaPreprocessorAbstract|FALSE
+ *   The preprocessor object, FALSE if the module does not have a preprocessor.
+ */
+function rich_snippets_preprocessor_load($module, array &$variables) {
+  $preprocessors = rich_snippets_get_preprocessors();
+  if (isset($preprocessors[$module])) {
+    return new $preprocessors[$module]['class']($variables);
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for theme_search_result().
+ *
+ * Base properties:
+ * - additionalType
+ * - description
+ * - image
+ * - name
+ * - url
+ */
+function rich_snippets_preprocess_search_result(&$variables) {
+  static $included;
+  if (!$included) {
+    // Add the CSS here since this hook is the most reliable place to do so.
+    // @see http://drupal.org/node/1871480
+    $path = drupal_get_path('module', 'rich_snippets');
+    drupal_add_css($path . '/rich_snippets.css');
+    // The preprocess hooks are stuck in another file for code organization.
+    module_load_include('inc', 'rich_snippets', 'rich_snippets.preprocess');
+    $included = TRUE;
+  }
+
+  // Get the module that executed the search so we can extract the schema.
+  if (0 === strpos($variables['module'], 'apachesolr_')) {
+    // Lump all apachesolr search modules together.
+    $module = 'apachesolr';
+  }
+  elseif ('search_facetapi' == $variables['module']) {
+    // Faceted Navigation for Search is really the node module, too.
+    $module = 'node';
+  }
+  else {
+    // Catch-all for everything else.
+    $module = $variables['module'];
+  }
+
+  // Get the schema from the module's hook implementation.
+  $schema = module_invoke($module, 'search_result_schema', $variables['result']);
+
+  // Initialize our custom variables.
+  $variables['image'] = '';
+
+  // Allow highlighting of the title.
+  // @todo Make the allowed tag match what is passed though to Solr.
+  $variables['title'] = filter_xss($variables['result']['title'], array('strong'));
+
+  // Shortened the URL for display in the search results.
+  $variables['url_shortened'] = rich_snippets_shorten_url($variables['url']);
+
+  // This is a legacy variable from Rich Snippets <= 7.x-1.0-alpha2. We will
+  // maintain it for a little while in case people are using it.
+  // @see http://drupal.org/node/1851924
+  // @todo Remove this in beta.
+  $variables['title_shortened'] = $variables['title'];
+
+  // Get the schema via the module's hook_search_result_schema() implementation,
+  // invoke the schema specific preprocess hook, and instantiate the module's
+  // preprocessor
+  $variables['schema'] = $preprocessed = FALSE;
+  if ($schema) {
+    $preprocessor = rich_snippets_preprocessor_load($module, $variables);
+    if ($preprocessor) {
+      $preprocessed = rich_snippets_invoke_preprocess_hooks($variables, $schema, $preprocessor);
+    }
+  }
+
+  // Use the default preprocessing logic if the schema wasn't defined or the
+  // schema specific preprocessor wasn't found.
+  if (!$preprocessed) {
+    rich_snippets_default_preprocessor($variables);
+  }
+
+  // Rebuild the search info since the split was probably modified.
+  $variables['info'] = implode(' - ', $variables['info_split']);
+}
+
+/**
+ * Invoke the schema specific preprocess hooks.
+ *
+ * @param array &$variables
+ *   An associative array of template variables.
+ * @param string $schema
+ *   The
+ */
+function rich_snippets_invoke_preprocess_hooks(&$variables, $schema, Drupal_RichSnippets_SchemaPreprocessorInterface $preprocessor) {
+  $preprocessed = FALSE;
+
+  // Normalize the schema and store as a class variable.
+  $normalized_schema = rich_snippet_normalize_schema($schema);
+  $variables['schema'] = $normalized_schema;
+
+  // Get all modules that implement the schema-specific preprocess hook.
+  $hook = 'preprocess_search_result_' . $normalized_schema . '_schema';
+  $modules = module_implements($hook);
+  if ($modules) {
+    $preprocessed = TRUE;
+
+    // Make sure this module's hooks are invoked first.
+    $modules = array_flip($modules);
+    if (isset($modules['rich_snippets'])) {
+      unset($modules['rich_snippets']);
+      $function = 'rich_snippets_' . $hook;
+      $function($variables, $preprocessor);
+    }
+
+    // Invoke all of the other hooks.
+    foreach ($modules as $module => $key) {
+      $function = $module . '_' . $hook;
+      $function($variables, $preprocessor);
+    }
+  }
+
+  return $preprocessed;
+}
+
+/**
+ * Returns a mapping of schema.org schema to field names.
+ *
+ * @param string $entity_type
+ *   The machine name of the entity.
+ * @param string $bundle
+ *   The machine name of the bundle.
+ *
+ * @return array
+ *   An associateve array keyed by schema.org schema to field names.
+ */
+function rich_snippets_get_rdf_schema_mappings($entity_type, $bundle) {
+  static $schema_mapping = array();
+  if (!isset($schema_mapping[$entity_type][$bundle])) {
+    $schema_mapping[$entity_type][$bundle] = array();
+    $rdf_mapping = rdf_mapping_load($entity_type, $bundle);
+    foreach ($rdf_mapping as $field_name => $field_mappings) {
+      $schemata = rich_snippets_get_schema_from_predicates($rdf_mapping, $field_name);
+      foreach ($schemata as $schema) {
+        $schema_mapping[$entity_type][$bundle][$schema][] = $field_name;
+      }
+    }
+  }
+  return $schema_mapping[$entity_type][$bundle];
+}
+
+/**
+ * Returns all Schema.org schema in the RDF predicates for a field.
+ *
+ * @param array $rdf_mapping
+ *   The return value of rdf_mapping_load().
+ * @param string $field_name
+ *   The machine name of the field.
+ *
+ * @return array
+ *   An array of Schema.org schema and properties.
+ */
+function rich_snippets_get_schema_from_predicates(array $rdf_mapping, $field_name) {
+  $schemata = array();
+  if (!empty($rdf_mapping[$field_name]['predicates'])) {
+    foreach ($rdf_mapping[$field_name]['predicates'] as $predicate) {
+      if (0 === strpos($predicate, 'schema:')) {
+        $schemata[] = substr($predicate, 7);
+      }
+    }
+  }
+  return $schemata;
+}
+
+/**
+ * Returns the schema associated with a bundle.
+ *
+ * @param string $entity_type
+ *   The machine name of the entity.
+ * @param string $bundle
+ *   The machine name of the bundle.
+ *
+ * @return string|FALSE
+ *   A string containing the schema, FALSE if the schema does not exist.
+ */
+function rich_snippets_get_result_schema($entity_type, $bundle) {
+  $mapping = rdf_mapping_load($entity_type, $bundle);
+  foreach ($mapping['rdftype'] as $typeof) {
+    if (0 === strpos($typeof, 'schema:')) {
+      return substr($typeof, 7);
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Returns a shortened URL.
+ *
+ * @param string $url
+ *   The URL of the matching document or webpage.
+ *
+ * @return string
+ *   The shortened URL
+ */
+function rich_snippets_shorten_url($url) {
+  $url_parts = parse_url($url);
+  $shortened = $url_parts['host'];
+  if (isset($url_parts['port'])) {
+    $shortened .= ':' . $url_parts['port'];
+  }
+
+  // Shorten longer paths.
+  if (!empty($url_parts['path'])) {
+    if (drupal_strlen($url_parts['path']) > 32) {
+      $shortened .= '/';
+      $ellipsis = t('...');
+
+      // Break the path into parts and get the last item in the path.
+      $path_parts = explode('/', trim($url_parts['path'], '/'));
+      $last_part = end($path_parts);
+
+      // Replace first part of path with ellipsis.
+      if (count($path_parts) > 1) {
+        $shortened .= $ellipsis . '/';
+      }
+
+      $shortened .= $last_part;
+    }
+    else {
+      // Append the entire path, it's short enough.
+      $shortened .= $url_parts['path'];
+    }
+  }
+  return $shortened;
+}
+
+/**
+ * Normalizes the schema to a value suitable for use in function names.
+ *
+ * Converts all characters to lowercase, replaces spaces with underscores. For
+ * example, "Health and medical types" -> "health_and_medical_types".
+ *
+ * Note that strtolower() is used in favor of drupal_strtolower() since none of
+ * the schemata have UTF-8 specific characters.
+ *
+ * @param string $schema
+ *   The raw schema, usually one listed at http://schema.org/docs/schemas.html.
+ *
+ * @return string
+ *   The normalized schema.
+ */
+function rich_snippet_normalize_schema($schema) {
+  return str_replace(' ', '_', strtolower($schema));
+}

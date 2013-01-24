@@ -512,7 +512,7 @@ function registration_registrations_page($entity_type, $entity) {
 
       $rows[] = array(
         l($registration->registration_id, 'registration/' . $registration->registration_id),
-        l($registration->mail, 'mailto:' . $registration->mail),
+        l($wrapper->mail->value(), 'mailto:' . $wrapper->mail->value()),
         $user_col,
         $author_col,
         $registration->count,
@@ -584,11 +584,11 @@ function registration_entity_settings_page($entity_type, $entity) {
  *
  * @see registration_status()
  */
-function registration_has_room($entity_type, $entity_id, $slots = 1, $registration_id = NULL) {
-  $settings = registration_entity_settings($entity_type, $entity_id);
+function registration_has_room($entity_type, $entity_id, $slots = 1, $registration_id = NULL, $reset = FALSE) {
+  $settings = registration_entity_settings($entity_type, $entity_id, $reset);
   $capacity = $settings['capacity'];
   if ($capacity) {
-    $count = registration_event_count($entity_type, $entity_id, $registration_id) + $slots;
+    $count = registration_event_count($entity_type, $entity_id, $registration_id, $reset) + $slots;
     if (($capacity - $count) < 0) {
       return FALSE;
     }
@@ -612,9 +612,9 @@ function registration_has_room($entity_type, $entity_id, $slots = 1, $registrati
  *
  * @see registration_has_room()
  */
-function registration_event_count($entity_type, $entity_id, $registration_id = NULL) {
+function registration_event_count($entity_type, $entity_id, $registration_id = NULL, $reset = FALSE) {
   $count = &drupal_static(__FUNCTION__ . '_' . $entity_type . '_' . $entity_id . '_' . $registration_id, FALSE);
-  if (!$count) {
+  if (!$count || $reset) {
     $query = db_select('registration', 'r');
     $query->addExpression('sum(count)', 'count');
     $query->condition('entity_id', $entity_id);
@@ -723,10 +723,10 @@ function registration_entity_delete($entity, $entity_type) {
  * @return array|bool
  *   A row from {registration_entity}, or FALSE if no settings exist.
  */
-function registration_entity_settings($entity_type, $entity_id) {
+function registration_entity_settings($entity_type, $entity_id, $reset = FALSE) {
   $result = &drupal_static(__FUNCTION__ . $entity_type . $entity_id);
 
-  if (!$result) {
+  if (!$result || $reset) {
     $result = db_select('registration_entity', 're')
       ->fields('re')
       ->condition('entity_id', $entity_id, '=')
@@ -829,7 +829,9 @@ function registration_send_broadcast($entity_type, $entity_id, $subject, $messag
     // send the email to each registrant and communicate results
     $success_count = 0;
     foreach ($registrations as $registration) {
-      $recipients[] = $registration->mail;
+      $wrapper = entity_metadata_wrapper('registration', $registration);
+
+      $recipients[] = $wrapper->mail->value();
 
       $entity = entity_load_single($entity_type, $entity_id);
       if (module_exists('token')) {
@@ -841,14 +843,14 @@ function registration_send_broadcast($entity_type, $entity_id, $subject, $messag
       $params['message'] = $message;
 
       $result = drupal_mail('registration', 'broadcast',
-        $registration->mail, $language, $params, $from
+        $wrapper->mail->value(), $language, $params, $from
       );
       if ($result['result']) {
         $success_count++;
       }
       else {
         watchdog('registration', 'Failed to send registration broadcast email to %email.',
-          array('%email' => $registration->mail), WATCHDOG_ERROR
+          array('%email' => $wrapper->mail->value()), WATCHDOG_ERROR
         );
       }
     }
@@ -929,7 +931,7 @@ function registration_cron() {
 /**
  * Check if new registrations are permitted for a host entity.
  *
- * Modules may implement hook_registration_status() to alter the status at
+ * Modules may implement hook_registration_status_alter() to alter the status at
  * runtime.
  *
  * @param string $entity_type
@@ -939,18 +941,24 @@ function registration_cron() {
  * @param bool $reset
  *   (optional) Whether to force checking status in case registration_status
  *   may have been called previously for this host entity.
+ * @param int $slots
+ *   (optional) The number of slots to check that there is space for.
+ * @param int $registration_id
+ *   (optional) A registration id to exclude from the has room check.
+ * @param array $errors
+ *   (optional) An array of error message strings.
  *
  * @return bool
- *   Whether new registrations are accepted.
  */
-function registration_status($entity_type, $entity_id, $reset = FALSE) {
+function registration_status($entity_type, $entity_id, $reset = FALSE, $slots = 1, $registration_id = NULL, &$errors = array()) {
   $checked = &drupal_static(__FUNCTION__, array());
 
   if (!$reset && isset($checked[$entity_type][$entity_id])) {
-    return $checked[$entity_type][$entity_id];
+    $errors = is_array($errors) ? array_merge($errors, $checked[$entity_type][$entity_id]['errors']) : $checked[$entity_type][$entity_id]['errors'];
+    return $checked[$entity_type][$entity_id]['status'];
   }
 
-  $settings = registration_entity_settings($entity_type, $entity_id);
+  $settings = registration_entity_settings($entity_type, $entity_id, $reset);
   $status = $settings['status'];
   $open = isset($settings['open']) ? strtotime($settings['open']) : NULL;
   $close = isset($settings['close']) ? strtotime($settings['close']) : NULL;
@@ -959,16 +967,19 @@ function registration_status($entity_type, $entity_id, $reset = FALSE) {
   // only explore other settings if main status is enabled
   if ($status) {
     // check capacity
-    if (!registration_has_room($entity_type, $entity_id)) {
+    if (!registration_has_room($entity_type, $entity_id, $slots, $registration_id, $reset)) {
       $status = FALSE;
+      $errors[] = t('insufficient slots remaining');
     }
     // check open date range
     elseif (isset($open) && ($now < $open)) {
       $status = FALSE;
+      $errors[] = t('registration is not yet open');
     }
     // check close date range
     elseif (isset($close) && ($now >= $close)) {
       $status = FALSE;
+      $errors[] = t('registration is closed');
     }
   }
 
@@ -976,12 +987,15 @@ function registration_status($entity_type, $entity_id, $reset = FALSE) {
   $context = array(
     'entity_type' => $entity_type,
     'entity_id' => $entity_id,
-    'settings' => $settings
+    'errors' => &$errors
   );
 
   drupal_alter('registration_status', $status, $context);
 
-  $checked[$entity_type][$entity_id] = $status;
+  $checked[$entity_type][$entity_id] = array(
+    'status' => $status,
+    'errors' => $errors,
+  );
 
   return $status;
 }
@@ -1038,12 +1052,18 @@ function registration_get_registration_instances($params = array()) {
  * Implement hook_token_info().
  */
 function registration_token_info() {
+  $type = array(
+    'name' => t('Registration'),
+    'description' => t('Tokens related to individual Registrations.'),
+    'needs-data' => 'registration',
+  );
   $registration['entity'] = array(
     'name' => t("Registration Host Entity"),
     'description' => t("The host entity for the registration."),
   );
+
   return array(
-    'types' => array(),
+    'types' => array('registration' => $type),
     'tokens' => array('registration' => $registration),
   );
 }
@@ -1058,8 +1078,12 @@ function registration_tokens($type, $tokens, array $data = array(), array $optio
 
     if ($entity_tokens = token_find_with_prefix($tokens, 'entity')) {
       $entity = $wrapper->entity->value();
-      return token_generate($registration->entity_type, $entity_tokens,
-        array($registration->entity_type => $entity), $options);
+      return token_generate(
+        $registration->entity_type,
+        $entity_tokens,
+        array($registration->entity_type => $entity),
+        $options
+      );
     }
   }
 }
@@ -1247,7 +1271,7 @@ function registration_states($conditions = array()) {
 }
 
 /**
- * Return an array of all active state IDs.
+ * Return an array of all active state machine names.
  *
  * @return array
  */
@@ -1255,7 +1279,7 @@ function registration_get_active_states() {
   $active = array();
   $states = registration_states(array('active' => TRUE));
   foreach ($states as $state) {
-    $active[] = $state->internalIdentifier();
+    $active[] = $state->identifier();
   }
   return $active;
 }
@@ -1279,4 +1303,28 @@ function registration_get_default_state() {
 function registration_get_states($name = NULL) {
   $types = entity_load_multiple_by_name('registration_state', isset($name) ? array($name) : FALSE);
   return isset($name) ? reset($types) : $types;
+}
+
+/**
+ * Get an array of states structured as options for a form select elements
+ *
+ * @param array $conditions
+ *
+ * @return array
+ */
+function registration_get_states_options($conditions = array()) {
+  $options = array();
+
+  // Rules likes to pass an object as the first param in an option list callback. Get rid of it.
+  if (!is_array($conditions)) {
+    $conditions = array();
+  }
+
+  $states = registration_states($conditions);
+
+  foreach ($states as $state) {
+    $options[$state->identifier()] = t('@state', array('@state' => entity_label('registration_state', $state)));
+  }
+
+  return $options;
 }

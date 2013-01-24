@@ -99,6 +99,7 @@ function radioactivity_settings_reset_messages() {
   variable_del("radioactivity_config_warning");
   variable_del("radioactivity_bootstrap_warning");
   $path = isset($_GET['destination']) ? $_GET['destination'] : "/";
+  cache_clear_all();
   drupal_goto($path);
 }
 
@@ -111,29 +112,67 @@ function _radioactivity_check_warnings() {
   $bootstrap_warning = variable_get('radioactivity_bootstrap_warning', FALSE);
 
   if ($config_warning || $bootstrap_warning) {
-
     $vars = array(
-      "@file" => _radioactivity_get_config_file_path(),
-      "@reset" => url("admin/structure/radioactivity/settings/reset/messages", array("query" => array(drupal_get_destination()))),
-      "@assist" => url("admin/structure/radioactivity/settings", array("fragment" => "edit-assist")),
+      '@status' => url('admin/reports/status'),
+    );
+    drupal_set_message(t('There is a problem with Radioactivity settings. Please check the <a href="@status">status page</a> for further information.', $vars), 'warning', FALSE);
+  }
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function radioactivity_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  $desc = '';
+
+  if ($phase == 'runtime') {
+
+    module_load_include("inc", "radioactivity", "radioactivity-bootstrap");
+
+    $config_warning = variable_get('radioactivity_config_warning', FALSE);
+    $bootstrap_warning = variable_get('radioactivity_bootstrap_warning', FALSE);
+
+    if ($config_warning || $bootstrap_warning) {
+
+      $level = REQUIREMENT_WARNING;
+      $value = $t('Performance issues');
+
+      $vars = array(
+        "@file" => _radioactivity_get_config_file_path(),
+        "@reset" => url("admin/structure/radioactivity/settings/reset/messages", array("query" => array(drupal_get_destination()))),
+        "@assist" => url("admin/structure/radioactivity/settings", array("fragment" => "edit-assist")),
+      );
+
+      if ($config_warning) {
+        $desc .= $t('Configuration file @file appears be missing. Have a look at the <a href="@assist">Radioactivity configuration assist</a> for further information.', $vars) . ' ';
+      }
+
+      if ($bootstrap_warning) {
+        $desc .= $t('One of the decay profiles is using a storage system that requires Drupal to boostrap. This may lead to serious slowdowns on high traffic sites. You should consider switching to one of the bootstrapless incident storages.', $vars) . ' ';
+      }
+
+      $desc .= $t('Once fixed click <a href="@reset">here</a> to clear Radioactivity warnings and caches, then reload an emitting page and check if problems have been resolved.', $vars);
+
+    } else {
+
+      $level = REQUIREMENT_OK;
+      $desc = '';
+      $value = $t('OK');
+
+    }
+
+    $requirements['radioactivity'] = array(
+      'title' => $t('Radioactivity'),
+      'description' => $desc,
+      'value' => $value,
+      'severity' => $level,
     );
 
-    if ($config_warning) {
-      drupal_set_message(t('Configuration file @file appears be missing. Have a look at the <a href="@assist">Radioactivity configuration assist</a> for further information.', $vars),
-        'warning',
-        FALSE
-      );
-    }
-
-    if ($bootstrap_warning) {
-      drupal_set_message(t('One of the decay profiles is using a storage system that requires Drupal to boostrap. This may lead to serious slowdowns on high traffic sites. You should consider switching to one of the bootstrapless incident storages.', $vars),
-        'warning',
-        FALSE
-      );
-    }
-
-    drupal_set_message(t('Once fixed click <a href="@reset">here</a> to clear Radioactivity warnings.', $vars), "warning", FALSE);
   }
+
+  return $requirements;
 }
 
 /**
@@ -231,7 +270,8 @@ function _radioactivity_get_storage($key) {
       $cache[$key] = new $class();
     }
     else {
-      $cache[$key] = new RadioactivityIncidentStorage();
+      watchdog('radioactivity', 'Tried to use a storage @class that is not defined.', array('@class' => $class, WATCHDOG_CRITICAL));
+      return FALSE;
     }
   }
   return $cache[$key];
@@ -279,9 +319,6 @@ function radioactivity_cron() {
 
   module_load_include("inc", "radioactivity", "radioactivity-bootstrap");
 
-  // Grab the db id if the field_config that is Radioactivity
-  $configs = db_select("field_config", "fc")->fields("fc", array("id"))->condition("fc.type", RADIOACTIVITY_FIELD_TYPE)->condition("fc.deleted", "0")->execute();
-
   if (class_exists("Memcache")) {
     // Expose the memcache settings for the memcache processIncident call
     if (!defined("VAR_RADIOACTIVITY_MEMCACHED_HOST")) {
@@ -292,69 +329,89 @@ function radioactivity_cron() {
 
   $last_cron_timestamp = variable_get('radioactivity_last_cron_timestamp', REQUEST_TIME);
 
-  while ($cfg = $configs->fetchObject()) {
+  $fields = field_info_fields();
 
-    // Grab the fields that are of type Radioactivity
-    $fields = db_select("field_config_instance", "fci")->fields("fci", array("field_name", "entity_type", "bundle"))->condition("fci.deleted", "0")->condition("fci.field_id", $cfg->id)->execute();
+  foreach ($fields as $field_name => &$field) {
 
-    while ($row = $fields->fetchObject()) {
+    if ($field['type'] != RADIOACTIVITY_FIELD_TYPE) {
+      continue;
+    }
 
-      $profile = radioactivity_get_field_profile($row->entity_type, $row->bundle, $row->field_name);
+    foreach ($field['bundles'] as $entity_type => &$bundles) {
+      foreach ($bundles as $bundle) {
 
-      if (!($profile && $profile->storageObject)) {
-        watchdog(
-          "radioactivity",
-          "Could not load profile for @type @bundle @field",
-          array("@type" => $row->entity_type, "@bundle" => $row->bundle, "@field" => $row->field_name),
-          WATCHDOG_ERROR
-        );
-        continue;
-      }
+        $profile = radioactivity_get_field_profile($entity_type, $bundle, $field_name);
 
-      $storage = $profile->storageObject;
-
-      // Process incidents
-      $storage->processIncidents();
-
-      // Check granularity
-      $threshold_timestamp = $last_cron_timestamp - ($last_cron_timestamp % $profile->granularity) + $profile->granularity;
-      if (REQUEST_TIME < $threshold_timestamp) {
-        continue;
-      }
-
-      // Update field database
-      $half_life = $profile->half_life;
-      $cut_off = $profile->cut_off;
-
-      $field_name = $row->field_name;
-
-      $table_name = 'field_data_' . $field_name;
-      $energy     = $field_name . '_' . RADIOACTIVITY_FIELD_ENERGY;
-      $timestamp  = $field_name . '_' . RADIOACTIVITY_FIELD_TIMESTAMP;
-
-      // grab update value from deferred values table
-      // and update it to the fields table if it is used
-      if ($profile->enable_decay == 1) {
-        $updated = db_update($table_name)->expression($energy, $energy . ' * pow(2, (' . $timestamp . ' * 1.0 - ' . REQUEST_TIME . ') / ' . $half_life . ')')->fields(array($timestamp => REQUEST_TIME))->condition($timestamp, REQUEST_TIME, '<')->condition("deleted", "0")->execute();
-
-        if (module_exists('rules')) {
-          // Invoke rules event for cut off
-          $items = db_select($table_name, 't')
-             ->fields('t', array('entity_type', 'entity_id'))
-             ->condition($energy, $cut_off, '<')
-             ->condition("deleted", "0")
-             ->execute();
-          while ($item = $items->fetchObject()) {
-            // Don't cache - conserves memory
-            $entity = entity_load($item->entity_type, array($item->entity_id), array(), TRUE);
-            $entity = entity_metadata_wrapper($item->entity_type, array_shift($entity));
-            rules_invoke_event('radioactivity_field_cut_off', $entity);
-          }
+        if (!($profile && $profile->storageObject)) {
+          watchdog(
+            "radioactivity",
+            "Could not load profile for @type @bundle @field",
+            array("@type" => $entity_type, "@bundle" => $bundle, "@field" => $field_name),
+            WATCHDOG_ERROR
+          );
+          continue;
         }
 
-        // Brute deletion of the field might not be ok but the field api can handle this
-        $cuts = db_delete($table_name)->condition($energy, $cut_off, '<')->condition("deleted", "0")->execute();
-      }
+        $storage = $profile->storageObject;
+
+        // Process incidents
+        $storage->processIncidents();
+
+        // Check granularity
+        $threshold_timestamp = $last_cron_timestamp - ($last_cron_timestamp % $profile->granularity) + $profile->granularity;
+        if (REQUEST_TIME < $threshold_timestamp) {
+          continue;
+        }
+
+        // Update field database
+        $half_life = $profile->half_life;
+        $cut_off = $profile->cut_off;
+
+        $table_name = 'field_data_' . $field_name;
+        $energy     = $field_name . '_' . RADIOACTIVITY_FIELD_ENERGY;
+        $timestamp  = $field_name . '_' . RADIOACTIVITY_FIELD_TIMESTAMP;
+
+        // grab update value from deferred values table
+        // and update it to the fields table if it is used
+        if ($profile->enable_decay > 0) {
+
+          // Switched deletion and decaying order because in
+          // some cases the decaying stops working when there are sh*tloads of fields.
+          // Brute deletion of the field might not be ok but the field api can handle this
+
+          // TODO: figure out how to do this in batches...
+
+          if (module_exists('rules')) {
+            // Invoke rules event for cut off
+            $items = db_select($table_name, 't')
+               ->fields('t', array('entity_type', 'entity_id'))
+               ->condition($energy, $cut_off, '<')
+               ->condition("deleted", "0")
+               ->execute();
+
+            while ($item = $items->fetchObject()) {
+              // Don't cache - conserves memory
+              $entity = entity_load($item->entity_type, array($item->entity_id), array(), TRUE);
+              $entity = entity_metadata_wrapper($item->entity_type, array_shift($entity));
+              rules_invoke_event('radioactivity_field_cut_off', $entity);
+            }
+
+          }
+
+          $cuts = db_delete($table_name)
+            ->condition($energy, $cut_off, '<')
+            ->condition("deleted", "0")
+            ->execute();
+
+          // Run the updates
+          $updated = db_update($table_name)
+            ->expression($energy, $energy . ' * pow(2, (' . $timestamp . ' * 1.0 - ' . REQUEST_TIME . ') / ' . $half_life . ')')
+            ->fields(array($timestamp => REQUEST_TIME))
+            ->condition($timestamp, REQUEST_TIME, '<')
+            ->condition("deleted", "0")
+            ->execute();
+        } // bundles
+      } // entity types
     }
   }
 
@@ -397,26 +454,6 @@ function radioactivity_get_decay_profile_options_list() {
   }
 
   return $list;
-}
-
-/**
- * Register an emitter
- * Used to gather data for emitter callbacks
- */
-function _radioactivity_emitter_callback_data($type = NULL, $data = NULL) {
-  static $cache;
-  if (!is_array($cache)) {
-    $cache = array();
-  }
-  if (!isset($type)) {
-    return $cache;
-  }
-  if (isset($cache[$type])) {
-    $cache[$type] = array_merge($cache[$type], $data);
-  }
-  else {
-    $cache[$type] = $data;
-  }
 }
 
 /**
@@ -481,5 +518,23 @@ function radioactivity_ctools_plugin_directory($module, $type) {
   // Load the export_ui plugin.
   if ($type == 'export_ui') {
     return 'plugins/export_ui';
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function radioactivity_form_ctools_export_ui_list_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['#action'] == '/admin/structure/radioactivity' ||
+      $form['#action'] == '/admin/structure/radioactivity/profiles') {
+    $list = radioactivity_get_decay_profile_options_list();
+    if (isset($list['none'])) {
+      drupal_set_message(t('Radioactivity fields require a decay profile in order to function.'
+        . ' Here you can create manage import and export profiles. In short a decay profile'
+        . ' describes the way a field works: does it loose energy over time or is it a simple view counter?'
+        . ' It also describes how the intermediate data is stored.'),
+        'warning'
+      );
+    }
   }
 }

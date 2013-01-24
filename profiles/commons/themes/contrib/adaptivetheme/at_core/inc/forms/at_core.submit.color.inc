@@ -12,8 +12,7 @@
  * run if there is a problem, such the user inputting non hexadecimal CSS color
  * strings, which color module validates to avoid XSS.
  */
-
-function at_core_submit_color(&$form_state) {
+function at_core_submit_color(&$form_state, $path, $theme_name) {
   $palette = $form_state['values']['palette'];
 
   if ($form_state['values']['info']['schemes']) {

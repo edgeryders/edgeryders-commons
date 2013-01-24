@@ -1,0 +1,285 @@
+<?php
+
+/**
+ * @file
+ * Integrates the core Search module with the Facet API project.
+ */
+
+/**
+ * Implements hook_facetapi_adapters().
+ */
+function search_facetapi_facetapi_adapters() {
+  return array(
+    'search' => array(
+      'handler' => array(
+        'class' => 'SearchFacetapiAdapter',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_facetapi_query_types().
+ */
+function search_facetapi_facetapi_query_types() {
+  return array(
+    'search_term' => array(
+      'handler' => array(
+        'class' => 'SearchFacetapiTerm',
+        'adapter' => 'search',
+      ),
+    ),
+    'search_date' => array(
+      'handler' => array(
+        'class' => 'SearchFacetapiDate',
+        'adapter' => 'search',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_facetapi_searcher_info().
+ */
+function search_facetapi_facetapi_searcher_info() {
+  $info = array();
+
+  $info['search'] = array(
+    'label' => t('Search'),
+    'adapter' => 'search',
+    'path' => 'admin/config/search/settings',
+    'supports facet missing' => FALSE,
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function search_facetapi_menu_alter(&$items) {
+  $items['admin/config/search/settings/index'] = array(
+    'title' => 'Search settings',
+    'weight' => -10,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function search_facetapi_form_facetapi_realm_settings_form_alter(&$form, &$form_state) {
+  $adapter = $form['#facetapi']['adapter'];
+  if ('search' == $adapter->getId()) {
+    $active = variable_get('search_active_modules', array('node', 'user'));
+    if (empty($active['search_facetapi'])) {
+      $message = t(
+        '<em>Faceted Navigation for Search</em> is not set as an active search module in the <a href="@search-settings-url">Search Settings</a> form and is the search page the facets are displayed on.',
+        array('@search-settings-url' => url('admin/config/search/settings'))
+      );
+      drupal_set_message($message, 'warning');
+    }
+  }
+}
+
+/**
+ * Implements hook_facetapi_facet_info().
+ */
+function search_facetapi_facetapi_facet_info(array $searcher_info) {
+  $facets = array();
+  if ('search' == $searcher_info['adapter'] && isset($searcher_info['types']['node'])) {
+    $entity_type = 'node';
+
+    // Gets field mappings.
+    $mappings = module_invoke_all('search_facetapi_field_mappings');
+    drupal_alter('search_facetapi_field_mappings', $mappings);
+
+    // Iterates over fields and builds facet definitions.
+    $instances = field_info_instances($entity_type);
+    foreach (field_info_fields() as $field_name => $field) {
+      // Makes sure the field is mapped and attached to a bundle in the entity
+      // we are indexing.
+      if (isset($mappings[$field['type']]) && isset($field['bundles'][$entity_type])) {
+        $label = FALSE;
+
+        // If we don't have a label, the field should not be faceted on.
+        foreach ($field['bundles'][$entity_type] as $bundle) {
+          $display = $instances[$bundle][$field_name]['display'];
+          if (empty($display['search_index']) || 'hidden' != $display['search_index']) {
+            $label = $instances[$bundle][$field_name]['label'];
+          }
+        }
+
+        if ($label) {
+          $facets[$field_name] = $mappings[$field['type']] + array(
+            'label' => check_plain($label),
+            'field api name' => $field_name,
+            'dependency plugins' => array('bundle', 'role'),
+            'description' => t('Filter by field of type @type.', array('@type' => $field['type'])),
+          );
+        }
+
+      }
+    }
+  }
+
+  return $facets;
+}
+
+/**
+ * Implements hook_search_facetapi_field_mappings().
+ */
+function field_search_facetapi_field_mappings() {
+  $mappings = array(
+    'number_integer' => array(
+      'query types' => array('term', 'numeric_range'),
+      'query type' => 'term',
+      'facet mincount allowed' => TRUE,
+    ),
+    'number_decimal' => array(
+      'query types' => array('term', 'numeric_range'),
+      'query type' => 'term',
+      'facet mincount allowed' => TRUE,
+    ),
+    'number_float' => array(
+      'query types' => array('term', 'numeric_range'),
+      'query type' => 'term',
+      'facet mincount allowed' => TRUE,
+    ),
+  );
+
+  return $mappings;
+}
+
+/**
+ * Implements hook_search_facetapi_field_mappings().
+ */
+function taxonomy_search_facetapi_field_mappings() {
+  $mappings = array(
+    'taxonomy_term_reference' => array(
+      'map callback' => 'facetapi_map_taxonomy_terms',
+      'query type' => 'term',
+      'facet mincount allowed' => TRUE,
+    ),
+  );
+
+  return $mappings;
+}
+
+/**
+ * Implements hook_facetapi_facet_info_alter().
+ */
+function search_facetapi_facetapi_facet_info_alter(array &$facet_info, array $searcher_info) {
+  if ('search' == $searcher_info['adapter'] && isset($searcher_info['types']['node'])) {
+    $facet_info['bundle']['field'] = 'type';
+  }
+}
+
+/**
+ * Implements hook_search_info().
+ */
+function search_facetapi_search_info() {
+  return array(
+    'title' => 'Site content',
+    'path' => 'content',
+  );
+}
+
+/**
+ * Implements hook_search_access().
+ */
+function search_facetapi_search_access() {
+  return user_access('access content');
+}
+
+/**
+ * Implements hook_update_index().
+ */
+function search_facetapi_update_index() {
+  // Piggy-backs off the node index. Invokes the node module's update hook if it
+  // is not an active search module.
+  $active = variable_get('search_active_modules', array('node', 'user'));
+  if (empty($active['node'])) {
+    node_update_index();
+  }
+}
+
+/**
+ * Implements hook_search_status().
+ */
+function search_facetapi_search_status() {
+  // Piggy-backs off the node index. Invokes the node module's update hook if it
+  // is not an active search module.
+  $active = variable_get('search_active_modules', array('node', 'user'));
+  if (empty($active['node'])) {
+    return node_search_status();
+  }
+}
+
+/**
+ * Implements hook_search_execute().
+ */
+function search_facetapi_search_execute($keys = NULL, $conditions = NULL) {
+
+  // Build matching conditions.
+  $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery')->extend('PagerDefault');
+  $query->join('node', 'n', 'n.nid = i.sid');
+  $query
+    ->condition('n.status', 1)
+    ->addTag('node_access')
+    ->searchExpression($keys, 'node');
+
+  // Ensures the adapter is valid.
+  if (!$adapter = facetapi_adapter_load('search')) {
+    return array();
+  }
+
+  // Sets search keys and adds active filters.
+  $adapter->setSearchKeys($keys);
+  $adapter->addActiveFilters($query);
+
+  // Only continue if the first pass query matches.
+  $adapter->hasMatches = $query->executeFirstPass();
+  if (!$adapter->hasMatches) {
+    return array();
+  }
+
+  // Add the ranking expressions.
+  _node_rankings($query);
+
+  // Executes results, gets and stores the result count.
+  global $pager_total_items;
+  $element = PagerDefault::$maxElement;
+  $find = $query->limit(10)->execute();
+  $adapter->setResultCount($pager_total_items[$element]);
+
+  // Builds result rows.
+  $results = array();
+  foreach ($find as $item) {
+    // Render the node.
+    $node = node_load($item->sid);
+    $build = node_view($node, 'search_result');
+    unset($build['#theme']);
+    $node->rendered = drupal_render($build);
+
+    // Fetch comments for snippet.
+    $node->rendered .= ' ' . module_invoke('comment', 'node_update_index', $node);
+
+    $extra = module_invoke_all('node_search_result', $node);
+
+    $uri = entity_uri('node', $node);
+    $results[] = array(
+      'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
+      'type' => check_plain(node_type_get_name($node)),
+      'title' => $node->title,
+      'user' => theme('username', array('account' => $node)),
+      'date' => $node->changed,
+      'node' => $node,
+      'extra' => $extra,
+      'score' => $item->calculated_score,
+      'snippet' => search_excerpt($keys, $node->rendered),
+      'language' => $node->language,
+    );
+  }
+  return $results;
+}

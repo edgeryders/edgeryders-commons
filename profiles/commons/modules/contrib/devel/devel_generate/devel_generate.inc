@@ -11,8 +11,10 @@
  *  The max age of each randomly-generated user, in seconds.
  * @param $roles
  *  An array of role IDs that the users should receive.
+ * @param $pass
+ *  A string to be used as common password for all generated users.
  */
-function devel_create_users($num, $kill, $age = 0, $roles = array()) {
+function devel_create_users($num, $kill, $age = 0, $roles = array(), $pass = NULL) {
   $url = parse_url($GLOBALS['base_url']);
   if ($kill) {
     $uids = db_select('users', 'u')
@@ -45,7 +47,7 @@ function devel_create_users($num, $kill, $age = 0, $roles = array()) {
       $edit = array(
         'uid'     => NULL,
         'name'    => $name,
-        'pass'    => NULL, // No password avoids user_hash_password() which is expensive.
+        'pass'    => $pass,
         'mail'    => $name . '@' . $url['host'],
         'status'  => 1,
         'created' => REQUEST_TIME - mt_rand(0, $age),
@@ -103,6 +105,7 @@ function devel_create_users($num, $kill, $age = 0, $roles = array()) {
         // Save the user record with the new picture.
         $edit = (array) $account;
         $edit['picture'] = $file;
+        $edit['pass'] = $pass; // Reassign password as it is replaced with the hashed version in $account
         user_save($account, $edit);
       }
     }
@@ -669,9 +672,19 @@ function devel_generate_content_add_node(&$results) {
   $users = $results['users'];
   $node->uid = $users[array_rand($users)];
   $type = node_type_get_type($node);
-  $node->title = $type->has_title ? devel_create_greeking(mt_rand(2, $results['title_length']), TRUE) : '';
   $node->revision = mt_rand(0,1);
   $node->promote = mt_rand(0, 1);
+
+  if ($type->has_title) {
+    // We should not use the random function if the value is not random
+    if ($results['title_length'] < 2) {
+      $node->title = devel_create_greeking(1, TRUE);
+    }
+    else {
+      $node->title = devel_create_greeking(mt_rand(1, $results['title_length']), TRUE);
+    }
+  }
+
   // Avoid NOTICE.
   if (!isset($results['time_range'])) {
     $results['time_range'] = 0;

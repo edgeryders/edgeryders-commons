@@ -6,14 +6,34 @@ core = 7.x
 projects[addressfield][type] = "module"
 projects[addressfield][subdir] = "contrib"
 
-projects[aloha][version] = "2.x-dev"
-projects[aloha][type] = "module"
-projects[aloha][subdir] = "contrib"
+projects[acquia_connector][type] = "module"
+projects[acquia_connector][subdir] = "contrib"
+
+projects[advancedqueue][type] = "module"
+projects[advancedqueue][subdir] = "contrib"
+
+projects[apachesolr][type] = "module"
+projects[apachesolr][subdir] = "contrib"
+
+projects[apachesolr_og][version] = "1.x-dev"
+projects[apachesolr_og][type] = "module"
+projects[apachesolr_og][subdir] = "contrib"
+
+projects[apachesolr_proximity][type] = "module"
+projects[apachesolr_proximity][subdir] = "contrib"
 
 projects[connector][version] = "1.x-dev"
 projects[connector][type] = "module"
 projects[connector][subdir] = "contrib"
 
+projects[ckeditor][type] = "module"
+projects[ckeditor][subdir] = "contrib"
+projects[ckeditor][download][type] = "git"
+projects[ckeditor][download][url] = "http://git.drupal.org/project/ckeditor.git"
+; Use Libraries API for ckeditor
+; http://drupal.org/node/1063482#comment-6964504
+projects[ckeditor][download][branch] = "7.x-1.x"
+projects[ckeditor][download][revision] = "f6abbda"
 
 projects[ctools][type] = "module"
 projects[ctools][subdir] = "contrib"
@@ -22,12 +42,13 @@ projects[ctools][patch][] = "http://drupal.org/files/ctools-dependent-js-broken-
 
 projects[custom_search][type] = "module"
 projects[custom_search][subdir] = "contrib"
-projects[custom_search][download][type] = "git"
-projects[custom_search][download][url] = "http://git.drupal.org/project/custom_search.git"
-projects[custom_search][download][branch] = "7.x-1.x"
+projects[custom_search][version] = "1.x-dev"
 
 projects[date][type] = "module"
 projects[date][subdir] = "contrib"
+
+projects[date_facets][type] = "module"
+projects[date_facets][subdir] = "contrib"
 
 projects[devel][version] = "1.x-dev"
 projects[devel][type] = "module"
@@ -43,9 +64,15 @@ projects[email_registration][subdir] = "contrib"
 projects[entity][type] = "module"
 projects[entity][subdir] = "contrib"
 
+projects[entitycache][type] = "module"
+projects[entitycache][subdir] = "contrib"
+
 projects[entityreference][version] = "1.x-dev"
 projects[entityreference][type] = "module"
 projects[entityreference][subdir] = "contrib"
+
+projects[edit_profile][type] = "module"
+projects[edit_profile][subdir] = "contrib"
 
 projects[entityreference_prepopulate][type] = "module"
 projects[entityreference_prepopulate][subdir] = "contrib"
@@ -63,9 +90,10 @@ projects[flag][subdir] = "contrib"
 
 projects[flag_abuse][type] = "module"
 projects[flag_abuse][subdir] = "contrib"
-projects[flag_abuse][download][type] = "git"
-projects[flag_abuse][download][url] = "http://git.drupal.org/project/flag_abuse.git"
-projects[flag_abuse][download][branch] = "7.x-2.x"
+projects[flag_abuse][version] = "2.x-dev"
+
+projects[redirect][type] = "module"
+projects[redirect][subdir] = "contrib"
 
 projects[http_client][version] = "2.x-dev"
 projects[http_client][type] = "module"
@@ -75,9 +103,8 @@ projects[admin_icons][version] = "1.x-dev"
 projects[admin_icons][type] = "module"
 projects[admin_icons][subdir] = "contrib"
 
-projects[jquery_update][version] = "2.x-dev"
-projects[jquery_update][type] = "module"
-projects[jquery_update][subdir] = "contrib"
+projects[libraries][type] = "module"
+projects[libraries][subdir] = "contrib"
 
 projects[link][type] = "module"
 projects[link][subdir] = "contrib"
@@ -86,25 +113,32 @@ projects[menu_attributes][type] = "module"
 projects[menu_attributes][subdir] = "contrib"
 
 projects[message][type] = "module"
-projects[message][download][type] = "git"
-projects[message][download][url] = "http://git.drupal.org/project/message.git"
-projects[message][download][branch] = "7.x-1.x"
 projects[message][subdir] = "contrib"
+projects[message][version] = "1.x-dev"
+
 
 projects[message_notify][type] = "module"
-projects[message_notify][download][type] = "git"
-projects[message_notify][download][url] = "http://git.drupal.org/project/message_notify.git"
-projects[message_notify][download][branch] = "7.x-2.x"
 projects[message_notify][subdir] = "contrib"
+projects[message_notify][version] = "2.x-dev"
 
 projects[message_subscribe][type] = "module"
-projects[message_subscribe][download][type] = "git"
-projects[message_subscribe][download][url] = "http://git.drupal.org/project/message_subscribe.git"
-projects[message_subscribe][download][branch] = "7.x-1.x"
 projects[message_subscribe][subdir] = "contrib"
+projects[message_subscribe][version] = "1.x-dev"
+
+projects[memcache][type] = "module"
+projects[memcache][subdir] = "contrib"
+
+projects[metatag][type] = "module"
+projects[metatag][subdir] = "contrib"
+; Support for rel=author link in head
+; http://drupal.org/node/1865228#comment-6839604
+projects[metatag][patch][] = "http://drupal.org/files/metatag-n1865228-3.patch"
 
 projects[module_filter][type] = "module"
 projects[module_filter][subdir] = "contrib"
+
+projects[mollom][type] = "module"
+projects[mollom][subdir] = "contrib"
 
 projects[oauth][version] = "3.x-dev"
 projects[oauth][type] = "module"
@@ -117,6 +151,9 @@ projects[oauthconnector][subdir] = "contrib"
 projects[og][version] = "2.x-dev"
 projects[og][type] = "module"
 projects[og][subdir] = "contrib"
+; Language tweak for 'user has been added to [group]'
+; http://drupal.org/node/1842830
+projects[og][patch][] = "http://drupal.org/files/og-add-group-message.patch"
 
 projects[panelizer][type] = "module"
 projects[panelizer][version] = "3.x-dev"
@@ -128,17 +165,37 @@ projects[panels][subdir] = "contrib"
 ; http://drupal.org/node/1828684#comment-6694732
 projects[panels][patch][] = "http://drupal.org/files/1828684-layout-fix-6.patch"
 
-projects[queue_mail][type] = "module"
-projects[queue_mail][subdir] = "contrib"
+; PHP 5.3.9 Strict Warning on Panels Empty Value
+; http://drupal.org/node/1632898#comment-6412840
+projects[panels][patch][] = "http://drupal.org/files/panels-n1632898-15.patch"
+
+projects[pathauto][type] = "module"
+projects[pathauto][subdir] = "contrib"
+
+projects[pm_existing_pages][type] = "module"
+projects[pm_existing_pages][subdir] = "contrib"
 
 projects[quicktabs][type] = "module"
 projects[quicktabs][subdir] = "contrib"
+projects[quicktabs][version] = "3.x-dev"
 
 projects[radioactivity][type] = "module"
 projects[radioactivity][subdir] = "contrib"
+projects[radioactivity][version] = "2.x-dev"
+
 ; Notice error for accessing an undefined array element
 ; http://drupal.org/node/1816252#comment-6617208
 projects[radioactivity][patch][] = "http://drupal.org/files/undefined_array-1816252-1.patch"
+
+; Radioactivity not compatible with Memcache module
+; http://drupal.org/node/1860216
+projects[radioactivity][patch][] = "http://drupal.org/files/radioactivity-memcache.patch"
+
+projects[r4032login][type] = "module"
+projects[r4032login][subdir] = "contrib"
+
+projects[rate][type] = "module"
+projects[rate][subdir] = "contrib"
 
 projects[realname][type] = "module"
 projects[realname][subdir] = "contrib"
@@ -150,19 +207,35 @@ projects[registration][subdir] = "contrib"
 projects[rules][type] = "module"
 projects[rules][subdir] = "contrib"
 
+projects[search_facetapi][type] = "module"
+projects[search_facetapi][subdir] = "contrib"
+
+projects[sharethis][type] = "module"
+projects[sharethis][subdir] = "contrib"
+
+projects[facetapi][type] = "module"
+projects[facetapi][subdir] = "contrib"
+
+projects[rich_snippets][type] = "module"
+projects[rich_snippets][subdir] = "contrib"
+
+projects[schemaorg][type] = "module"
+projects[schemaorg][subdir] = "contrib"
+
 projects[strongarm][version] = "2.x-dev"
 projects[strongarm][type] = "module"
 projects[strongarm][subdir] = "contrib"
 
 projects[timeago][type] = "module"
 projects[timeago][subdir] = "contrib"
-projects[timeago][download][type] = "git"
-projects[timeago][download][url] = "http://git.drupal.org/project/timeago.git"
-projects[timeago][download][branch] = "7.x-2.x"
+projects[timeago][version] = "2.x-dev"
 
 ; Provide a dedicated date type:
 ; http://drupal.org/node/1427226#comment-6638836
 projects[timeago][patch][] = "http://drupal.org/files/1427226-timeago-date-type.patch"
+
+projects[title][type] = "module"
+projects[title][subdir] = "contrib"
 
 projects[token][type] = "module"
 projects[token][subdir] = "contrib"
@@ -180,6 +253,9 @@ projects[views_load_more][subdir] = "contrib"
 projects[views_bulk_operations][type] = "module"
 projects[views_bulk_operations][subdir] = "contrib"
 
+projects[views_litepager][type] = "module"
+projects[views_litepager][subdir] = "contrib"
+
 projects[votingapi][type] = "module"
 projects[votingapi][subdir] = "contrib"
 
@@ -187,146 +263,118 @@ projects[votingapi][subdir] = "contrib"
 
 projects[commons_activity_streams][type] = "module"
 projects[commons_activity_streams][subdir] = "contrib"
-projects[commons_activity_streams][download][type] = "git"
-projects[commons_activity_streams][download][url] = "http://git.drupal.org/project/commons_activity_streams.git"
-projects[commons_activity_streams][download][branch] = "7.x-3.x"
+projects[commons_activity_streams][version] = "3.x-dev"
 
 projects[commons_body][type] = "module"
 projects[commons_body][subdir] = "contrib"
-projects[commons_body][download][type] = "git"
-projects[commons_body][download][url] = "http://git.drupal.org/project/commons_body.git"
-projects[commons_body][download][branch] = "7.x-3.x"
+projects[commons_body][version] = "3.x-dev"
 
 projects[commons_bw][type] = "module"
 projects[commons_bw][subdir] = "contrib"
-projects[commons_bw][download][type] = "git"
-projects[commons_bw][download][url] = "http://git.drupal.org/project/commons_bw.git"
-projects[commons_bw][download][branch] = "7.x-3.x"
+projects[commons_bw][version] = "3.x-dev"
 
 projects[commons_content_moderation][type] = "module"
 projects[commons_content_moderation][subdir] = "contrib"
-projects[commons_content_moderation][download][type] = "git"
-projects[commons_content_moderation][download][url] = "http://git.drupal.org/project/commons_content_moderation.git"
-projects[commons_content_moderation][download][branch] = "7.x-3.x"
+projects[commons_content_moderation][version] = "3.x-dev"
 
 projects[commons_documents][type] = "module"
 projects[commons_documents][subdir] = "contrib"
-projects[commons_documents][download][type] = "git"
-projects[commons_documents][download][url] = "http://git.drupal.org/project/commons_documents.git"
-projects[commons_documents][download][branch] = "7.x-3.x"
+projects[commons_documents][version] = "3.x-dev"
 
 projects[commons_groups][type] = "module"
 projects[commons_groups][subdir] = "contrib"
-projects[commons_groups][download][type] = "git"
-projects[commons_groups][download][url] = "http://git.drupal.org/project/commons_groups.git"
-projects[commons_groups][download][branch] = "7.x-3.x"
+projects[commons_groups][version] = "3.x-dev"
 
 projects[commons_events][type] = "module"
 projects[commons_events][subdir] = "contrib"
-projects[commons_events][download][type] = "git"
-projects[commons_events][download][url] = "http://git.drupal.org/project/commons_events.git"
-projects[commons_events][download][branch] = "7.x-3.x"
+projects[commons_events][version] = "3.x-dev"
 
 projects[commons_featured][type] = "module"
 projects[commons_featured][subdir] = "contrib"
-projects[commons_featured][download][type] = "git"
-projects[commons_featured][download][url] = "http://git.drupal.org/project/commons_featured.git"
-projects[commons_featured][download][branch] = "7.x-3.x"
+projects[commons_featured][version] = "3.x-dev"
 
 projects[commons_follow][type] = "module"
 projects[commons_follow][subdir] = "contrib"
-projects[commons_follow][download][type] = "git"
-projects[commons_follow][download][url] = "http://git.drupal.org/project/commons_follow.git"
-projects[commons_follow][download][branch] = "7.x-3.x"
+projects[commons_follow][version] = "3.x-dev"
 
 projects[commons_location][type] = "module"
 projects[commons_location][subdir] = "contrib"
-projects[commons_location][download][type] = "git"
-projects[commons_location][download][url] = "http://git.drupal.org/project/commons_location.git"
-projects[commons_location][download][branch] = "7.x-3.x"
+projects[commons_location][version] = "3.x-dev"
 
 projects[commons_misc][type] = "module"
 projects[commons_misc][subdir] = "contrib"
-projects[commons_misc][download][type] = "git"
-projects[commons_misc][download][url] = "http://git.drupal.org/project/commons_misc.git"
-projects[commons_misc][download][branch] = "7.x-3.x"
+projects[commons_misc][version] = "3.x-dev"
+
 
 projects[commons_notices][type] = "module"
 projects[commons_notices][subdir] = "contrib"
-projects[commons_notices][download][type] = "git"
-projects[commons_notices][download][url] = "http://git.drupal.org/project/commons_notices.git"
-projects[commons_notices][download][branch] = "7.x-3.x"
+projects[commons_notices][version] = "3.x-dev"
 
 projects[commons_notify][type] = "module"
 projects[commons_notify][subdir] = "contrib"
-projects[commons_notify][download][type] = "git"
-projects[commons_notify][download][url] = "http://git.drupal.org/project/commons_notify.git"
-projects[commons_notify][download][branch] = "7.x-3.x"
+projects[commons_notify][version] = "3.x-dev"
 
 projects[commons_pages][type] = "module"
 projects[commons_pages][subdir] = "contrib"
-projects[commons_pages][download][type] = "git"
-projects[commons_pages][download][url] = "http://git.drupal.org/project/commons_pages.git"
-projects[commons_pages][download][branch] = "7.x-3.x"
+projects[commons_pages][version] = "3.x-dev"
 
-projects[commons_posts][type] = "module"
 projects[commons_posts][subdir] = "contrib"
+projects[commons_posts][type] = "module"
 projects[commons_posts][download][type] = "git"
 projects[commons_posts][download][url] = "http://git.drupal.org/project/commons_posts.git"
 projects[commons_posts][download][branch] = "7.x-3.x"
 
+
+projects[commons_polls][type] = "module"
+projects[commons_polls][subdir] = "contrib"
+projects[commons_polls][version] = "3.x-dev"
+
 projects[commons_profile_base][type] = "module"
 projects[commons_profile_base][subdir] = "contrib"
-projects[commons_profile_base][version] = "2.x-dev"
+projects[commons_profile_base][version] = "3.x-dev"
 
 projects[commons_profile_social][type] = "module"
 projects[commons_profile_social][subdir] = "contrib"
-projects[commons_profile_social][download][type] = "git"
-projects[commons_profile_social][download][url] = "http://git.drupal.org/project/commons_profile_social.git"
-projects[commons_profile_social][download][branch] = "7.x-3.x"
+projects[commons_profile_social][version] = "3.x-dev"
+
+projects[commons_q_a][type] = "module"
+projects[commons_q_a][subdir] = "contrib"
+projects[commons_q_a][version] = "3.x-dev"
 
 projects[commons_radioactivity][type] = "module"
 projects[commons_radioactivity][subdir] = "contrib"
-projects[commons_radioactivity][download][type] = "git"
-projects[commons_radioactivity][download][url] = "http://git.drupal.org/project/commons_radioactivity.git"
-projects[commons_radioactivity][download][branch] = "7.x-3.x"
+projects[commons_radioactivity][version] = "3.x-dev"
 
+projects[commons_like][type] = "module"
+projects[commons_like][subdir] = "contrib"
+projects[commons_like][version] = "3.x-dev"
 
 projects[commons_search][type] = "module"
 projects[commons_search][subdir] = "contrib"
-projects[commons_search][download][type] = "git"
-projects[commons_search][download][url] = "http://git.drupal.org/project/commons_search.git"
-projects[commons_search][download][branch] = "7.x-3.x"
+projects[commons_search][version] = "3.x-dev"
 
 projects[commons_site_homepage][type] = "module"
 projects[commons_site_homepage][subdir] = "contrib"
-projects[commons_site_homepage][download][type] = "git"
-projects[commons_site_homepage][download][url] = "http://git.drupal.org/project/commons_site_homepage.git"
-projects[commons_site_homepage][download][branch] = "7.x-3.x"
+projects[commons_site_homepage][version] = "3.x-dev"
+
+projects[commons_utility_links][type] = "module"
+projects[commons_utility_links][subdir] = "contrib"
+projects[commons_utility_links][version] = "3.x-dev"
 
 projects[commons_user_profile_pages][type] = "module"
 projects[commons_user_profile_pages][subdir] = "contrib"
-projects[commons_user_profile_pages][download][type] = "git"
-projects[commons_user_profile_pages][download][url] = "http://git.drupal.org/project/commons_user_profile_pages.git"
-projects[commons_user_profile_pages][download][branch] = "7.x-3.x"
+projects[commons_user_profile_pages][version] = "3.x-dev"
 
 projects[commons_wikis][type] = "module"
 projects[commons_wikis][subdir] = "contrib"
-projects[commons_wikis][download][type] = "git"
-projects[commons_wikis][download][url] = "http://git.drupal.org/project/commons_wikis.git"
-projects[commons_wikis][download][branch] = "7.x-3.x"
+projects[commons_wikis][version] = "3.x-dev"
 
 projects[commons_wysiwyg][type] = "module"
 projects[commons_wysiwyg][subdir] = "contrib"
-projects[commons_wysiwyg][download][type] = "git"
-projects[commons_wysiwyg][download][url] = "http://git.drupal.org/project/commons_wysiwyg.git"
-projects[commons_wysiwyg][download][branch] = "7.x-3.x"
 
 projects[commons_topics][type] = "module"
 projects[commons_topics][subdir] = "contrib"
-projects[commons_topics][download][type] = "git"
-projects[commons_topics][download][url] = "http://git.drupal.org/project/commons_topics.git"
-projects[commons_topics][download][branch] = "7.x-3.x"
+projects[commons_topics][version] = "3.x-dev"
 
 ; Contributed themes.
 
@@ -335,24 +383,24 @@ projects[adaptivetheme][subdir] = "contrib"
 projects[adaptivetheme][download][type] = "git"
 projects[adaptivetheme][download][url] = "http://git.drupal.org/project/adaptivetheme.git"
 projects[adaptivetheme][download][branch] = "7.x-3.x"
-; Refactor require_once() instances into discrete functions:
-; http://drupal.org/node/1776730#comment-6705274
-projects[adaptivetheme][patch][] = "http://drupal.org/files/1776730-adaptivetheme-refactor-require-into-discrete-functions-21.patch"
+projects[adaptivetheme][download][revision] = "8e46acc"
 
 projects[sky][type] = "theme"
 projects[sky][subdir] = "contrib"
 
 projects[commons_origins][type] = "theme"
-projects[commons_origins][download][type] = "git"
-projects[commons_origins][download][url] = "http://git.drupal.org/project/commons_origins.git"
-projects[commons_origins][download][branch] = "7.x-3.x"
+projects[commons_origins][version] = "3.x-dev"
 projects[commons_origins][subdir] = "contrib"
 
 ; Libraries.
 ; NOTE: These need to be listed in http://drupal.org/packaging-whitelist.
 
+libraries[ckeditor][download][type] = "get"
+libraries[ckeditor][download][url] = "http://download.cksource.com/CKEditor/CKEditor/CKEditor%204.0/ckeditor_4.0_standard.tar.gz"
+libraries[ckeditor][type] = "libraries"
+
 libraries[timeago][download][type] = "get"
-libraries[timeago][destination] = "modules/contrib"
+libraries[timeago][type] = "libraries"
 ; We'd like to switch to a specific commit hash,
 ; pending http://drupal.org/node/1821996#comment-6678062.
 libraries[timeago][download][url] = "https://raw.github.com/rmm5t/jquery-timeago/master/jquery.timeago.js"

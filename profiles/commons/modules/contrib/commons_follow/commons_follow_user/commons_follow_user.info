@@ -3,31 +3,30 @@ description = Lets users follow other users.
 core = 7.x
 package = Commons - Building blocks
 php = 5.2.4
+version = 7.x-3.x-dev
 project = commons_follow
 dependencies[] = commons_follow
 dependencies[] = entityreference
 dependencies[] = flag
 dependencies[] = message
+dependencies[] = views
 dependencies[] = views_content
-datestamp = 1348251874
+dependencies[] = views_litepager
+dependencies[] = views_load_more
+datestamp = 1356630025
 features[ctools][] = views:views_default:3.0
 features[features_api][] = api:1
 features[field_instance][] = message-commons_follow_user_user_followed-field_target_users
 features[flag][] = commons_follow_user
+features[flag][] = email_user
 features[message_type][] = commons_follow_user_user_followed
+features[views_view][] = commons_follow_user
 features[views_view][] = commons_follow_user_followers
 features[views_view][] = commons_follow_user_following
 
-
-; Information added by drush on 2012-11-08
-version = ""
+; Information added by drupal.org packaging script on 2012-12-28
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_follow"
-datestamp = "1352387638"
-
-
-
-; Information added by drush on 2012-11-15
-version = ""
-project = "commons_follow"
-datestamp = "1353011136"
+datestamp = "1356655518"
 

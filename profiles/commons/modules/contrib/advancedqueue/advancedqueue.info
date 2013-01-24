@@ -1,0 +1,21 @@
+name = Advanced Queues
+description = Helper module for advanced queuing.
+package = Other
+core = 7.x
+
+files[] = advancedqueue.queue.inc
+
+; Views
+files[] = views/advancedqueue_handler_field_title.inc
+files[] = views/advancedqueue_handler_field_status.inc
+files[] = views/advancedqueue_handler_filter_status.inc
+
+; Test
+files[] = tests/advancedqueue.test
+
+; Information added by drupal.org packaging script on 2012-11-25
+version = "7.x-1.0-alpha2"
+core = "7.x"
+project = "advancedqueue"
+datestamp = "1353839756"
+

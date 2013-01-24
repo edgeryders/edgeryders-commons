@@ -39,6 +39,7 @@ function _radioactivity_light_initialization() {
     if (file_exists($config_file)) {
 
       include ($config_file);
+
     }
     else {
 
@@ -87,7 +88,11 @@ function _radioactivity_require_bootstrapping() {
  * Generate a checksum for given data
  */
 function _radioactivity_checksum_generate($data) {
-  return md5(VAR_RADIOACTIVITY_CHECKSUM_SALT . $data);
+  $temp = $data;
+  unset($temp['checksum']);
+  ksort($temp);
+  $temp = join(',', $temp);
+  return md5(VAR_RADIOACTIVITY_CHECKSUM_SALT . $temp);
 }
 
 /**
@@ -100,26 +105,15 @@ function _radioactivity_checksum_validate($data, $checksum) {
 /**
  * Validate (and filter) a payload
  */
-function _radioactivity_validate_payload($pl) {
-  if (!isset($pl['checksum']) || !isset($pl['data'])) {
-    return FALSE;
-  }
-  if (!_radioactivity_checksum_validate($pl['data'], $pl['checksum'])) {
-    return FALSE;
-  }
-  $payload = array(
-    'checksum' => $pl['checksum'],
-    'data' => $pl['data'],
-  );
-  return $payload;
+function _radioactivity_validate_incident($incident) {
+  return _radioactivity_checksum_validate($incident, $incident['checksum']);
 }
 
 /**
  * Prepare payload
  */
-function _radioactivity_prepare_payload($data) {
-  return array(
-    'checksum' => _radioactivity_checksum_generate($data),
-    'data' => $data,
-  );
+function _radioactivity_prepare_incident($incident) {
+  ksort($incident);
+  $incident['checksum'] = _radioactivity_checksum_generate($incident);
+  return $incident;
 }

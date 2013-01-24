@@ -4,7 +4,6 @@
  * @file
  * Generate form elments for the Panel and Gpanel Reponsive Layout settings.
  */
-
 function at_core_responsive_panels_form(&$form, $theme_name) {
   // Supported devices
   $devices = array(

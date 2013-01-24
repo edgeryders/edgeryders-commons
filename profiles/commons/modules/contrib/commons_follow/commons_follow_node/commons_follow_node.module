@@ -6,8 +6,6 @@
 
 include_once 'commons_follow_node.features.inc';
 
-
-
 /**
  * Implements hook_commons_follow_get_nids().
  */
@@ -17,7 +15,6 @@ function commons_follow_node_commons_follow_get_nids($account, $options) {
 
   // Get subscribe flag IDs.
   $flag_ids = commons_follow_get_subscription_flags_ids('node');
-
   if (empty($flag_ids)) {
     return array();
   }
@@ -29,14 +26,12 @@ function commons_follow_node_commons_follow_get_nids($account, $options) {
   }
 
   $result = $query
-    ->addTag('node_access')
     ->condition('fid', $flag_ids, 'IN')
     ->condition('uid', $account->uid, '=')
     ->condition('content_type', 'node', '=')
     ->fields('f',array('content_id'))
     ->execute()
     ->fetchAll();
-
   $nids = array();
   foreach($result as $row) {
     $nids[] = (integer) $row->content_id;
@@ -44,11 +39,6 @@ function commons_follow_node_commons_follow_get_nids($account, $options) {
 
   return $nids;
 }
-
-
-///////////////
-
-
 
 /**
 * Implements hook_commons_follow_get_message_ids().
@@ -62,27 +52,35 @@ function commons_follow_node_commons_follow_get_message_ids(&$followed_mids, $fo
   }
 }
 
-// When Commons Notify is enabled, return a list of UIDs that shuld be notified
-// about a particular message.
-function commons_follow_users_to_notify($message) {
-  //Return the appropriate query depending on message type...
-  //$result = db_query("SELECT fc.uid FROM {flag_content} fc WHERE fc.content_type = 'node" AND fc.content_id = :nid;
+/**
+ * Implements hook_node_insert().
+ */
+function commons_follow_node_node_insert($node) {
+  // The owner of the content automatically follows the content
+  commons_follow_node_follow_node($node->nid, $node->type, $node->uid);
 }
 
 /**
-* Implements hook_commons_follow_get_following_uids().
-*/
-function commons_follow_node_commons_follow_get_following_uids(&$following_uids, $message) {
-  // We only care about target nodes.
-  if (empty($message->field_target_nodes)) {
-    return;
-  }
-  foreach ($message->field_target_nodes[LANGUAGE_NONE] as $field) {
-    $target_nids[] = $field['target_id'];
-  }
-  // Find the UIDs who are following the target nodes.
-  $result = db_query("SELECT fc.uid FROM {flag_content} fc WHERE fc.content_type = 'node' AND fc.content_id IN(:target_nids) AND fc.fid IN (:commons_follow_flag_ids)", array(':target_nids' => array_values($target_nids), ':commons_follow_flag_ids' => array_keys(commons_follow_get_flag_ids())));
-  foreach ($result as $this_result) {
-    $following_uids[$this_result->uid] = $this_result->uid;
+ * Implements hook_comment_insert().
+ */
+function commons_follow_node_comment_insert($comment) {
+  // The user who comment a node automatically follows that content
+  $content_type = str_replace('comment_node_', '', $comment->node_type);
+  commons_follow_node_follow_node($comment->nid, $content_type, $comment->uid);
+}
+
+/**
+ * Let a user to follow a node.
+ *
+ * @see commons_follow_node_comment_insert
+ * @see commons_follow_node_node_insert
+ */
+function commons_follow_node_follow_node($nid, $content_type, $user_id = NULL) {
+  $flag = flag_get_flag('commons_follow_node');
+
+  // Check if this content type use the "Individual nodes" flag
+  if (in_array($content_type, $flag->types)) {
+    $account = isset($user_id) ? user_load($user_id) : NULL;
+    $flag->flag('flag', $nid, $account);
   }
 }

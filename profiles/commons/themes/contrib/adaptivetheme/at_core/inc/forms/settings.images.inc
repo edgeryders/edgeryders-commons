@@ -4,8 +4,7 @@
  * @file
  * Generate form elments for the Image styles settings.
  */
-
-function at_images_form(&$form) {
+function at_core_images_form(&$form) {
   $form['at']['images'] = array(
     '#type' => 'fieldset',
     '#title' => t('Image Settings'),

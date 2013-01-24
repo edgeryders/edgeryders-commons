@@ -4,10 +4,7 @@
  * @file
  * Generate form elments for the Headings Styles settings.
  */
-
-
 function at_core_headings_form(&$form) {
-
   // Title styles
   $form['at']['titles'] = array(
     '#type' => 'fieldset',

@@ -4,7 +4,6 @@
  * @file
  * Generate settings for the Custom CSS form.
  */
-
 function at_core_custom_css_form(&$form) {
   $form['at']['custom-styles'] = array(
     '#type' => 'fieldset',

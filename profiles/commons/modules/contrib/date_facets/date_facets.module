@@ -1,0 +1,74 @@
+<?php
+
+/**
+ * @file
+ * Provides date range facets that are similar to implementations in major search engines.
+ */
+
+/**
+ * Implements hook_facetapi_facet_info_alter().
+ *
+ * @see date_facets_add_widget()
+ */
+function date_facets_facetapi_facet_info_alter(array &$facet_info, array $searcher_info) {
+  switch ($searcher_info['adapter']) {
+    case 'apachesolr':
+    case 'search':
+      date_facets_associate_widget($facet_info);
+      break;
+  }
+}
+
+/**
+ * Associates all date fields with the "date_range" query type.
+ *
+ * @param array &$facet_info
+ *   The facet definitions passed to hook_facetapi_facet_info_alter().
+ */
+function date_facets_associate_widget(array &$facet_info) {
+  foreach ($facet_info as $name => $info) {
+    $query_types = array_flip($info['query types']);
+    if (isset($query_types['date'])) {
+      $facet_info[$name]['query types'][] = 'date_range';
+    }
+  }
+}
+
+/**
+ * Returns render arrays for all date ranges.
+ *
+ * @return array
+ *   An associative array of date ranges.
+ *
+ * @todo Implement an alter hook?
+ */
+function date_facets_get_ranges() {
+  $build = array();
+
+  $build['past_hour'] = array(
+    '#count' => NULL,
+    '#markup' => t('Past hour'),
+  );
+
+  $build['past_24_hours'] = array(
+    '#count' => NULL,
+    '#markup' => t('Past 24 hours'),
+  );
+
+  $build['past_week'] = array(
+    '#count' => NULL,
+    '#markup' => t('Past week'),
+  );
+
+  $build['past_month'] = array(
+    '#count' => NULL,
+    '#markup' => t('Past month'),
+  );
+
+  $build['past_year'] = array(
+    '#count' => NULL,
+    '#markup' => t('Past year'),
+  );
+
+  return $build;
+}

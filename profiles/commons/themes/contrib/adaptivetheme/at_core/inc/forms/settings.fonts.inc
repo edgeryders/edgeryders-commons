@@ -4,8 +4,7 @@
  * @file
  * Generate form elments for the font settings.
  */
-
-function at_fonts_form(&$form) {
+function at_core_fonts_form(&$form) {
   // Get the font elements array, this holds options and settings for each font type
   $form_elements = font_elements();
 

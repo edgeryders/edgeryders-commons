@@ -4,7 +4,6 @@
  * @file
  * Generate form elments for the Page Layout settings.
  */
-
 function at_core_page_layout_form(&$form, $theme_name) {
   // Get an array of device groups with option values
   $device_group_options = responsive_page_layouts_device_group_options($theme_name);
@@ -44,7 +43,6 @@ function at_core_page_layout_form(&$form, $theme_name) {
 
   // Set a message for when responsive layout is turned off
   $disable_message = t('<p>The responsive layout is disabled, only the Standard layout is now used.</p><p>To re-enable uncheck the "Disable responsive layout and styles" checkbox under the "Settings" tab.</p>');
-
 
   /*****************************************************************************
    *
@@ -208,7 +206,6 @@ function at_core_page_layout_form(&$form, $theme_name) {
     '#required' => TRUE,
   );
 
-
   /*****************************************************************************
    *
    * Tablet
@@ -230,7 +227,6 @@ function at_core_page_layout_form(&$form, $theme_name) {
       '#markup' => '<div class="messages warning">' . $disable_message . '</div>',
     );
   }
-
 
   /*******************
    * Tablet landscape
@@ -374,7 +370,6 @@ function at_core_page_layout_form(&$form, $theme_name) {
     '#required' => TRUE,
   );
 
-
   /******************
    * Tablet portrait
    *****************/
@@ -497,7 +492,6 @@ function at_core_page_layout_form(&$form, $theme_name) {
     '#required' => TRUE,
   );
 
-
   // Tablet portrait Media queries
   $form['at-settings']['tablet']['portrait']['tablet-portrait-media-queries-wrapper'] = array(
     '#type' => 'fieldset',
@@ -517,7 +511,6 @@ function at_core_page_layout_form(&$form, $theme_name) {
     '#size' => 100,
     '#required' => TRUE,
   );
-
 
   /*****************************************************************************
    *
@@ -540,7 +533,6 @@ function at_core_page_layout_form(&$form, $theme_name) {
       '#markup' => '<div class="messages warning">' . $disable_message . '</div>',
     );
   }
-
 
   /***********************
    * Smartphone landscape
@@ -632,7 +624,6 @@ function at_core_page_layout_form(&$form, $theme_name) {
     '#type' => 'hidden',
     '#default_value' => at_get_setting('smartphone_landscape_page_unit'),
   );
-
 
   /**********************
    * Smartphone portrait

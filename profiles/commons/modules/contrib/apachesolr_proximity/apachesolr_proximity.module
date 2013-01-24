@@ -1,0 +1,92 @@
+<?php
+
+/**
+ * @file
+ * Applies proximity boosting to Solr searches so that the distance between two
+ * or more terms is factored in the relevancy.
+ */
+
+/**
+ * Regex pattern used to parse terms and phrases from the search keywords.
+ */
+define('APACHESOLR_PROXIMITY_REGEX', '/ (-?)("[^"]+"|[^" ]+)/i');
+
+/**
+ * Regex pattern used to parse terms and phrases from the search keywords.
+ */
+define('APACHESOLR_PROXIMITY_VARIABLE', 'apachesolr_proximity_boost');
+
+/**
+ * Sets the proximity boost for an enviromnent.
+ *
+ * @param string $env_id
+ *   The machine name of the environment.
+ * @param float $boost
+ *   The boost factor.
+ */
+function apachesolr_proximity_set_boost($env_id, $boost) {
+  apachesolr_environment_variable_set($env_id, APACHESOLR_PROXIMITY_VARIABLE, $boost);
+}
+
+/**
+ * Gets the proximity boost for an enviromnent.
+ *
+ * @param string $env_id
+ *   The machine name of the environment.
+ *
+ * @return float
+ *   The boost factor.
+ */
+function apachesolr_proximity_get_boost($env_id) {
+  return apachesolr_environment_variable_get($env_id, APACHESOLR_PROXIMITY_VARIABLE, '8.0');
+}
+
+/**
+ * Resets the proximity boost for an enviromnent to its default value (8.0).
+ *
+ * @param string $env_id
+ *   The machine name of the environment.
+ */
+function apachesolr_proximity_reset_boost($env_id) {
+  apachesolr_environment_variable_del($env_id, APACHESOLR_PROXIMITY_VARIABLE);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter for apachesolr_search_bias_form.
+ */
+function apachesolr_proximity_form_apachesolr_search_bias_form_alter(&$form, &$form_state) {
+
+  $weights = drupal_map_assoc(array('21.0', '13.0', '8.0', '5.0', '3.0', '2.0', '1.0', '0.8', '0.5', '0.3', '0.2', '0.1'));
+
+  $form['proximity_bias'] = array(
+    '#title' => t('Term proximity bias'),
+    '#type' => 'fieldset',
+    '#group' => 'bias_tabs',
+    '#description' => t('Specificy the importance of the distance between two or more terms when calculating the relevancy.'),
+  );
+
+  $form['proximity_bias'][APACHESOLR_PROXIMITY_VARIABLE] = array(
+    '#type' => 'select',
+    '#options' => $weights,
+    '#title' => t('Term proximity'),
+    '#default_value' => apachesolr_proximity_get_boost($form['#env_id']),
+  );
+
+  $form['actions']['submit']['#submit'][] = 'apachesolr_proximity_bias_form_submit';
+  $form['actions']['reset']['#submit'][] = 'apachesolr_proximity_bias_form_reset';
+}
+
+/**
+ * Form submission handler for apachesolr_search_bias_form.
+ */
+function apachesolr_proximity_bias_form_submit($form, &$form_state) {
+  $boost = $form_state['values'][APACHESOLR_PROXIMITY_VARIABLE];
+  apachesolr_proximity_set_boost($form['#env_id'], $boost);
+}
+
+/**
+ * Form submission handler for apachesolr_search_bias_form.
+ */
+function apachesolr_proximity_bias_form_reset($form, &$form_state) {
+  apachesolr_proximity_reset_boost($form['#env_id']);
+}

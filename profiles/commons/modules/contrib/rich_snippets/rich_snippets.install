@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Rich Snippets module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function rich_snippets_install() {
+  variable_set('date_format_rich_snippets_published_date', 'M t, Y');
+  variable_set('date_format_rich_snippets_event_date', 'D, M t, Y');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function rich_snippets_uninstall() {
+  variable_del('date_format_rich_snippets_published_date');
+  variable_del('date_format_rich_snippets_event_date');
+}
+
+/**
+ * Remove the bad date formats discovered in issue #1874416.
+ */
+function rich_snippets_update_7100() {
+  // Update the variables to point to the new, correct values.
+  variable_set('date_format_rich_snippets_event_date', 'D, M j, Y');
+  variable_set('date_format_rich_snippets_published_date', 'M j, Y');
+
+  // Delete the bad formats form the database.
+  db_delete('date_formats')
+    ->condition('type', 'rich_snippets_published_date')
+    ->condition('format', 'M t, Y')
+    ->execute();
+  db_delete('date_formats')
+    ->condition('type', 'rich_snippets_event_date')
+    ->condition('format', 'D, M t, Y')
+    ->execute();
+}

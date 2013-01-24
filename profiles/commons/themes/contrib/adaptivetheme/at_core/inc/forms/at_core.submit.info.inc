@@ -8,7 +8,6 @@
  * current values - useful for migration or simply capturing the current
  * theme settings as defaults.
  */
-
 function at_core_submit_info(&$form_state, $theme_name, $path) {
   $values = $form_state['values'];
   $theme_settings = $values;
@@ -135,8 +134,8 @@ function at_core_submit_info(&$form_state, $theme_name, $path) {
       $dynamic_settings = implode("\n", $dynamic_settings_info);
     }
     if (!empty($static_settings_info) && !empty($dynamic_settings_info)) {
-      $combined_values = $static_settings . "\n" . $dynamic_settings; // ideally run a sanity check but all of them convert entities, which won't work for code
-      $filepath = $path . '/' . $theme_name . '_settings.info';
+      $combined_values = $static_settings . "\n" . $dynamic_settings; // ideally run a sanity check but all of them convert entities
+      $filepath = $path . '/' . $theme_name . '_settings.info.txt';
       file_unmanaged_save_data($combined_values, $filepath, FILE_EXISTS_REPLACE);
     }
   }

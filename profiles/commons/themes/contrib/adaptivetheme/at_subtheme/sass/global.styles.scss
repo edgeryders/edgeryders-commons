@@ -1795,13 +1795,13 @@ tr {
  * Core sets white-space to nowrap, which makes no sense
  */
 #forum td {
-  .created,
-  .posts,
-  .topics,
-  .last-reply,
-  .replies,
-  .pager {
-     white-space: normal;
+  &.created,
+  &.posts,
+  &.topics,
+  &.last-reply,
+  &.replies,
+  &.pager {
+    white-space: normal;
   }
 }
 

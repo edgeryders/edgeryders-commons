@@ -13,9 +13,9 @@ features[ctools][] = views:views_default:3.0
 features[features_api][] = api:1
 features[views_view][] = activity_group
 
-
-; Information added by drush on 2012-11-15
-version = ""
+; Information added by drupal.org packaging script on 2012-12-28
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_activity_streams"
-datestamp = "1353011139"
+datestamp = "1356655515"
 

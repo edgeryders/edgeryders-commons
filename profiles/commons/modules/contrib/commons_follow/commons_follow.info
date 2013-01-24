@@ -4,17 +4,21 @@ core = 7.x
 package = Commons - Building blocks
 php = 5.2.4
 project = commons_follow
+dependencies[] = ctools
 dependencies[] = entityreference
 dependencies[] = features
+dependencies[] = field_sql_storage
 dependencies[] = message_subscribe
 dependencies[] = strongarm
-datestamp = 1350676268
+datestamp = 1354747305
 features[ctools][] = strongarm:strongarm:1
 features[features_api][] = api:1
 features[field_base][] = field_target_comments
 features[field_base][] = field_target_nodes
 features[field_base][] = field_target_users
+features[image][] = 50x50_avatar
 features[variable][] = message_subscribe_flag_prefix
+features_exclude[dependencies][image] = image
 files[] = includes/views/commons_follow.views.inc
 files[] = includes/views/handlers/commons_follow_handler_filter_follow.inc
 files[] = includes/views/handlers/commons_follow_plugin_argument_default_node.inc
@@ -22,15 +26,9 @@ files[] = includes/views/handlers/commons_follow_plugin_argument_default_message
 files[] = includes/views/handlers/commons_follow_user_follow_filter.inc
 files[] = includes/views/handlers/commons_follow_user_follow_filter_message.inc
 
-; Information added by drush on 2012-11-08
-version = ""
+; Information added by drupal.org packaging script on 2012-12-28
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_follow"
-datestamp = "1352387638"
-
-
-
-; Information added by drush on 2012-11-15
-version = ""
-project = "commons_follow"
-datestamp = "1353011136"
+datestamp = "1356655518"
 

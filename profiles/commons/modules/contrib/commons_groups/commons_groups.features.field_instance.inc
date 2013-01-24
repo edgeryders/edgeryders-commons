@@ -9,20 +9,15 @@
  */
 function commons_groups_field_default_field_instances() {
   $field_instances = array();
-   // Get a list of content types that should have the og_groups_ref field added.
-  // Modules can alter this list by implementing hook_strongarm_alter().
-  $commons_groups_entity_types = commons_groups_get_entity_types();
 
-  if (!empty($commons_groups_entity_types['node'])) {
-    $field_instances = array();
-    foreach($commons_groups_entity_types['node'] as $type => $enabled) {
-      if ($enabled) {
-        commons_groups_field_definition($field_instances, $type);  
+  $commons_groups_entity_types = commons_groups_get_group_content_entity_types();
+  if (!empty($commons_groups_entity_types)) {
+    foreach ($commons_groups_entity_types as $entity_type => $bundles) {
+      foreach(array_keys($bundles) as $bundle) {
+        commons_groups_field_definition($field_instances, $entity_type, $bundle);
       }
-      
     }
   }
-
 
   // Exported field_instance: 'node-group-body'
   $field_instances['node-group-body'] = array(
@@ -158,6 +153,46 @@ function commons_groups_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-post-field_topics'
+  $field_instances['node-group-field_topics'] = array(
+    'bundle' => 'group',
+    'default_value' => NULL,
+    'deleted' => '0',
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'taxonomy',
+        'settings' => array(),
+        'type' => 'taxonomy_term_reference_link',
+        'weight' => 4,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_topics',
+    'label' => 'Topics',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'taxonomy',
+      'settings' => array(
+        'autocomplete_path' => 'taxonomy/autocomplete',
+        'size' => 60,
+      ),
+      'type' => 'taxonomy_autocomplete',
+      'weight' => '6',
+    ),
+  );
+
   // Translatables
   // Included for use with string extractors like potx.
   t('Determine if this is an OG group.');
@@ -170,10 +205,10 @@ function commons_groups_field_default_field_instances() {
 }
 
 
-function commons_groups_field_definition(&$field_instances, $type) {
+function commons_groups_field_definition(&$field_instances, $entity_type, $bundle) {
   // Exported field_instance: 'node-post-og_group_ref'
-   $field_instances["node-$type-og_group_ref"] = array(
-    'bundle' => $type,
+   $field_instances["$entity_type-$bundle-og_group_ref"] = array(
+    'bundle' => $bundle,
     'default_value' => NULL,
     'default_value_function' => 'commons_groups_entityreference_default_value',
     'deleted' => '0',
@@ -193,9 +228,9 @@ function commons_groups_field_definition(&$field_instances, $type) {
         'weight' => 0,
       ),
     ),
-    'entity_type' => 'node',
+    'entity_type' => $entity_type,
     'field_name' => 'og_group_ref',
-    'label' => 'Groups audience',
+    'label' => 'Groups',
     'required' => 0,
     'settings' => array(
       'behaviors' => array(
@@ -235,7 +270,7 @@ function commons_groups_field_definition(&$field_instances, $type) {
       'module' => 'og',
       'settings' => array(),
       'type' => 'og_complex',
-      'weight' => 0,
+      'weight' => 5,
     ),
   );
 

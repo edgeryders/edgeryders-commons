@@ -1,0 +1,11 @@
+name = Apache Solr Term Proximity
+description = Applies proximity boosting to Solr searches so that the distance between two or more terms is factored in the relevancy.
+package = Search Toolkit
+core = 7.x
+
+; Information added by drupal.org packaging script on 2012-11-23
+version = "7.x-1.0-rc1"
+core = "7.x"
+project = "apachesolr_proximity"
+datestamp = "1353687056"
+

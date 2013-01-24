@@ -1,0 +1,189 @@
+<?php
+
+/**
+* Tests the functionality of the Acquia SPI module.
+*/
+class AcquiaSPITestCase extends DrupalWebTestCase {
+  protected $privileged_user;
+  protected $setup_path;
+  protected $credentials_path;
+  protected $settings_path;
+  protected $status_report_url;
+
+  public static function getInfo() {
+    // Note: getInfo() strings are not translated with t().
+    return array(
+      'name' => 'Acquia SPI',
+      'description' => 'Test sending Acquia SPI data.',
+      'group' => 'Acquia',
+    );
+  }
+
+  public function setUp() {
+    global $base_url;
+    // Enable any modules required for the test
+    parent::setUp('acquia_agent', 'acquia_spi', 'acquia_connector_test');
+    // Create and log in our privileged user.
+    $this->privileged_user = $this->drupalCreateUser(array(
+      'administer site configuration',
+      'access administration pages',
+    ));
+    $this->drupalLogin($this->privileged_user);
+    // Setup variables.
+    $this->credentials_path = 'admin/config/system/acquia-agent/credentials';
+    $this->settings_path = 'admin/config/system/acquia-agent';
+    $this->status_report_url = 'admin/reports/status';
+    variable_set('acquia_network_address', $base_url);
+    variable_set('acquia_spi_server', $base_url);
+    variable_set('acquia_spi_ssl_override', TRUE);
+    variable_set('acquia_agent_verify_peer', FALSE);
+  }
+
+  /**
+   * Helper function for storing UI strings.
+   */
+  private function acquiaSPIStrings($id) {
+    switch ($id) {
+      case 'spi-status-text':
+        return 'SPI data will be sent once every 30 minutes once cron is called';
+      case 'spi-not-sent';
+        return 'SPI data has not been sent';
+      case 'spi-send-text';
+        return 'manually send SPI data';
+      case 'spi-data-sent':
+        return 'SPI data sent';
+      case 'spi-data-sent-error':
+        return 'There was an error sending SPI data';
+      case 'spi-new-def':
+        return 'There are new checks that will be performed on your site by the Acquia Network Connector';
+    }
+  }
+
+  public function testAcquiaSPISendData() {
+    $this->drupalGet($this->status_report_url);
+    $this->assertNoText($this->acquiaSPIStrings('spi-status-text'), 'SPI send option does not exist when site is not connected');
+    // Connect site on key and id that will error.
+    $edit_fields = array(
+      'acquia_identifier' => ACQTEST_ERROR_ID,
+      'acquia_key' => ACQTEST_ERROR_KEY,
+    );
+    $submit_button = 'Connect';
+    $this->drupalPost($this->credentials_path, $edit_fields, $submit_button);
+    // Send SPI data.
+    $this->drupalGet($this->status_report_url);
+    $this->assertText($this->acquiaSPIStrings('spi-status-text'), 'SPI explanation text exists');
+    $this->assertText($this->acquiaSPIStrings('spi-not-sent'), 'SPI data has not been sent');
+    $this->clickLink($this->acquiaSPIStrings('spi-send-text'));
+    $this->assertNoText($this->acquiaSPIStrings('spi-data-sent'), 'SPI data was not sent');
+    $this->assertText($this->acquiaSPIStrings('spi-data-sent-error'), 'Page says there was an error sending data');
+
+    // Connect site on non-error key and id.
+    $this->drupalGet($this->credentials_path);
+    $edit_fields = array(
+      'acquia_identifier' => ACQTEST_ID,
+      'acquia_key' => ACQTEST_KEY,
+    );
+    $this->drupalPost($this->credentials_path, $edit_fields, $submit_button);
+    // Send SPI data.
+    $this->drupalGet($this->status_report_url);
+    $this->clickLink($this->acquiaSPIStrings('spi-send-text'));
+    $this->assertText($this->acquiaSPIStrings('spi-data-sent'), 'SPI data was sent');
+    $this->assertNoText($this->acquiaSPIStrings('spi-not-sent'), 'SPI does not say "data has not been sent"');
+  }
+
+  public function testAcquiaSPIGet() {
+    $spi_default_keys = array(
+      'spi_data_version',
+      'site_key',
+      'modules',
+      'platform',
+      'quantum',
+      'system_status',
+      'failed_logins',
+      '404s',
+      'watchdog_size',
+      'watchdog_data',
+      'last_nodes',
+      'last_users',
+      'extra_files',
+      'ssl_login',
+      'file_hashes',
+      'hashes_md5',
+      'hashes_sha1',
+      'fileinfo',
+      'distribution',
+      'base_version',
+      'build_data',
+      'roles',
+      'uid_0_present',
+    );
+    // Test acquia_spi_get().
+    $spi_data = acquia_spi_get();
+    $valid = is_array($spi_data);
+    $this->assertTrue($valid, 'acquia_spi_get() returns an array');
+    if ($valid) {
+      foreach ($spi_default_keys as $key) {
+        if (!array_key_exists($key, $spi_data)) {
+          $valid = FALSE;
+          break;
+        }
+      }
+      $this->assertTrue($valid, 'Array has expected keys');
+      $this->assertEqual(sha1(drupal_get_private_key()), $spi_data['site_key'], 'Site key is sha1 of Drupal private key');
+      $this->assertTrue(!empty($spi_data['spi_data_version']), 'SPI data version is set');
+      $vars = drupal_json_decode($spi_data['system_vars']);
+      $this->assertTrue(is_array($vars), 'SPI data system_vars is a JSON-encoded array');
+      $this->pass(var_export($vars, TRUE));
+      $this->assertTrue(isset($vars['user_admin_role']), 'user_admin_role included in SPI data');
+    }
+  }
+
+  public function testAcquiaSPIUpdateResponse() {
+    $this->drupalGet($this->credentials_path);
+    $edit_fields = array(
+      'acquia_identifier' => ACQTEST_ID,
+      'acquia_key' => ACQTEST_KEY,
+    );
+    $submit_button = 'Connect';
+    $this->drupalPost($this->credentials_path, $edit_fields, $submit_button);
+    $nspi_server = variable_get('acquia_spi_server', 'https://nspi.acquia.com');
+    $spi_data = acquia_spi_get();
+    // Check that result is an array.
+    $result = acquia_agent_call('acquia.nspi.update', $spi_data, NULL, NULL, $nspi_server);
+    $this->assertTrue(is_array($result['result']), 'SPI update result is an array');
+
+    // Check that result is a bool when spi_data_version is not sent.
+    $spi_data_version = $spi_data['spi_data_version'];
+    unset($spi_data['spi_data_version']);
+    $result = acquia_agent_call('acquia.nspi.update', $spi_data, NULL, NULL, $nspi_server);
+    $this->assertTrue(is_bool($result['result']), 'SPI update result is a boolean when not sending "spi_data_version"');
+
+    $spi_data['spi_data_version'] = $spi_data_version;
+    // Trigger a SPI definition update response.
+    $spi_data['spi_def_update'] = TRUE;
+    $result = acquia_agent_call('acquia.nspi.update', $spi_data, NULL, NULL, $nspi_server);
+    $result = $result['result'];
+    $this->assertTrue(!empty($result['result']), 'SPI result array has expected "result" key.');
+    $this->assertTrue(!empty($result['update_spi_definition']), 'SPI result array has expected "update_spi_definition" key.');
+    $def_timestamp = variable_get('acquia_spi_def_timestamp', 0);
+    $this->assertEqual($def_timestamp, 0, 'SPI definition has not been called before');
+    $def_vars = variable_get('acquia_spi_def_vars', array());
+    $this->assertTrue(empty($def_vars), 'SPI definition variables is empty');
+    $waived_vars = variable_get('acquia_spi_def_waived_vars', array());
+    $this->assertTrue(empty($waived_vars), 'SPI definition waived variables is empty');
+    if (!empty($result['update_spi_definition']) && function_exists('acquia_spi_update_definition')) {
+      $update_res = acquia_spi_update_definition();
+      $this->assertTrue($update_res, 'Update definition call returned true');
+      $def_timestamp = variable_get('acquia_spi_def_timestamp', 0);
+      $this->assertNotEqual($def_timestamp, 0, 'SPI definition timestamp set');
+      $def_vars = variable_get('acquia_spi_def_vars', array());
+      $this->assertTrue(!empty($def_vars), 'SPI definition variable set');
+      variable_set('acquia_spi_def_waived_vars', array('user_admin_role'));
+      // Test that new variables are in SPI data.
+      $spi_data = acquia_spi_get();
+      $vars = drupal_json_decode($spi_data['system_vars']);
+      $this->assertTrue(!empty($vars['file_temporary_path']), 'New variables included in SPI data');
+      $this->assertTrue(!isset($vars['user_admin_role']), 'user_admin_role not included in SPI data');
+    }
+  }
+}

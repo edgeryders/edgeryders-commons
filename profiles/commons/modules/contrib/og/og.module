@@ -6,7 +6,7 @@
  */
 
 // Add field widget related code.
-require drupal_get_path('module', 'og') . '/includes/og.field.inc';
+require DRUPAL_ROOT . '/' . drupal_get_path('module', 'og') . '/includes/og.field.inc';
 
 /**
  * Define active group content states.
@@ -137,6 +137,7 @@ function og_entity_info() {
     'metadata controller class' => 'EntityDefaultMetadataController',
     'views controller class' => 'EntityDefaultViewsController',
     'access callback' => 'og_membership_type_access',
+    'entity cache' => module_exists('entitycache'),
   );
 
   if (class_exists('OgMembershipTypeUIController')) {
@@ -172,6 +173,7 @@ function og_entity_info() {
     'metadata controller class' => 'OgMembershipMetadataController',
     'views controller class' => 'OgMembershipViewsController',
     'access callback' => 'og_membership_access',
+    'entity cache' => module_exists('entitycache'),
   );
 
   // Add bundle info but bypass entity_load() as we cannot use it here.
@@ -896,7 +898,7 @@ function og_entity_delete($entity, $entity_type) {
   list($id, , $bundle) = entity_extract_ids($entity_type, $entity);
   if (og_is_group($entity_type, $entity)) {
     og_delete_user_roles_by_group($entity_type, $entity);
-    og_membership_delete_by_group($entity_type, $id);
+    og_membership_delete_by_group($entity_type, $entity);
   }
   if (og_is_group_content_type($entity_type, $bundle)) {
     // As the field attachers are called after hook_entity_presave() we
@@ -1316,7 +1318,7 @@ function og_entity_query_alter(EntityFieldQuery $query) {
 function og_query_og_membership_alter(QueryAlterableInterface $query) {
   $tables = &$query->getTables();
   $fields = &$query->getFields();
-  $conditions =  &$query->conditions();
+  $conditions = &$query->conditions();
 
   // Find the group-audience fields.
   $field_names = array();
@@ -1361,28 +1363,49 @@ function og_query_og_membership_alter(QueryAlterableInterface $query) {
     }
   }
 
-  if ($base_table) {
-    // Point the revision ID and bundle to the base entity.
-    $entity_type = $query->alterMetaData['entity_field_query']->entityConditions['entity_type']['value'];
-    $entity_type = is_array($entity_type) ? $entity_type[0] : $entity_type;
-    $entity_info = entity_get_info($entity_type);
+  $entity_type = $query->alterMetaData['entity_field_query']->entityConditions['entity_type']['value'];
+  $entity_type = is_array($entity_type) ? $entity_type[0] : $entity_type;
+  $entity_info = entity_get_info($entity_type);
+  $id = $entity_info['entity keys']['id'];
 
+  if ($base_table) {
     // If the table of the base entity does not exist (e.g. there is no
     // property condition), we need to add it, as we don't have the
     // revision ID and bundle in {og_membership} table.
     $base_table = $entity_info['base table'];
     if (strpos($base_table_alias, 'field_data') === 0) {
-      $id = $entity_info['entity keys']['id'];
-      $query->innerJoin($base_table, $base_table, "$base_table.$id = ogm.etid");
+      // Check if the entity base table already exists.
+      $base_table_alias = FALSE;
+      foreach ($tables as $table) {
+        if ($table['table'] == $base_table) {
+          $base_table_alias = $table['alias'];
+          break;
+        }
+      }
+      if (!$base_table_alias) {
+        $base_table_alias = $query->innerJoin($base_table, NULL, "$base_table.$id = ogm.etid");
+      }
     }
 
+    // Point the revision ID and bundle to the base entity.
     $fields['revision_id']['table'] = $base_table;
     // If there is no revision table, use the bundle.
-    $fields['revision_id']['field'] = !empty($entity_info['entity keys']['revision']) ? $entity_info['entity keys']['revision'] : $entity_info['entity keys']['bundle'];
+    if (!empty($entity_info['entity keys']['revision'])) {
+      // Entity doesn't support revisions.
+      $fields['revision_id']['field'] = $entity_info['entity keys']['revision'];
+
+    }
+    elseif (!empty($entity_info['entity keys']['bundle'])) {
+      $fields['revision_id']['field'] = $entity_info['entity keys']['bundle'];
+
+    }
+    else {
+      // Entity doesn't have bundles (e.g. user).
+      $fields['revision_id']['field'] = $id;
+    }
 
     $fields['bundle']['table'] = $base_table;
-    $fields['bundle']['field'] = $entity_info['entity keys']['bundle'];
-
+    $fields['bundle']['field'] = !empty($entity_info['entity keys']['bundle']) ? $entity_info['entity keys']['bundle'] : $id;
     $fields['entity_type']['table'] = 'ogm';
     $fields['entity_id']['table'] = 'ogm';
     $fields['entity_id']['field'] = 'etid';
@@ -1401,29 +1424,69 @@ function og_query_og_membership_alter(QueryAlterableInterface $query) {
     $query->join('og_membership', 'ogm', "ogm.etid = $base_table_alias.entity_id");
   }
 
+  _og_query_og_membership_alter_conditions($conditions, $aliases, $base_table_alias, $entity_info);
+}
+
+/**
+ * Recursively replace the fields to their aliases in the query's conditions.
+ *
+ * See og_query_og_membership_alter().
+ */
+function _og_query_og_membership_alter_conditions(&$conditions, $aliases, $base_table_alias, $entity_info) {
   foreach ($conditions as $delta => $values) {
     if (!is_array($values)) {
       continue;
     }
+
+    // Handle conditions in a sub-query.
+    if (is_object($values['value'])) {
+      _og_query_og_membership_alter_conditions($values['value']->conditions(), $aliases, $base_table_alias, $entity_info);
+    }
+
+    // Handle sub-conditions.
+    if (is_object($values['field'])) {
+      _og_query_og_membership_alter_conditions($values['field']->conditions(), $aliases, $base_table_alias, $entity_info);
+      continue;
+    }
+
     if (strpos($values['field'], 'field_data_') !== 0) {
       continue;
     }
 
-    $args = explode('.', $values['field']);
+    // Explode spaces on the fiels, for handling only the first part in values
+    // such as "foo.nid = bar.nid".
+    $field_parts = explode(' ', $values['field'], 2);
+    list($table, $column) = explode('.', $field_parts[0]);
 
-    if (empty($aliases[$args[0]])) {
+    if (empty($aliases[$table])) {
       continue;
     }
-    $field_name = $aliases[$args[0]];
+    $table = 'ogm';
 
-    if ($args[1] == 'deleted') {
+    // Replace entity_id or any other primary id (e.g. nid for the node
+    // entity).
+    $id_columns = array('entity_id', $entity_info['entity keys']['id']);
+    if (in_array($column, $id_columns)) {
+      $column = 'etid';
+    }
+
+    if ($column == 'deleted') {
       unset($conditions[$delta]);
+      continue;
     }
-    elseif (strpos($args[1], 'target_id')) {
-      $conditions[$delta]['field'] = 'ogm.gid';
+    elseif (strpos($column, 'target_id')) {
+       $column = 'gid';
     }
-    else {
-      $conditions[$delta]['field'] = 'ogm.' . $args[1];
+    elseif ($column == 'bundle') {
+      // Add the bundle of the base entity type.
+      $table = $base_table_alias;
+      $column = $entity_info['entity keys']['bundle'];
+    }
+
+    $conditions[$delta]['field'] = "$table.$column";
+    // Add the second part if it exists.
+    if (!empty($field_parts[1])) {
+      $conditions[$delta]['field'] .= ' ' . $field_parts[1];
     }
   }
 }
@@ -1468,13 +1531,171 @@ function og_membership_delete_multiple($ids = array()) {
 }
 
 /**
- * Delete all OG memberships by group.
+ * Implements hook_advanced_queue_info().
  */
-function og_membership_delete_by_group($group_type, $gid) {
+function og_advanced_queue_info() {
+  $items['og_membership_orphans'] = array(
+    'worker callback' => 'og_membership_orphans_worker',
+    // Message-subscribe will deal itself with deleting claimed items.
+    'delete when completed' => FALSE,
+  );
+  return $items;
+}
+
+/**
+ * Advanced queue worker; Process a queue item.
+ *
+ * Delete memberships, and if needed all related group-content.
+ */
+function og_membership_orphans_worker($item, $end_time = FALSE) {
+  $queue = DrupalQueue::get('og_membership_orphans');
+  $data = $item->data;
+
+  $group_type = $data['group_type'];
+  $gid = $data['gid'];
+
   $query = new EntityFieldQuery();
   $result = $query
     ->entityCondition('entity_type', 'og_membership')
     ->propertyCondition('group_type', $group_type, '=')
+    ->propertyCondition('gid', $gid, '=')
+    ->propertyOrderBy('id')
+    ->range(0, 10)
+    ->execute();
+
+  if (empty($result['og_membership'])) {
+    // We can delete the item.
+    $queue->deleteItem($item);
+    return TRUE;
+  }
+
+  $ids = array_keys($result['og_membership']);
+  if ($data['orphans']['move']) {
+    _og_orphans_move($ids, $data['orphans']['move']['group_type'], $data['orphans']['move']['gid']);
+    // Delete the item.
+    $queue->deleteItem($item);
+  }
+  elseif ($data['orphans']['delete']) {
+    _og_orphans_delete($ids);
+    // Release the item.
+    $queue->releaseItem($item);
+  }
+  return TRUE;
+}
+
+/**
+ * Helper function to delete orphan group-content.
+ *
+ * @param $ids
+ *   Array of OG membership IDs.
+ *
+ * @see og_membership_delete_by_group_worker()
+ */
+function _og_orphans_delete($ids) {
+  // Get all the group-content that is now orphan.
+  $orphans = array();
+  $og_memberships = og_membership_load_multiple($ids);
+
+  foreach ($og_memberships as $og_membership) {
+    $entity_type = $og_membership->entity_type;
+    $id = $og_membership->etid;
+    // Don't delete users.
+    if ($entity_type == 'user') {
+      continue;
+    }
+    $entity_groups = og_get_entity_groups($entity_type, $id);
+    // Orphan node can be relate to only one type of entity group.
+    if (count($entity_groups) == 1) {
+      $gids = reset($entity_groups);
+      // Orphan node can be relate to only one node.
+      if (count($gids) > 1) {
+        continue;
+      }
+    }
+    $orphans[$entity_type][] = $id;
+  }
+
+  if ($orphans) {
+    foreach ($orphans as $entity_type => $ids) {
+      entity_delete_multiple($entity_type, $ids);
+    }
+  }
+
+  // Delete the OG memberships.
+  og_membership_delete_multiple($ids);
+}
+
+/**
+ * Helper function to move orphan group-content to another group.
+ *
+ * @param $ids
+ *   Array of OG membership IDs.
+ *
+ * @see og_membership_delete_by_group_worker()
+ */
+function _og_orphans_move($ids, $group_type, $gid) {
+  if (!og_is_group($group_type, $gid)) {
+    $params = array(
+      '@group-type' => $group_type,
+      '@gid' => $gid,
+    );
+    throw new OgException(format_string('Cannot move orphan group-content to @group-type - @gid, as it is not a valid group.', $params));
+  }
+
+  $og_memberships = og_membership_load_multiple($ids);
+  foreach ($og_memberships as $og_membership) {
+    $entity_type = $og_membership->entity_type;
+    $id = $og_membership->etid;
+    if (count(og_get_entity_groups($entity_type, $id)) > 1) {
+      continue;
+    }
+    $og_membership->group_type = $group_type;
+    $og_membership->gid = $gid;
+    $og_membership->save();
+  }
+}
+
+/**
+ * Register memberships for deletion.
+ *
+ * if the property "skip_og_membership_delete_by_group" exists on the
+ * entity, this function will return early, and allow other implementing
+ * modules to deal with the deletion logic.
+ *
+ * @param $entity_type
+ *   The group type.
+ * @param $entity
+ *   The group entity object.
+ */
+function og_membership_delete_by_group($entity_type, $entity) {
+  if (!empty($entity->skip_og_membership_delete_by_group)) {
+    return;
+  }
+
+  list($gid) = entity_extract_ids($entity_type, $entity);
+  if (variable_get('og_use_queue', FALSE) && module_exists('advancedqueue')) {
+    $queue = DrupalQueue::get('og_membership_orphans');
+    // Add item to the queue.
+    $task = array(
+      'group_type' => $entity_type,
+      'gid' => $gid,
+      // Allow implementing modules to determine the disposition (e.g. delete
+      // orphan group content).
+      'orphans' => array(
+        'delete' => isset($entity->og_orphans['delete']) ? $entity->og_orphans['delete'] : variable_get('og_orphans_delete', FALSE),
+        'move' => isset($entity->og_orphans['move']) ? $entity->og_orphans['move'] : array(),
+      ),
+    );
+
+    // Exit now, as the task will be processed via advanced-queue.
+    return $queue->createItem($task);
+  }
+
+  // No scalable solution was chosen, so just delete OG memberships.
+  $query = new EntityFieldQuery();
+  $result = $query
+    ->entityCondition('entity_type', 'og_membership')
+    ->propertyCondition('group_type', $entity_type, '=')
     ->propertyCondition('gid', $gid, '=')
     ->execute();
 
@@ -1579,8 +1800,7 @@ function og_get_all_group($group_type = 'node') {
  *   Defaults to FALSE.
  */
 function og_get_best_group_audience_field($entity_type, $entity, $group_type, $group_bundle, $skip_access = FALSE) {
-  $entity_wrapper = entity_metadata_wrapper($entity_type, $entity);
-  $bundle = $entity_wrapper->getBundle();
+  list(,, $bundle) = entity_extract_ids($entity_type, $entity);
 
   $field_names = og_get_group_audience_fields($entity_type, $bundle);
   if (!$field_names) {
@@ -1598,11 +1818,13 @@ function og_get_best_group_audience_field($entity_type, $entity, $group_type, $g
       continue;
     }
 
+
     if (!og_check_field_cardinality($entity_type, $entity, $field_name)) {
       // Field reached maximum.
       continue;
     }
-    if (!$skip_access && !$entity_wrapper->{$field_name}->access('view')) {
+
+    if (!$skip_access && !field_access('view', $field, $entity_type, $entity)) {
       // User can't access field.
       continue;
     }
@@ -1824,9 +2046,9 @@ function og_user_access($group_type, $gid, $string, $account = NULL, $skip_alter
     return TRUE;
   }
 
-  $group = entity_load_single($group_type, $gid);
   // Group manager has all privileges (if variable is TRUE).
-  if (variable_get('og_group_manager_full_access', TRUE)) {
+  if (!empty($account->uid) && variable_get('og_group_manager_full_access', TRUE)) {
+    $group = entity_load_single($group_type, $gid);
     if (!empty($group->uid) && $group->uid == $account->uid) {
       return TRUE;
     }
@@ -1848,8 +2070,9 @@ function og_user_access($group_type, $gid, $string, $account = NULL, $skip_alter
   }
 
   if (!$skip_alter && empty($perm_alter[$identifier][$account->uid][$string])) {
-    // Let modules alter the permissions. since $perm is static we create a
-    // clone of it.
+    // Let modules alter the permissions. since $perm is static we create
+    // a clone of it.
+    $group = !empty($group) ? $group : entity_load_single($group_type, $gid);
     $temp_perm = $perm[$identifier][$account->uid];
     $context = array(
       'string' => $string,
@@ -2042,23 +2265,12 @@ function og_get_group_audience_fields($entity_type = 'user', $bundle_name = 'use
     return $return[$identifier];
   }
   $return[$identifier] = array();
-  // field_info_instances() doesn't give the field type, so we have to use
-  // field_info_fields().
-  foreach (field_info_fields() as $field_name => $field_info) {
+
+  foreach (field_info_instances($entity_type, $bundle_name) as $field_name => $instance) {
     if (!og_is_group_audience_field($field_name)) {
       continue;
     }
-
-    if (empty($field_info['bundles'][$entity_type])) {
-      continue;
-    }
-
-    foreach ($field_info['bundles'][$entity_type] as $field_bundle) {
-      if ($field_bundle == $bundle_name) {
-        $instance_info = field_info_instance($entity_type, $field_name, $bundle_name);
-        $return[$identifier][$field_name] = $instance_info['label'];
-      }
-    }
+    $return[$identifier][$field_name] = $instance['label'];
   }
   return $return[$identifier];
 }
@@ -2224,6 +2436,10 @@ function og_is_member($group_type, $gid, $entity_type = 'user', $entity = NULL, 
  *   TRUE if group should use default roles and permissions.
  */
 function og_is_group_default_access($entity_type, $entity) {
+  if (!field_info_field(OG_DEFAULT_ACCESS_FIELD)) {
+    // Don't bother loading entity if field does not exist.
+    return TRUE;
+  }
   $wrapper = entity_metadata_wrapper($entity_type, $entity);
   if (empty($wrapper->{OG_DEFAULT_ACCESS_FIELD})) {
     return TRUE;
@@ -2819,6 +3035,13 @@ function og_get_default_permissions() {
 
 /**
  * Get all the modules fields that can be assigned to fieldable enteties.
+ *
+ * @param $field_name
+ *   The field name that was registered for the definition.
+ *
+ * @return
+ *   An array with the field and instance definitions, or FALSE if not
+ *   found.
  */
 function og_fields_info($field_name = NULL) {
   $return = &drupal_static(__FUNCTION__, array());
@@ -2840,7 +3063,11 @@ function og_fields_info($field_name = NULL) {
     drupal_alter('og_fields_info', $return);
   }
 
-  return empty($field_name) ? $return : $return[$field_name];
+  if (!empty($field_name)) {
+    return !empty($return[$field_name]) ?  $return[$field_name] : FALSE;
+  }
+
+  return $return;
 }
 
 /**
@@ -3007,7 +3234,7 @@ function og_node_create_links($group_type, $gid, $field_name, $destination = NUL
 
   $types = isset($types) ? $types : array_keys(node_type_get_types());
   foreach ($types as $type_name) {
-    if (!og_is_group_content_type('node', $type_name) || !node_access('create', $type_name)) {
+    if (!og_is_group_content_type('node', $type_name) || !og_user_access($group_type, $gid, "create $type_name content")) {
       continue;
     }
 
@@ -3028,8 +3255,15 @@ function og_node_create_links($group_type, $gid, $field_name, $destination = NUL
 
   // Build links.
   $options  = array(
-    'query' => array($field_name => $gid) + drupal_get_destination(),
+    'query' => array($field_name => $gid),
   );
+
+  if ($destination) {
+    $options['query']['destination'] = $destination;
+  }
+  else {
+    $options['query'] += drupal_get_destination();
+  }
 
   $items = array();
   foreach ($names as $type => $name) {
@@ -3160,31 +3394,51 @@ function og_features_api() {
 }
 
 /**
- * Implements hook_migrate_api().
+ * Implements hook_features_pipe_alter().
+ *
+ * Prevent OG related fields from being piped in features, when a content
+ * type that has them is selected.
  */
-function og_migrate_api() {
-  $api = array(
-    'api' => 2,
-  );
-  return $api;
+function og_features_pipe_alter(&$pipe, $data, $export) {
+  if (variable_get('og_features_ignore_og_fields', FALSE) || empty($pipe['field'])) {
+    return;
+  }
+  foreach ($pipe['field'] as $delta => $value) {
+    $args = explode('-', $value);
+    $field_name = $args[2];
+    if (og_fields_info($field_name) || og_is_group_audience_field($field_name)) {
+      unset($pipe['field'][$delta]);
+    }
+  }
 }
 
 /**
- * Implements hook_modules_enabled().
- *
- * Register dynamic migrate plugins for upgrading from OG6.
+ * Implements hook_migrate_api().
  */
-function og_modules_enabled($modules) {
-  if (!db_table_exists('d6_og')) {
-    return;
+function og_migrate_api() {
+  $migrations = array();
+  if (db_table_exists('d6_og')) {
+    $migrations['OgMigrateAddFields'] = array('class_name' => 'OgMigrateAddFields');
+    $migrations['OgMigrateContent'] = array('class_name' => 'OgMigrateContent');
+    $migrations['OgMigrateUser'] = array('class_name' => 'OgMigrateUser');
+
+    foreach (node_type_get_names() as $bundle => $value) {
+      $machine_name = 'OgMigrateGroup' . ucfirst($bundle);
+      $migrations[$machine_name] = array(
+        'class_name' => 'OgMigrateGroup',
+        'bundle' => $bundle,
+      );
+    }
+  }
+  elseif (db_field_exists('og_membership', 'group_type') && db_table_exists('og') && !db_table_exists('d6_og')) {
+    $migrations['OgMigrateMembership'] = array('class_name' => 'OgMigrateMembership');
+    $migrations['OgMigrateRoles'] = array('class_name' => 'OgMigrateRoles');
+    $migrations['OgMigrateUserRoles'] = array('class_name' => 'OgMigrateUserRoles');
   }
 
-  if (!in_array('migrate', $modules) && !module_exists('migrate')) {
-    return;
-  }
-
-  foreach (node_type_get_names() as $bundle => $value) {
-    // Register a dynamic migration.
-    Migration::registerMigration('OgMigrateGroup', 'OgMigrateGroup' . ucfirst($bundle), array('bundle' => $bundle));
-  }
+  $api = array(
+    'api' => 2,
+    'migrations' => $migrations,
+  );
+  return $api;
 }

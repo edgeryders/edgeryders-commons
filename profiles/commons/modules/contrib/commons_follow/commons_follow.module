@@ -3,6 +3,62 @@
 include_once 'commons_follow.features.inc';
 
 
+
+/**
+ * Implements hook_features_pipe_alter().
+ *
+ */
+function commons_follow_features_pipe_alter(&$pipe, $data, $export) {
+  $commons_follow_fields = array(
+    'field_target_users', 'field_target_nodes', 'field_target_comments',
+  );
+  // Prevent Commons Follow fields from being piped in features
+  // when a content type includes those fields.
+  if (!empty($pipe['field_instance'])) {
+    foreach ($pipe['field_instance'] as $delta => $value) {
+      $args = explode('-', $value);
+      $field_name = $args[2];
+      if (in_array($field_name, $commons_follow_fields)) {
+        unset($pipe['field_instance'][$delta]);
+      }
+    }
+  }
+  if (!empty($pipe['field_base'])) {
+    foreach ($pipe['field_base'] as $delta => $value) {
+      if (in_array($delta, $commons_follow_fields)) {
+        unset($pipe['field_base'][$delta]);
+      }
+    }
+  }
+}
+
+function commons_follow_flag_alter(&$flag) {
+  $commons_entity_integrations = module_invoke_all('commons_entity_integration');
+  // Find Commons node types that should have follow integration and alter
+  // the commons_follow_node flag to allow following these node types.
+  // This is currently hard-coded to node entities and the
+  // commons_follow_node flag, but could be expanded to add the ability
+  // to follow other entities.
+  // The Commons follow flags for user, term and group already have the
+  // appropriate content types in their flag exports, whereas
+  // $flag->types for commons_follow_node is more likely
+  // to change between sites.
+  if (in_array($flag->name, array('commons_follow_node', 'email_node'))) {
+    if (!empty($commons_entity_integrations['node'])) {
+      // Exclude bundles that users should not be able to follow:
+      foreach ($commons_entity_integrations['node'] as $bundle => $options) {
+        if (isset($options['exclude_commons_follow']) && $options['exclude_commons_follow'] == TRUE) {
+          unset($commons_entity_integrations['node'][$bundle]);
+        }
+      }
+      // Add the remaining bundles as flaggable options
+      if (!empty($commons_entity_integrations['node'])) {
+        $flag->types += array_keys($commons_entity_integrations['node']);
+      }
+    }
+  }
+}
+
 /**
  * Get all node IDs relevant to what the user ordered.
  *
@@ -28,7 +84,7 @@ function commons_follow_get_nids($account = NULL, $options = array()) {
     $function = $module . '_commons_follow_get_nids';
     $result = $function($account, $options);
     if (empty($result)) {
-      return $nids;
+      continue;
     }
     foreach ($result as $nid) {
       $nids[$nid] = $nid;
@@ -155,13 +211,4 @@ function commons_follow_get_followed_message_ids($account = NULL) {
     }
   }
   return $followed_mids;
-}
-
-function commons_follow_get_following_uids(&$following_uids = array(), $message) {
-  $following_uids = array();
-  foreach (module_implements('commons_follow_get_following_uids') as $module) {
-    $function = $module . '_commons_follow_get_following_uids';
-    $function($following_uids, $message);
-  }
-  //Todo: Somebody probably wants to drupal_alter() this.
 }

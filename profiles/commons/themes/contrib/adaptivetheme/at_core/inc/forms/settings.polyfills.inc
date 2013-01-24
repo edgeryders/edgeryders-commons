@@ -6,7 +6,6 @@
  *
  * TODO: review documentation and provide links to help pages.
  */
-
 function at_core_polyfills_form(&$form, $theme_name) {
   $form['at-settings']['polyfills'] = array(
     '#type' => 'fieldset',

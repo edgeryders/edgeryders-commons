@@ -1,0 +1,16 @@
+name = Faceted Navigation for Search
+description = Integrates the core Search module with the Facet API project.
+dependencies[] = facetapi
+package = Search Toolkit
+core = 7.x
+files[] = plugins/facetapi/adapter.inc
+files[] = plugins/facetapi/query_type_term.inc
+files[] = plugins/facetapi/query_type_date.inc
+files[] = search_facetapi.extender.inc
+
+; Information added by drupal.org packaging script on 2012-05-30
+version = "7.x-1.0-beta2"
+core = "7.x"
+project = "search_facetapi"
+datestamp = "1338413501"
+

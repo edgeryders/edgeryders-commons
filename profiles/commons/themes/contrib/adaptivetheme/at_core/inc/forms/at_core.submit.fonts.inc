@@ -5,7 +5,6 @@
  * Extract font data from form values, send for processing and print
  * returned data in a CSS file.
  */
-
 function at_core_submit_fonts($form_state) {
   $values = $form_state['values'];
   $path = $values['path'];

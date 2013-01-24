@@ -6,6 +6,33 @@
 
 include_once 'commons_groups.features.inc';
 
+
+/**
+ * Implements hook_entity_view().
+ */
+function commons_groups_entity_view($entity, $type, $view_mode, $langcode) {
+  // Set a breadcrumb for nodes in groups. We currently assume that
+  // nodes are groups.
+  if ($view_mode == 'full' && !empty($entity->og_group_ref[LANGUAGE_NONE][0]['target_id']) && $type != 'user') {
+    $breadcrumb = array();
+    $breadcrumb[] = l(t('Home'), NULL);
+    $breadcrumb[] = l(t('Groups'), 'groups');
+    $group = node_load($entity->og_group_ref[LANGUAGE_NONE][0]['target_id']);
+    if (node_access('view', $group)) {
+      $breadcrumb[] = l($group->title, 'node/' . $group->nid);
+    }
+    drupal_set_breadcrumb($breadcrumb);
+  }
+}
+/**
+ * Implements hook_menu_alter().
+ */
+function commons_groups_menu_alter(&$items) {
+  // Provide a more informative title.
+  if (isset($items['node/%/group'])) {
+    $items['node/%/group']['title'] = t('Administer group');
+  }
+}
 /**
  * Implements hook_block_info().
  */
@@ -32,21 +59,108 @@ function commons_groups_block_view() {
 }
 
 /**
+ * Implements hook_features_pipe_alter().
+ *
+ */
+function commons_groups_features_pipe_alter(&$pipe, $data, $export) {
+  // Prevent Commons Groups related fields from being piped in features
+  // when a content type includes those fields.
+  if (!empty($pipe['field_instance'])) {
+    foreach ($pipe['field_instance'] as $delta => $value) {
+      $args = explode('-', $value);
+      $field_name = $args[2];
+      if ($field_name == 'og_group_ref') {
+        unset($pipe['field_instance'][$delta]);
+      }
+    }
+  }
+  if (!empty($pipe['field_base'])) {
+    foreach ($pipe['field_base'] as $delta => $value) {
+      if ($delta == 'og_group_ref') {
+        unset($pipe['field_base'][$delta]);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_commons_entity_integration().
+ */
+function commons_groups_commons_entity_integration() {
+  return array(
+    'node' => array(
+      'group' => array(
+        'is_group_content' => FALSE,
+        'exclude_commons_follow' => TRUE,
+      ),
+    ),
+  );
+}
+
+
+function commons_groups_group_contributors_count_topics($group) {
+
+  // Format the count of contributors.
+  $output = '';
+  $view = views_get_view('commons_contributors_group');
+  if (!empty($view)) {
+    $view->set_display('panel_pane_1');
+    $view->set_arguments(array($group->nid));
+    $view->get_total_rows = TRUE;
+    $view->execute();
+    $contributors_count = $view->total_rows;
+    $output .= l(t('@contributors_count @contributors', array('@contributors_count' => $contributors_count, '@contributors' => format_plural($contributors_count, 'contributor', 'contributors'))), 'node/' . $group->nid . '/contributors');
+  }
+  // Format the list of topics:
+  if (!empty($group->field_topics[LANGUAGE_NONE])) {
+    foreach ($group->field_topics[LANGUAGE_NONE] as $item) {
+      $tids[] = $item['tid'];
+    }
+    $topics = taxonomy_term_load_multiple($tids);
+    $topics_text = ' discussing the @topics ';
+    $t_args = array('@topics' => format_plural(count($topics), 'topic', 'topics'));
+    foreach ($topics as $topic) {
+      $topics_text .= '!topic-' . $topic->tid;
+      if ($topic == end($topics)) {
+        $topics_text .= '.';
+      }
+      else {
+        $topics_text .= ', ';
+      }
+      $t_args['!topic-' . $topic->tid] = l(t($topic->name), 'taxonomy/term/' . $topic->tid);
+    }
+   $output .= t($topics_text, $t_args);
+  }
+  return $output;
+}
+
+/**
 * Implements hook_form_alter().
 */
 function commons_groups_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'group_node_form' && is_null($form['nid']['#value']) && $node->status == 0) {
+  if ($form_id == 'group_node_form' && is_null($form['nid']['#value'])) {
     $form['actions']['submit']['#submit'][] = 'commons_groups_group_submission_message';
   }
-  if (isset($form['#node'])) {
-    $enabled_node_types = commons_groups_get_enabled_node_types();
-    if (isset($enabled_node_types[$form['#node']->type])) {
+  // Redirect the user back to the group homepage after submitting
+  // a node within a group.
+  if (isset($form['#node']) && substr($form_id, -10) == '_node_form') {
+    // Set a human-friendly page title.
+    if (empty($form['#node']->nid)) {
+      $types = node_type_get_types();
+      $type = $form['#node']->type;
+      // Use 'a' or 'an' appropriately.
+      $verb = strtolower($type[0]) == 'a' ? 'Create an' : 'Create a';
+      drupal_set_title(t("$verb @name", array('@name' => $types[$type]->name)), PASS_THROUGH);
+    }
+    // Customizations to the node form for entitites that are group content.
+    $group_content_entity_types = commons_groups_get_group_content_entity_types();
+    if (isset($group_content_entity_types['node'][$form['#node']->type])) {
       $form['actions']['submit']['#submit'][] = 'commons_groups_node_in_group_submit';
     }
   }
   if (in_array($form_id, array('og_ui_admin_global_permissions', 'og_ui_admin_permissions'))) {
-    $enabled_node_types = commons_groups_get_enabled_node_types();
-    if (!empty($enabled_node_types)) {
+    $group_content_entity_types = commons_groups_get_group_content_entity_types();
+    if (!empty($group_content_entity_types)) {
       // @TODO: Improve this message to be more specific and/or
       // reflect these changes in the checkboxes.
       $message = 'In addition to the permissions listed here, the Commons Groups module grants non-group members the ability to post content into groups where content in the group is public.';
@@ -76,11 +190,11 @@ function commons_groups_system_info_alter(&$info, $file, $type) {
   // and can sucessfully revert the field_instance component back
   // to its default state.
   if ($file->name == 'commons_groups') {
-    $commons_groups_entity_types = commons_groups_get_entity_types();
-    if (!empty($commons_groups_entity_types['node'])) {
-      foreach ($commons_groups_entity_types['node'] as $type => $status) {
-        if ($status && !in_array("node-$type-og_group_ref", $info['features']['field_instance'])) {
-          $info['features']['field_instance'][] = "node-$type-og_group_ref";
+    $group_content_entity_types = commons_groups_get_group_content_entity_types();
+    if (!empty($group_content_entity_types)) {
+      foreach ($group_content_entity_types as $entity_type => $bundles) {
+        foreach(array_keys($bundles) as $bundle) {
+          $info['features']['field_instance'][] = "$entity_type-$bundle-og_group_ref";
         }
       }
     }
@@ -102,11 +216,11 @@ function commons_groups_default_message_type_alter(&$defaults) {
 function commons_groups_og_user_access_alter(&$temp_perm, $context) {
   // Grant access to non-group members to be able to post into groups
   // where the group node is public and content is public within the group.
-  $commons_groups_enabled_node_types = commons_groups_get_enabled_node_types();
+  $commons_groups_entity_types = commons_groups_get_group_content_entity_types();
   $group_content_restricted = (bool) (isset($context['group']->group_content_access[LANGUAGE_NONE][0]['value']) && $context['group']->group_content_access[LANGUAGE_NONE][0]['value'] == 2);
   // @TODO: Consider using a static here.
   $user_is_member = (bool)og_is_member('node', $context['group']->nid, 'user', $context['account']);
-  foreach ($commons_groups_enabled_node_types as $type => $status) {
+  foreach ($commons_groups_entity_types['node'] as $type => $options) {
     if ($context['string'] == "create $type content" && (!$group_content_restricted || $user_is_member)) {
       $temp_perm["create $type content"] = TRUE;
     }
@@ -131,7 +245,10 @@ function commons_groups_token_info() {
     'name' => t('"In groups" text'),
     'description' => t('The text (starting with "in the groups") indicating which groups a peice of content belongs to.'),
   );
-
+  $tokens['node']['commons-groups-group-contributors-count-topics'] = array(
+    'name' => t('Commons Groups: Group contributor count and topics'),
+    'description' => t('Displays text showing the number of contributors and the topics associated with a group node.'),
+  );
   return array(
     'types' => $types,
     'tokens' => $tokens,
@@ -139,12 +256,21 @@ function commons_groups_token_info() {
 }
 
 
-
 /**
  * Implements hook_tokens().
  */
 function commons_groups_tokens($type, $tokens, $data = array(), $options = array()) {
   $replacements = array();
+  if ($type == 'node' && !empty($data['node'])) {
+    $group = $data['node'];
+
+    foreach ($tokens as $name => $original) {
+      if ($name == 'commons-groups-group-contributors-count-topics') {
+        $replacements[$original] = commons_groups_group_contributors_count_topics($group);
+        return $replacements;
+      }
+    }
+  }
   if ($type == 'commons-groups') {
     if (!empty($tokens['in-groups-text']))  {
       // Build a list of groups associated with this message.
@@ -152,6 +278,7 @@ function commons_groups_tokens($type, $tokens, $data = array(), $options = array
       $target_nids = array();
       $related_groups = array();
       $related_gids = array();
+
       // First, build an array of target nodes associated with the message.
       foreach ($data['message']->field_target_nodes[LANGUAGE_NONE] as $key => $value) {
         $target_nids[] = $value['target_id'];
@@ -213,9 +340,9 @@ function commons_groups_tokens($type, $tokens, $data = array(), $options = array
         $text = t($text, $t_args);
       }
       $replacements['[commons-groups:in-groups-text]'] = $text;
+      return $replacements;
     }
   }
-  return $replacements;
 }
 
 function commons_groups_message_partial_default() {
@@ -227,8 +354,10 @@ function commons_groups_message_partial_default() {
   return $partial;
 }
 
-function commons_groups_group_submission_message() {
-  drupal_set_message(t('Thanks for your group submission! This group has entered the moderation queue and will be reviewed shortly.'));
+function commons_groups_group_submission_message($form, &$form_state) {
+  if ($form_state['values']['status'] !== 1) {
+    drupal_set_message(t('Thanks for your group submission! This group has entered the moderation queue and will be reviewed shortly.'));
+  }
 }
 
 /**
@@ -249,7 +378,6 @@ function commons_groups_entityreference_default_value($entity_type, $entity, $fi
   }
 
   $ids = explode(',', $_GET[$field_name]);
-
   // Check access to the provided entities.
   $target_type = $field['settings']['target_type'];
   entity_load($target_type, $ids);
@@ -263,7 +391,6 @@ function commons_groups_entityreference_default_value($entity_type, $entity, $fi
         $items[]= array('target_id' => $target_id);
     }
   }
-
   return $items;
 }
 
@@ -303,33 +430,29 @@ function commons_groups_node_insert($node) {
 /**
 * Returns an array of entity types that are enabled via Commons Groups.
 */
-function commons_groups_get_entity_types() {
-  $commons_groups_entity_types = variable_get('commons_groups_entity_types', array());
-  if (!empty($commons_groups_entity_types['node'])) {
-    foreach ($commons_groups_entity_types['node'] as $type_name => $enabled) {
-      $type = node_type_get_type($type_name);
-      // If the module defining this content type has been disabled, don't add
-      // a field on its behalf in order to prevent the
-      // Commons Groups og_group_ref field component from appearing
-      // to be overidden.
-      if ($enabled && !module_exists($type->module)) {
-        $commons_groups_entity_types['node'][$type_name] = 0;
+function commons_groups_get_group_content_entity_types() {
+  // Find all Commons Entity integrations.
+  $commons_entity_integrations = module_invoke_all('commons_entity_integration');
+  if (empty($commons_entity_integrations)) {
+    return array();
+  }
+
+  foreach ($commons_entity_integrations as $entity_type => $integration) {
+    foreach ($integration as $bundle => $options) {
+      if (isset($options['is_group_content']) && $options['is_group_content'] == FALSE) {
+        unset($commons_entity_integrations[$entity_type][$bundle]);
       }
     }
+    // If an entity type has no integrations, don't return it.
+    if (empty($commons_entity_integrations[$entity_type])) {
+      unset($commons_entity_integrations[$entity_type]);
+    }
   }
-  return $commons_groups_entity_types;
+
+  return $commons_entity_integrations;
+
 }
 
-/**
-* Helper function for commons_groups_get_entity_types() to return
-* only those node types that are configured as enabled.
-*/
-function commons_groups_get_enabled_node_types() {
-  $commons_groups_entity_types = commons_groups_get_entity_types();
-  if (!empty($commons_groups_entity_types['node'])) {
-    return array_filter($commons_groups_entity_types['node']);
-  }
-}
 /**
 * When a user first creates content within a group,
 * grant her the contributor role within that group.
@@ -363,7 +486,7 @@ function commons_groups_commons_bw_group_widget() {
       'title' => 'All',
       'type' => 'view',
       'vid' => 'commons_bw_all',
-      'display' => 'page_1',
+      'display' => 'default',
       'weight' => -10,
       'default' => 1,
     ),

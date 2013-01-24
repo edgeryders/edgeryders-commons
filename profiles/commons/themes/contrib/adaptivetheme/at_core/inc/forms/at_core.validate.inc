@@ -7,7 +7,6 @@
  * @param $form
  * @param $form_state
  */
-
 function at_core_settings_validate($form, &$form_state) {
   $values = $form_state['values'];
   $theme_name = $form_state['build_info']['args'][0];

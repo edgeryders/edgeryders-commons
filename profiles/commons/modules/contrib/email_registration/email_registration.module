@@ -9,6 +9,11 @@
  * Implements hook_user_insert().
  */
 function email_registration_user_insert(&$edit, &$account, $category = NULL) {
+  // Don't create a new username if one is already set.
+  if (!empty($account->name) && strpos($account->name, 'email_registration_') !== 0) {
+    return;
+  }
+
   // Other modules may implement hook_email_registration_name($edit, $account)
   // to generate a username (return a string to be used as the username, NULL
   // to have email_registration generate it).
@@ -17,23 +22,17 @@ function email_registration_user_insert(&$edit, &$account, $category = NULL) {
   $names = array_filter($names);
 
   if (empty($names)) {
-    // Default implementation of name generation.
+    // Strip off everything after the @ sign.
     $new_name = preg_replace('/@.*$/', '', $edit['mail']);
-    // Remove unwanted characters.
-    $new_name = preg_replace('/[^a-zA-Z0-9.-]/', '', $new_name);
-
-    // if username generated from email record already exists, append underscore and number eg:(chris_123)
-    if ((bool) db_query("SELECT 1 FROM {users} WHERE uid <> :uid AND LOWER(name) = LOWER(:new_name)", array(':uid' => $account->uid, ':new_name' => $new_name))->fetchField()) {
-      $name_idx = db_query_range("SELECT SUBSTRING_INDEX(name,'_',-1) FROM {users} WHERE name REGEXP :search ORDER BY CAST(SUBSTRING_INDEX(name,'_',-1) AS UNSIGNED) DESC", 0, 1, array(':search' => '^' . $new_name . '_[0-9]+$'))->fetchField();
-
-      $new_name .= '_' . ($name_idx + 1);
-    }
   }
   else {
     // One would expect a single implementation of the hook, but if there
     // are multiples out there use the last one.
     $new_name = array_pop($names);
   }
+
+  // Ensure whatever name we have is unique.
+  $new_name = email_registration_unique_username($new_name, $account->uid);
 
   // Replace with generated username.
   db_update('users')
@@ -42,31 +41,72 @@ function email_registration_user_insert(&$edit, &$account, $category = NULL) {
     ->execute();
 
   $edit['name'] = $new_name;
-
-  // If email verification is off and a new user is the one creating an account,
-  // log the new user in with his correct name.
-  global $user;
-  if (!variable_get('user_email_verification', 1) && $user->uid == 0) {
-    $user = $account;
-    $user->name = $new_name;
-  }
   $account->name = $new_name;
   return;
 }
 
 /**
+ * Given a starting point for a Drupal username (e.g. the name portion of an
+ * email address) return a legal, unique Drupal username. This function is
+ * designed to work on the results of the /user/register or /admin/people/create
+ * forms which have already called user_validate_name, valid_email_address
+ * or a similar function. If your custom code is creating users, you should
+ * ensure that the email/name is already validated using something like that.
+ *
+ * @param $name
+ *   A name from which to base the final user name.  May contain illegal characters; these will be stripped.
+ *
+ * @param $uid
+ *   (optional) Uid to ignore when searching for unique user (e.g. if we update the username after the
+ *   {users} row is inserted)
+ *
+ * @return
+ *   A unique user name based on $name.
+ *
+ * @see user_validate_name().
+ *
+ */
+function email_registration_unique_username($name, $uid = 0) {
+  // Strip illegal characters.
+  $name = preg_replace('/[^\x{80}-\x{F7} a-zA-Z0-9@_.\'-]/', '', $name);
+
+  // Strip leading and trailing spaces.
+  $name = trim($name);
+
+  // Convert any other series of spaces to a single underscore.
+  $name = preg_replace('/ +/', '_', $name);
+
+  // If there's nothing left use a default.
+  $name = ('' === $name) ? t('user') : $name;
+
+  // Truncate to reasonable size.
+  $name = (drupal_strlen($name) > (USERNAME_MAX_LENGTH - 10)) ? drupal_substr($name, 0, USERNAME_MAX_LENGTH - 11) : $name;
+
+  // Iterate until we find a unique name.
+  $i = 0;
+  do {
+    $new_name = empty($i) ? $name : $name . '_' . $i;
+    $found = db_query_range("SELECT uid from {users} WHERE uid <> :uid AND name = :name", 0, 1, array(':uid' => $uid, ':name' => $new_name))->fetchAssoc();
+    $i++;
+  } while (!empty($found));
+
+  return $new_name;
+}
+
+
+/**
  * Implements hook_form_FORM_ID_alter().
  */
-function email_registration_form_user_register_form_alter(&$form, &$form_state, $form_id) {
-  $form['account']['name']['#type'] = 'hidden';
-  $form['account']['name']['#value'] = user_password();
+function email_registration_form_user_register_form_alter(&$form, &$form_state) {
+  $form['account']['name']['#type'] = 'value';
+  $form['account']['name']['#value'] = 'email_registration_' . user_password();
   $form['account']['mail']['#title'] = t('E-mail');
 }
 
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function email_registration_form_user_pass_alter(&$form, &$form_state, $form_id) {
+function email_registration_form_user_pass_alter(&$form, &$form_state) {
   $form['name']['#title'] = t('E-mail');
   $form['name']['#description'] = t('A password reset message will be sent to your e-mail address.');
 }
@@ -74,7 +114,7 @@ function email_registration_form_user_pass_alter(&$form, &$form_state, $form_id)
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function email_registration_form_user_login_alter(&$form, &$form_state, $form_id) {
+function email_registration_form_user_login_alter(&$form, &$form_state) {
   $form['name']['#title'] = t('E-mail');
   $form['name']['#description'] = t('Enter your e-mail address.');
   $form['name']['#element_validate'][] = 'email_registration_user_login_validate';
@@ -84,7 +124,7 @@ function email_registration_form_user_login_alter(&$form, &$form_state, $form_id
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function email_registration_form_user_login_block_alter(&$form, &$form_state, $form_id) {
+function email_registration_form_user_login_block_alter(&$form, &$form_state) {
   $form['name']['#title'] = t('E-mail');
   $form['name']['#element_validate'][] = 'email_registration_user_login_validate';
 }
@@ -95,8 +135,17 @@ function email_registration_form_user_login_block_alter(&$form, &$form_state, $f
  */
 function email_registration_user_login_validate($form, &$form_state) {
   if (isset($form_state['values']['name'])) {
+    // Keep the email value in form state for furher validation.
+    $form_state['values']['email'] = $form_state['values']['name'];
     if ($name = db_query('SELECT name FROM {users} WHERE LOWER(mail) = LOWER(:name)', array(':name' => $form_state['values']['name']))->fetchField()) {
       $form_state['values']['name'] = $name;
     }
   }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function email_registration_form_user_profile_form_alter($form, &$form_state) {
+  $form['account']['name']['#title'] = t('Display name');
 }

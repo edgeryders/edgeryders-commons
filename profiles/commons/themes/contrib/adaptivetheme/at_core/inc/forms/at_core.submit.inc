@@ -1,11 +1,10 @@
-  <?php
+<?php
 
 /**
  * @file
  * Process all form values. Uses multiple other include files and helper
  * functions to handle various operations.
  */
-
 global $path_to_at_core;
 $path_to_at_core = drupal_get_path('theme', 'adaptivetheme');
 
@@ -21,15 +20,12 @@ include($path_to_at_core . '/inc/forms/at_core.submit.builders.inc');
  */
 function at_core_settings_submit($form, &$form_state) {
   global $path_to_at_core;
+
   // Set form_state values into one variable
   $values = $form_state['values'];
 
   // Get the active theme name, $theme_key will return the admin theme
   $theme_name = $form_state['build_info']['args'][0];
-
-  // Set up some paths we use to get and save files
-  $path_to_panels_css = $path_to_at_core . '/layouts/css/';
-
 
   // Set values for our three possible paths to the generated files
   $public_files = 'public://adaptivetheme/' . $theme_name . '_files';
@@ -72,13 +68,17 @@ function at_core_settings_submit($form, &$form_state) {
       require_once($path_to_at_core . '/inc/forms/at_core.submit.customcss.inc');
       at_core_submit_custom_css($form_state, $theme_name);
     }
+    // Set variables for device detection environment
+    variable_set('at_detection', isset($values['detection']) ? $values['detection'] : FALSE);
+    variable_set('at_browscap_detect', isset($values['browscap_detect']) ? $values['browscap_detect'] : FALSE);
+    variable_set('at_mobile_detect', isset($values['mobile_detect']) ? $values['mobile_detect'] : FALSE);
   }
 
   // Color inc save
   if (module_exists('color')) {
     if (isset($values['at-color']) && $values['at-color'] == TRUE) {
       require_once($path_to_at_core . '/inc/forms/at_core.submit.color.inc');
-      at_core_submit_color($form_state);
+      at_core_submit_color($form_state, $path, $theme_name);
     }
   }
 }

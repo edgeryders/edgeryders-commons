@@ -4,7 +4,7 @@
  * @file
  * Module file for the features module, which enables the capture and
  * management of features in Drupal. A feature is a collection of Drupal
- * entities which taken together statisfy a certain use-case.
+ * entities which taken together satisfy a certain use-case.
  */
 
 define('FEATURES_API', '1');

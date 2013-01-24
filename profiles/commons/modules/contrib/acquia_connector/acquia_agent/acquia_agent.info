@@ -1,0 +1,19 @@
+name = Acquia agent
+description = "Allows Drupal to securely communicate with the Acquia Network, and checks for updates to Acquia Drupal."
+package = Acquia Network Connector
+core = 7.x
+configure = admin/config/system/acquia-agent
+files[] = acquia_agent.module
+files[] = acquia_agent.install
+files[] = acquia_agent.pages.inc
+files[] = acquia_agent_drupal_version.inc
+files[] = acquia_agent_streams.inc
+files[] = tests/acquia_agent.test
+php = 5.2
+
+; Information added by drupal.org packaging script on 2012-09-21
+version = "7.x-2.8"
+core = "7.x"
+project = "acquia_connector"
+datestamp = "1348252266"
+

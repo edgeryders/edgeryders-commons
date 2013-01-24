@@ -1,0 +1,55 @@
+ol.search-results li {
+  padding-bottom: none;
+  border-bottom: none;
+  margin-bottom: 23px;
+  overflow: hidden;
+}
+
+div.search-results-wrapper h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  top: -1000em;
+  overflow: hidden;
+}
+
+.search-result-url cite {
+  display: inline-block;
+  margin-bottom: 1px;
+  color: #093;
+  font-style: normal;
+  width: 80%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+span.search-result-snippet {
+  color: #222;
+  line-height: 1.24;
+}
+
+div.search-result-wrapper h3.title {
+  text-decoration: underline;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+div.search-result-wrapper h3.title a {
+  color: #12C;
+}
+
+span.search-result-date, div.search-result-snippet-wrapper, div.search-result-snippet-info a {
+  color: #666;
+}
+
+div.search-result-images {
+  padding-top: 4px;
+  margin-right: 10px;
+  display: block;
+  float: left;
+}

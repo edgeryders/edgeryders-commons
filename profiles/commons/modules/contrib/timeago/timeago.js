@@ -2,7 +2,7 @@ Drupal.behaviors.timeago = {
   attach: function (context) {
     jQuery('abbr.timeago, span.timeago, time.timeago', context).timeago();
   }
-}
+};
 
 /**
  * This allows translating string suffixes through Drupal. Some languages
@@ -25,7 +25,7 @@ jQuery.timeago.settings.strings = {
   month: Drupal.t("about a month"),
   months: Drupal.t("%d months"),
   year: Drupal.t("about a year"),
-  years: Drupal.t("%d years"),
-}
+  years: Drupal.t("%d years")
+};
 // Allow timestamps in the future. https://drupal.org/node/1696742
 jQuery.timeago.settings.allowFuture = true;

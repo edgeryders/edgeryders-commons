@@ -1,0 +1,145 @@
+<?php
+
+/**
+ * @file
+ * Creates separate "Edit account" and "Edit profile" tabs for each user, with custom user fields configured under "Edit profile."
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function edit_profile_menu() {
+  $items['user/%user/edit-profile'] = array(
+    'title' => 'Edit profile',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('edit_profile_user_profile_form', 1),
+    'access callback' => 'edit_profile_user_edit_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    // This item should appear after "View" but before "Edit account".
+    'weight' => -5,
+    // In hook_forms() we redirect this menu item's form callback to
+    // user_profile_form() instead, so we need to load its file.
+    'file path' => drupal_get_path('module', 'user'),
+    'file' => 'user.pages.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function edit_profile_menu_alter(&$items) {
+ $items['user/%user/edit']['title'] = 'Edit account';
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function edit_profile_admin_paths() {
+  $paths = array(
+    'user/*/edit-profile' => TRUE,
+  );
+
+  return $paths;
+}
+
+/**
+ * Access callback for editing user profiles.
+ */
+function edit_profile_user_edit_access($account) {
+  if (!user_edit_access($account)) {
+    return FALSE;
+  }
+
+  // Do not show the "Edit profile" tab if there are no user fields to display
+  // on it, or if there are but the current user doesn't have access to
+  // actually edit any of those fields.
+  if ($instances = field_info_instances('user', 'user')) {
+    foreach ($instances as $instance) {
+      $field = field_info_field($instance['field_name']);
+      if (field_access('edit', $field, $instance['entity_type'], $account)) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_forms().
+ */
+function edit_profile_forms() {
+  // Let the "Edit profile" form share the same callback as "Edit account", so
+  // it displays the same data by default but we can alter them separately in
+  // hook_form_FORM_ID_alter().
+  $forms['edit_profile_user_profile_form'] = array(
+    'callback' => 'user_profile_form',
+  );
+
+  return $forms;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function edit_profile_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
+  // Hide all user fields when displaying the main "Edit account" form. (We
+  // need to explicitly check that we aren't on the "Edit profile" form or on a
+  // different category under "Edit account", since this alter hook gets called
+  // in those contexts also.)
+  if ($form_id != 'edit_profile_user_profile_form' && $form['#user_category'] == 'account') {
+    foreach (array_keys(field_info_instances('user', 'user')) as $field_name) {
+      $form[$field_name]['#access'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function edit_profile_form_edit_profile_user_profile_form_alter(&$form, &$form_state) {
+  // Hide all form elements when displaying the "Edit profile" form, except
+  // user fields and other elements needed for the form to function.
+  $field_names = array_keys(field_info_instances('user', 'user'));
+  $form_fields_to_keep = array_merge($field_names, array('actions', 'form_build_id', 'form_token', 'form_id'));
+  foreach (element_children($form) as $key) {
+    if (!in_array($key, $form_fields_to_keep)) {
+      $form[$key]['#access'] = FALSE;
+    }
+  }
+  // Only show the 'submit' button on this form, and hide any others (such as
+  // 'cancel account').
+  foreach (element_children($form['actions']) as $key) {
+    if ($key != 'submit') {
+      $form['actions'][$key]['#access'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function edit_profile_module_implements_alter(&$implementations, $hook) {
+  // To allow edit_profile_form_edit_profile_user_profile_form_alter() to hide
+  // all non-field elements from the "Edit profile" form, we must ensure that
+  // this module's form alter hooks run last.
+  if ($hook == 'form_alter' && isset($implementations['edit_profile'])) {
+    $group = $implementations['edit_profile'];
+    unset($implementations['edit_profile']);
+    $implementations['edit_profile'] = $group;
+  }
+}
+
+/**
+ * Implements hook_field_extra_fields_alter().
+ */
+function edit_profile_field_extra_fields_alter(&$info) {
+  // Do not show any of the "extra" user fields on the Manage Fields form; they
+  // will be displayed on "Edit account" but the real user fields will be
+  // displayed on "Edit profile", so there is no reason to allow them to be
+  // ordered with respect to each other.
+  unset($info['user']['user']['form']);
+}

@@ -90,15 +90,6 @@ class RadioactivityMemcachedIncidentStorage extends RadioactivityIncidentStorage
   }
 
   /**
-   * Default emitter processing via ajax callback path
-   */
-  public function processEmitters() {
-    if (count(self::$memcachedEmitters) > 0) {
-      radioactivity_emitter_callback_data('memcache', self::$memcachedEmitters);
-    }
-  }
-
-  /**
    * Does this require boostrapping?
    */
   public function requiresBootstrap() {

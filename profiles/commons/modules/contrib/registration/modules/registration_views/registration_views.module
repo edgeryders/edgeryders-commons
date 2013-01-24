@@ -93,7 +93,7 @@ class RegistrationViewsController extends EntityDefaultViewsController {
       ),
     );
 
-    $data['registration']['state']['relationship']['base field'] = 'registration_state_id';
+    $data['registration']['state']['relationship']['base field'] = 'name';
 
     // Entity Metadata does not handle registration schema well.
     $data['registration']['user_uid']['relationship'] = array(

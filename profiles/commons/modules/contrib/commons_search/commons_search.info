@@ -1,14 +1,27 @@
 name = Commons Search
 description = Provide the global search block.
 core = 7.x
-package = Commons - Building blocks
+package = Commons - Search
+php = 5.2.4
 version = 7.x-3.0-alpha1
 project = commons_search
 dependencies[] = ctools
-dependencies[] = strongarm
 dependencies[] = custom_search
+dependencies[] = features
+dependencies[] = rich_snippets
+dependencies[] = search
+dependencies[] = strongarm
+dependencies[] = views
+dependencies[] = views_load_more
+stylesheets[all][] = css/commons_search.css
+features[ctools][] = panelizer:panelizer:1
 features[ctools][] = strongarm:strongarm:1
+features[ctools][] = views:views_default:3.0
 features[features_api][] = api:1
+features[menu_links][] = main-menu:search
+features[user_permission][] = search content
+features[user_permission][] = use advanced search
+features[user_permission][] = use custom search
 features[variable][] = custom_search_any_force
 features[variable][] = custom_search_any_restricts
 features[variable][] = custom_search_content_types_region
@@ -52,11 +65,11 @@ features[variable][] = custom_search_type_selector
 features[variable][] = custom_search_type_selector_all
 features[variable][] = custom_search_type_selector_label
 features[variable][] = custom_search_type_selector_label_visibility
+features[views_view][] = group_search
 
-stylesheets[all][] = css/commons_search.css
-
-; Information added by drush on 2012-11-15
-version = ""
+; Information added by drupal.org packaging script on 2013-01-19
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_search"
-datestamp = "1353011132"
+datestamp = "1358556098"
 

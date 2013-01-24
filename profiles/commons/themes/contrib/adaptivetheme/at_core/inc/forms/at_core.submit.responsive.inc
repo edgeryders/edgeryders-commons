@@ -10,11 +10,19 @@
  * responsive styles (the aggregated styles with embedded media queries) and a
  * default layout CSS file (for when desktop first method has been selected).
  */
-
 function at_core_submit_reponsive(&$form_state, $theme_name, $path) {
+  global $path_to_at_core;
+
+  // Set up some paths we use to get and save files
   $path_to_responsive_css = drupal_get_path('theme', $theme_name) . '/css/';
+  $path_to_panels_css = $path_to_at_core . '/layouts/css/';
+
+  // Set form state values to an easy to remember variable
   $values = $form_state['values'];
+
+  // Initialize
   $smartphone_landscape_panels_data = array();
+
   // Get the page layout config array
   $layout_variables = page_layout();
 
@@ -92,7 +100,7 @@ function at_core_submit_reponsive(&$form_state, $theme_name, $path) {
     // stage in the future this layout might not be hard coded and we might really
     // need to return a dynamically built layout. Note that $layout is only ever
     // used in desktop first - never in mobile first.
-    $layout = at_build_page_layout($smartphone_portrait_layout_data['layout'], $smartphone_portrait_layout_data['sidebar_first'], $smartphone_portrait_layout_data['sidebar_second'], $smartphone_portrait_layout_data['sidebar_unit']);
+    $layout = at_build_page_layout($smartphone_portrait_layout_data['layout'], $smartphone_portrait_layout_data['sidebar_first'], $smartphone_portrait_layout_data['sidebar_second'], $smartphone_portrait_layout_data['sidebar_unit'], $theme_name);
 
     $method = $smartphone_portrait_layout_data['layout'];
     $comment = "/* $device $method */\n";
@@ -147,7 +155,7 @@ function at_core_submit_reponsive(&$form_state, $theme_name, $path) {
         $smartphone_landscape_layout_data[$value] = check_plain($values["$device" . '_' . "$value"]);
       }
     }
-    $layout = at_build_page_layout($smartphone_landscape_layout_data['layout'], $smartphone_landscape_layout_data['sidebar_first'], $smartphone_landscape_layout_data['sidebar_second'], $smartphone_landscape_layout_data['sidebar_unit']);
+    $layout = at_build_page_layout($smartphone_landscape_layout_data['layout'], $smartphone_landscape_layout_data['sidebar_first'], $smartphone_landscape_layout_data['sidebar_second'], $smartphone_landscape_layout_data['sidebar_unit'], $theme_name);
 
     $method = $smartphone_landscape_layout_data['layout'];
     $comment = "/* $device $method */\n";
@@ -210,7 +218,7 @@ function at_core_submit_reponsive(&$form_state, $theme_name, $path) {
     if ($tablet_portrait_layout_data['layout'] == 'two_col_stack') {
       $tablet_portrait_layout_data['layout'] = 'two_sidebars_right_stack';
     }
-    $layout = at_build_page_layout($tablet_portrait_layout_data['layout'], $tablet_portrait_layout_data['sidebar_first'], $tablet_portrait_layout_data['sidebar_second'], $tablet_portrait_layout_data['sidebar_unit']);
+    $layout = at_build_page_layout($tablet_portrait_layout_data['layout'], $tablet_portrait_layout_data['sidebar_first'], $tablet_portrait_layout_data['sidebar_second'], $tablet_portrait_layout_data['sidebar_unit'], $theme_name);
 
     $method = $tablet_portrait_layout_data['layout'];
     $comment = "/* $device $method */\n";
@@ -275,7 +283,7 @@ function at_core_submit_reponsive(&$form_state, $theme_name, $path) {
     if ($tablet_portrait_layout_data['layout'] == 'two_col_stack') {
       $tablet_portrait_layout_data['layout'] = 'two_sidebars_right_stack';
     }
-    $layout = at_build_page_layout($tablet_landscape_layout_data['layout'], $tablet_landscape_layout_data['sidebar_first'], $tablet_landscape_layout_data['sidebar_second'], $tablet_landscape_layout_data['sidebar_unit']);
+    $layout = at_build_page_layout($tablet_landscape_layout_data['layout'], $tablet_landscape_layout_data['sidebar_first'], $tablet_landscape_layout_data['sidebar_second'], $tablet_landscape_layout_data['sidebar_unit'], $theme_name);
 
     $method = $tablet_landscape_layout_data['layout'];
     $comment = "/* $device $method */\n";
@@ -332,7 +340,7 @@ function at_core_submit_reponsive(&$form_state, $theme_name, $path) {
         $bigscreen_layout_data[$value] = check_plain($values["$device" . '_' . "$value"]);
       }
     }
-    $layout = at_build_page_layout($bigscreen_layout_data['layout'], $bigscreen_layout_data['sidebar_first'], $bigscreen_layout_data['sidebar_second'], $bigscreen_layout_data['sidebar_unit']);
+    $layout = at_build_page_layout($bigscreen_layout_data['layout'], $bigscreen_layout_data['sidebar_first'], $bigscreen_layout_data['sidebar_second'], $bigscreen_layout_data['sidebar_unit'], $theme_name);
 
     $method = $bigscreen_layout_data['layout'];
     $comment = "/* $device $method */";

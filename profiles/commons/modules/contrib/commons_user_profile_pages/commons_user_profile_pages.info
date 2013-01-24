@@ -14,9 +14,9 @@ dependencies[] = commons_events
 features[ctools][] = page_manager:pages_default:1
 features[features_api][] = api:1
 features[page_manager_handlers][] = user_view_panel_context
-
-; Information added by drush on 2012-11-15
-version = ""
+; Information added by drupal.org packaging script on 2013-01-08
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_user_profile_pages"
-datestamp = "1353011131"
+datestamp = "1357606064"
 

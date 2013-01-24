@@ -126,7 +126,7 @@ function adaptivetheme_breadcrumb($vars) {
           $output .= '<li class="' . $class . ' crumb-first">' . $val . '</li>';
         }
         else {
-          $output .= '<li class="' . $class . '"><span class="crumb-sepreator">' . $separator . '</span>' . $val . '</li>';
+          $output .= '<li class="' . $class . '"><span class="crumb-separator">' . $separator . '</span>' . $val . '</li>';
         }
       }
       $output .= '</ol></nav></div>';
@@ -209,7 +209,14 @@ function adaptivetheme_item_list($vars) {
   $type = $vars['type'];
   $attributes = $vars['attributes'];
 
-  $output = '<div class="item-list">';
+  // If a class exists use it on the wrapper, for Drupal core this mainly applies
+  // to the pager, so you get the wrapper class .item-list-pager
+  if (isset($attributes['class'])) {
+    $output = '<div class="item-list item-list-' . $attributes['class'][0] . '">';
+  }
+  else {
+    $output = '<div class="item-list">';
+  }
 
   if (isset($title) && $title !== '') {
     $output .= '<h3>' . $title . '</h3>';
@@ -221,6 +228,7 @@ function adaptivetheme_item_list($vars) {
     foreach ($items as $i => $item) {
       $attributes = array();
       $children = array();
+      $data = '';
       if (is_array($item)) {
         foreach ($item as $key => $value) {
           if ($key == 'data') {

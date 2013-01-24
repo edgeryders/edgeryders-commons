@@ -13,6 +13,7 @@ dependencies[] = file
 dependencies[] = og_ui
 dependencies[] = strongarm
 dependencies[] = views
+dependencies[] = views_litepager
 features[ctools][] = strongarm:strongarm:1
 features[ctools][] = views:views_default:3.0
 features[features_api][] = api:1
@@ -36,10 +37,9 @@ features[variable][] = node_options_document
 features[variable][] = node_preview_document
 features[variable][] = node_submitted_document
 features[views_view][] = commons_bw_documents
-
-
-; Information added by drush on 2012-11-15
-version = ""
+; Information added by drupal.org packaging script on 2012-12-28
+version = "7.x-3.x-dev"
+core = "7.x"
 project = "commons_documents"
-datestamp = "1353011137"
+datestamp = "1356655517"
 

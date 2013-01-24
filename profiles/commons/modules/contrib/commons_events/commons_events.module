@@ -33,6 +33,26 @@ function commons_events_attendee_access($event_node) {
 }
 
 /**
+ * Implements hook_views_default_views_alter().
+ */
+function commons_events_views_default_views_alter(&$views) {
+  if (isset($views['commons_bw_all'])) {
+    // Events aren't meant to display on the group browswing widget because
+    // they have their own landing page.
+    $views['commons_bw_all']->display['default']->display_options['filters']['type']['id'] = 'type';
+    $views['commons_bw_all']->display['default']->display_options['filters']['type']['table'] = 'node';
+    $views['commons_bw_all']->display['default']->display_options['filters']['type']['field'] = 'type';
+    $views['commons_bw_all']->display['default']->display_options['filters']['type']['operator'] = 'not in';
+    if (!isset($views['commons_bw_all']->display['default']->display_options['filters']['type']['value'])) {
+      $views['commons_bw_all']->display['default']->display_options['filters']['type']['value'] = array('event' => 'event');
+    }
+    else {
+      $views['commons_bw_all']->display['default']->display_options['filters']['type']['value']['event'] = 'event';
+    }
+  }
+}
+
+/**
  * Page callback for full event attendee listing.
  */
 function commons_events_event_attendees_page($event_node) {
@@ -129,8 +149,8 @@ function commons_events_form_node_form_alter(&$form, &$form_state) {
       '#weight' => 10,
     );
     $form['field_number_of_attendees']['#states'] = $form['field_status']['#states'];
-    $form['field_number_of_attendees']['#states']['invisible'][':input[name="field_status"]'] = array(
-      'value' => 0,
+    $form['field_number_of_attendees']['#states']['visible'][':input[name="field_status"]'] = array(
+      'value' => 1,
     );
     $form['field_number_of_attendees']['#weight'] = 11;
     $form['field_topics']['#weight'] = 12;
@@ -171,6 +191,18 @@ function commons_events_form_node_form_alter(&$form, &$form_state) {
 }
 
 /**
+ * Implements hook_commons_entity_integration.
+ */
+function commons_events_commons_entity_integration() {
+  return array(
+    'node' => array(
+      'event' => array(
+      ),
+    ),
+  );
+}
+
+/**
  * Custom node form validation handler.
  */
 function commons_events_node_form_validate($form, &$form_state) {
@@ -186,14 +218,6 @@ function commons_events_node_form_validate($form, &$form_state) {
           return FALSE;
         }
       break;
-    case 'external':
-      // Must have entered a URL to the offsite registration page.
-      if (empty($form_state['values']['field_offsite_url'][$lng]['0']['value'])
-        || !valid_url($form_state['values']['field_offsite_url'][$lng]['0']['value'])) {
-        form_set_error('field_offsite_url', t('A valid URL is required for offsite registration.'));
-        return FALSE;
-      }
-      break;
   }
   return TRUE;
 }
@@ -207,6 +231,9 @@ function commons_events_node_form_submit($form, $form_state) {
   if (isset($node->nid)) {
     $settings = registration_entity_settings('node', $node->nid);
     $settings['status'] = (int) $form_state['values']['field_status'];
+    if ($form_state['values']['field_registration_type'][$lng]['0']['value'] == 'external') {
+      $settings['status'] = 0;
+    }
     if (!empty($form_state['values']['field_number_of_attendees'][$lng]['0']['value'])
       && is_numeric($form_state['values']['field_number_of_attendees'][$lng]['0']['value'])) {
       $settings['capacity'] = (int) $form_state['values']['field_number_of_attendees'][$lng]['0']['value'];
@@ -227,6 +254,24 @@ function commons_events_token_info_alter(&$tokens) {
 }
 
 /**
+ * Implements hook_commons_bw_create_all_widget().
+ */
+function commons_events_commons_bw_create_all_widget($group) {
+   if (og_user_access('node', $group->nid, 'create event content')) {
+      $link = l('List an event','node/add/event',
+      array('attributes' => array('class' => 'commons-events-create'), 'query' => array('og_group_ref' => $group->nid))
+    );
+    return array(
+      'commons_events' => array(
+        'link' => $link,
+        'text' => t('Create in-person or online meetups'),
+        '#weight' => 6,
+      ),
+    );
+  }
+}
+
+/**
  * Implements hook_tokens().
  */
 function commons_events_tokens($type, $tokens, array $data = array(), array $options = array()) {
@@ -243,29 +288,57 @@ function commons_events_tokens($type, $tokens, array $data = array(), array $opt
 }
 
 /**
-* Implements hook_strongarm_alter().
-*/
- function commons_events_strongarm_alter(&$items) {
-  // Expose the Post content type for 'liking' via the Commons_like module
-  // by altering the configuration for the Rate.module widget that it provides.
-  if (!empty($items['rate_widgets']->value)) {
-    foreach($items['rate_widgets']->value as $key => $widget) {
-      if ($widget->name == 'commons_like') {
-        if (!in_array('event', $items['rate_widgets']->value[$key]->node_types)) {
-          $items['rate_widgets']->value[$key]->node_types[] = 'event';
-        }
-        if (!in_array('event', $items['rate_widgets']->value[$key]->comment_types)) {
-          $items['rate_widgets']->value[$key]->comment_types[] = 'event';
-        }
-      }
-    }
+ * Generates the 'more' link for upcoming events in a specific group.
+ */
+function commons_events_upcoming_more_link($group_id) {
+  if (module_exists('commons_events_solr')) {
+    $options = array(
+      'query' => array(
+        'f[1]' => 'sm_og_group_ref:node:' . $group_id,
+      ),
+    );
+    return l('more', 'events', $options);
   }
-  // Expose the post content type for integration with Commons Radioactivity
-  // and Commons Groups.
-  foreach (array('commons_radioactivity_entity_types', 'commons_groups_entity_types') as $key) {
-    if (isset($items[$key])) {
-      $items[$key]->value['node']['event'] = 1;
-    }
+  $options = array(
+    'query' => array(
+      'gid' => $group_id,
+    ),
+  );
+  return l('more', 'events', $options);
+}
+
+/**
+ * Implements hook_views_post_execute().
+ */
+function commons_events_views_post_execute(&$view) {
+  if ($view->name == 'commons_events_upcoming'
+    && $view->current_display == 'panel_pane_1') {
+    $view->attachment_after = '<div class="more-link">' . commons_events_upcoming_more_link($view->args[0]) . '</div>';
   }
 }
 
+/**
+ * Implements hook_block_info().
+ */
+function commons_events_block_info() {
+  $blocks = array(
+    'commons_events_create_event_link' => array(
+      'info' => t('"Create an event" call to action'),
+      'cache' => DRUPAL_CACHE_GLOBAL,
+    ),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function commons_events_block_view($delta = '') {
+  if ($delta == 'commons_events_create_event_link'
+    && node_access('create', 'event')) {
+    return array(
+      'subject' => NULL,
+      'content' => l(t('List an event'), 'node/add/event'),
+    );
+  }
+}

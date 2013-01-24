@@ -1,12 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Generate form elments for the Apple touch icons settings.
+ */
 function at_core_touch_icons_form(&$form, $theme_name) {
-
-  /**
-   * @file
-   * Generate form elments for the Apple touch icons settings.
-   */
-
   $form['at']['ati'] = array(
     '#type' => 'fieldset',
     '#title' => t('Touch Icons'),

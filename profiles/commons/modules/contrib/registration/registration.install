@@ -63,9 +63,11 @@ function registration_schema() {
         'default' => 0,
       ),
       'state' => array(
-        'description' => 'State of this registration.',
-        'type' => 'int',
+        'description' => 'The {registration_state}.name of this registration.',
+        'type' => 'varchar',
+        'length' => 32,
         'not null' => TRUE,
+        'default' => '',
       ),
       'created' => array(
         'description' => 'The Unix timestamp when the registration was created.',
@@ -97,7 +99,7 @@ function registration_schema() {
       ),
       'registration_state' => array(
         'table' => 'registration_state',
-        'columns' => array('state' => 'registration_state_id'),
+        'columns' => array('state' => 'name'),
       ),
     ),
     'unique keys' => array(
@@ -105,7 +107,7 @@ function registration_schema() {
         'entity_id',
         'entity_type',
         'anon_mail',
-        'user_uid'
+        'user_uid',
       ),
     ),
     'primary key' => array('registration_id'),
@@ -149,6 +151,8 @@ function registration_schema() {
         'description' => 'Date to send the reminder on.',
         'mysql_type' => 'datetime',
         'pgsql_type' => 'timestamp',
+        'sqlite_type' => 'varchar',
+        'sqlsrv_type' => 'smalldatetime',
         'not null' => FALSE,
       ),
       'reminder_template' => array(
@@ -161,12 +165,16 @@ function registration_schema() {
         'description' => 'Date to open registrations. Or NULL to open immediately.',
         'mysql_type' => 'datetime',
         'pgsql_type' => 'timestamp',
+        'sqlite_type' => 'varchar',
+        'sqlsrv_type' => 'smalldatetime',
         'not null' => FALSE,
       ),
       'close' => array(
         'description' => 'Date to close registrations. Or NULL to never close automatically.',
         'mysql_type' => 'datetime',
         'pgsql_type' => 'timestamp',
+        'sqlite_type' => 'varchar',
+        'sqlsrv_type' => 'smalldatetime',
         'not null' => FALSE,
       ),
       'settings' => array(
@@ -246,31 +254,31 @@ function registration_schema() {
   );
 
   $schema['registration_state'] = array(
-    'description' => t('Stores registration states configuration.'),
+    'description' => 'Stores registration states configuration.',
     'fields' => array(
       'registration_state_id' => array(
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
-        'description' => t('The registration state ID.'),
+        'description' => 'The registration state ID.',
       ),
       'name' => array(
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
-        'description' => t('The machine name of the registration state.'),
+        'description' => 'The machine name of the registration state.',
       ),
       'label' => array(
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
-        'description' => t('The human readable name of the registration state.'),
+        'description' => 'The human readable name of the registration state.',
       ),
       'description' => array(
         'type' => 'text',
         'size' => 'big',
         'not null' => FALSE,
-        'description' => t('The description of the registration state.'),
+        'description' => 'The description of the registration state.',
       ),
       'default_state' => array(
         'description' => 'A boolean indicating default registration state.',
@@ -284,20 +292,20 @@ function registration_schema() {
         'not null' => TRUE,
         'default' => 0,
         'size' => 'tiny',
-        'description' => t('A flag showing active registration states.'),
+        'description' => 'A flag showing active registration states.',
       ),
       'show_on_form' => array(
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
         'size' => 'tiny',
-        'description' => t('A flag showing if this registration state should be shown on the registration form.'),
+        'description' => 'A flag showing if this registration state should be shown on the registration form.',
       ),
       'weight' => array(
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('The weight of this  registration state in the UI'),
+        'description' => 'The weight of this  registration state in the UI',
       ),
       'status' => array(
         'type' => 'int',
@@ -336,7 +344,7 @@ function registration_field_schema($field) {
     'registration_type' => array(
       'type' => 'varchar',
       'length' => 32,
-      'not null' => FALSE
+      'not null' => FALSE,
     ),
   );
   $indexes = array(
@@ -356,30 +364,30 @@ function registration_field_schema($field) {
 }
 
 /**
- * Implements hook_install
+ * Implements hook_install().
  */
 function registration_install() {
-  // Create default states
+  // Create default states.
   $states = array(
     'complete' => array(
-      'label' => st('Complete'),
-      'description' => st('Registration has been completed.'),
+      'label' => 'Complete',
+      'description' => 'Registration has been completed.',
       'default_state' => 1,
       'active' => 1,
       'show_on_form' => 0,
       'weight' => 1,
     ),
     'pending' => array(
-      'label' => st('Pending'),
-      'description' => st('Registration is pending.'),
+      'label' => 'Pending',
+      'description' => 'Registration is pending.',
       'default_state' => 0,
       'active' => 0,
       'show_on_form' => 0,
       'weight' => 1,
     ),
     'canceled' => array(
-      'label' => st('Canceled'),
-      'description' => st('Registration was cancelled'),
+      'label' => 'Canceled',
+      'description' => 'Registration was cancelled',
       'default_state' => 0,
       'active' => 0,
       'show_on_form' => 0,
@@ -407,11 +415,43 @@ function registration_install() {
  * Implements hook_uninstall().
  */
 function registration_uninstall() {
-  // Remove default states
+  // Remove default states.
   $default_states = array(
-    'complete', 'complete', 'canceled'
+    'complete', 'complete', 'canceled',
   );
   db_delete('registration_state')
     ->condition('name', $default_states, 'IN')
     ->execute();
+}
+
+/**
+ * Change registration_state.state field from int to varchar.
+ *
+ * Required to use machine names for states.
+ */
+function registration_update_7100(&$sandbox) {
+  module_load_include('module', 'registration');
+
+  db_drop_index('registration', 'registration_state');
+  db_change_field('registration', 'state', 'state',
+    array(
+      'description' => 'The {registration_state}.name of this registration.',
+      'type' => 'varchar',
+      'length' => 32,
+      'not null' => TRUE,
+      'default' => '',
+    ));
+  db_add_index('registration', 'registration_state', array('state'));
+
+  $states = registration_get_states();
+
+  // Iterate through each defined state and update registrations with that state
+  // with the machine name of the state.
+  foreach ($states as $state) {
+    $num_updated = db_update('registration')
+      ->fields(array('state' => $state->identifier()))
+      ->condition('state', $state->registration_state_id)
+      ->execute();
+  }
+
 }

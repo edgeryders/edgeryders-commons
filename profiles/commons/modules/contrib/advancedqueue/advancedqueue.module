@@ -1,0 +1,52 @@
+<?php
+
+/**
+ * @file
+ * Helper module for advanced queuing.
+ */
+
+/**
+ * Status indicating item was added to the queue.
+ */
+define('ADVANCEDQUEUE_STATUS_QUEUED', -1);
+
+/**
+ * Status indicating item is currently being processed.
+ */
+define('ADVANCEDQUEUE_STATUS_PROCESSING', 0);
+
+/**
+ * Status indicating item was processed successfuly.
+ */
+define('ADVANCEDQUEUE_STATUS_SUCCESS', 1);
+
+/**
+ * Status indicating item processing failed.
+ */
+define('ADVANCEDQUEUE_STATUS_FAILURE', 2);
+
+/**
+ * Implements hook_views_api().
+ */
+function advancedqueue_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'advancedqueue') . '/views',
+  );
+}
+
+/**
+ * Implements hook_advancedqueue_entity_info().
+ */
+function advancedqueue_entity_info() {
+  $entity_info['advancedqueue_item'] = array(
+    'label' => t('Advanced queue item'),
+    'controller class' => 'DrupalDefaultEntityController',
+    'base table' => 'advancedqueue',
+    'module' => 'advancedqueue',
+    'entity keys' => array(
+      'id' => 'item_id',
+    ),
+  );
+  return $entity_info;
+}

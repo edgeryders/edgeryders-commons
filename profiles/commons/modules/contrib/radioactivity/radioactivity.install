@@ -17,7 +17,7 @@ function radioactivity_field_schema($field) {
         'not null' => FALSE,
       ),
     );
-    $indexes =array('energy' => array(RADIOACTIVITY_FIELD_ENERGY));
+    $indexes = array('energy' => array(RADIOACTIVITY_FIELD_ENERGY));
   }
   return array('columns' => $columns, 'indexes' => $indexes);
 }
@@ -217,4 +217,15 @@ function radioactivity_update_7203() {
   $table_name = 'radioactivity_flood_map';
   $table = drupal_get_schema_unprocessed('radioactivity', $table_name);
   db_create_table($table_name, $table);
+}
+
+/**
+ * Update existing decay profiles which have decaying enabled to Advanced mode
+ */
+function radioactivity_update_7204() {
+  $table_name = 'radioactivity_decay_profile';
+  $update = db_update($table_name)
+    ->fields(array('enable_decay' => 2))
+    ->condition('enable_decay', 1, '=')
+    ->execute();
 }

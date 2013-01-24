@@ -1609,14 +1609,15 @@ tr.even td.active {
  */
 #forum td {}
 
-#forum td .created,
-#forum td .posts,
-#forum td .topics,
-#forum td .last-reply,
-#forum td .replies,
-#forum td .pager {
+#forum td.created,
+#forum td.posts,
+#forum td.topics,
+#forum td.last-reply,
+#forum td.replies,
+#forum td.pager {
   white-space: normal;
 }
+
 
 
 /* =============================================================================

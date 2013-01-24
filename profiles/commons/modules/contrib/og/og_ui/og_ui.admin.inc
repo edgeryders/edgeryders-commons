@@ -65,6 +65,40 @@ function og_ui_admin_settings($form_state) {
     }
   }
 
+  $form['og_features_ignore_og_fields'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Prevent "Features" export piping'),
+    '#description' => t('When exporting using Features module a content-type, this will prevent from OG related fields to be exported.'),
+    '#default_value' => variable_get('og_features_ignore_og_fields', FALSE),
+    '#access' => module_exists('features'),
+  );
+
+  $form['og_use_queue'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use queue'),
+    '#description' => t('Use <a href="@url">"Advacned-Queue"</a> module to process operations such as deleting memberships when groups are deleted.', array('@url' => 'http://drupal.org/project/advancedqueue')),
+    '#default_value' => variable_get('og_use_queue', FALSE),
+    '#disabled' => !module_exists('advancedqueue'),
+  );
+
+  $form['og_orphans_delete'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Delete orphans'),
+    '#description' => t('Delete "Orphan" group-content (not including useres), when the group is deleted.'),
+    '#default_value' => variable_get('og_orphans_delete', FALSE),
+    '#disabled' => !module_exists('advancedqueue'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="og_use_queue"]' => array('checked' => TRUE),
+      ),
+    ),
+    '#attributes' => array(
+      'class' => array('entityreference-settings'),
+    ),
+  );
+
+  // Re-use Entity-reference CSS for indentation.
+  $form['#attached']['css'][] = drupal_get_path('module', 'entityreference') . '/entityreference.admin.css';
   return system_settings_form($form);
 }
 
@@ -220,8 +254,8 @@ function og_ui_add_users_submit($form, &$form_state) {
   $og_membership->etid = $account->uid;
   $og_membership->state = $state;
   $og_membership->save();
-
-  drupal_set_message(t('%user has been added to group.', array('%user' => format_username($account))));
+  $group = node_load($gid);
+  drupal_set_message(t('%user has been added to the group %group-title.', array('%user' => format_username($account), '%group-title' => $group->title)));
 }
 
 /**

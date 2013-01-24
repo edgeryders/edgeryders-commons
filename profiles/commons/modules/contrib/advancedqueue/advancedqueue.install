@@ -1,0 +1,131 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Advanced-queue module.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function advancedqueue_enable() {
+  if (variable_get('queue_default_class', NULL) === NULL) {
+    // Take ownership of all the queues.
+    variable_set('queue_default_class', 'AdvancedQueue');
+  }
+}
+
+/**
+ * Implements hook_disable().
+ */
+function advancedqueue_disable() {
+  if (variable_get('queue_default_class', NULL) === 'AdvancedQueue') {
+    // Let the queues run free.
+    variable_del('queue_default_class', 'AdvancedQueue');
+  }
+}
+
+/**
+ * Implements hook_schema().
+ */
+function advancedqueue_schema() {
+  $schema['advancedqueue'] = array(
+    'description' => 'Stores items in queues.',
+    'fields' => array(
+      'item_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique item ID.',
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The queue name.',
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The user to which the item belongs.',
+      ),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => 400,
+        'not null' => TRUE,
+        'description' => 'The title of this item.',
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'The arbitrary data for the item.',
+      ),
+      'result' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'The arbitrary result for the item, only significant if {advancedqueue}.status <> 0',
+      ),
+      'expire' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Timestamp when the claim lease expires on the item.',
+      ),
+      'status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => ADVANCEDQUEUE_STATUS_QUEUED,
+        'size' => 'tiny',
+        'description' => 'Indicates whether the item has been processed (-1 = queue, 0 = processing, 1 = successfully processed, 2 = failed).',
+      ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Timestamp when the item was created.',
+      ),
+      'processed' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Timestamp when the item was processed.',
+      ),
+    ),
+    'primary key' => array('item_id'),
+    'indexes' => array(
+      'queue' => array('name', 'status', 'expire', 'created'),
+    ),
+  );
+
+  $schema['advancedqueue_tags'] = array(
+    'description' => 'Stores tags of items in queues.',
+    'fields' => array(
+      'item_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'A {advancedqueue}.item_id',
+      ),
+      'tag' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The queue name.',
+      ),
+    ),
+    'primary key' => array('item_id', 'tag'),
+    'indexes' => array(
+      'tag' => array('tag'),
+    ),
+  );
+
+  return $schema;
+}

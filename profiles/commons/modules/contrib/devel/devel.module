@@ -57,7 +57,7 @@ function devel_menu() {
   // Note: we can't dynamically append destination to querystring.
   // Do so at theme layer. Fix in D7?
   $items['devel/cache/clear'] = array(
-    'title' => 'Empty cache',
+    'title' => 'Clear cache',
     'page callback' => 'devel_cache_clear',
     'description' => 'Clear the CSS cache and all database cache tables which store page, node, theme and variable caches.',
     'access arguments' => array('access devel information'),
@@ -102,7 +102,8 @@ function devel_menu() {
   $items['devel/variable'] = array(
     'title' => 'Variable editor',
     'description' => 'Edit and delete site variables.',
-    'page callback' => 'devel_variable_page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('devel_variable_form'),
     'access arguments' => array('access devel information'),
     'file' => 'devel.pages.inc',
     'menu_name' => 'devel',
@@ -1538,7 +1539,7 @@ function _devel_print_object($obj, $prefix = NULL, $parents = NULL, $object = FA
   if (is_array($obj)) {
     $output = "<dl>\n";
     foreach ($obj as $field => $value) {
-      if ($field == 'devel_flag_reference') {
+      if ($field === 'devel_flag_reference') {
         continue;
       }
       if (!is_null($parents)) {

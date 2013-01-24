@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * Validate that a AdvancedQueue works as a normal queue.
+ *
+ * Note this class extends core's QueueTestCase, so we use its tests.
+ */
+class AdvancedQueueTestCase extends QueueTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Advanced queue',
+      'description' => 'Validate that a Advanced Queue works as a normal queue.',
+      'group' => 'Advanced Queue',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('advancedqueue');
+    variable_set('queue_default_class', 'AdvancedQueue');
+  }
+}

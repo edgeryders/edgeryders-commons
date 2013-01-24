@@ -132,19 +132,12 @@ class Registration extends Entity {
     $registration_id,
     $entity_id,
     $entity_type,
-    $mail,
     $anon_mail = NULL,
     $user_uid = NULL,
     $count,
     $author_uid,
-    $state, // State ID
     $created,
     $updated;
-
-  public function __construct(array $values = array(), $entityType = NULL) {
-    parent::__construct($values, $entityType);
-    $this->mail = $this->mail();
-  }
 
   /**
    * Specifies the default label, which is picked up by label() by default.
@@ -186,7 +179,7 @@ class Registration extends Entity {
     // Mail
     $build['mail'] = array(
       '#prefix' => '<div class="field registration-mail"><div class="field-label">' . t('Email Address') . '</div>',
-      '#markup' => $this->mail,
+      '#markup' => $wrapper->mail->value(),
       '#suffix' => '</div>',
     );
 
@@ -249,10 +242,10 @@ class Registration extends Entity {
     // set a default state if not provided
     $wrapper = entity_metadata_wrapper('registration', $this);
     $state = $wrapper->state->value();
-    if (!$state || $this->state == -1) {
+    if (!$state) {
       $default_state = registration_get_default_state();
       if ($default_state) {
-        $this->state = $default_state->internalIdentifier();
+        $this->state = $default_state->identifier();
       }
     }
     $this->updated = REQUEST_TIME;
@@ -267,17 +260,6 @@ class Registration extends Entity {
    */
   protected function defaultUri() {
     return array('path' => 'registration/' . $this->internalIdentifier());
-  }
-
-  /**
-   * Return email address to use with this registration.
-   *
-   * @return string
-   */
-  protected function mail() {
-    $wrapper = entity_metadata_wrapper('registration', $this);
-    $user = $wrapper->user->value();
-    return ($user) ? $user->mail : $this->anon_mail;
   }
 
   /**
@@ -372,6 +354,25 @@ class RegistrationMetadataController extends EntityDefaultMetadataController {
       'setter callback' => 'entity_property_verbatim_set',
     );
 
+    $properties['anon_mail'] = array(
+      'label' => t('Anonymous e-mail'),
+      'type' => 'text',
+      'schema field' => 'anon_mail',
+      'description' => t('An e-mail address associated with the registration of an anonymous user.'),
+      'getter callback' => 'registration_get_properties',
+      'setter callback' => 'registration_property_email_set',
+    );
+
+    // Provides a single calculated property that contains either the associated user's email address or the
+    // anonymous email used if no user is associated with the registration
+    $properties['mail'] = array(
+      'label' => t('Registrant e-mail'),
+      'type' => 'text',
+      'description' => t('Either the user email address, if registration is for a user, or the anonymous user email property.'),
+      'getter callback' => 'registration_get_properties',
+      'computed' => TRUE,
+    );
+
     // Entities
     $properties['entity'] = array(
       'label' => t("Host entity"),
@@ -393,28 +394,19 @@ class RegistrationMetadataController extends EntityDefaultMetadataController {
 
     $properties['user'] = array(
       'label' => t("User entity"),
-      'type' => 'entity',
+      'type' => 'user',
       'schema field' => 'user_uid',
       'description' => t("The entity for which the registration belongs to. Usually a user."),
       'getter callback' => 'registration_property_user_get',
       'setter callback' => 'registration_property_user_set',
     );
 
-    $properties['anon_mail'] = array(
-      'label' => t('Anonymous e-mail'),
-      'type' => 'text',
-      'schema field' => 'anon_mail',
-      'description' => t('An e-mail address associated with the registration of an anonymous user.'),
-      'getter callback' => 'registration_get_properties',
-      'setter callback' => 'registration_property_email_set',
-    );
-
     $properties['state'] = array(
       'label' => t("State entity"),
       'type' => 'registration_state',
       'schema field' => 'state',
+      'options list' => 'registration_get_states_options',
       'description' => t("The state of the registration."),
-      'getter callback' => 'registration_property_state_get',
       'setter callback' => 'entity_property_verbatim_set',
     );
     return $info;
@@ -427,7 +419,8 @@ class RegistrationMetadataController extends EntityDefaultMetadataController {
  * @see registration_entity_property_info().
  */
 function registration_property_host_get(Registration $registration, array $options, $property_name, $entity_type) {
-  return entity_load_single($registration->entity_type, $registration->entity_id);
+  $entity = entity_load_single($registration->entity_type, $registration->entity_id);
+  return entity_metadata_wrapper($registration->entity_type, $entity);
 }
 
 /**
@@ -437,7 +430,8 @@ function registration_property_host_get(Registration $registration, array $optio
  */
 function registration_property_author_get(Registration $registration, array $options, $property_name, $entity_type) {
   if (is_numeric($registration->author_uid)) {
-    return entity_load_single('user', $registration->author_uid);
+    $entity = entity_load_single('user', $registration->author_uid);
+    return entity_metadata_wrapper('user', $entity);
   }
 }
 
@@ -448,18 +442,8 @@ function registration_property_author_get(Registration $registration, array $opt
  */
 function registration_property_user_get(Registration $registration, array $options, $property_name, $entity_type) {
   if (is_numeric($registration->user_uid)) {
-    return entity_load_single('user', $registration->user_uid);
-  }
-}
-
-/**
- * Callback to get $registration->state.
- *
- * @see registration_entity_property_info().
- */
-function registration_property_state_get(Registration $registration, array $options, $property_name, $entity_type) {
-  if (is_numeric($registration->state)) {
-    return entity_load_single('registration_state', $registration->state);
+    $entity = entity_load_single('user', $registration->user_uid);
+    return entity_metadata_wrapper('user', $entity);
   }
 }
 
@@ -504,6 +488,11 @@ function registration_get_properties($entity, array $options, $name, $type) {
       break;
     case 'entity':
       return entity_metadata_wrapper($entity->entity_type, $entity->entity);
+      break;
+    case 'mail':
+      // If a user is set, use their email
+      $user =  entity_metadata_wrapper('registration', $entity)->user;
+      return ($user->value()) ? $user->mail->value() : $entity->anon_mail;
       break;
   }
 }
@@ -617,7 +606,7 @@ function registration_access($op, $registration = NULL, $account = NULL, $entity
 
   // First grant access to the entity for the specified operation if no other
   // module denies it and at least one other module says to grant access.
-  $access_results = module_invoke_all('registration_access', $op, $registration, $account, $entity_type);
+  $access_results = module_invoke_all('registration_access', $op, $entity_type, $registration, $account);
   if (in_array(FALSE, $access_results, TRUE)) {
     return FALSE;
   }

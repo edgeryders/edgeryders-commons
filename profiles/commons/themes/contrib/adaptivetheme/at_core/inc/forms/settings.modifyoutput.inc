@@ -4,7 +4,6 @@
  * @file
  * Generate form elments for the Modify Output settings.
  */
-
 function at_core_modify_output_form(&$form) {
   $form['at']['modify-output'] = array(
     '#type' => 'fieldset',
@@ -212,6 +211,13 @@ function at_core_modify_output_form(&$form) {
     '#title' => t('Add rel=author to user names.'),
     '#default_value' => at_get_setting('rel_author'),
     '#description' => t('Add rel author to user names to support Googles <a href="!authorhship" target="_blank">Authorship</a> feature.', array('!authorhship' => 'http://support.google.com/webmasters/bin/answer.py?hl=en&answer=1408986')),
+  );
+  // Change Logo title
+  $form['at']['modify-output']['seo']['logo_title'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use the Site Name for the logo title (tool tip).'),
+    '#default_value' => at_get_setting('logo_title'),
+    '#description' => t('By default the text "Home page" is used for the tool tip. This option overrides this with the site name.'),
   );
 
   // Extra CSS Classes

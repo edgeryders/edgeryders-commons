@@ -4,10 +4,8 @@
  * @file
  * Generate settings for the CSS exclude form.
  */
-
 function at_core_css_exclude_form(&$form, $theme_name) {
-
-// We need some getters.
+  // We need some getters.
   include_once(drupal_get_path('theme', 'adaptivetheme') . '/inc/get.inc');
 
   // Get the relevent CSS file data for building the form.

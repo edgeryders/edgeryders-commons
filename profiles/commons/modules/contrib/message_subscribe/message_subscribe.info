@@ -11,9 +11,9 @@ dependencies[] = message_notify
 
 files[] = message_subscribe.test
 
-
-; Information added by drush on 2012-11-15
-version = ""
+; Information added by drupal.org packaging script on 2013-01-17
+version = "7.x-1.0-alpha3+1-dev"
+core = "7.x"
 project = "message_subscribe"
-datestamp = "1353011147"
+datestamp = "1358429405"
 

@@ -928,7 +928,6 @@ class OgComplexWidgetTestCase extends DrupalWebTestCase {
     og_create_field(OG_AUDIENCE_FIELD, 'node', 'post', $og_field);
   }
 
-
   /**
    * Test "field modes" of the OG reference widget.
    */
@@ -1017,8 +1016,6 @@ class OgComplexWidgetTestCase extends DrupalWebTestCase {
     $user1 = $this->drupalCreateUser();
     $user2 = $this->drupalCreateUser();
 
-    $type = $this->drupalCreateContentType();
-
     $settings = array(
       'type' => 'group',
       OG_GROUP_FIELD . '[und][0][value]' => 1,
@@ -1032,6 +1029,43 @@ class OgComplexWidgetTestCase extends DrupalWebTestCase {
     $this->drupalPost("user/$user2->uid/edit", array(), 'Save');
 
     $this->assertTrue(og_get_entity_groups('user', $user2, array(OG_STATE_PENDING)), 'User membership was retained after user save.');
+  }
+
+  /**
+   * Test multiple group-audience fields.
+   */
+  function testMultipleFields() {
+    // Add another group-audience field.
+    $og_field = og_fields_info(OG_AUDIENCE_FIELD);
+    og_create_field('another_field', 'node', 'post', $og_field);
+
+    $user1 = $this->drupalCreateUser();
+
+    // Create a group.
+    $settings = array(
+      'type' => 'group',
+      OG_GROUP_FIELD . '[und][0][value]' => 1,
+      'uid' => $user1->uid,
+    );
+    $group1 = $this->drupalCreateNode($settings);
+    $group2 = $this->drupalCreateNode($settings);
+
+    // Create group content.
+    $settings = array(
+      'type' => 'post',
+      'uid' => $user1->uid,
+    );
+    $post1 = $this->drupalCreateNode($settings);
+
+    og_group('node', $group1->nid, array('entity_type' => 'node', 'entity' => $post1, 'field_name' => OG_AUDIENCE_FIELD));
+    og_group('node', $group2->nid, array('entity_type' => 'node', 'entity' => $post1, 'field_name' => 'another_field'));
+
+    $this->drupalLogin($user1);
+    $this->drupalGet("node/$post1->nid/edit");
+
+    // Assert correct selection in both fields.
+    $this->assertOptionSelected('edit-og-group-ref-und-0-default', $group1->nid);
+    $this->assertOptionSelected('edit-another-field-und-0-default', $group2->nid);
   }
 }
 
@@ -1191,6 +1225,7 @@ class OgEntityFieldQueryTestCase extends DrupalWebTestCase {
     parent::setUp('og', 'entity_feature');
 
     $user1 = $this->drupalCreateUser();
+    $user2 = $this->drupalCreateUser();
     $type = $this->drupalCreateContentType();
     $group_type = $type->type;
 
@@ -1273,10 +1308,17 @@ class OgEntityFieldQueryTestCase extends DrupalWebTestCase {
     );
     og_group('node', $group2, $values);
 
+    $values = array(
+      'entity_type' => 'user',
+      'entity' => $user2,
+    );
+    og_group('node', $group2, $values);
+
     $this->group1 = $group1;
     $this->group2 = $group2;
     $this->node = $node;
     $this->user1 = $user1;
+    $this->user2 = $user2;
     $this->entity_test = $entity_test;
   }
 
@@ -1289,7 +1331,8 @@ class OgEntityFieldQueryTestCase extends DrupalWebTestCase {
    * - Non-audience field first, with single group audience.
    * - Multiple entity types in entityCondition().
    * - No entity property.
-   * - Non-node entity without revision table.
+   * - Non-node entity without revision table (e.g. entity_test).
+   * - Non-node entity without revision table and without bundles (e.g. user).
    * - Count query.
    */
   function testEntityFieldQuery()  {
@@ -1370,6 +1413,19 @@ class OgEntityFieldQueryTestCase extends DrupalWebTestCase {
 
     $this->assertEqual(array_keys($result['entity_test']), array($entity_test->pid), 'Non-node entity without revision table query is correct.');
 
+    // Non-node entity without revision table and without bundles.
+    $query = new EntityFieldQuery();
+    $result = $query
+      ->entityCondition('entity_type', 'user')
+      ->fieldCondition('og_entity_test', 'target_id', $group2->nid)
+      ->execute();
+
+    $expected_values = array(
+      $this->user1->uid,
+      $this->user2->uid,
+    );
+    $this->assertEqual(array_keys($result['user']), $expected_values, 'Non-node entity without revision table and without bundles query is correct.');
+
     // Count query.
     $query = new EntityFieldQuery();
     $result = $query
@@ -1440,10 +1496,10 @@ class OgBehaviorHandlerTestCase  extends DrupalWebTestCase {
     // Add OG group field to the entity_test's "main" bundle.
     og_create_field(OG_GROUP_FIELD, 'entity_test', 'main');
 
-    $type = $this->drupalCreateContentType();
+    $type = $this->drupalCreateContentType(array('type' => 'behavior'));
     $this->group_content = $type->type;
 
-    // Add OG audience field to the node's "article" bundle.
+    // Add OG audience field to the new bundle.
     $og_field = og_fields_info(OG_AUDIENCE_FIELD);
     $og_field['field']['settings']['target_type'] = 'entity_test';
     og_create_field(OG_AUDIENCE_FIELD, 'node', $type->type, $og_field);
@@ -1510,5 +1566,157 @@ class OgBehaviorHandlerTestCase  extends DrupalWebTestCase {
 
     $gids = og_get_entity_groups('node', $node);
     $this->assertEqual(array_values($gids['entity_test']), array($entity1->pid), 'Widget behavior was skipped and removed group association as expected.');
+  }
+
+  /**
+   * Test settings the OG membership state via field values, when associating
+   * a new group-content to a group.
+   */
+  function testSetStateOnInsert() {
+    module_enable(array('og_test'));
+    $permissions = array(
+      'access content',
+      "create $this->group_content content",
+      'administer group',
+    );
+    $user1 = $this->drupalCreateUser();
+    $user2 = $this->drupalCreateUser($permissions);
+    $user3 = $this->drupalCreateUser($permissions);
+
+    // Create a group.
+    $entity1 = entity_create('entity_test', array('name' => 'main', 'uid' => $user1->uid));
+    $wrapper = entity_metadata_wrapper('entity_test', $entity1);
+    $wrapper->{OG_GROUP_FIELD}->set(1);
+    $wrapper->save();
+
+    og_group('entity_test', $entity1, array('entity_type' => 'user', 'entity' => $user2));
+    og_group('entity_test', $entity1, array('entity_type' => 'user', 'entity' => $user3));
+
+    // Post a node, state should be active.
+    $type = str_replace('_', '-', $this->group_content);
+    $edit = array(
+      'title' => 'state-active',
+      'og_group_ref[und][0][default][]' => array($entity1->pid),
+    );
+
+    $this->drupalLogin($user2);
+    $this->drupalPost('node/add/' . $type, $edit, t('Save'));
+
+    $gids = og_get_entity_groups('node', 1);
+    $id = key($gids['entity_test']);
+    $og_membership = og_membership_load($id);
+    $this->assertEqual($og_membership->state, OG_STATE_ACTIVE, 'Memebership status is Active');
+
+
+    // Post a node, state should be pending.
+    $this->drupalLogin($user3);
+    $edit['title'] = 'state-pending';
+    $this->drupalPost('node/add/' . $type, $edit, t('Save'));
+    $gids = og_get_entity_groups('node', 2, array(OG_STATE_PENDING));
+    $id = key($gids['entity_test']);
+    $og_membership = og_membership_load($id);
+    $this->assertEqual($og_membership->state, OG_STATE_PENDING, 'Memebership status is Active');
+  }
+}
+
+/**
+ * Testing for deleting orphans group content.
+ */
+class OgDeleteOrphansTestCase extends DrupalWebTestCase {
+
+  public $group_type;
+  public $node_type;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'OG orphan delete',
+      'description' => 'Verifying for deleting orphan group content.',
+      'group' => 'Organic groups',
+      'dependencies' => array('advancedqueue'),
+    );
+  }
+
+  function setUp() {
+    parent::setUp('og_test', 'advancedqueue');
+
+    // Create a group content type.
+    $group = $this->drupalCreateContentType();
+    og_create_field(OG_GROUP_FIELD, 'node', $group->type);
+    $this->group_type = $group->type;
+
+    // Create group audience content type.
+    $type = $this->drupalCreateContentType();
+    $this->node_type = $type->type;
+
+    // Add OG audience field to the audience content type.
+    $og_field = og_fields_info(OG_AUDIENCE_FIELD);
+    $og_field['field']['settings']['target_type'] = 'node';
+    og_create_field(OG_AUDIENCE_FIELD, 'node', $type->type, $og_field);
+
+    // Set the setting for delete a group content when deleting group.
+    variable_set('og_orphans_delete', TRUE);
+    variable_set('og_use_queue', TRUE);
+  }
+
+  /**
+   * Testing two things:
+   *  When deleting a group, the node of the group will be deleted.
+   *  Associated node with the deleted group and another group won't be deleted.
+   */
+  function testDeleteGroup() {
+    // Creating two groups.
+    $first_group = $this->drupalCreateNode(array('type' => $this->group_type));
+    $second_group = $this->drupalCreateNode(array('type' => $this->group_type));
+
+    // Create two nodes.
+    $first_node = $this->drupalCreateNode(array('type' => $this->node_type));
+    og_group('node', $first_group, array('entity_type' => 'node', 'entity' => $first_node));
+    og_group('node', $second_group, array('entity_type' => 'node', 'entity' => $first_node));
+
+    $second_node = $this->drupalCreateNode(array('type' => $this->node_type));
+    og_group('node', $first_group, array('entity_type' => 'node', 'entity' => $second_node));
+
+    // Delete the group.
+    node_delete($first_group->nid);
+
+    // Execute manually the queue worker.
+    $queue = DrupalQueue::get('og_membership_orphans');
+    $item = $queue->claimItem();
+    og_membership_orphans_worker($item);
+
+    // Load the nodes we used during the test.
+    $first_node = node_load($first_node->nid);
+    $second_node = node_load($second_node->nid);
+
+    // Verify the none orphan node wasn't deleted.
+    $this->assertTrue($first_node, "The second node is realted to another group and deleted.");
+    // Verify the orphan node deleted.
+    $this->assertFalse($second_node, "The orphan node deleted.");
+  }
+
+  /**
+   * Testing the moving of the node to another group when deleting a group.
+   */
+  function testMoveOrphans() {
+    // Creating two groups.
+    $first_group = $this->drupalCreateNode(array('type' => $this->group_type, 'title' => 'move'));
+    $second_group = $this->drupalCreateNode(array('type' => $this->group_type));
+
+    // Create a group and relate it to the first group.
+    $first_node = $this->drupalCreateNode(array('type' => $this->node_type));
+    og_group('node', $first_group, array('entity_type' => 'node', 'entity' => $first_node));
+
+    // Delete the group.
+    node_delete($first_group->nid);
+
+    // Execute manually the queue worker.
+    $queue = DrupalQueue::get('og_membership_orphans');
+    $item = $queue->claimItem();
+    og_membership_orphans_worker($item);
+
+    // Load the node into a wrapper and verify we moved him to another group.
+    $wrapper = entity_metadata_wrapper('node', $first_node->nid);
+
+    $this->assertTrue($wrapper->{OG_AUDIENCE_FIELD}->get(0)->getIdentifier() == $second_group->nid, "The node of the group moved to another group.");
   }
 }

@@ -99,23 +99,15 @@ function registration_form($form, &$form_state, Registration $registration) {
     '#element_validate' => array('element_validate_integer_positive')
   );
 
-  $options = array();
-  $default_state = -1;
-  $states = registration_states(array('show_on_form' => TRUE));
-  // we use "$this_state" variable name because $state is conflicting with variable set above.
-  foreach ($states as $this_state) {
-    $options[$this_state->registration_state_id] = t('@state', array('@state' => $this_state->label));
-    if ($this_state->default_state) {
-      $default_state = $this_state->registration_state_id;
-    }
-  }
-  
+  $default_state = registration_get_default_state();
+  $states = registration_get_states_options(array('show_on_form' => TRUE));
+
   $form['state'] = array(
     '#type' => 'select',
     '#title' => t('State'),
     '#description' => t('State of this registration'),
-    '#default_value' => ($state ? $state->internalIdentifier() : $default_state),
-    '#options' => $options,
+    '#default_value' => ($state ? $state->identifier() : $default_state->identifier()),
+    '#options' => $states,
     '#access' => !empty($states) && user_access('edit ' . $registration->type . ' registration state')
   );
 
@@ -155,17 +147,17 @@ function registration_form($form, &$form_state, Registration $registration) {
 function registration_form_validate($form, &$form_state) {
   $registration = $form_state['registration'];
 
-  if (!registration_status($registration->entity_type, $registration->entity_id)) {
+  $count = $form_state['values']['count'];
+
+  $registration_status = registration_status($registration->entity_type, $registration->entity_id, FALSE, $count, $registration->registration_id, $errors);
+
+  if (!$registration_status) {
     $label = entity_label($registration->entity_type,
       entity_load_single($registration->entity_type, $registration->entity_id));
-    form_set_error('', t('Registrations are no longer available for %label',
-      array('%label' => $label)));
-  }
 
-  // verify the event hasn't sold out
-  $count = $form_state['values']['count'];
-  if (!registration_has_room($registration->entity_type, $registration->entity_id, $count, $registration->registration_id)) {
-    form_set_error('', t('Sorry, there are insufficient slots remaining for this event.'));
+    form_set_error('', t('Sorry, unable to register for %label due to: %errors.',
+      array('%label' => $label, '%errors' => implode(', ', $errors))
+    ));
   }
 
   // validate according to who's registering
@@ -690,7 +682,7 @@ function registration_state_form($form, &$form_state, $registration_state, $op =
   // Machine-readable type name.
   $form['name'] = array(
     '#type' => 'machine_name',
-    '#default_value' => $registration_state->name,
+    '#default_value' => $registration_state->identifier(),
     '#maxlength' => 32,
     //'#disabled' => $registration_state->locked && $op != 'clone',
     '#machine_name' => array(
@@ -816,11 +808,11 @@ function registration_state_overview_form($form, &$form_state) {
       );
       $form['state'][$sid]['delete'] = array(
         '#type' => 'item',
-        '#markup' => l(t('delete'), 'admin/structure/registration/registration_states/manage/' . $state->name . '/delete', array('query' => drupal_get_destination())),
+        '#markup' => l(t('delete'), 'admin/structure/registration/registration_states/manage/' . $state->identifier() . '/delete', array('query' => drupal_get_destination())),
       );
       $form['state'][$sid]['export'] = array(
         '#type' => 'item',
-        '#markup' => l(t('export'), 'admin/structure/registration/registration_states/manage/' . $state->name . '/export'),
+        '#markup' => l(t('export'), 'admin/structure/registration/registration_states/manage/' . $state->identifier() . '/export'),
       );
     }
   }

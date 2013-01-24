@@ -58,15 +58,6 @@ abstract class RadioactivityIncidentStorage {
   }
 
   /**
-   * Default emitter processing via ajax callback path
-   */
-  public function processEmitters() {
-    if (count(self::$emitters) > 0) {
-      radioactivity_emitter_callback_data('default', self::$emitters);
-    }
-  }
-
-  /**
    * Get decay profile attached to this instance
    */
   public function getDecayProfile() {

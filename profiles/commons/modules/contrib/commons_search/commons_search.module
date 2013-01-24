@@ -27,24 +27,42 @@ function commons_search_form_alter(&$form, &$form_state, $form_id) {
     // Move the textfield to after the drop down.
     $site_key = 'c-all';
     $form['search_block_form']['#weight'] = 1;
-    if (module_exists('apachesolr_search')) {
+    if (module_exists('commons_search_core')) {
+      // We're using faceted core search, so change Site search key to reflect
+      // the change of search engines.
+      $site_key = 'o-search_facetapi';
+    }
+    else if (module_exists('apachesolr_search')) {
+      // Are we using Apache Solr? If so change the Site search key to reflect
+      // the change of search engines.
       $site_key = 'o-solr';
     }
+    // Overwrite all options so we only have 3 (at most).
     $form['custom_search_types']['#options'] = array(
       $site_key => t('Site'),
       'c-user' => t('Users'),
     );
     $group = FALSE;
     $node = current_path();
-    if (strpos($node, 'node/') !== FALSE
-      && is_numeric(substr($node, strpos($node, '/')+1))) {
-      $node = node_load(substr($node, strpos($node, '/')+1));
+    if ((strrpos($node, 'node/') !== FALSE || strrpos($node, 'group/') !== FALSE)
+      && is_numeric(substr($node, strrpos($node, '/')+1))) {
+      // If we're on a page that looks like a group node, see if it is actually
+      // a group node.
+      $node = node_load(substr($node, strrpos($node, '/')+1));
       $group = ($node->type == 'group');
     }
     if ($group) {
-      $form['custom_search_types']['#options']['o-commons_search'] = t('Group');
+      // Current page is a group node, so add group search option to the
+      // dropdown menu and set the current group id.
+      $form['custom_search_types']['#options']['o-commons_search'] = t('This group');
+      $form['custom_search_types']["#default_value"] = 'o-commons_search';
       $form_state['search_group_id'] = $node->nid;
       $form['#submit'][] = 'commons_search_search_form_submit';
+    }
+    if (isset($_REQUEST['keys'])) {
+      // If we've already searched, refill the search box with the current
+      // search keywords.
+      $form['search_block_form']['#default_value'] = check_plain($_REQUEST['keys']);
     }
   }
 }
@@ -54,12 +72,42 @@ function commons_search_form_alter(&$form, &$form_state, $form_id) {
  * Add group id filter if appropriate.
  */
 function commons_search_search_form_submit($form, &$form_state) {
-  if (isset($form_state['search_group_id'])) {
+  if ($form_state['values']['custom_search_types'] == 'o-commons_search'
+    && isset($form_state['search_group_id'])) {
+    $keys = $form_state['values']['search_block_form'];
     if (module_exists('apachesolr_search')) {
-      $form_state['redirect'] .= '&f[1]=sm_og_group_ref:node:' . $form_state['search_group_id'];
+      // Add on a filter to the solr query to only list results within the
+      // specified group.
+      $qm = (strpos($form_state['redirect'], '?') !== FALSE ? '' : '?');
+      $form_state['redirect'] .= $qm . '&f[1]=sm_og_group_ref:node:' . $form_state['search_group_id'];
     }
     else {
-      $form_state['redirect'] = 'search/group/' . $form_state['search_group_id'];
+      // Using core search to search within a group doesn't work, so we simply
+      // use a view with exposed search terms to do the searching.
+      drupal_goto('search/group/' . $form_state['search_group_id'], array('query' => array('keys' => $keys)));
     }
   }
+}
+
+/**
+ * Implements hook_preprocess_hook().
+ */
+function commons_search_preprocess_search_results(&$variables) {
+  $variables['result_count'] = count($variables['results']);
+  $title = t('Search results');
+  if (isset($variables['response'])
+    && isset($variables['response']->request)
+    && preg_match('/sm_og_group_ref:"node:([0-9]+)"&/', urldecode($variables['response']->request), $match)) {
+    $group = node_load($match[1]);
+    $title = t('Search within !group', array('!group' => '<em>' . $group->title . '</em>'));
+  }
+  $variables['search_title'] = $title;
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function commons_search_theme_registry_alter(&$theme_registry) {
+  $theme_registry['search_results']['path'] = drupal_get_path('module', 'commons_search') . '/theme';
+  $theme_registry['search_results']['template'] = 'commons_search__search_results';
 }

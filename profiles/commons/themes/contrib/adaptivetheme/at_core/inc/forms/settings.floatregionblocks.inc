@@ -4,7 +4,6 @@
  * @file
  * Generate form elments for the Float Region Blocks settings.
  */
-
 function at_core_float_region_blocks_form(&$form, $info_array) {
   // Regions we don't want to include
   $unset_regions = array(
