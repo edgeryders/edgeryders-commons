@@ -5,6 +5,16 @@
  */
 
 /**
+ * Implements hook_ctools_plugin_api().
+ */
+function commons_notify_ctools_plugin_api() {
+  list($module, $api) = func_get_args();
+  if ($module == "strongarm" && $api == "strongarm") {
+    return array("version" => "1");
+  }
+}
+
+/**
  * Implements hook_default_message_type().
  */
 function commons_notify_default_message_type() {
@@ -30,7 +40,8 @@ function commons_notify_default_message_type() {
           "safe_value" : "\\u003Cp\\u003EHi [message:user:name],\\u003C\\/p\\u003E\\n\\u003Cp\\u003E[message:field-target-comments:0:author] commented on [message:field-target-nodes:0:title] [commons-groups:in-groups-text]:\\u003C\\/p\\u003E\\n\\u003Cp\\u003E[message:field-target-comments:0:body]\\u003C\\/p\\u003E\\n\\u003Cp\\u003ERead \\u0026amp; respond: [message:field-target-comments:0:url]\\u003Cbr \\/\\u003E\\nUpdate your notification settings: [site:url]\\/notification-settings\\u003C\\/p\\u003E\\n"
         }
       ]
-    }
+    },
+    "rdf_mapping" : []
   }');
   $items['commons_notify_node_created'] = entity_import('message_type', '{
     "name" : "commons_notify_node_created",
@@ -53,7 +64,8 @@ function commons_notify_default_message_type() {
           "safe_value" : "\\u003Cp\\u003EHi [message:user:name],\\u003C\\/p\\u003E\\n\\u003Cp\\u003E[message:field-target-nodes:0:author] created the [message:field-target-nodes:0:content-type] \\u201c[message:field-target-nodes:0:title]\\u201d on [site:name] [commons-groups:in-groups-text] on [message:field-target-nodes:0:created]:\\u003C\\/p\\u003E\\n\\u003Cp\\u003E[message:field-target-nodes:0:body]\\u003C\\/p\\u003E\\n\\u003Cp\\u003EPermalink: [message:field-target-nodes:0:url]\\u003Cbr \\/\\u003E\\nAdd a comment at [message:field-target-nodes:0:url]#comment-form\\u003C\\/p\\u003E\\n\\u003Cp\\u003EChange email notifications at [site:url]user\\/[message:user:uid]\\/notification-settings\\u003C\\/p\\u003E\\n"
         }
       ]
-    }
+    },
+    "rdf_mapping" : []
   }');
   $items['commons_notify_node_created_no_groups'] = entity_import('message_type', '{
     "name" : "commons_notify_node_created_no_groups",
@@ -76,7 +88,8 @@ function commons_notify_default_message_type() {
           "safe_value" : "\\u003Cp\\u003EHi [message:user:name],\\u003C\\/p\\u003E\\n\\u003Cp\\u003E[message:field-target-nodes:0:author] created the [message:field-target-nodes:0:content-type] \\u201c[message:field-target-nodes:0:title]\\u201d on [site:name] [commons-groups:in-groups-text] on [message:field-target-nodes:0:created]:\\u003C\\/p\\u003E\\n\\u003Cp\\u003E[message:field-target-nodes:0:body]\\u003C\\/p\\u003E\\n\\u003Cp\\u003EPermalink: [message:field-target-nodes:0:url]\\u003Cbr \\/\\u003E\\nAdd a comment at [message:field-target-nodes:0:url]#comment-form\\u003C\\/p\\u003E\\n\\u003Cp\\u003EChange email notifications at [site:url]user\\/[message:user:uid]\\/notification-settings\\u003C\\/p\\u003E\\n"
         }
       ]
-    }
+    },
+    "rdf_mapping" : []
   }');
   return $items;
 }
@@ -89,7 +102,8 @@ function commons_notify_default_message_type_category() {
   $items['commons_notify'] = entity_import('message_type_category', '{
     "category" : "commons_notify",
     "description" : "Commons Notify",
-    "language" : "und"
+    "language" : "und",
+    "rdf_mapping" : []
   }');
   return $items;
 }

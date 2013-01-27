@@ -149,18 +149,29 @@ function registration_form_validate($form, &$form_state) {
 
   $count = $form_state['values']['count'];
 
-  $registration_status = registration_status($registration->entity_type, $registration->entity_id, FALSE, $count, $registration->registration_id, $errors);
+  $label = entity_label($registration->entity_type,
+    entity_load_single($registration->entity_type, $registration->entity_id));
 
-  if (!$registration_status) {
-    $label = entity_label($registration->entity_type,
-      entity_load_single($registration->entity_type, $registration->entity_id));
+  // Test status on new registrations.
+  if ($registration->is_new) {
+    $registration_status = registration_status($registration->entity_type, $registration->entity_id, FALSE, $count, $registration->registration_id, $errors);
 
-    form_set_error('', t('Sorry, unable to register for %label due to: %errors.',
-      array('%label' => $label, '%errors' => implode(', ', $errors))
-    ));
+    if (!$registration_status) {
+      form_set_error('', t('Sorry, unable to register for %label due to: %errors.',
+        array('%label' => $label, '%errors' => implode(', ', $errors))
+      ));
+    }
+  }
+  // Only check capacity for existing registrations.
+  else {
+    $has_room = registration_has_room($registration->entity_type, $registration->entity_id, $count, $registration->registration_id);
+    if (!$has_room) {
+      form_set_error('', t('Sorry, unable to register for %label due to: insufficient slots remaining.',
+        array('%label' => $label)));
+    }
   }
 
-  // validate according to who's registering
+  // Validate according to who's registering.
   switch ($form_state['values']['who_is_registering']) {
     case REGISTRATION_REGISTRANT_TYPE_ANON:
       if (!valid_email_address($form_state['values']['anon_mail'])) {

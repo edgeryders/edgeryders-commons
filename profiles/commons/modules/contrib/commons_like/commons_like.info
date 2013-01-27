@@ -14,9 +14,9 @@ features[features_api][] = api:1
 features[field_instance][] = message-commons_like_user_likes_node-field_target_nodes
 features[message_type][] = commons_like_user_likes_node
 features[variable][] = rate_widgets
-; Information added by drupal.org packaging script on 2013-01-08
+; Information added by drupal.org packaging script on 2013-01-25
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_like"
-datestamp = "1357606031"
+datestamp = "1359074791"
 

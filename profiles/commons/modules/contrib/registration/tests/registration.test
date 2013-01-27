@@ -133,7 +133,10 @@ class RegistrationStandardTestCase extends RegistrationTestCase {
     $this->assertNotIdentical(FALSE, $read_instance, t('Create registration instance'), 'Registration');
 
     // Get Instance
-    $registration_instances = registration_get_registration_instances();
+    $registration_instances = registration_get_registration_instances(array(
+      'entity_type' => $this->host_entity_type,
+      'bundle' => $entity->type
+    ));
     $this->assertTrue(count($registration_instances) == 1, t('Read registration field instances'), 'Registration');
     $this->assertTrue($registration_instances[0]['field_name'] == $field_name, t('Validate registration field instance data.'), 'Registration');
   }
@@ -152,7 +155,7 @@ class RegistrationStandardTestCase extends RegistrationTestCase {
 
     // Get all types
     $types = registration_get_types();
-    $this->assertTrue(isset($types[$this->registration_type_name]) && count($types) == 1, t('Load all registration types'), 'Registration');
+    $this->assertTrue(isset($types[$this->registration_type_name]), t('Load all registration types'), 'Registration');
 
     // Ensure value on field saves
     $this->resetRegistration();

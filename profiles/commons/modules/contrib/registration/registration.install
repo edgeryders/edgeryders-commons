@@ -102,14 +102,6 @@ function registration_schema() {
         'columns' => array('state' => 'name'),
       ),
     ),
-    'unique keys' => array(
-      'entity_id_entity_type_user' => array(
-        'entity_id',
-        'entity_type',
-        'anon_mail',
-        'user_uid',
-      ),
-    ),
     'primary key' => array('registration_id'),
   );
 
@@ -453,5 +445,11 @@ function registration_update_7100(&$sandbox) {
       ->condition('state', $state->registration_state_id)
       ->execute();
   }
+}
 
+/**
+ * Remove entity_id_entity_type_user unique index from registration.
+ */
+function registration_update_7101(&$sandbox) {
+  db_drop_index('registration', 'entity_id_entity_type_user');
 }

@@ -254,8 +254,8 @@ function og_ui_add_users_submit($form, &$form_state) {
   $og_membership->etid = $account->uid;
   $og_membership->state = $state;
   $og_membership->save();
-  $group = node_load($gid);
-  drupal_set_message(t('%user has been added to the group %group-title.', array('%user' => format_username($account), '%group-title' => $group->title)));
+
+  drupal_set_message(t('%user has been added to group.', array('%user' => format_username($account))));
 }
 
 /**

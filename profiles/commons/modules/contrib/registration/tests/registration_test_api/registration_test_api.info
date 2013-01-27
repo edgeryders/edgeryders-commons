@@ -5,9 +5,9 @@ core = 7.x
 
 dependencies[] = registration
 hidden = TRUE
-; Information added by drupal.org packaging script on 2013-01-22
-version = "7.x-1.0-beta3+52-dev"
+; Information added by drupal.org packaging script on 2013-01-25
+version = "7.x-1.0"
 core = "7.x"
 project = "registration"
-datestamp = "1358861455"
+datestamp = "1359153187"
 
