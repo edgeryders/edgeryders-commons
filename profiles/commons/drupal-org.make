@@ -35,6 +35,10 @@ projects[ckeditor][download][url] = "http://git.drupal.org/project/ckeditor.git"
 projects[ckeditor][download][branch] = "7.x-1.x"
 projects[ckeditor][download][revision] = "f6abbda"
 
+; Fatal error if Libraries module is enabled after CKEditor
+; http://drupal.org/node/1898294#comment-6980796
+projects[ckeditor][patch][] = "http://drupal.org/files/ckeditor-install-lib-1898294-2.patch"
+
 projects[ctools][type] = "module"
 projects[ctools][subdir] = "contrib"
 ; http://drupal.org/node/1494860#comment-6204438
@@ -155,9 +159,13 @@ projects[og][subdir] = "contrib"
 ; http://drupal.org/node/1842830
 projects[og][patch][] = "http://drupal.org/files/og-add-group-message.patch"
 
+; og_group_ref field should respect og_user_access()
+; http://drupal.org/node/1902086#comment-7026516
+projects[og][patch][] = "http://drupal.org/files/1902086-og-ref-respect-og-user-access-3.patch"
+
 projects[panelizer][type] = "module"
-projects[panelizer][version] = "3.x-dev"
 projects[panelizer][subdir] = "contrib"
+projects[panelizer][version] = "3.0"
 
 projects[panels][type] = "module"
 projects[panels][subdir] = "contrib"
@@ -196,13 +204,23 @@ projects[r4032login][subdir] = "contrib"
 
 projects[rate][type] = "module"
 projects[rate][subdir] = "contrib"
+; Add widget to node/comment $links
+; http://drupal.org/node/947516#comment-6979780
+projects[rate][patch][] = "http://drupal.org/files/947516-rate-node-links-15.patch"
 
 projects[realname][type] = "module"
 projects[realname][subdir] = "contrib"
 
-projects[registration][version] = "1.x-dev"
-projects[registration][type] = "module"
 projects[registration][subdir] = "contrib"
+projects[registration][type] = "module"
+projects[registration][download][type] = "git"
+projects[registration][download][url] = "http://git.drupal.org/project/registration.git"
+projects[registration][download][branch] = "7.x-1.x"
+projects[registration][download][revision] = "267f05b"
+
+; Update Entity cache support
+; http://drupal.org/node/1867564#comment-7001180
+projects[registration][patch][] = "http://drupal.org/files/entity_cache_support-1867564-4.patch"
 
 projects[rules][type] = "module"
 projects[rules][subdir] = "contrib"
@@ -380,10 +398,7 @@ projects[commons_topics][version] = "3.x-dev"
 
 projects[adaptivetheme][type] = "theme"
 projects[adaptivetheme][subdir] = "contrib"
-projects[adaptivetheme][download][type] = "git"
-projects[adaptivetheme][download][url] = "http://git.drupal.org/project/adaptivetheme.git"
-projects[adaptivetheme][download][branch] = "7.x-3.x"
-projects[adaptivetheme][download][revision] = "8e46acc"
+projects[adaptivetheme][version] = "3.x-dev"
 
 projects[sky][type] = "theme"
 projects[sky][subdir] = "contrib"

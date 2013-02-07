@@ -49,8 +49,8 @@ function at_core_float_region_blocks_form(&$form, $info_array) {
   // Don't include this feature for now, its too late in the cycle
   // $breakpoints = array(
   //   '<none>' => t('none - I can handle this in CSS'),
-  //   'smartphone_portrait' => t('Smartphone Portrait'),
-  //   'smartphone_landscape' => t('Smartphone Landscape'),
+  //   'smalltouch_portrait' => t('Smalltouch Portrait'),
+  //   'smalltouch_landscape' => t('Smalltouch Landscape'),
   //   'tablet_portrait' => t('Tablet Portrait'),
   //   'tablet_landscape' => t('Tablet Landscape'),
   // );

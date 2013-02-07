@@ -230,10 +230,12 @@ function commons_events_solr_panel_facet_subtype($facet_name) {
  * Implements hook_theme_registry_alter().
  */
 function commons_events_solr_theme_registry_alter(&$theme_registry) {
-  $theme_registry['search_results']['preprocess functions'] = array_flip($theme_registry['search_results']['preprocess functions']);
-  unset($theme_registry['search_results']['preprocess functions']['commons_events_solr_preprocess_search_results']);
-  $theme_registry['search_results']['preprocess functions']['commons_events_solr_preprocess_search_results'] = 9;
-  $theme_registry['search_results']['preprocess functions'] = array_flip($theme_registry['search_results']['preprocess functions']);
+}
+
+/**
+ * Implements hook_preprocess_hook().
+ */
+function commons_events_solr_preprocess_search_result(&$variables) {
 }
 
 /**

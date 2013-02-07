@@ -110,6 +110,12 @@ function commons_install_tasks() {
       'type' => '',
       'run' => $acquia_connector ? INSTALL_TASK_RUN_IF_NOT_COMPLETED : INSTALL_TASK_SKIP,
     ),
+    'commons_installer_palette' => array(
+      'display_name' => st('Chose site color palette'),
+      'display' => TRUE,
+      'type' => 'form',
+      'function' => 'commons_installer_palette',
+    ),
     'commons_anonymous_message_homepage' => array(
       'display_name' => st('Enter Homepage welcome text'),
       'display' => TRUE,
@@ -129,9 +135,31 @@ function commons_install_tasks() {
       'display' => TRUE,
       'type' => 'form',
     ),
+    'commons_admin_permissions' => array(
+      'display' => FALSE,
+    ),
   );
 }
 
+/**
+ * Allow users to select from a predefined list of color palettes during
+ * the commons installation.
+ */
+function commons_installer_palette() {
+  $form = array();
+  require_once('profiles/commons/themes/contrib/commons_origins/commons_origins.palettes.inc');
+
+  commons_origins_palettes_form($form);
+  $form['commons_origins_palette_fieldset']['#collapsible'] = FALSE;
+  $form['commons_origins_palette_fieldset']['#collapsed'] = FALSE;
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => st('Save color palette'),
+  );
+  drupal_add_css('profiles/commons/commons_installer.css');
+
+  return $form;
+}
 /**
  * Let the admin user create the first group as part of the installation process
  */
@@ -203,16 +231,23 @@ function commons_revert_features() {
   features_revert($revert);
 }
 
+function commons_admin_permissions() {
+  //get the administrator role, we set this in the install file
+  $admin_role = user_role_load_by_name('administrator');
+  user_role_grant_permissions($admin_role->rid, array_keys(module_invoke_all('permission')));
+}
+
 /**
  * Save the full name of the first user.
  */
 function commons_admin_save_fullname($form_id, &$form_state) {
   $values = $form_state['values'];
-    if (!empty($values['field_name_first']) || !empty($values['field_name_last'])) {
+  if (!empty($values['field_name_first']) || !empty($values['field_name_last'])) {
     $account = user_load(1);
     $account->field_name_first[LANGUAGE_NONE][0]['value'] = $values['field_name_first'];
     $account->field_name_last[LANGUAGE_NONE][0]['value'] = $values['field_name_last'];
     user_save($account);
+    realname_update($account);
   }
 }
 
@@ -233,7 +268,7 @@ function commons_check_acquia_connector($form_id, &$form_state) {
  */
 function commons_anonymous_welcome_text_form() {
   $form['commons_anonymous_welcome_explanation'] = array(
-    '#markup' => '<h2>' . st('Homepage welcome text') . '</h2>' . st("Below, enter text that will be shown on your community's homeage to help new visitors understand what your community is about and why they should join. The image below shows an example of how this text will appear. You can always change this text later."),
+    '#markup' => '<h2>' . st('Homepage welcome text') . '</h2>' . st("Below, enter text that will be shown on your community's homepage to help new visitors understand what your community is about and why they should join. The image below shows an example of how this text will appear. You can always change this text later."),
     '#weight' => -1,
   );
   $form['commons_anonymous_welcome_example'] = array(
@@ -252,7 +287,7 @@ function commons_anonymous_welcome_text_form() {
   $form['commons_anonymous_welcome_body'] = array(
     '#type' => 'textarea',
     '#title' => st('Welcome body text'),
-    '#description' => st('Enter a couple of sentences elborating about your community.'),
+    '#description' => st('Enter a couple of sentences elaborating about your community.'),
     '#required' => TRUE,
     '#default_value' => st('Share your thoughts, find answers to your questions.'),
   );
@@ -445,7 +480,8 @@ function commons_demo_content() {
   $event->field_address[LANGUAGE_NONE][0]['locality'] = 'Boston';
   $event->og_group_ref[LANGUAGE_NONE][0]['target_id'] = $boston_group->nid;
   node_save($event);
-
+  // Don't display the 'registration settings have been saved' message.
+  commons_clear_messages();
 
   // Delete the demo content variable
   variable_del('commons_install_example_content');
@@ -502,6 +538,15 @@ function commons_install_finished(&$install_state) {
   // Flush all caches to ensure that any full bootstraps during the installer
   // do not leave stale cached data, and that any content types or other items
   // registered by the installation profile are registered correctly.
+
+  // Remove the bookmarks flag
+  $flag = flag_get_flag('bookmarks');
+  if($flag) {
+    $flag->delete();
+    $flag->disable();
+    _flag_clear_cache();
+  }
+
   drupal_flush_all_caches();
 
   // Remember the profile which was used.

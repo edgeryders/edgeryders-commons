@@ -12,7 +12,7 @@
  * @param $vars, passed in the adaptivetheme_preprocess_html()
  * @param $theme_name, the active theme.
  */
-function generate_html_classes(&$vars, $theme_name) {
+function at_generate_html_classes(&$vars, $theme_name) {
   $classes_array = &drupal_static(__FUNCTION__, array());
   if (empty($classes_array)) {
 
@@ -89,7 +89,7 @@ function generate_html_classes(&$vars, $theme_name) {
  * @param $vars, passed in the adaptivetheme_preprocess_page()
  * @param $theme_name, the active theme.
  */
-function generate_page_classes(&$vars, $theme_name) {
+function at_generate_page_classes(&$vars, $theme_name) {
   $classes_array = &drupal_static(__FUNCTION__, array());
   if (empty($classes_array)) {
 
@@ -188,6 +188,11 @@ function generate_page_classes(&$vars, $theme_name) {
         }
       }
     }
+
+    // Page class for at menu toggle
+    if (at_get_setting('enable_menu_toggle', $theme_name) === 1) {
+      $classes_array[] = 'at-mt';
+    }
   }
 
   return $classes_array;
@@ -197,6 +202,7 @@ function generate_page_classes(&$vars, $theme_name) {
  * Add classes for platforms and browsers.
  * This is very simple and can never replace something like WURFL or Mobile
  * Smart, in the future I intend to build a module to replace this.
+ * Note - this is too dangerous to namespace since legacy themes use it.
  *
  * @param null $ua
  */
@@ -312,6 +318,7 @@ function css_browser_selector($ua = NULL) {
  * load a body class for the active color scheme, very useful for CSS tweaks
  * required for a particular scheme. This is not enabled by default, you have to
  * call it in template_preprocess_html(). Mostly ripped from Color module.
+ * Note - this is too dangerous to namespace since legacy themes use it.
  *
  * @param $theme_name
  */
@@ -348,4 +355,20 @@ function get_color_scheme_name($theme_name) {
   }
 
   return $scheme_name;
+}
+
+/**
+ * Generate default classes for Panels layouts
+ * Done because for some unknown reason setting these
+ * in template_preprocess does not work, aka the variable
+ * does not appear in the panel layout preprocess function.
+ */
+function at_panels_classes_array() {
+  $output = array(
+    'at-panel',
+    'panel-display',
+    'clearfix',
+  );
+
+  return $output;
 }

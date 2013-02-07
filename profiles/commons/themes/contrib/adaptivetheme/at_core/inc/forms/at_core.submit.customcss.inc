@@ -4,9 +4,7 @@
  * @file
  * Save custom CSS to file
  */
-function at_core_submit_custom_css($form_state, $theme_name) {
-  $values = $form_state['values'];
-  $path = $values['path'];
+function at_core_submit_custom_css($values, $theme_name, $path) {
   $custom_css = '';
   if (!empty($values['custom_css'])) {
     // sanitize user entered data

@@ -4,13 +4,13 @@
  * @file
  * Generate form elments for the Panel and Gpanel Reponsive Layout settings.
  */
-function at_core_responsive_panels_form(&$form, $theme_name) {
+function at_core_responsive_panels_form(&$form, $theme_name, $info_array) {
   // Supported devices
   $devices = array(
     'bigscreen',
     'tablet_landscape',
     'tablet_portrait',
-    'smartphone_landscape',
+    'smalltouch_landscape',
   );
 
   // Get the configuration array for panel layouts
@@ -22,9 +22,6 @@ function at_core_responsive_panels_form(&$form, $theme_name) {
   // Set variables here for active Gpanels, we need to test on this later
   $active_gpanels = array();
   $active_gpanels_arrays = array();
-
-  // Get the active themes info array
-  $info_array = at_get_info($theme_name);
 
   // Build a keyed array of the regions, we need to reset the keys for
   // array_intersect() to figure out which Gpanels are being used
@@ -140,10 +137,15 @@ function at_core_responsive_panels_form(&$form, $theme_name) {
           foreach ($layouts as $layout) {
             foreach ($layout as $key => $value) {
               if (isset($value['theme'])) {
+                $default_value = at_get_setting($device . '_' . $value['theme']);
+                // Add a check for backwards compatibility with pre 7.x-3.2 themes
+                if ($device == 'smalltouch_landscape') {
+                  $default_value = at_get_setting('smalltouch_landscape_' . $value['theme']) ? at_get_setting('smalltouch_landscape_' . $value['theme']) : at_get_setting('smartphone_landscape_' . $value['theme']);
+                }
                 $form['at-settings']['panels']['panels-wrapper'][$device][$group][$device . '_' . $value['theme']] = array(
                   '#type' => 'radios',
                   '#title' => t($value['title']),
-                  '#default_value' => at_get_setting($device . '_' . $value['theme']),
+                  '#default_value' => $default_value,
                   '#options' => $value['options'],
                 );
               }

@@ -128,7 +128,7 @@ function commons_events_form_node_form_alter(&$form, &$form_state) {
       ),
     );
     // Status and attendee limit are shown if registration is onsite.
-    $node_registration_status = 0;
+    $node_registration_status = 1;
     if (isset($form_state['node']->nid)) {
       $settings = registration_entity_settings('node', $form_state['node']->nid);
       $node_registration_status = $settings['status'];
@@ -314,6 +314,10 @@ function commons_events_views_post_execute(&$view) {
   if ($view->name == 'commons_events_upcoming'
     && $view->current_display == 'panel_pane_1') {
     $view->attachment_after = '<div class="more-link">' . commons_events_upcoming_more_link($view->args[0]) . '</div>';
+  }
+  else if ($view->name == 'commons_events_upcoming'
+    && $view->current_display == 'panel_pane_2') {
+    $view->attachment_before = '<div class="commons-event-count">' . format_plural(count($view->result), '1 event', '@count events') . '</div>';
   }
 }
 

@@ -50,7 +50,7 @@ function at_core_context_regions_form(&$form, $info_array) {
       '#markup' => t('<p><strong>Detection:</strong> <span class="no-detection">No detection module installed.</span> Please install either the Browscap or Mobile Detect module.</p>
         <ul>
         <li><a href="!browscap_module" target="_blank">Browscap module</a>: allows you to hide or move blocks for all mobile devices.</li>
-        <li><a href="!mobiledetect_module" target="_blank">Mobile Detect module</a>: allows you to hide regions in all just Smartphones or all mobile devices.</li>
+        <li><a href="!mobiledetect_module" target="_blank">Mobile Detect module</a>: allows you to hide regions in all just smalltouch devices (exclude tablets) or all mobile devices (smalltouch and tablets).</li>
       </ul>', array('!browscap_module' => 'http://drupal.org/project/browscap', '!mobiledetect_module' => 'http://drupal.org/project/mobile_detect')),
     );
   }
@@ -59,7 +59,7 @@ function at_core_context_regions_form(&$form, $info_array) {
     $browscap_detect = TRUE;
     $form['at']['context-regions']['requirements'] = array(
       '#markup' => t('<p><strong>Detection module:</strong> <span class="detection">Browscap</span></p>
-        <p>Alternatively use the <a href="!mobiledetect_module" target="_blank">Mobile Detect module</a> which allows you to hide regions in all just Smartphones or all mobile devices.</p>
+        <p>Alternatively use the <a href="!mobiledetect_module" target="_blank">Mobile Detect module</a> which allows you to hide regions in all just Smalltouchs or all mobile devices.</p>
       </ul>', array('!mobiledetect_module' => 'http://drupal.org/project/mobile_detect')),
     );
   }
@@ -133,10 +133,10 @@ function at_core_context_regions_form(&$form, $info_array) {
           '#type' => 'radios',
           '#title' => t('Hide region options'),
           '#options' => array(
-            'unset_smartphone' => t('Hide in Smartphones'),
+            'unset_smalltouch' => t('Hide in Smalltouch devicess'),
             'unset_all_devices' => t('Hide in all mobile devices'),
           ),
-          '#default_value' => at_get_setting('unset_options_' . $mobile_region_name) ? at_get_setting('unset_options_' . $mobile_region_name) : 'unset_smartphone',
+          '#default_value' => at_get_setting('unset_options_' . $mobile_region_name) ? at_get_setting('unset_options_' . $mobile_region_name) : 'unset_smalltouch',
           '#states' => array(
             'visible' => array(
               'input[name=unset_' . $mobile_region_name . ']' => array('checked' => TRUE),
@@ -171,10 +171,10 @@ function at_core_context_regions_form(&$form, $info_array) {
           '#type' => 'radios',
           '#title' => t('Move region options'),
           '#options' => array(
-            'move_smartphone' => t('Move in Smartphones'),
+            'move_smalltouch' => t('Move in Smalltouchs'),
             'move_all_devices' => t('Move in all mobile devices'),
           ),
-          '#default_value' => at_get_setting('move_options_' . $mobile_region_name) ? at_get_setting('move_options_' . $mobile_region_name) : 'move_smartphone',
+          '#default_value' => at_get_setting('move_options_' . $mobile_region_name) ? at_get_setting('move_options_' . $mobile_region_name) : 'move_smalltouch',
           '#states' => array(
             'visible' => array(
               'input[name=move_region_' . $mobile_region_name . ']' => array('checked' => TRUE),

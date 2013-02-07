@@ -81,8 +81,16 @@ function at_core_extensions_form(&$form) {
   $form['at-settings']['extend']['enable']['enable_context_regions'] = array(
     '#type' => 'checkbox',
     '#title' => t('Mobile Regions and Blocks'),
-    '#description' => t('Unset regions or move blocks to another region in mobile devices. Requires the <a href="!browscap_module" target="_blank">Browscap module</a> for mobile device detection.', array('!browscap_module' => 'http://drupal.org/project/browscap')),
+    '#description' => t('Unset regions or move blocks to another region in mobile devices. Requires either <a href="!browscap_module" target="_blank">Browscap</a> or <a href="!mobiledetect_module" target="_blank">Mobile Detect</a> for mobile device detection.', array('!browscap_module' => 'http://drupal.org/project/browscap', '!mobiledetect_module' => 'http://drupal.org/project/mobile_detect')),
     '#default_value' => at_get_setting('enable_context_regions'),
+  );
+
+  // Menu Toggle
+  $form['at-settings']['extend']['enable']['enable_menu_toggle'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Mobile Menu Toggle'),
+    '#description' => t('Collapse the Main menu (or menu block in Menu Bar region) into a clickable link/button. This is a new feature and may not work perfectly with older sub-themes.'),
+    '#default_value' => at_get_setting('enable_menu_toggle'),
   );
 
   // Float Region blocks

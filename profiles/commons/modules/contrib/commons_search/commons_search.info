@@ -49,7 +49,6 @@ features[variable][] = custom_search_max_length
 features[variable][] = custom_search_node_types
 features[variable][] = custom_search_node_types_excluded
 features[variable][] = custom_search_order
-features[variable][] = custom_search_other
 features[variable][] = custom_search_paths
 features[variable][] = custom_search_paths_selector
 features[variable][] = custom_search_paths_selector_label
@@ -67,9 +66,9 @@ features[variable][] = custom_search_type_selector_label
 features[variable][] = custom_search_type_selector_label_visibility
 features[views_view][] = group_search
 
-; Information added by drupal.org packaging script on 2013-01-19
+; Information added by drupal.org packaging script on 2013-02-02
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_search"
-datestamp = "1358556098"
+datestamp = "1359766078"
 

@@ -25,7 +25,7 @@ function at_core_css_exclude_form(&$form, $theme_name) {
     '#title' => t('Unset CSS'),
     '#description' => t('<h2>Unset CSS</h2><p>Stylesheet names are cached, if some are not showing in this list you may need to clear the cache.</p><p>In for some reason (it happens) the CSS files you want to unset never show here you can explicitly declare them in your info file as "unset_css", see your sub-themes info file under "Stylesheets" for instructions.</p>'),
     '#attached' => array(
-      'js' => array(drupal_get_path('theme', 'adaptivetheme') . '/scripts/check_all.js'),
+      'js' => array(drupal_get_path('theme', 'adaptivetheme') . '/scripts/check-all.js'),
     ),
   );
 

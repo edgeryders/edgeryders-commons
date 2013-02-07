@@ -8,8 +8,7 @@
  * current values - useful for migration or simply capturing the current
  * theme settings as defaults.
  */
-function at_core_submit_info(&$form_state, $theme_name, $path) {
-  $values = $form_state['values'];
+function at_core_submit_info($values, $theme_name, $path) {
   $theme_settings = $values;
   if ($theme_settings) {
     $dynamic_settings_info = array();

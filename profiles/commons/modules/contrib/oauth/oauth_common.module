@@ -19,6 +19,14 @@ define('OAUTH_COMMON_LOGIN_PATH', 'user/login');
  */
 function oauth_common_permission() {
   $permissions = array(
+    'access own authorizations' => array(
+      'title' => t('Access own OAuth authorizations'),
+      'restrict access' => TRUE,
+    ),
+    'access own consumers' => array(
+      'title' => t('Access own OAuth consumers'),
+      'restrict access' => TRUE,
+    ),
     'oauth authorize any consumers' => array(
       'title' => t('Authorize any OAuth consumers'),
       'restrict access' => TRUE,

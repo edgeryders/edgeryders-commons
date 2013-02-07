@@ -610,11 +610,11 @@ function ckeditor_file_download($uri) {
  * Enable disabled plugins by hook_modules_disabled().
  */
 function ckeditor_modules_enabled($modules) {
+  module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
   if (in_array('libraries', $modules)) {
     // Check and update path to CKEditor in the global profile
     _ckeditor_requirements_isinstalled();
   }
-  module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
   $profiles_list = ckeditor_profile_input_formats();
   $plugins_list = ckeditor_load_plugins();
   foreach ($profiles_list AS $_profile => $_inputs) {

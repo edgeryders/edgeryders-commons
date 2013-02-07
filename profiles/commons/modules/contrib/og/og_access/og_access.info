@@ -9,9 +9,9 @@ files[] = og_access.install
 
 ; Tests
 files[] = og_access.test
-; Information added by drupal.org packaging script on 2013-01-20
-version = "7.x-2.0-rc3"
+; Information added by drupal.org packaging script on 2013-02-03
+version = "7.x-2.0-rc3+3-dev"
 core = "7.x"
 project = "og"
-datestamp = "1358690883"
+datestamp = "1359855698"
 

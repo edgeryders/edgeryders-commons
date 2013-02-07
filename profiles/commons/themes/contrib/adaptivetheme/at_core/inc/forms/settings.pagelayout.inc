@@ -24,8 +24,8 @@ function at_core_page_layout_form(&$form, $theme_name) {
       if ($device_group === 'tablet_portrait') {
         $tablet_portrait_options[$option] = drupal_ucfirst(str_replace('_', ' ', $option));
       }
-      if ($device_group === 'smartphone_landscape') {
-        $smartphone_landscape_options[$option] = drupal_ucfirst(str_replace('_', ' ', $option));
+      if ($device_group === 'smalltouch_landscape') {
+        $smalltouch_landscape_options[$option] = drupal_ucfirst(str_replace('_', ' ', $option));
       }
     }
   }
@@ -215,7 +215,7 @@ function at_core_page_layout_form(&$form, $theme_name) {
   $form['at-settings']['tablet'] = array(
     '#type' => 'fieldset',
     '#title' => t('Tablet Layout'),
-    '#description' => t('<h3>Tablet Layout</h3><p>Tablet devices such as iPad have two orientations - landscape and portrait. You can configure a different layout for each orientation.</p>'),
+    '#description' => t('<h3>Tablet Layout</h3><p>Tablet devices such as iPad, Android and Windows tablets have two orientations - landscape and portrait, which can also be thought of as wide and narrow tablets. You can configure a different layout for each orientation.</p>'),
     '#attributes' => array(
       'class' => array('at-layout-form'),
     ),
@@ -235,7 +235,7 @@ function at_core_page_layout_form(&$form, $theme_name) {
   $form['at-settings']['tablet']['landscape'] = array(
     '#type' => 'fieldset',
     '#title' => t('Landscape'),
-    '#description' => t('<h4>Landscape tablet</h4>'),
+    '#description' => t('<h4>Landscape tablet <span class="field-description-info">(wide)</span></h4>'),
     '#states' => array(
       'disabled' => array('input[name="disable_responsive_styles"]' => array('checked' => TRUE)),
     ),
@@ -370,6 +370,7 @@ function at_core_page_layout_form(&$form, $theme_name) {
     '#required' => TRUE,
   );
 
+
   /******************
    * Tablet portrait
    *****************/
@@ -377,7 +378,7 @@ function at_core_page_layout_form(&$form, $theme_name) {
   $form['at-settings']['tablet']['portrait'] = array(
     '#type' => 'fieldset',
     '#title' => t('Portrait'),
-    '#description' => t('<h4>Portrait tablet</h4>'),
+    '#description' => t('<h4>Portrait tablet <span class="field-description-info">(narrow)</span></h4>'),
     '#states' => array(
       'disabled' => array('input[name="disable_responsive_styles"]' => array('checked' => TRUE)),
     ),
@@ -512,16 +513,17 @@ function at_core_page_layout_form(&$form, $theme_name) {
     '#required' => TRUE,
   );
 
+
   /*****************************************************************************
    *
-   * Smartphone
+   * Smalltouch
    *
    ****************************************************************************/
 
-  $form['at-settings']['smartphone'] = array(
+  $form['at-settings']['smalltouch'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Smartphone Layout'),
-    '#description' => t('<h3>Smartphone Layout</h3><p>Smartphone devices such as iPhone, Android and Windows phones have two orientations - landscape and portrait. You can configure a layout for landscape orientation only - portrait orientation always displays in one column with sidebars stacked below the main content.</p>'),
+    '#title' => t('Smalltouch Layout'),
+    '#description' => t('<h3>Smalltouch Layout</h3><p>Smalltouch devices such as iPhone, Android and Windows phones have two orientations - landscape and portrait, which can also be thought of as wide and arrow smalltouch devices. You can configure a layout for landscape orientation only - portrait orientation (narrow) will always display in one column (all regions full width and stacked) with sidebars below the main content.</p>'),
     '#attributes' => array(
       'class' => array('at-layout-form'),
     ),
@@ -529,160 +531,160 @@ function at_core_page_layout_form(&$form, $theme_name) {
 
   // Disabled message
   if(at_get_setting('disable_responsive_styles') === 1) {
-    $form['at-settings']['smartphone']['disabled'] = array(
+    $form['at-settings']['smalltouch']['disabled'] = array(
       '#markup' => '<div class="messages warning">' . $disable_message . '</div>',
     );
   }
 
   /***********************
-   * Smartphone landscape
+   * Smalltouch landscape
    **********************/
 
-  $form['at-settings']['smartphone']['landscape'] = array(
+  $form['at-settings']['smalltouch']['landscape'] = array(
     '#type' => 'fieldset',
     '#title' => t('Landscape'),
-    '#description' => t('<h4>Landscape smartphone</h4>'),
+    '#description' => t('<h4>Landscape smalltouch <span class="field-description-info">(wide)</span></h4>'),
     '#states' => array(
       'disabled' => array('input[name="disable_responsive_styles"]' => array('checked' => TRUE)),
     ),
   );
 
-  $form['at-settings']['smartphone']['landscape']['smartphone-landscape-layout-wrapper'] = array(
+  $form['at-settings']['smalltouch']['landscape']['smalltouch-landscape-layout-wrapper'] = array(
     '#type' => 'fieldset',
     '#title' => t('Choose sidebar layout'),
   );
 
-  $form['at-settings']['smartphone']['landscape']['smartphone-landscape-layout-wrapper']['smartphone_landscape_layout'] = array(
+  $form['at-settings']['smalltouch']['landscape']['smalltouch-landscape-layout-wrapper']['smalltouch_landscape_layout'] = array(
     '#type' => 'radios',
     '#title' => t('<strong>Choose sidebar positions</strong>'),
-    '#default_value' => str_replace('-', '_', at_get_setting('smartphone_landscape_layout')),
-    '#options' => $smartphone_landscape_options,
+    '#default_value' => at_get_setting('smalltouch_landscape_layout') ? str_replace('-', '_', at_get_setting('smalltouch_landscape_layout')) : str_replace('-', '_', at_get_setting('smartphone_landscape_layout')),
+    '#options' => $smalltouch_landscape_options,
   );
 
-  $form['at-settings']['smartphone']['landscape']['smartphone-landscape-sidebar-width-wrapper'] = array(
+  $form['at-settings']['smalltouch']['landscape']['smalltouch-landscape-sidebar-width-wrapper'] = array(
     '#type' => 'fieldset',
     '#title' => t('Set sidebar widths'),
     '#description' => t('<strong>Set the width of each sidebar</strong>'),
     '#states' => array(
-      '!visible' => array('input[name="smartphone_landscape_layout"]' => array('value' => 'one_col_stack')),
+      '!visible' => array('input[name="smalltouch_landscape_layout"]' => array('value' => 'one_col_stack')),
     ),
   );
 
-  $form['at-settings']['smartphone']['landscape']['smartphone-landscape-sidebar-width-wrapper']['smartphone_landscape_sidebar_unit'] = array(
+  $form['at-settings']['smalltouch']['landscape']['smalltouch-landscape-sidebar-width-wrapper']['smalltouch_landscape_sidebar_unit'] = array(
     '#type' => 'select',
     '#title' => t('Unit'),
-    '#default_value' => at_get_setting('smartphone_landscape_sidebar_unit'),
+    '#default_value' => at_get_setting('smalltouch_landscape_sidebar_unit') ? at_get_setting('smalltouch_landscape_sidebar_unit') : at_get_setting('smartphone_landscape_sidebar_unit'),
     '#options' => $unit_options,
   );
 
-  $form['at-settings']['smartphone']['landscape']['smartphone-landscape-sidebar-width-wrapper']['smartphone_landscape_sidebar_first'] = array(
+  $form['at-settings']['smalltouch']['landscape']['smalltouch-landscape-sidebar-width-wrapper']['smalltouch_landscape_sidebar_first'] = array(
     '#type' => 'textfield',
     '#title' => t('First sidebar'),
-    '#default_value' => check_plain(at_get_setting('smartphone_landscape_sidebar_first')),
+    '#default_value' => at_get_setting('smalltouch_landscape_sidebar_first') ? check_plain(at_get_setting('smalltouch_landscape_sidebar_first')) : check_plain(at_get_setting('smartphone_landscape_sidebar_first')),
     '#size' => 4,
     '#maxlenght' => 4,
     '#states' => array(
-      'required' => array('input[name="smartphone_landscape_layout"]' => array('value' => 'one_col_vert')),
+      'required' => array('input[name="smalltouch_landscape_layout"]' => array('value' => 'one_col_vert')),
     ),
   );
 
-  $form['at-settings']['smartphone']['landscape']['smartphone-landscape-sidebar-width-wrapper']['smartphone_landscape_sidebar_second'] = array(
+  $form['at-settings']['smalltouch']['landscape']['smalltouch-landscape-sidebar-width-wrapper']['smalltouch_landscape_sidebar_second'] = array(
     '#type' => 'textfield',
     '#title' => t('Second sidebar'),
-    '#default_value' => check_plain(at_get_setting('smartphone_landscape_sidebar_second')),
+    '#default_value' => at_get_setting('smalltouch_landscape_sidebar_second') ? check_plain(at_get_setting('smalltouch_landscape_sidebar_second')) : check_plain(at_get_setting('smartphone_landscape_sidebar_second')),
     '#size' => 4,
     '#maxlenght' => 4,
     '#states' => array(
-      'required' => array('input[name="smartphone_landscape_layout"]' => array('value' => 'one_col_vert')),
+      'required' => array('input[name="smalltouch_landscape_layout"]' => array('value' => 'one_col_vert')),
     ),
   );
 
-  $form['at-settings']['smartphone']['landscape']['smartphone-landscape-media-queries-wrapper'] = array(
+  $form['at-settings']['smalltouch']['landscape']['smalltouch-landscape-media-queries-wrapper'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Smartphone Landscape Media Queries'),
+    '#title' => t('Smalltouch Landscape Media Queries'),
     '#weight' => 1,
     '#attributes' => array(
       'class' => array('at-media-queries'),
     ),
   );
 
-  $form['at-settings']['smartphone']['landscape']['smartphone-landscape-media-queries-wrapper']['smartphone_landscape_media_query'] = array(
+  $form['at-settings']['smalltouch']['landscape']['smalltouch-landscape-media-queries-wrapper']['smalltouch_landscape_media_query'] = array(
     '#type' => 'textfield',
     '#title' => t('Media query for this layout'),
-    '#default_value' => check_plain(at_get_setting('smartphone_landscape_media_query')),
+    '#default_value' => at_get_setting('smalltouch_landscape_media_query') ? check_plain(at_get_setting('smalltouch_landscape_media_query')) : check_plain(at_get_setting('smartphone_landscape_media_query')),
     '#description' => t('Do not include @media, it\'s included automatically.'),
     '#size' => 100,
-    '#required' => TRUE,
+    //'#required' => TRUE,
   );
 
   // Pass hidden values to the sumbit function, these values are required but the user can't change them via the UI
-  $form['at-settings']['smartphone']['landscape']['hidden']['smartphone_landscape_page_width'] = array(
+  $form['at-settings']['smalltouch']['landscape']['hidden']['smalltouch_landscape_page_width'] = array(
     '#type' => 'hidden',
-    '#default_value' => check_plain(at_get_setting('smartphone_landscape_page_width')),
+    '#default_value' => at_get_setting('smalltouch_landscape_page_width') ? check_plain(at_get_setting('smalltouch_landscape_page_width')) : check_plain(at_get_setting('smartphone_landscape_page_width')),
   );
-  $form['at-settings']['smartphone']['landscape']['hidden']['smartphone_landscape_page_unit'] = array(
+  $form['at-settings']['smalltouch']['landscape']['hidden']['smalltouch_landscape_page_unit'] = array(
     '#type' => 'hidden',
-    '#default_value' => at_get_setting('smartphone_landscape_page_unit'),
+    '#default_value' => at_get_setting('smalltouch_landscape_page_unit') ? at_get_setting('smalltouch_landscape_page_unit') : at_get_setting('smartphone_landscape_page_unit'),
   );
 
   /**********************
-   * Smartphone portrait
+   * Smalltouch portrait
    *********************/
 
-  $form['at-settings']['smartphone']['portrait'] = array(
+  $form['at-settings']['smalltouch']['portrait'] = array(
     '#type' => 'fieldset',
     '#title' => t('Portrait'),
-    '#description' => t('<h4>Portrait smartphone</h4><div class="smartphone-portrait-layout">One column</div><p>The smartphone portrait layout always displays in one column with sidebars stacked horizontally below the main content. All widths are always 100%.</p>'),
+    '#description' => t('<h4>Portrait smalltouch <span class="field-description-info">(narrow)</span></h4><div class="smalltouch-portrait-layout">One column</div><p>The smalltouch portrait layout always displays in one column with sidebars stacked horizontally below the main content. All widths are always 100%.</p>'),
     '#states' => array(
       'disabled' => array('input[name="disable_responsive_styles"]' => array('checked' => TRUE)),
     ),
   );
 
-  $form['at-settings']['smartphone']['portrait']['smartphone-portrait-media-queries-wrapper'] = array(
+  $form['at-settings']['smalltouch']['portrait']['smalltouch-portrait-media-queries-wrapper'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Smartphone Portrait Media Queries'),
+    '#title' => t('Smalltouch Portrait Media Queries'),
     '#weight' => 1,
     '#attributes' => array(
       'class' => array('at-media-queries'),
     ),
   );
 
-  $form['at-settings']['smartphone']['portrait']['smartphone-portrait-media-queries-wrapper']['smartphone_portrait_media_query'] = array(
+  $form['at-settings']['smalltouch']['portrait']['smalltouch-portrait-media-queries-wrapper']['smalltouch_portrait_media_query'] = array(
     '#type' => 'textfield',
     '#title' => t('Media query for this layout'),
-    '#default_value' => check_plain(at_get_setting('smartphone_portrait_media_query')),
+    '#default_value' => at_get_setting('smalltouch_portrait_media_query') ? check_plain(at_get_setting('smalltouch_portrait_media_query')) : check_plain(at_get_setting('smartphone_portrait_media_query')),
     '#description' => t('Do not include @media, it\'s included automatically.'),
     '#size' => 100,
   );
 
   // Pass hidden values to the sumbit function, these values are required but the user can't change them via the UI
-  $form['at-settings']['smartphone']['portrait']['hidden']['smartphone_portrait_page_width'] = array(
+  $form['at-settings']['smalltouch']['portrait']['hidden']['smalltouch_portrait_page_width'] = array(
     '#type' => 'hidden',
-    '#default_value' => check_plain(at_get_setting('smartphone_portrait_page_width')),
+    '#default_value' => at_get_setting('smalltouch_portrait_page_width') ? check_plain(at_get_setting('smalltouch_portrait_page_width')) : check_plain(at_get_setting('smartphone_portrait_page_width')),
   );
 
-  $form['at-settings']['smartphone']['portrait']['hidden']['smartphone_portrait_page_unit'] = array(
+  $form['at-settings']['smalltouch']['portrait']['hidden']['smalltouch_portrait_page_unit'] = array(
     '#type' => 'hidden',
-    '#default_value' => at_get_setting('smartphone_portrait_page_unit'),
+    '#default_value' => at_get_setting('smalltouch_portrait_page_unit') ? at_get_setting('smalltouch_portrait_page_unit') : at_get_setting('smartphone_portrait_page_unit'),
   );
 
-  $form['at-settings']['smartphone']['portrait']['hidden']['smartphone_portrait_sidebar_first'] = array(
+  $form['at-settings']['smalltouch']['portrait']['hidden']['smalltouch_portrait_sidebar_first'] = array(
     '#type' => 'hidden',
-    '#default_value' => check_plain(at_get_setting('smartphone_portrait_sidebar_first')),
+    '#default_value' => at_get_setting('smalltouch_portrait_sidebar_first') ? check_plain(at_get_setting('smalltouch_portrait_sidebar_first')) : check_plain(at_get_setting('smartphone_portrait_sidebar_first')),
   );
 
-  $form['at-settings']['smartphone']['portrait']['hidden']['smartphone_portrait_sidebar_second'] = array(
+  $form['at-settings']['smalltouch']['portrait']['hidden']['smalltouch_portrait_sidebar_second'] = array(
     '#type' => 'hidden',
-    '#default_value' => check_plain(at_get_setting('smartphone_portrait_sidebar_second')),
+    '#default_value' => at_get_setting('smalltouch_portrait_sidebar_second') ? check_plain(at_get_setting('smalltouch_portrait_sidebar_second')) : check_plain(at_get_setting('smartphone_portrait_sidebar_second')),
   );
 
-  $form['at-settings']['smartphone']['portrait']['hidden']['smartphone_portrait_sidebar_unit'] = array(
+  $form['at-settings']['smalltouch']['portrait']['hidden']['smalltouch_portrait_sidebar_unit'] = array(
     '#type' => 'hidden',
-    '#default_value' => check_plain(at_get_setting('smartphone_portrait_sidebar_unit')),
+    '#default_value' => at_get_setting('smalltouch_portrait_sidebar_unit') ? check_plain(at_get_setting('smalltouch_portrait_sidebar_unit')) : check_plain(at_get_setting('smartphone_portrait_sidebar_unit')),
   );
 
-  $form['at-settings']['smartphone']['portrait']['hidden']['smartphone_portrait_layout'] = array(
+  $form['at-settings']['smalltouch']['portrait']['hidden']['smalltouch_portrait_layout'] = array(
     '#type' => 'hidden',
-    '#default_value' => str_replace('-', '_', at_get_setting('smartphone_portrait_layout')),
+    '#default_value' => at_get_setting('smalltouch_portrait_layout') ? str_replace('-', '_', at_get_setting('smalltouch_portrait_layout')) : str_replace('-', '_', at_get_setting('smartphone_portrait_layout')),
   );
 }

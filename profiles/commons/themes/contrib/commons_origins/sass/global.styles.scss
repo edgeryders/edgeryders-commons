@@ -86,14 +86,6 @@ h2 {
   font-size: 54px;
   line-height: 54px;
   font-family: $alt-font;
-
-  .palette-orange-red & {
-    color: $palette_orange_red_red;
-  }
-
-  .palette-magenta-blue & {
-    color: $palette_magenta_blue_dark;
-  }
 }
 
 
@@ -227,26 +219,6 @@ var {
     @include box-shadow($dark_blue 0px -1px 0px);
     margin-top: 1px;
   }
-
-  .palette-orange-red & {
-    background-color: $palette_orange_red_red;
-    border-top: 4px solid darken($palette_orange_red_red, 50%);
-
-    .boxshadow & {
-      @include box-shadow($palette_orange_red_red 0px -1px 0px);
-      margin-top: 1px;
-    }
-  }
-
-  .palette-magenta-blue & {
-    background-color: $palette_magenta_blue_dark;
-    border-top: 4px solid darken($palette_magenta_blue_dark, 50%);
-
-    .boxshadow & {
-      @include box-shadow($palette_magenta_blue_dark 0px -1px 0px);
-      margin-top: 1px;
-    }
-  }
 }
 
 .header-color-row-two {
@@ -254,18 +226,6 @@ var {
   height: 26px;
   border-top: 1px solid lighten($light_blue, 10%);
   border-bottom: 1px solid darken($light_blue, 10%);
-
-  .palette-orange-red & {
-    background-color: $palette_orange_red_orange;
-    border-top: 1px solid lighten($palette_orange_red_orange, 10%);
-    border-bottom: 1px solid darken($palette_orange_red_orange, 10%);
-  }
-
-  .palette-magenta-blue & {
-    background-color: $palette_magenta_blue_light;
-    border-top: 1px solid lighten($palette_magenta_blue_light, 10%);
-    border-bottom: 1px solid darken($palette_magenta_blue_light, 10%);
-  }
 }
 
 
@@ -297,7 +257,11 @@ var {
 /*
  * Wraps the content region, avoid applying styles to this wrapper, its used mainly for position and invisible gutters and can be problematic to style
  */
-#content {}
+#content {
+  .front.not-logged-in & {
+    background: image-url('commons-drop.png') right top no-repeat;
+  }
+}
 
 
 /*
@@ -432,18 +396,18 @@ var {
     vertical-align: bottom;
   }
 
-  .palette-active & {
-    a {
-      display: block;
-      width: 48px;
-      height: 80px;
-      background: image-url('logo-general.png') left top no-repeat;
-    }
+  // .palette-active & {
+  //   a {
+  //     display: block;
+  //     width: 48px;
+  //     height: 80px;
+  //     background: image-url('logo-general.png') left top no-repeat;
+  //   }
 
-    img {
-      display: none;
-    }
-  }
+  //   img {
+  //     display: none;
+  //   }
+  // }
 }
 
 
@@ -612,22 +576,6 @@ h1.node-title {
       text-decoration:underline;
     }
   }
-
-  .palette-orange-red & {
-    color: $palette_orange_red_orange;
-
-    a {
-      color: $palette_orange_red_orange;
-    }
-  }
-
-  .palette-magenta-blue & {
-    color: $palette_magenta_blue_light;
-
-    a {
-      color: $palette_magenta_blue_light;
-    }
-  }
 }
 
 /*
@@ -678,6 +626,24 @@ h1.node-title {
   }
 }
 
+.view-activity-group, .view-commons-activity-streams-activity, .view-commons-activity-streams-user-activity {
+  .views-row {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+
+    &.views-row-last {
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0;
+    }
+
+    h2 {
+      display: none;
+    }
+  }
+}
+
 .view-commons-bw-all, .view-commons-bw-posts, .view-commons-bw-q-a, .view-commons-bw-wikis, .view-commons-bw-polls, #comments {
   .content, .views-field-timestamp {
     margin-left: 70px;
@@ -711,12 +677,12 @@ h1.node-title {
 }
 
 .page-node {
+  // .rate-widget-commons_like {
+  //   @extend %like-btn;
+  // }
+
   .node-content {
     margin-left: 70px;
-
-    .rate-widget-commons_like {
-      @extend %like-btn;
-    }
 
     .user-picture {
       float:left;
@@ -859,11 +825,84 @@ h1.node-title {
     }
 
     .rate-widget-commons_like {
-      @extend %like-btn;
       position: absolute;
       right: 5px;
       top: 15px;
     }
+  }
+}
+
+.page-node-add {
+  .node-form {
+    position: relative;
+  }
+
+  fieldset {
+    border: none;
+
+    &#edit-og-group-ref-und {
+      padding: 0;
+    }
+  }
+
+  #edit-body {
+    .ckeditor_links {
+      background-color: $white;
+      padding: 5px 15px 0 15px;
+      display: block;
+    }
+
+    fieldset {
+      background-color: $white;
+      @include border-radius(0 0 6px 6px);
+    }
+  }
+
+  #edit-body, .form-item-title ,.field-name-og-group-ref, .field-type-taxonomy-term-reference-form {
+    width: 66%;
+    // float: left;
+
+    input[type="text"] {
+      width: 100%;
+    }
+  }
+
+  #edit-additional-settings {
+    // float: right;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 33%;
+    margin-right: 0;
+    margin-left: 0;
+    padding: 0;
+    @extend %pod;
+
+    > div {
+      @extend %pod-content;
+
+      fieldset {
+        border-bottom: 1px solid $border;
+        padding-left: 0;
+        padding-right: 0;
+
+        &.collapsed {
+          border-bottom: none;
+        }
+
+        fieldset {
+          border-bottom: none;
+        }
+      }
+    }
+
+    input[type="text"] {
+      width: 100%;
+    }
+  }
+
+  #edit-actions {
+    clear: both;
   }
 }
 
@@ -901,7 +940,7 @@ h1.node-title {
   }
 }
 
-.page-node .flag-commons-follow-node, .page-node .flag-commons-follow-group {
+.page-node .flag-commons-follow-node, .page-node .flag-commons-follow-group, .flag-commons-follow-user {
   display: inline-block;
 
   a {
@@ -1004,6 +1043,8 @@ h1.node-title {
 .page-user {
   .pane-user-picture {
     display: inline-block;
+    float: left;
+    width: 15%;
 
     .user-picture {
       background: $white;
@@ -1018,10 +1059,13 @@ h1.node-title {
   }
 
   .pane-user-field-bio {
-    
+    float: left;
+    width: 80%;
   }
 
   .pane-user-field-facebook-url {
+    float: left;
+    width: 26%;
 
     a {
       display: inline-block;
@@ -1036,6 +1080,8 @@ h1.node-title {
   }
 
   .pane-user-field-linkedin-url {
+    float: left;
+    width: 26%;
 
     a {
       display: inline-block;
@@ -1050,6 +1096,8 @@ h1.node-title {
   }
 
   .pane-user-field-twitter-url {
+    float: left;
+    width: 26%;
 
     a {
       display: inline-block;
@@ -1061,6 +1109,10 @@ h1.node-title {
         top: 7px;
       }
     }
+  }
+
+  .pane-user-flag-commons-follow-user-link {
+    clear: both;
   }
 
   .pane-views-panes {
@@ -1102,7 +1154,7 @@ h1.node-title {
   // float: left;
   // @extend %divider-left;
   height: 64px;
-  width: 270px;
+  width: 266px;
   text-align: left;
 }
 
@@ -1179,14 +1231,6 @@ a {
   &:focus {
     text-decoration: underline;
   }
-
-  .palette-orange-red & {
-    color: $palette_orange_red_orange;
-  }
-
-  .palette-magenta-blue & {
-    color: $palette_magenta_blue_light;
-  }
 }
 
 
@@ -1214,13 +1258,15 @@ a {
   margin:0;
   @extend %divider-right;
 
-  ul,
+  h3.block-title {
+    display: none;
+  }
+
   ul.menu {
     margin: 0;
     padding: 0;
   }
 
-  li,
   ul.menu li {
     display: inline-block;
     float: left;
@@ -1256,30 +1302,10 @@ a {
           border-width: 0 6px 6px 6px;
           border-color: transparent transparent $light_blue transparent;
         }
-
-        .palette-orange-red & {
-          &:before {
-            border-color: transparent transparent lighten($palette_orange_red_orange, 10%) transparent;
-          }
-
-          &:after {
-            border-color: transparent transparent $palette_orange_red_orange transparent;
-          }
-        }
-
-        .palette-magenta-blue & {
-          &:before {
-            border-color: transparent transparent lighten($palette_magenta_blue_light, 10%) transparent;
-          }
-
-          &:after {
-            border-color: transparent transparent $palette_magenta_blue_light transparent;
-          }
-        }
       }
     }
   }
-  li a,
+
   ul.menu li a {
     display: block;
     white-space: nowrap;
@@ -1365,14 +1391,6 @@ ul.commons-utility-links {
 
       a {
         margin-left: 9px;
-      }
-
-      .palette-orange-red & {
-        border-left-color: $palette_orange_red_orange;
-      }
-
-      .palette-magenta-blue & {
-        border-left-color: $palette_magenta_blue_light;
       }
     }
   }
@@ -2135,6 +2153,77 @@ body.page-node .pane-views-panes {
     right: 0;
     top: 5px;
   }
+
+  &.page-node {
+    .pane-node-content {
+      > .block-inner {
+        padding: 0;
+        margin: 0;
+      }
+
+      .node.node-promoted {
+        padding: 25px 10px 20px 10px;
+      }
+
+      footer.submitted {
+        display: none;
+      }
+
+      figure {
+        float:left;
+        margin:3px 10px 5px 0;
+        background:$white;
+        padding:4px;
+        @include border-radius(3px);
+        @include box-shadow($light_gray 1px 1px 4px);
+        position:relative;
+        display:block;
+        line-height:0;
+      }
+
+      .field-name-field-topics {
+        float: right;
+      }
+
+      nav {
+        float: left;
+        width: 50%;
+        margin-top: 20px;
+
+        ul {
+          float: left;
+        }
+
+        li {
+          float: left;
+
+          &.flag-inappropriate_node {
+            float: none;
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+          }
+
+          .flag-commons-follow-group a {
+            font-size: 0;
+            padding: 5px 27px;
+
+            &:before {
+              top: 0;
+            }
+          }
+        }
+      }
+    }
+
+    .node-content {
+      margin-left: 0;
+
+      .user-picture {
+        display: none;
+      }
+    }
+  }
 }
 
 .view-commons-radioactivity-groups-most-active, .view-commons-groups-recent-content, .view-commons-radioactivity-groups-active-in-group {
@@ -2154,6 +2243,16 @@ body.page-node .pane-views-panes {
     &:before {
       content: '';
       @include sprite_url_height_width($icons, events);
+      margin-right: 6px;
+    }
+  }
+
+  .type-Poll {
+    font-size: 12px;
+
+    &:before {
+      content: '';
+      @include sprite_url_height_width($icons, polls);
       margin-right: 6px;
     }
   }
@@ -2699,27 +2798,6 @@ body.page-node .pane-views-panes {
   }
 }
 
-// Quicktabs buttons styles
-.quicktabs-style-commons-pills ul.quicktabs-tabs li.active a {
-  .palette-orange-red & {
-    background-color: $palette_orange_red_red;
-  }
-
-  .palette-magenta-blue & {
-    background-color: $palette_magenta_blue_dark;
-  }
-}
-
-.quicktabs-style-commons-pills ul.quicktabs-tabs li.active a:after {
-  .palette-orange-red & {
-    border-color: $palette_orange_red_red transparent transparent transparent;
-  }
-
-  .palette-magenta-blue & {
-    border-color: $palette_magenta_blue_dark transparent transparent transparent;
-  }
-}
-
 /* =============================================================================
  *   Block Styling
  * ========================================================================== */
@@ -2900,18 +2978,6 @@ body.page-node .pane-views-panes {
     margin-top: 15px;
   }
 
-  .palette-orange-red & {
-    background-color: darken($palette_orange_red_orange, 12%); // Old browsers
-    @include filter-gradient(darken($palette_orange_red_orange, 12%), darken($palette_orange_red_orange, 6%), vertical); // IE6-9
-    @include background-image(linear-gradient(top,  darken($palette_orange_red_orange, 12%) 0%,darken($palette_orange_red_orange, 6%)100%));
-  }
-
-  .palette-magenta-blue & {
-    background-color: darken($palette_magenta_blue_light, 12%); // Old browsers
-    @include filter-gradient(darken($palette_magenta_blue_light, 12%), darken($palette_magenta_blue_light, 6%), vertical); // IE6-9
-    @include background-image(linear-gradient(top,  darken($palette_magenta_blue_light, 12%) 0%,darken($palette_magenta_blue_light, 6%)100%));
-  }
-
   .block-inner {
     margin-left:0;
     margin-right:0;
@@ -2931,7 +2997,11 @@ body.page-node .pane-views-panes {
     background:transparent;
     border:none;
     margin:3px 0 0 0;
-    // width:200px;
+    width:145px;
+
+    .node-type-group & {
+      width:120px;
+    }
   }
   .form-submit {
     background-color:transparent !important;
@@ -3709,7 +3779,7 @@ body.front.not-logged-in {
   #block-system-main {
     .pane-1 {
       float:left;
-      width:60%;
+      width:56%;
       .pane-title {
         font-weight:700;
         font-size:38px;
@@ -3814,7 +3884,7 @@ body.front.logged-in {
   #views-exposed-form-commons-homepage-content-panel-pane-1 .views-exposed-widgets {
     margin-top:-45px;
     // margin-left:-10px;
-    padding: 10px;
+    padding: 0;
 
     &.widgets-active {
       @extend %pod;
@@ -3834,6 +3904,18 @@ body.front.logged-in {
   }
 }
 
+#quicktabs-commons_follow_ui .flag-email-group a {
+  cursor: default;
+
+  input {
+    cursor: default;
+  }
+
+  span {
+    display: none;
+  }
+}
+
 /*
  *  Placeholder styles
  */
@@ -3849,3 +3931,123 @@ body.front.logged-in {
     background-image:image-url('icons/icon-events.png');
   }
 }
+
+// Events Page
+
+.page-events {
+  .pane-commons-events-commons-events-create-event-link {
+    text-align: right;
+
+    .block-inner {
+      margin: 0;
+    }
+
+    a {
+      @extend %btn-green;
+      font-size: 1.1em;
+
+      &:before {
+        @include sprite_url_height_width($icons, icon-events);
+        content: '';
+        top: 2px;
+        margin-right: 6px;
+      }
+    }
+  }
+
+  .search-results-wrapper .search-result {
+    @extend %pod;
+    
+    .search-result-wrapper {
+      @extend %pod-content;
+    }
+  }
+
+  .region-three-25-50-25-first {
+    @extend %pod;
+    margin-right: 0;
+    
+    .region-inner {
+      @extend %pod-content;
+    }
+
+    h3 {
+      color: $gray;
+      font-size: 18px;
+    }
+
+    .panel-pane {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+      margin-bottom: 14px;
+    }
+  }
+
+  .region-three-25-50-25-third {
+    .pane-views-panes {
+      @extend %pod;
+      margin-right: 0;
+
+      .block-inner {
+        @extend %pod-content;
+      }
+    }
+  }
+
+  div.search-result-wrapper h3.title {
+    text-decoration: none;
+    
+    a {
+      color: $light_blue;
+    }
+  }
+  
+}
+
+// Search
+
+.page-search {
+  .region-two-33-66-first {
+    @extend %pod;
+    
+    .region-inner {
+      @extend %pod-content;
+    }
+
+    h3 {
+      color: $gray;
+      font-size: 18px;
+    }
+
+    .panel-pane {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+      margin-bottom: 14px;
+    }
+  }
+
+  .search-results {
+    @extend %pod;
+    @extend %pod-content;
+  }
+}
+
+// Commons Origins Pallete Choices
+
+#edit-commons-origins-palette {
+  .form-item-commons-origins-palette {
+    clear: both;
+    margin-bottom: 10px;
+
+    input[type="radio"] {
+      float: left;
+    }
+
+    label {
+      margin-left: 20px;
+    }
+  }
+}
+
+// Import the color palettes
+@import 'palettes';

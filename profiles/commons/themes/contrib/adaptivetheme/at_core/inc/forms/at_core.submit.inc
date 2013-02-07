@@ -42,7 +42,7 @@ function at_core_settings_submit($form, &$form_state) {
   elseif ($values['global_files_path'] === 'custom_path') {
     $path = $custom_path;
   }
-  $form_state['values']['path'] = $path;
+  $values['path'] = $path;
 
   // Set up the files directory for the generated files
   file_prepare_directory($path, FILE_CREATE_DIRECTORY);
@@ -50,23 +50,28 @@ function at_core_settings_submit($form, &$form_state) {
 
   // Include processing for automagical info builder
   require_once($path_to_at_core . '/inc/forms/at_core.submit.info.inc');
-  at_core_submit_info($form_state, $theme_name, $path);
+  at_core_submit_info($values, $theme_name, $path);
 
   // Include processing for page & panels layouts, and responsive styles
   require_once($path_to_at_core . '/inc/forms/at_core.submit.responsive.inc');
-  at_core_submit_reponsive($form_state, $theme_name, $path);
+  at_core_submit_reponsive($values, $theme_name, $path);
 
   if ($values['enable_extensions'] === 1) {
     // Include processing for fonts
     if (isset($values['enable_font_settings']) && $values['enable_font_settings'] === 1) {
       require_once($path_to_at_core . '/inc/fonts.inc');
       require_once($path_to_at_core . '/inc/forms/at_core.submit.fonts.inc');
-      at_core_submit_fonts($form_state, $theme_name);
+      at_core_submit_fonts($values, $theme_name, $path);
     }
     // Include processing for Custom CSS
     if (isset($values['enable_custom_css']) && $values['enable_custom_css'] === 1) {
       require_once($path_to_at_core . '/inc/forms/at_core.submit.customcss.inc');
-      at_core_submit_custom_css($form_state, $theme_name);
+      at_core_submit_custom_css($values, $theme_name, $path);
+    }
+    // Include processing for the Menu Toggle
+    if (isset($values['enable_menu_toggle']) && $values['enable_menu_toggle'] === 1) {
+      require_once($path_to_at_core . '/inc/forms/at_core.submit.menutoggle.inc');
+      at_core_submit_menu_toggle($values, $theme_name, $path);
     }
     // Set variables for device detection environment
     variable_set('at_detection', isset($values['detection']) ? $values['detection'] : FALSE);
@@ -78,7 +83,7 @@ function at_core_settings_submit($form, &$form_state) {
   if (module_exists('color')) {
     if (isset($values['at-color']) && $values['at-color'] == TRUE) {
       require_once($path_to_at_core . '/inc/forms/at_core.submit.color.inc');
-      at_core_submit_color($form_state, $path, $theme_name);
+      at_core_submit_color($values, $theme_name, $path);
     }
   }
 }

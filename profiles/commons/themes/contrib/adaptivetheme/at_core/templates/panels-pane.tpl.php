@@ -30,9 +30,7 @@
  *   data including the contexts and all of the other panes being displayed.
  */
 ?>
-<?php if ($pane_prefix): ?>
-  <?php print $pane_prefix; ?>
-<?php endif; ?>
+<?php if (isset($pane_prefix)): print $pane_prefix; endif; ?>
 <<?php print $tag . $attributes . $id; ?>>
   <div class="block-inner clearfix">
     <?php if ($admin_links): ?>
@@ -69,6 +67,4 @@
 
   </div>
 </<?php print $tag; ?>>
-<?php if ($pane_suffix): ?>
-  <?php print $pane_suffix; ?>
-<?php endif; ?>
+<?php if (isset($pane_suffix)): print $pane_suffix; endif; ?>

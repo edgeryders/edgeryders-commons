@@ -10,7 +10,7 @@ dependencies[] = field_sql_storage
 dependencies[] = radioactivity
 dependencies[] = strongarm
 dependencies[] = views
-datestamp = 1352833881
+datestamp = 1359684043
 features[ctools][] = radioactivity:radioactivity_decay_profile:1
 features[ctools][] = strongarm:strongarm:1
 features[ctools][] = views:views_default:3.0
@@ -20,9 +20,9 @@ features[radioactivity_decay_profile][] = commons_ra_node
 features[variable][] = commons_radioactivity_entity_types
 features[views_view][] = commons_radioactivity_admin
 
-; Information added by drupal.org packaging script on 2013-01-25
+; Information added by drupal.org packaging script on 2013-02-06
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_radioactivity"
-datestamp = "1359074800"
+datestamp = "1360111630"
 

@@ -25,7 +25,7 @@ regions[three_inset_left_bottom]  = AT Inset left - bottom
 
  */
 ?>
-<!-- Three inset left -->
+
 <?php if (
   $page['three_inset_left_sidebar'] ||
   $page['three_inset_left_top'] ||
@@ -33,6 +33,7 @@ regions[three_inset_left_bottom]  = AT Inset left - bottom
   $page['three_inset_left_inset'] ||
   $page['three_inset_left_bottom']
   ): ?>
+  <!-- Three inset left Gpanel -->
   <div class="at-panel gpanel panel-display three-inset-left clearfix">
     <?php print render($page['three_inset_left_sidebar']); ?>
     <div class="inset-wrapper clearfix">

@@ -16,9 +16,9 @@ features[flag][] = email_term
 features[views_view][] = commons_follow_taxonomy_term
 features_exclude[dependencies][ctools] = ctools
 
-; Information added by drupal.org packaging script on 2013-01-25
+; Information added by drupal.org packaging script on 2013-02-06
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_follow"
-datestamp = "1359074784"
+datestamp = "1360111616"
 

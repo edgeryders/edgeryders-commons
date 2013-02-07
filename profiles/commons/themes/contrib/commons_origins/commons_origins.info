@@ -59,6 +59,7 @@
 ;----------// Scripts
 
   scripts[] = scripts/modernizr.js
+  scripts[] = scripts/syze.min.js
   scripts[] = scripts/jquery.formalize.min.js
   scripts[] = scripts/jquery.selectBox.min.js
   scripts[] = scripts/commons_origins.js
@@ -427,9 +428,9 @@ project = "adaptivetheme"
 datestamp = "1343717778"
 
 
-; Information added by drupal.org packaging script on 2013-01-23
+; Information added by drupal.org packaging script on 2013-02-06
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_origins"
-datestamp = "1358901986"
+datestamp = "1360111626"
 

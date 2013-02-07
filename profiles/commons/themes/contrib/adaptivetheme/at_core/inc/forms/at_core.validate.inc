@@ -27,8 +27,8 @@ function at_core_settings_validate($form, &$form_state) {
   if (empty($values['tablet_portrait_layout'])) {
     form_set_error('tablet_portrait_layout', t('No layout selection detected for the <b>Tablet Portrait Layout</b>. Please review "Tablet Layout > Portrait > Choose sidebar positions" and select an option.'));
   }
-  if (empty($values['smartphone_landscape_layout'])) {
-    form_set_error('smartphone_landscape_layout', t('No layout selection detected for the <b>Smartphone Landscape Layout</b>. Please review "Smartphone Layout > Landscape > Choose sidebar positions" and select an option.'));
+  if (empty($values['smalltouch_landscape_layout'])) {
+    form_set_error('smalltouch_landscape_layout', t('No layout selection detected for the <b>Smalltouch Landscape Layout</b>. Please review "Smalltouch Layout > Landscape > Choose sidebar positions" and select an option.'));
   }
 
   // Validate our form #state required fields, #states are UI only.
@@ -56,13 +56,13 @@ function at_core_settings_validate($form, &$form_state) {
     }
   }
 
-  // Smartphone
-  if ($values['smartphone_landscape_layout'] === 'one_col_vert') {
-    if (empty($values['smartphone_landscape_sidebar_first'])) {
-      form_set_error('smartphone_landscape_sidebar_first', t('Smartphone First Sidebar width is empty - enter a value or choose another layout.'));
+  // Smalltouch
+  if ($values['smalltouch_landscape_layout'] === 'one_col_vert') {
+    if (empty($values['smalltouch_landscape_sidebar_first'])) {
+      form_set_error('smalltouch_landscape_sidebar_first', t('Smalltouch First Sidebar width is empty - enter a value or choose another layout.'));
     }
-    if (empty($values['smartphone_landscape_sidebar_second'])) {
-      form_set_error('smartphone_landscape_sidebar_second', t('Smartphone Second Sidebar width is empty - enter a value or choose another layout.'));
+    if (empty($values['smalltouch_landscape_sidebar_second'])) {
+      form_set_error('smalltouch_landscape_sidebar_second', t('Smalltouch Second Sidebar width is empty - enter a value or choose another layout.'));
     }
   }
 
@@ -96,6 +96,14 @@ function at_core_settings_validate($form, &$form_state) {
         form_set_error('global_gutter_width', t('The gutter width is not valid: <b>!invalid_gutter_value</b> is not a usable value', array('!invalid_gutter_value' => $invalid_gutter_value)));
       }
     }
+    // Menu toggle custom media query must be set if used
+    //if (isset($values['enable_menu_toggle']) && $values['enable_menu_toggle'] === 1) {
+    //  if (isset($values['menu_toggle_custom_media_query_toggle']) && $values['menu_toggle_custom_media_query_toggle'] === 1) {
+    //    if (empty($values['menu_toggle_custom_media_query'])) {
+    //      form_set_error('menu_toggle_custom_media_query', t('Menu Toggle custom media query is empty, please enter a media query or select another option.'));
+    //    }
+    //  }
+    //}
   }
 
   // Check if the custom files directory exists

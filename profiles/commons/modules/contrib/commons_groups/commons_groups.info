@@ -51,14 +51,14 @@ features[variable][] = pathauto_node_group_pattern
 features[variable][] = pathauto_node_pattern
 features[views_view][] = commons_bw_all
 features[views_view][] = commons_contributors_group
+features[views_view][] = commons_group_moderation
 features[views_view][] = commons_groups_contributors
 features[views_view][] = commons_groups_directory
 features[views_view][] = commons_groups_recent_content
 features[views_view][] = commons_groups_user_groups
-
-; Information added by drupal.org packaging script on 2012-12-18
+; Information added by drupal.org packaging script on 2013-02-05
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_groups"
-datestamp = "1355791651"
+datestamp = "1360025335"
 

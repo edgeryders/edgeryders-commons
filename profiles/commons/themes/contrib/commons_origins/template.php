@@ -37,6 +37,11 @@ function commons_origins_preprocess_html(&$vars) {
   } else if (strlen($site_name) > 15) {
     $vars['classes_array'][] = 'site-name-long';
   }
+  $palette = variable_get('commons_origins_palette', 'default');
+  if ($palette != 'default') {
+    $vars['classes_array'][] = 'palette-active';
+    $vars['classes_array'][] = drupal_html_class($palette);
+  }
 
   // Two examples of adding custom classes to the body.
 
@@ -44,7 +49,7 @@ function commons_origins_preprocess_html(&$vars) {
   // $vars['classes_array'][] = drupal_html_class($theme_key);
 
   // Browser/platform sniff - adds body classes such as ipad, webkit, chrome etc.
-  // $vars['classes_array'][] = css_browser_selector();
+  $vars['classes_array'][] = css_browser_selector();
 
 }
 //
@@ -141,6 +146,29 @@ function commons_origins_preprocess_node(&$vars) {
 function commons_origins_process_node(&$vars) {
 }
 // */
+
+/**
+* Implements hook_form_alter().
+*/
+function commons_origins_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'post_node_form') {
+    $form['additional_settings']['#type'] = 'fieldset';
+  }
+  if ($form_id == 'system_theme_settings') {
+    require_once('commons_origins.palettes.inc');
+    commons_origins_palettes_form($form);
+  }
+}
+
+/**
+* Implements hook_css_alter().
+*/
+// function commons_origins_css_alter(&$css) {
+//   $exclude = array(
+//     'profiles/commons/modules/contrib/rich_snippets/rich_snippets.css' => FALSE,
+//   );
+//   $css = array_diff_key($css, $exclude);
+// }
 
 
 /**

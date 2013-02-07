@@ -5,13 +5,25 @@
  */
 
 /**
+ * Implements hook_install().
+ */
+function commons_events_solr_install() {
+  // Set module weight to be below rich_snippets, so we can disable snippeting
+  // on the Solr events landing page.
+  db_update('system')
+    ->fields(array('weight' => 5))
+    ->condition('name', 'commons_events_solr')
+    ->execute();
+}
+
+/**
  * Implements hook_enable().
  */
 function commons_events_solr_enable() {
   module_load_include('inc', 'page_manager', 'plugins/tasks/page');
   $page = page_manager_page_load('views_events_landing_page');
-  $page->disabled = TRUE;
-  page_manager_page_save($page);
+  ctools_include('export');
+  ctools_export_set_object_status($page, TRUE);
 }
 
 /**
@@ -20,6 +32,6 @@ function commons_events_solr_enable() {
 function commons_events_solr_disable() {
   module_load_include('inc', 'page_manager', 'plugins/tasks/page');
   $page = page_manager_page_load('views_events_landing_page');
-  $page->disabled = FALSE;
-  page_manager_page_save($page);
+  ctools_include('export');
+  ctools_export_set_object_status($page, FALSE);
 }

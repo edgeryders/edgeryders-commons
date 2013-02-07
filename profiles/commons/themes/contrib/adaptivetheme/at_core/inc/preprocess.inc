@@ -13,7 +13,7 @@ function adaptivetheme_preprocess(&$vars) {
   // Provide variables to all templates to test for a mobile and tablet context, this
   // requires the Mobile Detect or Browscap modules.  TRUE/FALSE mean the feature
   // was detected; NULL means the feature could not be properly detected.
-  $browser = at_get_browser(); 
+  $browser = at_get_browser();
   $vars['is_mobile'] = $browser['is_mobile'];
   $vars['is_tablet'] = $browser['is_tablet'];
 }
@@ -54,42 +54,48 @@ function adaptivetheme_preprocess_html(&$vars) {
   $path = variable_get('theme_' . $theme_name . '_files_directory');
 
   // Load Layout
-  load_layout_css($path, $theme_name);
+  at_load_layout_css($path, $theme_name);
+
+  // Add layout settings as JS settings
+  at_load_layout_js_settings($theme_name);
 
   // Load Responsive Styles.
   if (at_get_setting('disable_responsive_styles', $theme_name) === 0) {
-    load_responsive_css($path, $theme_name);
+    at_load_responsive_css($path, $theme_name);
   }
 
-  // Load fonts and/or Custom CSS
+  // Load fonts and/or Custom CSS and the menu toggle files
   if (at_get_setting('enable_extensions', $theme_name) === 1) {
     // Fonts CSS
     if (at_get_setting('enable_font_settings', $theme_name) === 1) {
-      load_fonts($path, $theme_name);
+      at_load_fonts($path, $theme_name);
     }
     // Custom CSS
     if (at_get_setting('enable_custom_css', $theme_name) === 1) {
-      load_custom_css($path, $theme_name);
+      at_load_custom_css($path, $theme_name);
+    }
+    // Load the menu toggle js and css files
+    if (at_get_setting('enable_menu_toggle', $theme_name) === 1) {
+      at_load_menu_toggle($path, $theme_name);
     }
     // Load Extension Settings CSS
-    load_extensions_css($theme_name);
+    at_load_extensions_css($theme_name);
   }
 
   // Load conditional stylesheets declared in the info file
   if (isset($info['ie_stylesheets'])) {
-    load_subtheme_conditional_styles($theme_name);
+    at_load_subtheme_conditional_styles($theme_name);
   }
 
   // Load specific subtheme scripts
   if (at_get_setting('load_onmediaqueryjs', $theme_name) === 1) {
-    load_subtheme_script('scripts/media_queries.js', $theme_name, 'footer', '100');
+    at_load_subtheme_script('scripts/media_queries.js', $theme_name, 'footer', '100');
   }
 
-  // Build an array of polyfilling scripts
-  $vars['polyfills_array'] = '';
-  $vars['polyfills_array'] = load_polyfills($theme_name, $vars);
+  // Load polyfills
+  $vars['polyfills'] = at_load_polyfills($theme_name, $vars);
 
-  // Set the skip link target id
+  // Set the skip navigation target ID
   $vars['skip_link_target'] = '#main-content';
   if (at_get_setting('skip_link_target', $theme_name)) {
     $skip_link_target = at_get_setting('skip_link_target', $theme_name);
@@ -97,7 +103,7 @@ function adaptivetheme_preprocess_html(&$vars) {
   }
 
   // Generate body classes
-  if ($html_classes = generate_html_classes($vars, $theme_name)) {
+  if ($html_classes = at_generate_html_classes($vars, $theme_name)) {
     foreach ($html_classes as $class_name) {
       $vars['classes_array'][] = $class_name;
     }
@@ -112,7 +118,7 @@ function adaptivetheme_preprocess_html(&$vars) {
 
   // Load debuggers if enabled. Panels page debugger is a menu item, see alter.inc
   if (at_get_setting('expose_regions', $theme_name) === 1 || at_get_setting('show_window_size', $theme_name) === 1 || at_get_setting('load_all_panels', $theme_name) === 1) {
-    load_debuggers($theme_name);
+    at_load_debuggers($theme_name);
   }
 }
 
@@ -164,13 +170,14 @@ function adaptivetheme_preprocess_page(&$vars) {
 
   // Build a variable for the main menu
   if (isset($vars['main_menu'])) {
+    $main_menu_title = at_get_setting('menu_button_link_text') ? at_get_setting('menu_button_link_text') : t('Main menu');
     $vars['primary_navigation'] = theme('links', array(
       'links' => $vars['main_menu'],
       'attributes' => array(
         'class' => array('menu', 'primary-menu', 'clearfix'),
        ),
       'heading' => array(
-        'text' => t('Main menu'),
+        'text' => $main_menu_title,
         'level' => 'h2',
         'class' => array('element-invisible'),
       )
@@ -185,7 +192,7 @@ function adaptivetheme_preprocess_page(&$vars) {
         'class' => array('menu', 'secondary-menu', 'clearfix'),
       ),
       'heading' => array(
-        'text' => t('Secondary navigation'),
+        'text' => t('Secondary menu'),
         'level' => 'h2',
         'class' => array('element-invisible'),
       )
@@ -199,13 +206,13 @@ function adaptivetheme_preprocess_page(&$vars) {
   // Add back the $search_box var to D7
   if (module_exists('search')) {
     $search_box = drupal_get_form('search_form');
-    $vars['search_box'] = '<div id="search-box">' . drupal_render($search_box) . '</div>';
+    $vars['search_box'] = '<div id="search-box" role="search">' . drupal_render($search_box) . '</div>';
   }
 
   // Process enabled Extensions
   if (at_get_setting('enable_extensions', $theme_name) === 1) {
     // Generate page classes, in AT Core these are all Extensions
-    if ($page_classes = generate_page_classes($vars, $theme_name)) {
+    if ($page_classes = at_generate_page_classes($vars, $theme_name)) {
       foreach ($page_classes as $class_name) {
         $vars['classes_array'][] = $class_name;
       }
@@ -265,7 +272,8 @@ function adaptivetheme_preprocess_page(&$vars) {
 
   // Work around a perculier bug/feature(?) in Drupal 7 which incorrectly sets
   // the page title to "User account" for all three of these pages.
-  if (arg(0) === 'user') {
+  $title = drupal_get_title();
+  if (arg(0) === 'user' && $title == t('User account')) {
     if (arg(1) === 'login' || arg(1) == '') {
       drupal_set_title(t('User login'));
     }
@@ -409,9 +417,13 @@ function adaptivetheme_preprocess_block(&$vars) {
 
   // The menu bar region gets special treatment for the block template
   if ($vars['block']->region === 'menu_bar') {
-    // Hide titles, very unlikey to want it show, ever
-    $vars['title_attributes_array']['class'][] = 'element-invisible';
-    $vars['classes_array'][] = 'menu-wrapper menu-bar-wrapper clearfix';
+    // Hide title with element invisible unless the menu toggle is active
+    if (at_get_setting('enable_menu_toggle', $theme_name) === 0) {
+      $vars['title_attributes_array']['class'][] = 'element-invisible';
+    }
+    $vars['classes_array'][] = 'menu-wrapper';
+    $vars['classes_array'][] = 'menu-bar-wrapper';
+    $vars['classes_array'][] = 'clearfix';
   }
 
   // Add extra classes if required
@@ -860,21 +872,17 @@ function adaptivetheme_preprocess_image(&$vars) {
   // Some modules set the style name even when its empty, such as User Badges
   // module, so initialize the class name variable with a "none" class
   $style_name_class = 'none';
-  
+
   // If there really is a style name use it for the class
   if (isset($vars['style_name']) && !empty($vars['style_name'])) {
     $style_name_class = drupal_html_class($vars['style_name']);
   }
 
-  // In the first instance we assume class attributes is an array, as it should be,
-  // and add the image style class
+  // Check if the class attributes is an array. If we don't do this check and
+  // the class attribute is string it can cause a fatal error.
+  // See http://drupal.org/node/1722146 for an example
   if (is_array($vars['attributes']['class'])) {
     $vars['attributes']['class'][] = 'image-style-' . $style_name_class;
-  }
-  else {
-    // Else it's a string, workaround for Media module bug: http://drupal.org/node/1722146
-    // and User Badges bug: http://drupal.org/node/1748394
-    $vars['attributes']['class'] .= ' image-style-' . $style_name_class;
   }
 }
 
@@ -889,30 +897,29 @@ function adaptivetheme_preprocess_maintenance_page(&$vars) {
   $path = variable_get('theme_' . $theme_name . '_files_directory');
 
   // Load Layout
-  load_layout_css($path, $theme_name);
+  at_load_layout_css($path, $theme_name);
 
   // Load Responsive Styles.
   if (at_get_setting('disable_responsive_styles', $theme_name) === 0) {
-    load_responsive_css($path, $theme_name);
+    at_load_responsive_css($path, $theme_name);
   }
 
   // Load fonts and/or Custom CSS
   if (at_get_setting('enable_extensions', $theme_name) === 1) {
     // Fonts CSS
     if (at_get_setting('enable_font_settings', $theme_name) === 1) {
-      load_fonts($path, $theme_name);
+      at_load_fonts($path, $theme_name);
     }
     // Custom CSS
     if (at_get_setting('enable_custom_css', $theme_name) === 1) {
-      load_custom_css($path, $theme_name);
+      at_load_custom_css($path, $theme_name);
     }
     // Load Extension Settings CSS
-    load_extensions_css($theme_name);
+    at_load_extensions_css($theme_name);
   }
 
-  // Build an array of polyfilling scripts
-  $vars['polyfills_array'] = '';
-  $vars['polyfills_array'] = load_polyfills($theme_name, $vars);
+  // Load polyfills
+  $vars['polyfills'] = at_load_polyfills($theme_name, $vars);
 
   // Load the colors stylesheet for the active color scheme. This only works
   // for maintenance mode, when there is a database error the default color
@@ -929,4 +936,25 @@ function adaptivetheme_preprocess_maintenance_page(&$vars) {
   }
 
   $vars['attribution'] = "<small id=\"attribution\"><a href=\"http://adaptivethemes.com\">Premium Drupal Themes</a></small>";
+}
+
+/**
+ * Preprocess variables for user-profile.tpl.php
+ */
+function adaptivetheme_preprocess_user_profile(&$vars) {
+  $vars['classes_array'][] = 'profile';
+}
+
+/**
+ * Preprocess variables for breadcrumbs
+ */
+function adaptivetheme_preprocess_breadcrumb(&$vars) {
+  // Add Google rich snippets to breadcrumbs using RDFa
+  if (module_exists('rdf')) {
+    $rich_snippet = 'rel="v:url" property="v:title" ';
+    foreach ($vars['breadcrumb'] as $key => $breadcrumb) {
+      $breadcrumb = substr_replace($breadcrumb, $rich_snippet, 3, 0);
+      $vars['breadcrumb'][$key] = '<span typeof="v:Breadcrumb">' . $breadcrumb . '</span>';
+    }
+  }
 }

@@ -242,32 +242,6 @@ function responsive_panels_data_structure() {
 }
 
 /**
- * Return just the plugin names.
- * This is used primarily in one place - adaptivetheme_process_node() so we can
- * search for matches against Display Suite template suggestions, sounds weird
- * buts a work-around for a bug in Display Suite.
- *
- * @see adaptivetheme_process_node()
- * @see http://drupal.org/node/1514216
- * TODO: marked for removal due to new features in Display Suite.
- */
-function responsive_panels_plugin_names() {
-  $plugin_names = drupal_static(__FUNCTION__, array());
-  if (empty($plugin_names)) {
-    $data_structure = responsive_panels_data_structure();
-    foreach ($data_structure as $key => $value) {
-      foreach ($value as $type => $sub_types) {
-        foreach ($sub_types as $k => $v) {
-          $plugin_names[] = $k;
-        }
-      }
-    }
-  }
-
-  return $plugin_names;
-}
-
-/**
  * Return option arrays for forms.
  * Returns the options for radio lists in the page layout settings in the
  * appearance theme settings.

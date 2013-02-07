@@ -62,8 +62,8 @@ function at_core_debug_form(&$form) {
   $queries .= '<dt>Standard layout</dt><dd>@media ' . at_get_setting('bigscreen_media_query') . '</dd>';
   $queries .= '<dt>Tablet landscape</dt><dd>@media ' . at_get_setting('tablet_landscape_media_query') . '</dd>';
   $queries .= '<dt>Tablet portrait</dt><dd>@media ' . at_get_setting('tablet_portrait_media_query') . '</dd>';
-  $queries .= '<dt>Smartphone landscape</dt><dd>@media ' . at_get_setting('smartphone_landscape_media_query') . '</dd>';
-  $queries .= '<dt>Smartphone portrait</dt><dd>@media ' . at_get_setting('smartphone_portrait_media_query') . '</dd>';
+  $queries .= '<dt>Smalltouch landscape</dt><dd>@media ' . at_get_setting('smalltouch_landscape_media_query') . '</dd>';
+  $queries .= '<dt>Smalltouch portrait</dt><dd>@media ' . at_get_setting('smalltouch_portrait_media_query') . '</dd>';
   $queries .= '</dl>';
 
   // Sanity check

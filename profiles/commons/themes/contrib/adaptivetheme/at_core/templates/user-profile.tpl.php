@@ -38,6 +38,6 @@
  * @see template_preprocess_user_profile()
  */
 ?>
-<article class="profile"<?php print $attributes; ?>>
+<article id="user-<?php print $user->uid; ?>" class="<?php print $classes; ?>"<?php print $attributes; ?>>
   <?php print render($user_profile); ?>
 </article>

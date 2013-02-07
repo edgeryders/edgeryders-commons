@@ -76,7 +76,7 @@ function og_ui_admin_settings($form_state) {
   $form['og_use_queue'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use queue'),
-    '#description' => t('Use <a href="@url">"Advacned-Queue"</a> module to process operations such as deleting memberships when groups are deleted.', array('@url' => 'http://drupal.org/project/advancedqueue')),
+    '#description' => t('Use <a href="@url">Advanced queue</a> module to process operations such as deleting memberships when groups are deleted.', array('@url' => 'http://drupal.org/project/advancedqueue')),
     '#default_value' => variable_get('og_use_queue', FALSE),
     '#disabled' => !module_exists('advancedqueue'),
   );
@@ -254,8 +254,8 @@ function og_ui_add_users_submit($form, &$form_state) {
   $og_membership->etid = $account->uid;
   $og_membership->state = $state;
   $og_membership->save();
-
-  drupal_set_message(t('%user has been added to group.', array('%user' => format_username($account))));
+  $group = node_load($gid);
+  drupal_set_message(t('%user has been added to the group %group-title.', array('%user' => format_username($account), '%group-title' => $group->title)));
 }
 
 /**
