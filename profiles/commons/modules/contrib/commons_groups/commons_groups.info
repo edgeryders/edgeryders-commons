@@ -56,9 +56,9 @@ features[views_view][] = commons_groups_contributors
 features[views_view][] = commons_groups_directory
 features[views_view][] = commons_groups_recent_content
 features[views_view][] = commons_groups_user_groups
-; Information added by drupal.org packaging script on 2013-02-05
+; Information added by drupal.org packaging script on 2013-02-08
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_groups"
-datestamp = "1360025335"
+datestamp = "1360284584"
 
