@@ -428,9 +428,9 @@ project = "adaptivetheme"
 datestamp = "1343717778"
 
 
-; Information added by drupal.org packaging script on 2013-02-06
+; Information added by drupal.org packaging script on 2013-02-08
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_origins"
-datestamp = "1360111626"
+datestamp = "1360284594"
 
