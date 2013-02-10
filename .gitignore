@@ -1,5 +1,6 @@
 # Ignore configuration files that may contain sensitive information.
 sites/*/settings*.php
+.htpasswd
 
 # Ignore paths that contain user-generated content.
 sites/*/files
@@ -8,5 +9,11 @@ sites/*/private
 # Ignore website access statistics.
 plesk-stat
 
-# Ignore robots.txt, which will be a symlink different for staging and development.
+# Ignore robots.txt and .htaccess, which will be symlinks different for staging and development.
 robots.txt
+.htaccess
+
+# Ignore files which have been renamed from a standard Drupal installation.
+htaccess
+htaccess-development
+robots.txt-development
