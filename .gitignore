@@ -10,8 +10,8 @@ sites/*/private
 plesk-stat
 
 # Ignore robots.txt and .htaccess, which will be symlinks different for staging and development.
-# robots.txt
-# .htaccess
+robots.txt
+.htaccess
 
 # Ignore files which have been renamed from a standard Drupal installation.
 htaccess
