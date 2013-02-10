@@ -7,3 +7,6 @@ sites/*/private
 
 # Ignore website access statistics.
 plesk-stat
+
+# Ignore robots.txt, which will be a symlink different for staging and development.
+robots.txt
