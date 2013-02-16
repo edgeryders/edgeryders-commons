@@ -29,8 +29,8 @@ class Registration extends Entity {
     $wrapper = entity_metadata_wrapper('registration', $this);
     $host = $wrapper->entity->value();
     if ($host) {
-      return t('Registration for @title', array(
-          '@title' => entity_label($this->entity_type, $host)
+      return t('Registration for !title', array(
+          '!title' => entity_label($this->entity_type, $host)
         )
       );
     }

@@ -28,6 +28,24 @@ class RegistrationWaitlistTestCase extends RegistrationTestCase {
    * Check internal status modifiers for the wait list.
    */
   function testHostRegistrationWaitlistStatus() {
+    global $user;
+
+    $permissions = array(
+      'create ' . $this->registration_type_name . ' registration',
+    );
+
+    $this->checkPermissions($permissions, TRUE);
+    $basic_user = $this->drupalCreateUser($permissions);
+
+    $permissions = array(
+      'administer ' . $this->registration_type_name . ' registration',
+    );
+
+    $this->checkPermissions($permissions, TRUE);
+    $admin_user = $this->drupalCreateUser($permissions);
+
+    // Start with the basic user
+    $user = $basic_user;
 
     // Enable waitlist, wl capacity = unlimited
     $this->setHostEntitySettings(array(
@@ -53,6 +71,13 @@ class RegistrationWaitlistTestCase extends RegistrationTestCase {
     // Test that wait list limit and reserved slots is enforced
     $registrations[] = $this->createRegistration(array('count' => 2));
     $this->assertFalse(registration_status($this->host_entity_type, $this->host_entity_id, TRUE), t('Host entity status is closed, wait list full.'), 'Registration');
+
+    // Load user with admin permission
+    $user = $admin_user;
+    $this->assertTrue(registration_status($this->host_entity_type, $this->host_entity_id, TRUE), t('Host entity status is open, wait list full but user has admin permission.'), 'Registration');
+
+    // Switch back to basic user
+    $user = $basic_user;
 
     // unfill capacity by one registration
     entity_delete('registration', end($registrations)->registration_id);

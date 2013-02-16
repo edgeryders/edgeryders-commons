@@ -4,6 +4,7 @@ package = Registration
 core = 7.x
 
 dependencies[] = registration
+dependencies[] = views
 
 ; Views: Registration
 files[] = includes/registration_handler_field_registration_link.inc
@@ -18,9 +19,9 @@ files[] = includes/registration_handler_field_entity_datetime.inc
 files[] = includes/registration_handler_field_entity_settings_link.inc
 files[] = includes/registration_handler_field_entity_registration_status.inc
 
-; Information added by drupal.org packaging script on 2013-01-25
-version = "7.x-1.0"
+; Information added by drupal.org packaging script on 2013-02-16
+version = "7.x-1.0+15-dev"
 core = "7.x"
 project = "registration"
-datestamp = "1359153187"
+datestamp = "1360979098"
 

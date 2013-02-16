@@ -62,7 +62,8 @@ function registration_entity_info() {
       'uri callback' => 'entity_class_uri',
       'token type' => 'registration',
       'module' => 'registration',
-      'label callback' => 'entity_class_label'
+      'label callback' => 'entity_class_label',
+      'entity cache' => module_exists('entitycache'),
     ),
     'registration_type' => array(
       'label' => t('Registration type'),
@@ -86,6 +87,7 @@ function registration_entity_info() {
         'file path' => drupal_get_path('module', 'registration') . '/includes',
         'controller class' => 'RegistrationTypeUIController',
       ),
+      'entity cache' => module_exists('entitycache'),
     ),
     'registration_state' => array(
       'label' => t('Registration State'),
@@ -113,15 +115,10 @@ function registration_entity_info() {
       'token type' => 'registration_state',
       'module' => 'registration',
       'access callback' => 'registration_state_access',
-      'exportable' => TRUE
+      'exportable' => TRUE,
+      'entity cache' => module_exists('entitycache'),
     ),
   );
-
-  // Support entity cache module.
-  if (module_exists('entitycache')) {
-    $entities['registration']['field cache'] = FALSE;
-    $entities['registration']['entity cache'] = TRUE;
-  }
 
   return $entities;
 }
@@ -742,6 +739,17 @@ function registration_event_count($entity_type, $entity_id, $registration_id = N
     $count = ($count == '') ? 0 : $count;
   }
 
+  // Allow other mods to override count.
+  $settings = registration_entity_settings($entity_type, $entity_id);
+  $context = array(
+    'entity_type' => $entity_type,
+    'entity_id' => $entity_id,
+    'registration_id' => $registration_id,
+    'settings' => $settings,
+  );
+
+  drupal_alter('registration_event_count', $count, $context);
+
   return $count;
 }
 
@@ -1070,6 +1078,13 @@ function registration_status($entity_type, $entity_id, $reset = FALSE, $slots = 
   if (!$reset && isset($checked[$entity_type][$entity_id])) {
     $errors = is_array($errors) ? array_merge($errors, $checked[$entity_type][$entity_id]['errors']) : $checked[$entity_type][$entity_id]['errors'];
     return $checked[$entity_type][$entity_id]['status'];
+  }
+
+  $entity = entity_load_single($entity_type, $entity_id);
+  $registration_type = registration_get_entity_registration_type($entity_type, $entity);
+  // bypass further access checks if user can administer registration
+  if (user_access('administer registration') || user_access("administer $registration_type registration")) {
+    return TRUE;
   }
 
   $settings = registration_entity_settings($entity_type, $entity_id, $reset);

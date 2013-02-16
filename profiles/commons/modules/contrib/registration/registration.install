@@ -325,6 +325,19 @@ function registration_schema() {
     ),
   );
 
+  // Create cache bins for Entity-cache module.
+  $cache_schema = drupal_get_schema_unprocessed('system', 'cache');
+  $types = array(
+    'registration',
+    'registration_type',
+    'registration_state',
+  );
+
+  foreach ($types as $type) {
+    $schema["cache_entity_$type"] = $cache_schema;
+    $schema["cache_entity_$type"]['description'] = "Cache table used to store $type entity records.";
+  }
+
   return $schema;
 }
 
@@ -452,4 +465,23 @@ function registration_update_7100(&$sandbox) {
  */
 function registration_update_7101(&$sandbox) {
   db_drop_index('registration', 'entity_id_entity_type_user');
+}
+
+/**
+ * Create cache bins for Entity-cache module.
+ */
+function registration_update_7102(&$sandbox) {
+  // Create cache bins for Entity-cache module.
+  $cache_schema = drupal_get_schema_unprocessed('system', 'cache');
+  $types = array(
+    'registration',
+    'registration_type',
+    'registration_state',
+  );
+
+  foreach ($types as $type) {
+    $schema["cache_entity_$type"] = $cache_schema;
+    $schema["cache_entity_$type"]['description'] = "Cache table used to store $type entity records.";
+    db_create_table("cache_entity_$type", $schema["cache_entity_$type"]); 
+  }
 }

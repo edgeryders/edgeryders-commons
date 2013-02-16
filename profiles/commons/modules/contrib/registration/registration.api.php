@@ -40,3 +40,22 @@ function hook_registration_entity_settings($settings) {
     ),
   );
 }
+
+/**
+ * Allow modules to override event count.
+ *
+ * This can impact access control and the ability for users to register.
+ *
+ * @param int $count
+ *
+ * @param array $context
+ *   array(
+ *     'entity_type' => $entity_type,
+ *     'entity_id' => $entity_id,
+ *     'registration_id' => $registration_id,
+ *     'settings' => $settings,
+ *   );
+ */
+function hook_registration_even_count_alter($count, $context) {
+
+}
