@@ -1,3 +1,15 @@
+Dev release 7.x-1.x
+
+Bug fixes:
+
+[#1898294] by kscheirer: Fatal error if Libraries module is enabled after CKEditor
+[#1895278] by wwalc: WYSIWYG editor should allow Drupal to trigger 'formUpdated' event
+[#1063482] by nod_, wwalc, roderik, helior, hadsie: Use Libraries API for CKEditor 
+[#1889010] by michal_cksource: Problem with CKFinder files upload when private download method is used
+[#1885950] by michal_cksource: Fix HTML validation for iframe in profile configuration
+[#1885938] by michal_cksource: Disable div based editor on default
+[#1872064] by dczepierga: Undefined index: loadPlugins in ckeditor_modules_disabled() and ckeditor_modules_uninstalled()
+
 2012-12-22
 New stable release 7.x-1.12
 
