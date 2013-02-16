@@ -24,9 +24,9 @@ features[views_view][] = commons_follow_user
 features[views_view][] = commons_follow_user_followers
 features[views_view][] = commons_follow_user_following
 
-; Information added by drupal.org packaging script on 2013-02-06
+; Information added by drupal.org packaging script on 2013-02-15
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_follow"
-datestamp = "1360111616"
+datestamp = "1360889358"
 

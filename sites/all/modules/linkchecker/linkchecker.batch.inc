@@ -39,6 +39,16 @@ function _linkchecker_batch_node_import_op($nid, &$context) {
   $context['message'] = t('Content: @title', array('@title' => $node->title));
 }
 
+/**
+ * Output node batch result messages.
+ *
+ * @param bool $success
+ *   If scan completed successfully or not.
+ * @param int $results
+ *   Number of nodes scanned.
+ * @param array $operations
+ *   Array of functions called.
+ */
 function _linkchecker_batch_node_import_finished($success, $results, $operations) {
   if ($success) {
     $message = format_plural(count($results), 'One node has been scanned.', '@count nodes have been scanned.');
@@ -83,6 +93,16 @@ function _linkchecker_batch_comments_import_op($cid, &$context) {
   $context['message'] = t('Comment: @title', array('@title' => $comment->subject));
 }
 
+/**
+ * Output comment batch result messages.
+ *
+ * @param bool $success
+ *   If scan completed successfully or not.
+ * @param int $results
+ *   Number of comments scanned.
+ * @param array $operations
+ *   Array of functions called.
+ */
 function _linkchecker_batch_comments_import_finished($success, $results, $operations) {
   if ($success) {
     $message = format_plural(count($results), 'One comment has been scanned.', '@count comments have been scanned.');
@@ -97,14 +117,6 @@ function _linkchecker_batch_comments_import_finished($success, $results, $operat
  * Batch: Scan blocks for links.
  */
 function _linkchecker_batch_import_block_custom() {
-  // Get all active {block_custom}.bid's. Does not work as module is not
-  // notified if a block get assigned/unassigned to a region.
-  // $query = db_select('block_custom', 'bc');
-  // $query->leftJoin('block', 'b', 'b.delta = bc.bid AND module = :module ', array(':module' => 'block'));
-  // $query->fields('bc', array('bid'));
-  // $query->condition('b.status', 1);
-  // $result = $query->distinct()->execute();
-
   // Get all {block_custom}.bid's as block module suxxx and has no usable hooks.
   $result = db_query('SELECT bid FROM {block_custom} ORDER BY bid');
 
@@ -135,6 +147,16 @@ function _linkchecker_batch_import_block_custom_op($bid, &$context) {
   $context['message'] = t('Block: @title', array('@title' => $block_custom->info));
 }
 
+/**
+ * Output block batch result messages.
+ *
+ * @param bool $success
+ *   If scan completed successfully or not.
+ * @param int $results
+ *   Number of blocks scanned.
+ * @param array $operations
+ *   Array of functions called.
+ */
 function _linkchecker_batch_block_custom_import_finished($success, $results, $operations) {
   if ($success) {
     $message = format_plural(count($results), 'One block has been scanned.', '@count blocks have been scanned.');
@@ -159,7 +181,7 @@ function _linkchecker_batch_block_custom_import_finished($success, $results, $op
  */
 function _linkchecker_batch_import_single_node($nid, $missing_links_count) {
   $operations = array();
-  for ($i = 0; $i <= $missing_links_count; $i = $i+LINKCHECKER_SCAN_MAX_LINKS_PER_RUN) {
+  for ($i = 0; $i <= $missing_links_count; $i = $i + LINKCHECKER_SCAN_MAX_LINKS_PER_RUN) {
     $operations[] = array('_linkchecker_batch_single_node_import_op', array($nid));
   }
   $batch = array(
@@ -173,6 +195,14 @@ function _linkchecker_batch_import_single_node($nid, $missing_links_count) {
   return $batch;
 }
 
+/**
+ * Run single node link extraction.
+ *
+ * @param int $nid
+ *   Node ID.
+ * @param array $context
+ *   Batch context array.
+ */
 function _linkchecker_batch_single_node_import_op($nid, &$context) {
   // Load the node and scan for links.
   $node = node_load($nid, NULL, TRUE);
@@ -183,6 +213,16 @@ function _linkchecker_batch_single_node_import_op($nid, &$context) {
   $context['message'] = t('Content: @title', array('@title' => $node->title));
 }
 
+/**
+ * Output single node batch result messages.
+ *
+ * @param bool $success
+ *   If scan completed successfully or not.
+ * @param int $results
+ *   How often the node has been scanned.
+ * @param array $operations
+ *   Array of functions called.
+ */
 function _linkchecker_batch_single_node_import_finished($success, $results, $operations) {
   if ($success) {
     $message = format_plural(count($results), 'Node @nid has been re-scanned once to collect all links.', 'Node @nid has been re-scanned @count times to collect all links.', array('@nid' => $results[0]));
@@ -207,7 +247,7 @@ function _linkchecker_batch_single_node_import_finished($success, $results, $ope
  */
 function _linkchecker_batch_import_single_comment($cid, $missing_links_count) {
   $operations = array();
-  for ($i = 0; $i <= $missing_links_count; $i = $i+LINKCHECKER_SCAN_MAX_LINKS_PER_RUN) {
+  for ($i = 0; $i <= $missing_links_count; $i = $i + LINKCHECKER_SCAN_MAX_LINKS_PER_RUN) {
     $operations[] = array('_linkchecker_batch_single_comment_import_op', array($cid));
   }
   $batch = array(
@@ -221,6 +261,14 @@ function _linkchecker_batch_import_single_comment($cid, $missing_links_count) {
   return $batch;
 }
 
+/**
+ * Run single comment link extraction.
+ *
+ * @param int $cid
+ *   Comment ID.
+ * @param array $context
+ *   Batch context array.
+ */
 function _linkchecker_batch_single_comment_import_op($cid, &$context) {
   $comment = comment_load($cid);
   _linkchecker_add_comment_links($comment, TRUE);
@@ -230,6 +278,16 @@ function _linkchecker_batch_single_comment_import_op($cid, &$context) {
   $context['message'] = t('Comment: @title', array('@title' => $comment->subject));
 }
 
+/**
+ * Output single comment batch result messages.
+ *
+ * @param bool $success
+ *   If scan completed successfully or not.
+ * @param int $results
+ *   How often the comment has been scanned.
+ * @param array $operations
+ *   Array of functions called.
+ */
 function _linkchecker_batch_single_comment_import_finished($success, $results, $operations) {
   if ($success) {
     $message = format_plural(count($results), 'Comment @cid has been re-scanned once to collect all links.', 'Comment @cid has been re-scanned @count times to collect all links.', array('@cid' => $results[0]));
@@ -254,7 +312,7 @@ function _linkchecker_batch_single_comment_import_finished($success, $results, $
  */
 function _linkchecker_batch_import_single_block_custom($bid, $missing_links_count) {
   $operations = array();
-  for ($i = 0; $i <= $missing_links_count; $i = $i+LINKCHECKER_SCAN_MAX_LINKS_PER_RUN) {
+  for ($i = 0; $i <= $missing_links_count; $i = $i + LINKCHECKER_SCAN_MAX_LINKS_PER_RUN) {
     $operations[] = array('_linkchecker_batch_single_block_custom_import_op', array($nid));
   }
   $batch = array(
@@ -268,6 +326,14 @@ function _linkchecker_batch_import_single_block_custom($bid, $missing_links_coun
   return $batch;
 }
 
+/**
+ * Run single block link extraction.
+ *
+ * @param int $bid
+ *   Node ID.
+ * @param array $context
+ *   Batch context array.
+ */
 function _linkchecker_batch_single_block_custom_import_op($bid, &$context) {
   // Load the custom block and scan for links.
   $block_custom = linkchecker_block_custom_block_get($bid);
@@ -278,6 +344,16 @@ function _linkchecker_batch_single_block_custom_import_op($bid, &$context) {
   $context['message'] = t('Block: @title', array('@title' => $block_custom->info));
 }
 
+/**
+ * Output single block batch result messages.
+ *
+ * @param bool $success
+ *   If scan completed successfully or not.
+ * @param int $results
+ *   How often the block has been scanned.
+ * @param array $operations
+ *   Array of functions called.
+ */
 function _linkchecker_batch_single_block_custom_import_finished($success, $results, $operations) {
   if ($success) {
     $message = format_plural(count($results), 'Block @bid has been re-scanned once to collect all links.', 'Block @bid has been re-scanned @count times to collect all links.', array('@bid' => $results[0]));

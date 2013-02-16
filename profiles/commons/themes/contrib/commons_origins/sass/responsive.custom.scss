@@ -50,6 +50,30 @@
     float: none;
     width: 100%;
   }
+
+  .view-commons-groups-directory .view-filters .form-text {
+    width: 280px;
+  }
+
+  #branding {
+    margin-right: 6px;
+  }
+
+  .commons-bw-create-all-widget-types {
+    left: -100px;
+    top: auto;
+    bottom: 0;
+  }
+
+  .page-node-add #edit-additional-settings {
+    width: 100%;
+    position: static;
+  }
+
+  .page-node-add .field-type-taxonomy-term-reference-form {
+    width: 100%;
+    position: static;
+  }
 }
 
 

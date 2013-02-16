@@ -1,3 +1,22 @@
+linkchecker 7.x-dev, nightly
+----------------------------
+
+* Code style review and fixes (minor level)
+* No need to check comment/block enable variables in auto update.
+* Issue #1901018 by hass: ERROR - __clone method called on non-object.
+* Issue #1901014 by hass: ERROR - Cannot use object of type stdClass as array.
+* Code style: indent secondary line of comment one space
+* #1891900: Uninstall of variable 'linkchecker_check_connections_max' failed.
+* Use #empty in empty table.
+* #1882602: Compatible with Drupal <7.15
+* #1850210 followup: _linkchecker_unpublish_nodes() may run out of memory by loading all nodes at once.
+* #1719174: Editing node throws "Undefined property" stdClass::$nid in hook_node_prepare().
+* #1879316: Support Workbench Moderation workflow (forward revisons handling)
+* Fixed a test to use LANGUAGE_NONE constant.
+* #1880652: Refactor _linkchecker_parse_fields() and _linkchecker_replace_fields() to be less expensive, see #1040790 for more details.
+* #1875602: Check URL fragment identifiers in content
+* Minor code style fixes
+
 linkchecker 7.x-1.0, December 24, 2012
 --------------------------------------
 

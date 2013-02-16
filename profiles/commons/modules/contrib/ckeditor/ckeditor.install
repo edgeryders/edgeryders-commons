@@ -302,7 +302,7 @@ function _ckeditor_requirements_ckfinder_config_check($profile_name) {
   if (!file_exists($config_path)) {
     return t('!ckfinder is not installed correctly: <code>!config</code> not found. Make sure that you uploaded all files and did not accidentally remove the configuration file.', array(
           '!config' => $config_path,
-          '!ckfinder' => '<a href="http://cksource.com/ckfinder">CKFinder</a>'
+          '!ckfinder' => '<a href="http://ckfinder.com">CKFinder</a>'
         ));
   }
 

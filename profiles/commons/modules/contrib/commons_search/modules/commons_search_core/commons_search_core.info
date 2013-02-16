@@ -27,11 +27,14 @@ features[facetapi][] = search:block:field_topics
 features[features_api][] = api:1
 features[page_manager_handlers][] = search_search_facetapi_panel_context
 features[variable][] = page_manager_search_disabled_search_facetapi
+features[variable][] = custom_search_other
+features[variable][] = search_active_modules
+features[variable][] = search_default_module
 features_exclude[dependencies][ctools] = ctools
 
-; Information added by drupal.org packaging script on 2013-02-02
+; Information added by drupal.org packaging script on 2013-02-16
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_search"
-datestamp = "1359766078"
+datestamp = "1360975722"
 

@@ -25,12 +25,12 @@
  * See global.base also which includes normalize.css and some additional
  * helper classes and base styles.
  */
-  
+
 /* =============================================================================
  *   Base
  * ========================================================================== */
 
-/* 
+/*
  * To preserve theme settings never apply font properties to the HTML element.
  * This is critically important if you are using the Responsive JavaScript
  * feature as this relies on being able to set a pseudo font family on the HTML
@@ -204,7 +204,8 @@ var {
   color: $white;
   text-align: right;
   margin-right: 8px;
-  
+  white-space:nowrap;
+
   a {
     color: $white;
   }
@@ -418,7 +419,6 @@ var {
   display: inline-block;
   vertical-align: top;
   margin-top: 14px;
-  width: 333px;
 
   .site-name-long & {
     margin-top: 16px;
@@ -475,7 +475,7 @@ var {
  * The main page title (h1)
  */
 #page-title {
-  margin: 0 0 0 6px;
+  margin: 0 0 10px 6px;
   font-weight:300;
 
   .page-node & {
@@ -550,9 +550,48 @@ ul.links {
   }
 }
 
-ul.primary.tabs li a {
-  @include border-radius(3px 3px 0px 0px);
+ul.primary.tabs {
+  border-bottom: none;
+  padding: 0;
+
+  li {
+    margin-bottom: 5px;
+    margin-top: 5px;
+
+    a {
+      background-color: #d7d7d7;
+      @include border-radius(3px);
+      padding: 3px 10px;
+      display: block;
+      color: #a5a3a3;
+      border: none;
+
+      &:hover {
+        text-decoration: none;
+        background-color: #d7d7d7;
+        color: #a5a3a3;
+      }
+    }
+
+    &.active a {
+      background-color: $dark_blue;
+      border: none;
+      color: $white;
+
+      &:hover {
+        background-color: $dark_blue;
+      }
+    }
+  }
 }
+
+// li.flag-commons_follow_group {
+//   @extend %btn-gray;
+//   a {
+//     background:transparent !important;
+//     padding:3px 17px !important;
+//   }
+// }
 
 li.sharethis {
   @extend %btn-gray;
@@ -820,6 +859,7 @@ h1.node-title {
     // width: 50%;
     clear: both;
     margin-top: 20px;
+    position:relative;
 
     ul {
       float: left;
@@ -837,6 +877,8 @@ h1.node-title {
 
       .flag-commons-follow-group a {
         font-size: 0;
+        line-height: 0;
+        color: transparent;
         padding: 3px 27px;
         height: 14px;
 
@@ -951,9 +993,34 @@ h1.node-title {
     }
   }
 
-  #edit-body, .form-item-title ,.field-name-og-group-ref, .field-type-taxonomy-term-reference-form {
+  #edit-body, .form-item-title, .field-name-og-group-ref, #poll-choice-wrapper, .field-name-field-address-form {
     width: 66%;
-    // float: left;
+    float: none;
+
+    input[type="text"] {
+      width: 100%;
+    }
+
+    .lt480 & {
+      width: 100%;
+    }
+  }
+
+  .field-type-taxonomy-term-reference-form {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 33%;
+    margin-right: 0;
+    margin-left: 0;
+    padding: 0;
+    @extend %pod;
+
+    > div {
+      @extend %pod-content;
+      padding: 5px 10px 10px 10px;
+      margin: 0;
+    }
 
     input[type="text"] {
       width: 100%;
@@ -964,7 +1031,7 @@ h1.node-title {
     // float: right;
     position: absolute;
     right: 0;
-    top: 0;
+    top: 80px;
     width: 33%;
     margin-right: 0;
     margin-left: 0;
@@ -1033,7 +1100,7 @@ h1.node-title {
   }
 }
 
-.page-node .flag-commons-follow-node, .page-node .flag-commons-follow-group, .flag-commons-follow-user {
+.flag-commons-follow-node, .flag-commons-follow-group, .flag-commons-follow-user {
   display: inline-block;
 
   a {
@@ -1059,6 +1126,49 @@ h1.node-title {
 
   span {
     display: none !important;
+  }
+}
+
+.flag-commons-follow-node a {
+  &.flag-action, &.unflag-action {
+    font-size: 0;
+    line-height: 0;
+    color: transparent;
+    padding: 3px 26px;
+    height: 14px;
+    position: relative;
+    top: 1px;
+
+    &:before {
+      top: 1px;
+    }
+  }
+}
+
+.view-commons-homepage-content {
+  .comment-add a {
+    @extend %btn-gray;
+    position: relative;
+    font-size: 0;
+    line-height: 0;
+    color: transparent;
+    padding: 3px 26px;
+    height: 14px;
+    top: 2px;
+
+    &:before {
+      content: '';
+      @include sprite_url_height_width($icons, comments-dark);
+    }
+  }
+
+  .node-readmore a {
+    @extend %btn-gray;
+    position: relative;
+    padding: 3px 12px;
+    height: 14px;
+    line-height: 14px;
+    top: 1px;
   }
 }
 
@@ -1237,7 +1347,7 @@ h1.node-title {
  * Regions can be nested, such as when using Panels
  */
 .region-inner .region-inner {}
-// 
+//
 
 /*
  * Header region, embedded in the #header
@@ -1638,10 +1748,10 @@ ul.menu {
 
 /* If li.content exists it's a problem, so reset the padding */
 .block .menu li.content {
-  padding: 0;   
+  padding: 0;
 }
 
- 
+
 /* =============================================================================
  *   Book navigation menu
  * ========================================================================== */
@@ -1659,7 +1769,7 @@ ul.menu {
     min-width: 2em;
     white-space: nowrap;
   }
-  
+
   .menu {
     margin-left: 0;
   }
@@ -2066,7 +2176,7 @@ ul.action-links {
 
 
 /*
- * Image Alignment Theme Settings - included here so you can easily override 
+ * Image Alignment Theme Settings - included here so you can easily override
  */
 
 /*
@@ -2167,7 +2277,7 @@ ul.action-links {
 .pane-views-panes,
 .pane-views,
 body.page-node .pane-views-panes {
-  
+
   h2 {
     font:{
       size:20px;
@@ -2546,7 +2656,7 @@ body.page-node .pane-views-panes {
     a {
       position: relative;
       display: block;
-      
+
       img {
         @include opacity(0.5);
       }
@@ -2703,7 +2813,7 @@ body.page-node .pane-views-panes {
       font-weight:normal;
       color:$light_gray;
       padding:1px 0 0 0;
-    }  
+    }
   }
   .views-widget {
     float:left;
@@ -3422,6 +3532,47 @@ body.page-node.node-type-group {
   margin-left: 40px;
 }
 
+.rate-widget-commons_thumbs_up_down {
+  float:right;
+  width:68px;
+  height:75px;
+  position:relative;
+  .item-list ul {
+    margin:0;
+    position:absolute;
+    bottom:0;
+    width:68px;
+    li {
+      margin:0;
+      list-style-type:none;
+      .rate-button {
+        display:block;
+        width:32px;
+        height:30px;
+        background-image:image-url('icons/updown.png');
+        text-indent:-9999px;
+      }
+      .rate-button[title="up"] {
+        background-position:left top;
+        float:left;
+      }
+      .rate-button[title="down"] {
+        background-position:right top;
+        float:right;
+      }
+    }
+  }
+  .rate-info {
+    position:absolute;
+    top:0;
+    width:52px;
+    height:36px;
+    padding:4px 8px;
+    background:image-url('icons/bkg_updown.png');
+    text-align:center;
+  }
+}
+
 
 /* =============================================================================
  *   Forms
@@ -3438,7 +3589,7 @@ body.page-node.node-type-group {
 /*
  * Wrapper for a form element (or group of form elements) and its label
  */
-.form-item { 
+.form-item {
 
   input.error,
   textarea.error,
@@ -3450,7 +3601,7 @@ body.page-node.node-type-group {
     font-weight: 700;
   }
 
-  label.option { 
+  label.option {
   }
 
   .description {
@@ -3475,7 +3626,7 @@ body.page-node.node-type-group {
 /*
  * The submit button
  */
-.form-submit { 
+.form-submit {
 }
 
 
@@ -3496,14 +3647,14 @@ fieldset {
 /*
  * Tips for Drupal's input formats
  */
-.tips { 
+.tips {
 }
 
 
 /*
  * Buttons used by contrib modules like Media
  */
-a.button { 
+a.button {
   @include appearance(button);
 }
 
@@ -3895,7 +4046,7 @@ body.front.logged-in {
       border-bottom: 1px solid #ccc;
       padding-top: 10px;
       padding-bottom: 20px;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       position:relative;
 
       &.node-promoted {
@@ -3911,7 +4062,7 @@ body.front.logged-in {
       .node-content {
         margin:0 0 0 78px;
         form {
-          
+
         }
 
         .field-name-body {
@@ -3933,7 +4084,7 @@ body.front.logged-in {
     }
     .item-list {
       // border-top:1px solid $white;
-      padding:10px 0 0 0;      
+      padding:10px 0 0 0;
     }
     // .pager a {
     //   display:inline-block;
@@ -3953,9 +4104,10 @@ body.front.logged-in {
     // }
   }
   #views-exposed-form-commons-homepage-content-panel-pane-1 .views-exposed-widgets {
-    margin-top:-45px;
+    // margin-top:-45px;
     // margin-left:-10px;
-    padding: 0;
+    padding: 10px 10px 10px 10px;
+    margin-bottom: 20px;
 
     &.widgets-active {
       @extend %pod;
@@ -3969,9 +4121,21 @@ body.front.logged-in {
   }
 }
 
+body.front.logged-in .view-commons-homepage-content .article.node {
+  &.no-user-picture, &.node-page {
+    .node-header, .node-content, .author-datetime, .links {
+      margin-left: 0;
+    }
+  }
+}
+
 .front {
-  .region-two-66-33-first, .region-two-66-33-second {
-    margin-top: 40px;
+  .region-two-66-33-first {
+    margin-top: 18px;
+  }
+
+  .region-two-66-33-second {
+    margin-top: 80px;
   }
 }
 
@@ -4009,7 +4173,7 @@ body.front.logged-in {
 
   .search-results-wrapper .search-result {
     @extend %pod;
-    
+
     .search-result-wrapper {
       @extend %pod-content;
     }
@@ -4018,7 +4182,7 @@ body.front.logged-in {
   .region-three-25-50-25-first {
     @extend %pod;
     margin-right: 0;
-    
+
     .region-inner {
       @extend %pod-content;
     }
@@ -4048,12 +4212,12 @@ body.front.logged-in {
 
   div.search-result-wrapper h3.title {
     text-decoration: none;
-    
+
     a {
       color: $light_blue;
     }
   }
-  
+
 }
 
 .pane-commons-events-commons-events-create-event-link {
@@ -4081,7 +4245,8 @@ body.front.logged-in {
 .page-search {
   .region-two-33-66-first {
     @extend %pod;
-    
+    margin-right: 0;
+
     .region-inner {
       @extend %pod-content;
     }
@@ -4096,6 +4261,10 @@ body.front.logged-in {
       padding-bottom: 5px;
       margin-bottom: 14px;
     }
+  }
+
+  .region-two-33-66-second > div {
+    padding-left: 15px;
   }
 
   .search-results {
@@ -4118,6 +4287,13 @@ body.front.logged-in {
     label {
       margin-left: 20px;
     }
+  }
+}
+
+// Login & Signup Form
+#user-login, #user-register-form {
+  input[type="text"], input[type="password"] {
+    width: 100%;
   }
 }
 

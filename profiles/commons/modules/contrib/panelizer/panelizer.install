@@ -5,26 +5,6 @@
  */
 
 /**
- * Implements hook_requirements().
- */
-function panelizer_requirements($phase) {
-  $requirements = array();
-
-  if ($phase == 'runtime') {
-    $node_view = page_manager_get_task('node_view');
-    if ($node_view['disabled']) {
-      $requirements['panelizer'] = array(
-        'title' => t('Panelizer'),
-        'value' => t('You must enable the %node_view page template in <a href="@url">page manager</a> to use panelizer.', array('%node_view' => 'node_view', '@url' => url('admin/structure/pages'))),
-        'severity' => REQUIREMENT_ERROR,
-      );
-    }
-  }
-
-  return $requirements;
-}
-
-/**
  * Implements hook_schema().
  */
 function panelizer_schema() {

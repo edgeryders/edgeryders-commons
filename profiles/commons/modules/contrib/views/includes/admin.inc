@@ -91,10 +91,10 @@ function views_ui_check_advanced_help() {
     $filename = db_query_range("SELECT filename FROM {system} WHERE type = 'module' AND name = 'advanced_help'", 0, 1)
       ->fetchField();
     if ($filename && file_exists($filename)) {
-      drupal_set_message(t('If you <a href="@modules">enable the advanced help module</a>, Views will provide more and better help. <a href="@hide">You can disable this message at the Views settings page.</a>', array('@modules' => url('admin/modules'),'@hide' => url('admin/structure/views/settings'))));
+      drupal_set_message(t('If you <a href="@modules">enable the advanced help module</a>, Views will provide more and better help. <a href="@hide">Hide this message.</a>', array('@modules' => url('admin/modules'),'@hide' => url('admin/structure/views/settings'))));
     }
     else {
-      drupal_set_message(t('If you install the advanced help module from !href, Views will provide more and better help. <a href="@hide">You can disable this message at the Views settings page.</a>', array('!href' => l('http://drupal.org/project/advanced_help', 'http://drupal.org/project/advanced_help'), '@hide' => url('admin/structure/views/settings'))));
+      drupal_set_message(t('If you install the advanced help module from !href, Views will provide more and better help. <a href="@hide">Hide this message.</a>', array('!href' => l('http://drupal.org/project/advanced_help', 'http://drupal.org/project/advanced_help'), '@hide' => url('admin/structure/views/settings'))));
     }
   }
 }
@@ -2214,7 +2214,7 @@ function views_ui_edit_form_get_bucket($type, $view, $display) {
   switch ($type) {
     case 'filter':
       $rearrange_url = "admin/structure/views/nojs/rearrange-$type/$view->name/$display->id/$type";
-      $rearrange_text = t('and/or, rearrange');
+      $rearrange_text = t('And/Or, Rearrange');
       // TODO: Add another class to have another symbol for filter rearrange.
       $class = 'icon compact rearrange';
       break;
@@ -2233,7 +2233,7 @@ function views_ui_edit_form_get_bucket($type, $view, $display) {
 
     default:
       $rearrange_url = "admin/structure/views/nojs/rearrange/$view->name/$display->id/$type";
-      $rearrange_text = t('rearrange');
+      $rearrange_text = t('Rearrange');
       $class = 'icon compact rearrange';
   }
 
@@ -2241,16 +2241,16 @@ function views_ui_edit_form_get_bucket($type, $view, $display) {
   $actions = array();
   $count_handlers = count($display->handler->get_handlers($type));
   $actions['add'] = array(
-    'title' => t('add'),
+    'title' => t('Add'),
     'href' => "admin/structure/views/nojs/add-item/$view->name/$display->id/$type",
-    'attributes'=> array('class' => array('icon compact add', 'views-ajax-link'), 'title' => t('add'), 'id' => 'views-add-' . $type),
+    'attributes'=> array('class' => array('icon compact add', 'views-ajax-link'), 'title' => t('Add'), 'id' => 'views-add-' . $type),
     'html' => TRUE,
   );
   if ($count_handlers > 0) {
     $actions['rearrange'] = array(
       'title' => $rearrange_text,
       'href' => $rearrange_url,
-      'attributes' => array('class' => array($class, 'views-ajax-link'), 'title' => $rearrange_text, 'id' => 'views-rearrange-' . $type),
+      'attributes' => array('class' => array($class, 'views-ajax-link'), 'title' => t('Rearrange'), 'id' => 'views-rearrange-' . $type),
       'html' => TRUE,
     );
   }

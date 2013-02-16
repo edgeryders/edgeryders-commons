@@ -182,30 +182,30 @@ function _linkchecker_report_page($query, $account = NULL) {
     }
 
     // Create table data for output.
-    $rows[] = array('data' =>
-      array(
+    $rows[] = array(
+      'data' => array(
         l(_filter_url_trim($link->url, 40), $link->url),
         $link->code,
         check_plain($link->error),
-        theme('item_list', array('items' => $links))
+        theme('item_list', array('items' => $links)),
       ),
     );
-  }
-
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No broken links have been found.'), 'colspan' => count($header)));
   }
 
   $build['linkchecker_table'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
+    '#empty' => t('No broken links have been found.'),
   );
   $build['linkchecker_pager'] = array('#theme' => 'pager');
 
   return $build;
 }
 
+/**
+ * Edit link settings form.
+ */
 function linkchecker_link_edit_form($form, &$form_state, $link) {
 
   $form['settings'] = array(
@@ -255,6 +255,9 @@ function linkchecker_link_edit_form($form, &$form_state, $link) {
   return $form;
 }
 
+/**
+ * Edit link settings form submit handler.
+ */
 function linkchecker_link_edit_form_submit($form, &$form_state) {
   // Force link re-check asap.
   if ($form_state['values']['recheck']) {
@@ -273,7 +276,7 @@ function linkchecker_link_edit_form_submit($form, &$form_state) {
         'method' => $form_state['values']['method'],
         'fail_count' => 0,
         'last_checked' => 0,
-        'status' => $form_state['values']['status']
+        'status' => $form_state['values']['status'],
       ))
       ->execute();
     drupal_set_message(t('The link settings for %url have been saved and the fail counter has been reset.', array('%url' => $form_state['values']['url'])));
@@ -284,13 +287,22 @@ function linkchecker_link_edit_form_submit($form, &$form_state) {
       ->condition('lid', $form_state['values']['lid'])
       ->fields(array(
         'method' => $form_state['values']['method'],
-        'status' => $form_state['values']['status']
+        'status' => $form_state['values']['status'],
       ))
       ->execute();
     drupal_set_message(t('The link settings for %url have been saved.', array('%url' => $form_state['values']['url'])));
   }
 }
 
+/**
+ * Check if the link is an internal URL or not.
+ *
+ * @param object $link
+ *   Link object.
+ *
+ * @return bool
+ *   TRUE if link is internal, otherwise FALSE.
+ */
 function _linkchecker_is_internal_url(&$link) {
   global $base_url;
 

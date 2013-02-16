@@ -13,8 +13,8 @@ function linkchecker_redirect_insert($redirect) {
 }
 
 /**
-* Implements hook_redirect_update().
-*/
+ * Implements hook_redirect_update().
+ */
 function linkchecker_redirect_update($redirect) {
   // It's unknown if this is a redirect for HTTP/HTTPS or the encoded urls.
   $url_http = url($redirect->source, array('absolute' => TRUE, $redirect->source_options));
@@ -41,7 +41,7 @@ function _linkchecker_redirect_reset($urls = array()) {
 
   $num_updated = db_update('linkchecker_link')
     ->condition('urlhash', array_map('drupal_hash_base64', $urls))
-    ->condition('fail_count',  0, '>')
+    ->condition('fail_count', 0, '>')
     ->condition('status', 1)
     ->fields(array('last_checked' => 0))
     ->execute();

@@ -24,9 +24,9 @@ features[variable][] = site_frontpage
 features[views_view][] = commons_homepage_content
 features_exclude[dependencies][views_content] = views_content
 
-; Information added by drupal.org packaging script on 2013-02-02
+; Information added by drupal.org packaging script on 2013-02-16
 version = "7.x-3.x-dev"
 core = "7.x"
 project = "commons_site_homepage"
-datestamp = "1359766080"
+datestamp = "1360975723"
 

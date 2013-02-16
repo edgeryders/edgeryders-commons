@@ -60,7 +60,8 @@ function custom_search_i18n_form_alter(&$form, &$form_state, $form_id) {
         $form[$form_id]['#title'] = i18n_string_translate('custom_search:common:1:' . $delta . 'label', variable_get('custom_search_' . $delta . 'label', CUSTOM_SEARCH_LABEL_DEFAULT));
 
         // Default text
-        $form[$form_id]['#attributes']['placeholder'] = array(i18n_string_translate('custom_search:common:1:' . $delta . 'text', variable_get('custom_search_' . $delta . 'text', '')));
+        $form[$form_id]['#default_value'] = i18n_string_translate('custom_search:common:1:' . $delta . 'text', variable_get('custom_search_' . $delta . 'text', ''));
+        $form['default_text']['#default_value'] = i18n_string_translate('custom_search:common:1:' . $delta . 'text', variable_get('custom_search_' . $delta . 'text', ''));
 
         // Submit button
         $form['actions']['submit']['#value'] = i18n_string_translate('custom_search:common:1:' . $delta . 'submit_text', variable_get('custom_search_' . $delta . 'submit_text', CUSTOM_SEARCH_SUBMIT_TEXT_DEFAULT));

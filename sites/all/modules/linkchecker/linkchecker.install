@@ -19,7 +19,7 @@ function linkchecker_install() {
 function linkchecker_uninstall() {
   variable_del('linkchecker_action_status_code_301');
   variable_del('linkchecker_action_status_code_404');
-  variable_get('linkchecker_check_connections_max');
+  variable_del('linkchecker_check_connections_max');
   variable_del('linkchecker_check_library');
   variable_del('linkchecker_check_links_interval');
   variable_del('linkchecker_check_links_types');
@@ -272,7 +272,7 @@ function linkchecker_update_7002(&$sandbox) {
 }
 
 /**
- * #1321378: Improve performance of queries.
+ * Issue #1321378: Improve performance of queries.
  */
 function linkchecker_update_7003() {
   db_drop_index('linkchecker_block_custom', 'lid');
@@ -390,7 +390,7 @@ function linkchecker_update_7007() {
 }
 
 /**
- * #965720: Add indexes to improve performance of views queries.
+ * Issue #965720: Add indexes to improve performance of views queries.
  */
 function linkchecker_update_7008() {
   db_drop_index('linkchecker_link', 'method');
@@ -455,10 +455,10 @@ function linkchecker_update_7011() {
 }
 
 
-/**
- * PHP 5.3 backport for array_replace().
- */
 if (!function_exists('array_replace')) {
+  /**
+   * PHP 5.3 backport for array_replace().
+   */
   function array_replace() {
     $array = array();
     $n = func_num_args();

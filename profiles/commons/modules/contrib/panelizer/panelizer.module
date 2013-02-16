@@ -261,6 +261,11 @@ function panelizer_entity_view_alter(&$build, $entity_type) {
     $view_mode = 'default';
   }
 
+  // Make sure the bundle + view mode is actually panelized!
+  if (!$handler->is_panelized($bundle . '.' . $view_mode)) {
+    return;
+  }
+
   if (!empty($recursion_prevention[$entity_type][$entity_id][$view_mode])) {
     return;
   }
@@ -327,7 +332,12 @@ function panelizer_features_api() {
   $api = array();
   if (function_exists('_ctools_features_get_info') && defined('FEATURES_ALTER_TYPE_NONE')) {
     $api['panelizer_defaults'] = _ctools_features_get_info('panelizer_defaults');
-    $api['panelizer_defaults']['alter_type'] = FEATURES_ALTER_TYPE_NONE;
+    // CTools calls our hook_panelizer_defaults_alter so prevent Features from
+    // calling it too. FEATURES_ALTER_TYPE_INLINE means we are handling alter
+    // hooks ourselves here.
+    $api['panelizer_defaults']['alter_type'] = FEATURES_ALTER_TYPE_INLINE;
+    // Provide a separate alter hook for features_override.
+    $api['panelizer_defaults']['alter_hook'] = 'panelizer_defaults_override';
   }
 
   return $api;
@@ -351,6 +361,9 @@ function panelizer_panelizer_defaults_alter(&$items) {
   foreach (panelizer_get_plugins_with_hook('panelizer_defaults') as $handler) {
     $handler->hook_panelizer_defaults($items);
   }
+
+  // Allow features_overrides to alter the config.
+  drupal_alter('panelizer_defaults_override', $items);
 }
 
 /**
@@ -1176,6 +1189,7 @@ function panelizer_panels_cache_save($argument, $cache) {
   // If this is set, they clicked a button that saves a different panelizer
   // than was being edited, such as saving to default rather than customizing
   // an entity.
+  $original = $argument;
   if (isset($cache->display->swap_cache_key)) {
     $argument = $cache->display->swap_cache_key;
   }
@@ -1191,7 +1205,6 @@ function panelizer_panels_cache_save($argument, $cache) {
   if (!$handler) {
     return;
   }
-
 
   if (!empty($get_default)) {
     $panelizer = $handler->get_default_panelizer_object($bundle, $name);
@@ -1212,7 +1225,7 @@ function panelizer_panels_cache_save($argument, $cache) {
       $cache->display->context = $handler->get_contexts($entities[$entity_id]->panelizer[$view_mode], $entities[$entity_id]);
     }
   }
-  panelizer_panels_cache_clear($argument, $cache);
+  panelizer_panels_cache_clear($original, $cache);
 }
 
 // ---------------------------------------------------------------------------
@@ -1531,6 +1544,22 @@ function panelizer_form_panels_ipe_edit_control_form_alter(&$form, &$form_state)
   // Change the default button to say "Save as custom".
   $form['buttons']['submit']['#value'] = t('Save as custom');
 
+  // Calculate the proper name to add to the cache key, which
+  // has some data stripped off of the true name.
+  if (empty($panelizer->name)) {
+    $name = 'default';
+  }
+  else {
+    $pieces = explode(':', $panelizer->name);
+    // Strip off entity type
+    array_shift($pieces);
+    // Strip off entity bundle
+    array_shift($pieces);
+    // Strip off view mode
+    array_shift($pieces);
+    $name = implode(':', $pieces);
+  }
+
   // Add another button to save as the default instead:
   $form['buttons']['save_default'] = array(
     '#type' => 'submit',
@@ -1540,7 +1569,7 @@ function panelizer_form_panels_ipe_edit_control_form_alter(&$form, &$form_state)
     '#weight' => -1,
     // precalculate the cache key so we don't have to unwind a bunch of stuff
     // in the submit handler.
-    '#cache_key' => 'default:' . $handler->entity_type . ':' . $bundle . '.' . $panelizer->view_mode . ':' . $panelizer->name,
+    '#cache_key' => 'default:' . $handler->entity_type . ':' . $bundle . '.' . $panelizer->view_mode . ':' . $name,
     '#attributes' => array('class' => array('panels-ipe-save')),
     '#id' => 'panelizer-save-default',
   );

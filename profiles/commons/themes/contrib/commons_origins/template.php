@@ -142,6 +142,10 @@ function commons_origins_preprocess_node(&$vars) {
   if ($vars['promote']) {
     $vars['submitted'] .= ' <span class="featured-node-tooltip">' . t('Featured') . ' ' . $vars['type'] . '</span>';
   }
+
+  if (empty($vars['elements']['#node']->picture)) {
+    $vars['classes_array'][] = 'no-user-picture';
+  }
 }
 function commons_origins_process_node(&$vars) {
 }
@@ -151,7 +155,8 @@ function commons_origins_process_node(&$vars) {
 * Implements hook_form_alter().
 */
 function commons_origins_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'post_node_form') {
+  // dpm($form_id);
+  if ($form_id == 'post_node_form' || $form_id == 'document_node_form' || $form_id == 'question_node_form' || $form_id == 'event_node_form' || $form_id == 'wiki_node_form' || $form_id == 'poll_node_form') {
     $form['additional_settings']['#type'] = 'fieldset';
   }
   if ($form_id == 'system_theme_settings') {

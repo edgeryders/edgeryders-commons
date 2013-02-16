@@ -5,6 +5,9 @@
  * Administrative page callbacks for the linkchecker module.
  */
 
+/**
+ * Implements hook_admin_settings_form().
+ */
 function linkchecker_admin_settings_form($form_state) {
 
   $form['settings'] = array(
@@ -139,7 +142,7 @@ function linkchecker_admin_settings_form($form_state) {
     '#default_value' => variable_get('linkchecker_check_library', 'core'),
     '#options' => array(
       'core' => t('Drupal core'),
-      'httprl' => t('HTTP Parallel Request Library'),
+      'httprl' => t('HTTP Parallel Request & Threading Library'),
     ),
   );
   $form['check']['linkchecker_check_connections_max'] = array(
@@ -255,12 +258,15 @@ function linkchecker_admin_settings_form($form_state) {
     '#submit' => array('linkchecker_clear_analyze_links_submit'),
   );
 
-  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
-  $form['buttons']['reset'] = array('#type' => 'submit', '#value' => t('Reset to defaults') );
+  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
+  $form['buttons']['reset'] = array('#type' => 'submit', '#value' => t('Reset to defaults'));
 
   return $form;
 }
 
+/**
+ * Implements hook_admin_settings_form_validate().
+ */
 function linkchecker_admin_settings_form_validate($form, &$form_state) {
   $form_state['values']['linkchecker_disable_link_check_for_urls'] = trim($form_state['values']['linkchecker_disable_link_check_for_urls']);
   $form_state['values']['linkchecker_ignore_response_codes'] = trim($form_state['values']['linkchecker_ignore_response_codes']);
@@ -283,6 +289,9 @@ function linkchecker_admin_settings_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Implements hook_admin_settings_form_submit().
+ */
 function linkchecker_admin_settings_form_submit($form, &$form_state) {
   // Exclude unnecessary elements.
   unset($form_state['values']['linkchecker_analyze'], $form_state['values']['linkchecker_clear_analyze']);
@@ -316,7 +325,9 @@ function linkchecker_admin_settings_form_submit($form, &$form_state) {
 }
 
 /**
- * Submit callback; Analyze fields in all node types, comments, custom blocks.
+ * Submit callback.
+ *
+ * Analyze fields in all node types, comments, custom blocks.
  */
 function linkchecker_analyze_links_submit($form, &$form_state) {
   // Exclude unnecessary elements.
@@ -342,7 +353,10 @@ function linkchecker_analyze_links_submit($form, &$form_state) {
 }
 
 /**
- * Submit callback; Clear link data and analyze fields in all content types, comments, custom blocks.
+ * Submit callback.
+ *
+ * Clear link data and analyze fields in all content types, comments, custom
+ * blocks.
  */
 function linkchecker_clear_analyze_links_submit($form, &$form_state) {
   // Exclude unnecessary elements.
