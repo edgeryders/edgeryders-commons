@@ -5,6 +5,15 @@
  */
 
 /**
+ * Implements hook_admin_paths_alter().
+ */
+function commons_admin_paths_alter(&$paths) {
+  // Avoid switching between themes when users edit their account.
+  $paths['user'] = FALSE;
+  $paths['user/*'] = FALSE;
+}
+
+/**
  * Implements hook_install_tasks_alter().
  */
 function commons_install_tasks_alter(&$tasks, $install_state) {
@@ -49,6 +58,7 @@ function commons_form_install_configure_form_alter(&$form, $form_state) {
     '#type' => 'fieldset',
     '#title' => st('Acquia'),
     '#description' => st('The !an can supplement the functionality of Commons by providing enhanced site search (faceted search, content recommendations, content biasing, multi-site search, and others using the Apache Solr service), spam protection (using the Mollom service), and more.  A free 30-day trial is available.', array('!an' => l(t('Acquia Network'), 'http://acquia.com/products-services/acquia-network', array('attributes' => array('target' => '_blank'))))),
+    '#weight' => -11,
   );
   $form['server_settings']['enable_acquia_connector'] = array(
     '#type' => 'checkbox',
@@ -101,6 +111,16 @@ function commons_update_projects_alter(&$projects) {
  */
 function commons_install_tasks() {
 
+  //make sure we have more memory than 196M. if not lets try to increase it.
+  if (ini_get('memory_limit') != '-1' && ini_get('memory_limit') <= '196M') {
+    ini_set('memory_limit', '196M');
+  }
+
+  //make sure we have more memory than 196M. if not lets try to increase it.
+  if ((int)ini_get('max_execution_time') != -1 && (int)ini_get('max_execution_time') != 0 && (int)ini_get('max_execution_time') <= 120) {
+    ini_set('max_execution_time', 120);
+  }
+
   $demo_content = variable_get('commons_install_example_content', FALSE);
   $acquia_connector = variable_get('commons_install_acquia_connector', FALSE);
 
@@ -111,7 +131,7 @@ function commons_install_tasks() {
       'run' => $acquia_connector ? INSTALL_TASK_RUN_IF_NOT_COMPLETED : INSTALL_TASK_SKIP,
     ),
     'commons_installer_palette' => array(
-      'display_name' => st('Chose site color palette'),
+      'display_name' => st('Choose site color palette'),
       'display' => TRUE,
       'type' => 'form',
       'function' => 'commons_installer_palette',
@@ -147,7 +167,7 @@ function commons_install_tasks() {
  */
 function commons_installer_palette() {
   $form = array();
-  require_once('profiles/commons/themes/contrib/commons_origins/commons_origins.palettes.inc');
+  require_once(drupal_get_path('theme', 'commons_origins') . '/commons_origins.palettes.inc');
 
   commons_origins_palettes_form($form);
   $form['commons_origins_palette_fieldset']['#collapsible'] = FALSE;
@@ -318,6 +338,12 @@ function commons_anonymous_welcome_text_form_submit($form_id, &$form_state) {
 }
 
 /**
+ * Helper function to generate a machine name similar to the user's full name.
+ */
+function commons_normalize_name($name) {
+  return drupal_strtolower(str_replace(' ','_', $name));
+}
+/**
  * This function generate a demo content
  */
 function commons_demo_content() {
@@ -327,16 +353,18 @@ function commons_demo_content() {
 
   // Create demo Users
   $demo_users = array(
-    'Lou White' => 'Lou White',
-    'George Foreman' => 'George Foreman',
-    'Cesar Ramirez' => 'Cesar Ramirez',
-    'Elinor Dashwood' => 'Elinor Dashwood',
-    'Matt Edmunds' => 'Matt Edmunds',
+    'Jeff Noyes' => 'Jeff Noyes',
+    'Drew Robertson' => 'Drew Robertson',
+    'Lisa Rex' => 'Lisa Rex',
+    'Katelyn Fogarty' => 'Katelyn Fogarty',
+    'Dharmesh Mistry' => 'Dharmesh Mistry',
+    'Erica Ligeski' => 'Erica Ligeski',
   );
+
 
   foreach ($demo_users as $name) {
     list($first_name, $last_name)  = explode(" ", $name);
-    $normalize_name = drupal_strtolower(str_replace(' ','_', $name));
+    $normalize_name = commons_normalize_name($name);
     $password = user_password(8);
 
 
@@ -354,8 +382,10 @@ function commons_demo_content() {
     $fields['field_name_first'][LANGUAGE_NONE][0]['value'] = $first_name;
     $fields['field_name_last'][LANGUAGE_NONE][0]['value'] = $last_name;
 
-
     $demo_users[$name] = user_save('', $fields);
+
+    // Add avatars to demo Users.
+    commons_add_user_avatar($demo_users[$name]);
   }
 
   // Demo Content.
@@ -367,7 +397,7 @@ function commons_demo_content() {
 
   $boston_group->title = 'Boston';
   $boston_group->body[LANGUAGE_NONE][0]['value'] = commons_veggie_ipsum();
-  $boston_group->uid = $demo_users['Lou White']->uid;
+  $boston_group->uid = $demo_users['Jeff Noyes']->uid;
   $boston_group->language = LANGUAGE_NONE;
   $boston_group->created = time() - 604800;
   $boston_group->status = 1;
@@ -380,7 +410,7 @@ function commons_demo_content() {
 
   $nyc_group->title = 'New York City';
   $nyc_group->body[LANGUAGE_NONE][0]['value'] = commons_veggie_ipsum();
-  $nyc_group->uid = $demo_users['Lou White']->uid;
+  $nyc_group->uid = $demo_users['Drew Robertson']->uid;
   $nyc_group->language = LANGUAGE_NONE;
   $nyc_group->status = 1;
   // Make the group 1 week old:
@@ -394,7 +424,7 @@ function commons_demo_content() {
   node_object_prepare($post);
 
   $post->title = 'Best brunch places in Cambridge';
-  $post->uid = $demo_users['George Foreman']->uid;
+  $post->uid = $demo_users['Lisa Rex']->uid;
   $post->language = LANGUAGE_NONE;
   // 1:30 ago.
   $post->created = time() - 5400;
@@ -426,7 +456,7 @@ function commons_demo_content() {
   node_object_prepare($wiki);
   $wiki->created = time() - 604800;
   $wiki->title = 'How to create a veggie burger';
-  $wiki->uid = $demo_users['Matt Edmunds']->uid;
+  $wiki->uid = $demo_users['Dharmesh Mistry']->uid;
   $wiki->language = LANGUAGE_NONE;
   $wiki->body[LANGUAGE_NONE][0]['value'] = "Celtuce quandong gumbo coriander avocado yarrow broccoli rabe parsnip nori mung bean watercress taro pea sprouts cress. Bush tomato water spinach radish green bean okra spinach garlic cress. Cucumber squash tigernut swiss chard celery cabbage beet greens nori groundnut grape melon seakale. Earthnut pea kakadu plum chicory potato plantain fennel gumbo chickweed gourd cauliflower wakame green bean epazote taro quandong. Celery turnip kombu lotus root lettuce sierra leone bologi kale cauliflower gumbo parsnip taro welsh onion melon asparagus green bean beet greens black-eyed pea jícama. Kohlrabi lentil turnip greens plantain bush tomato leek arugula courgette amaranth yarrow.";
   $wiki->body[LANGUAGE_NONE][0]['format'] = filter_default_format();
@@ -453,7 +483,7 @@ function commons_demo_content() {
   node_object_prepare($event);
 
   $event->title = 'Ribfest Boston 2012';
-  $event->uid = $demo_users['Elinor Dashwood']->uid;
+  $event->uid = $demo_users['Katelyn Fogarty']->uid;
   $event->language = LANGUAGE_NONE;
   $event->body[LANGUAGE_NONE][0]['value'] = "<strong>What ignited in 1999 as a community block party has exploded into one of Boston's most anticipated street festivals.</strong> Averaging 50,000 pounds of ribs and BBQ from more than 30 restaurants, Ribfest Boston 2013 is expected to draw more than 50,000 people. As a nationally recognized music festival, we host a hot blend of Indie, pop, Indie Roots, rock and alt country for one of the most unique band lineups in the city. Families can spend the whole weekend in Kids Square to enjoy live entertainment, inflatables, games and more.";
   $event->body[LANGUAGE_NONE][0]['format'] = filter_default_format();
@@ -485,6 +515,43 @@ function commons_demo_content() {
 
   // Delete the demo content variable
   variable_del('commons_install_example_content');
+}
+
+function commons_add_user_avatar($account) {
+  global $base_url;
+
+  if ($account->uid) {
+    $picture_directory =  file_default_scheme() . '://' . variable_get('user_picture_path', 'pictures');
+    if(file_prepare_directory($picture_directory, FILE_CREATE_DIRECTORY)){
+      $picture_result = drupal_http_request($base_url . '/profiles/commons/images/avatars/avatar-' . commons_normalize_name($account->name) . '.png');
+      $picture_path = file_stream_wrapper_uri_normalize($picture_directory . '/picture-' . $account->uid . '-' . REQUEST_TIME . '.jpg');
+      $picture_file = file_save_data($picture_result->data, $picture_path, FILE_EXISTS_REPLACE);
+
+      // Check to make sure the picture isn't too large for the site settings.
+      $validators = array(
+        'file_validate_is_image' => array(),
+        'file_validate_image_resolution' => array(variable_get('user_picture_dimensions', '85x85')),
+        'file_validate_size' => array(variable_get('user_picture_file_size', '30') * 1024),
+      );
+
+      // attach photo to user's account.
+      $errors = file_validate($picture_file, $validators);
+
+      if (empty($errors)) {
+        // Update the user record.
+        $picture_file->uid = $account->uid;
+        $picture_file = file_save($picture_file);
+        file_usage_add($picture_file, 'user', 'user', $account->uid);
+        db_update('users')
+          ->fields(array(
+          'picture' => $picture_file->fid,
+          ))
+          ->condition('uid', $account->uid)
+          ->execute();
+        $account->picture = $picture_file->fid;
+      }
+    }
+  }
 }
 
 /**
@@ -527,6 +594,7 @@ function commons_acquia_connector_enable() {
   $modules = variable_get('commons_install_acquia_modules', array());
   if (!empty($modules)) {
     module_enable($modules, TRUE);
+    commons_clear_messages();
   }
 }
 
@@ -535,10 +603,6 @@ function commons_acquia_connector_enable() {
  */
 function commons_install_finished(&$install_state) {
   // BEGIN copy/paste from install_finished().
-  // Flush all caches to ensure that any full bootstraps during the installer
-  // do not leave stale cached data, and that any content types or other items
-  // registered by the installation profile are registered correctly.
-
   // Remove the bookmarks flag
   $flag = flag_get_flag('bookmarks');
   if($flag) {
@@ -547,7 +611,34 @@ function commons_install_finished(&$install_state) {
     _flag_clear_cache();
   }
 
+  // Flush all caches to ensure that any full bootstraps during the installer
+  // do not leave stale cached data, and that any content types or other items
+  // registered by the installation profile are registered correctly.
   drupal_flush_all_caches();
+
+  // We make custom code for the footer here because we want people to be able to freely edit it if they wish.
+  $footer_body = '<p>'. st('A Commons Community, powered by <a href="@acquia">Acquia</a>', array('@acquia' => url('https://www.acquia.com/products-services/drupal-commons-social-business-software'))) . '</p>';
+
+  $footer_block_text = array(
+    'body' => st($footer_body),
+    'info' => st('Default Footer'),
+    'format' => 'full_html',
+  );
+
+  if (drupal_write_record('block_custom', $footer_block_text)) {
+    $footer_block = array(
+      'module' => 'block',
+      'delta' => $footer_block_text['bid'],
+      'theme' => 'commons_origins',
+      'visibility' => 0,
+      'region' => 'footer',
+      'status' => 1,
+      'pages' => 0,
+      'weight' => 1,
+      'title' => variable_get('site_name', 'Drupal Commons'),
+    );
+    drupal_write_record('block', $footer_block);
+  }
 
   // Remember the profile which was used.
   variable_set('install_profile', drupal_get_profile());
@@ -593,4 +684,33 @@ function commons_clear_messages() {
   drupal_get_messages('completed', TRUE);
   // Migrate adds its messages under the wrong type, see #1659150.
   drupal_get_messages('ok', TRUE);
+}
+
+/**
+ * Set a default user avatar as a managed file object.
+ */
+function commons_set_default_avatar() {
+  global $base_url;
+  $picture_directory =  file_default_scheme() . '://' . variable_get('user_picture_path', 'pictures');
+  if(file_prepare_directory($picture_directory, FILE_CREATE_DIRECTORY)){
+    $picture_result = drupal_http_request($base_url . '/profiles/commons/images/avatars/user-avatar.png');
+    $picture_path = file_stream_wrapper_uri_normalize($picture_directory . '/picture-default.jpg');
+    $picture_file = file_save_data($picture_result->data, $picture_path, FILE_EXISTS_REPLACE);
+
+    // Check to make sure the picture isn't too large for the site settings.
+    $validators = array(
+      'file_validate_is_image' => array(),
+      'file_validate_image_resolution' => array(variable_get('user_picture_dimensions', '85x85')),
+      'file_validate_size' => array(variable_get('user_picture_file_size', '30') * 1024),
+    );
+
+    // attach photo to user's account.
+    $errors = file_validate($picture_file, $validators);
+
+    if (empty($errors)) {
+      // Update the user record.
+      $picture_file = file_save($picture_file);
+      variable_set('user_picture_default', $picture_path);
+    }
+  }
 }

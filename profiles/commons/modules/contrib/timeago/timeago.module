@@ -354,8 +354,6 @@ function timeago_add_js() {
   if (module_exists('libraries') && function_exists('libraries_load')) {
     $library_path = libraries_get_path('timeago');
     libraries_load('timeago');
-    $path = drupal_get_path('module', 'timeago') . '/timeago.js';
-    drupal_add_js($path);
   }
   else {
     $library_path = drupal_get_path('module', 'timeago');

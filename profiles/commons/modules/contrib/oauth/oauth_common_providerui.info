@@ -7,8 +7,8 @@ dependencies[] = oauth_common
 core = 7.x
 
 ; Information added by drupal.org packaging script on 2013-02-04
-version = "7.x-3.1+1-dev"
+version = "7.x-3.1"
 core = "7.x"
 project = "oauth"
-datestamp = "1359940850"
+datestamp = "1359936562"
 

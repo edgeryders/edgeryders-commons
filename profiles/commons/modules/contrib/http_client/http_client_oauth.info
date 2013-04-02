@@ -8,9 +8,9 @@ files[] = includes/HttpClientOAuth.inc
 package = Services - clients
 core = 7.x
 
-; Information added by drupal.org packaging script on 2012-08-23
-version = "7.x-2.4+0-dev"
+; Information added by drupal.org packaging script on 2012-08-22
+version = "7.x-2.4"
 core = "7.x"
 project = "http_client"
-datestamp = "1345681779"
+datestamp = "1345646840"
 

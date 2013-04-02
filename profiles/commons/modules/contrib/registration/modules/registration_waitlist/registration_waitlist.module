@@ -85,9 +85,7 @@ function registration_waitlist_registration_status_alter(&$status, &$context) {
  */
 function registration_waitlist_entity_presave($entity, $type) {
   if ($type == 'registration') {
-    $errors = array();
-    $status = registration_status($entity->entity_type, $entity->entity_id, TRUE, $entity->count, $entity->registration_id, $errors);
-    if (registration_waitlist_is_active($entity->entity_type, $entity->entity_id, $errors)) {
+    if (registration_waitlist_is_active($entity->entity_type, $entity->entity_id)) {
       $active_states = registration_get_active_states();
 
       // Check that the state being saved is active

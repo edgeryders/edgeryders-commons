@@ -1128,13 +1128,10 @@ function features_admin_components_revert(&$form, &$form_state) {
   module_load_include('inc', 'features', 'features.export');
   features_include();
   $module = $form_state['values']['module'];
-  $revert = array($module => array());
+  $revert = array();
   foreach (array_filter($form_state['values']['revert']) as $component => $status) {
     $revert[$module][] = $component;
     drupal_set_message(t('Reverted all <strong>@component</strong> components for <strong>@module</strong>.', array('@component' => $component, '@module' => $module)));
-  }
-  if (empty($revert[$module])) {
-    drupal_set_message(t('Please select which components to revert.'), 'warning');
   }
   features_revert($revert);
   $form_state['redirect'] = 'admin/structure/features/' . $module;
@@ -1202,9 +1199,11 @@ function features_form_submit(&$form, &$form_state) {
 }
 
 /**
- * Form for clearing cache after enabling a feature.
+ * Form for disabling orphaned dependencies.
  */
 function features_cleanup_form($form, $form_state, $cache_clear = FALSE) {
+  $form = array();
+
   // Clear caches if we're getting a post-submit redirect that requests it.
   if ($cache_clear) {
     drupal_flush_all_caches();
@@ -1216,7 +1215,80 @@ function features_cleanup_form($form, $form_state, $cache_clear = FALSE) {
     menu_rebuild();
   }
 
+  // Retrieve orphaned modules and provide them as optional modules to be disabled.
+  // Exclude any modules that have been added to the 'ignored' list.
+  $options = array();
+  $orphans = features_get_orphans();
+  $ignored = variable_get('features_ignored_orphans', array());
+  if (!empty($orphans)) {
+    foreach ($orphans as $module) {
+      if (!in_array($module->name, $ignored, TRUE)) {
+        $options[$module->name] = check_plain($module->info['name']);
+      }
+    }
+  }
+
+  if (!empty($options)) {
+    $form['orphans'] = array(
+      '#title' => t('Orphaned dependencies'),
+      '#description' => t('These modules are dependencies of features that have been disabled. They may be disabled without affecting other components of your website.'),
+      '#type' => 'checkboxes',
+      '#options' => $options,
+      '#default_value' => array_keys($options),
+    );
+    $form['buttons'] = array('#tree' => TRUE, '#theme' => 'features_form_buttons');
+    $form['buttons']['disable'] = array(
+      '#type' => 'submit',
+      '#value' => t('Disable selected modules'),
+      '#submit' => array('features_cleanup_form_disable'),
+    );
+    $form['buttons']['ignore'] = array(
+      '#type' => 'submit',
+      '#value' => t('Leave enabled'),
+      '#submit' => array('features_cleanup_form_ignore'),
+    );
+  }
+  else {
     drupal_goto('admin/structure/features');
+  }
+  return $form;
+}
+
+/**
+ * Submit handler for disable action on features_cleanup_form().
+ */
+function features_cleanup_form_disable(&$form, &$form_state) {
+  if (!empty($form_state['values']['orphans'])) {
+    $disable = array_keys(array_filter($form_state['values']['orphans']));
+    $ignored = array_diff(array_keys($form_state['values']['orphans']), $disable);
+
+    // Disable any orphans that have been selected.
+    module_disable($disable);
+    drupal_flush_all_caches();
+
+    // Add enabled modules to ignored orphans list.
+    $ignored_orphans = variable_get('features_ignored_orphans', array());
+    foreach ($ignored as $module) {
+      $ignored_orphans[$module] = $module;
+    }
+    variable_set('features_ignored_orphans', $ignored_orphans);
+  }
+  $form_state['redirect'] = 'admin/structure/features/cleanup';
+}
+
+/**
+ * Submit handler for ignore action on features_cleanup_form().
+ */
+function features_cleanup_form_ignore(&$form, &$form_state) {
+  if (!empty($form_state['values']['orphans'])) {
+    $ignored = array_keys($form_state['values']['orphans']);
+    $ignored_orphans = variable_get('features_ignored_orphans', array());
+    foreach ($ignored as $module) {
+      $ignored_orphans[$module] = $module;
+    }
+    variable_set('features_ignored_orphans', $ignored_orphans);
+  }
+  $form_state['redirect'] = 'admin/structure/features/cleanup';
 }
 
 /**

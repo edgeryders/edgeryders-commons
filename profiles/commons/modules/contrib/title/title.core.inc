@@ -39,7 +39,7 @@ function title_entity_info() {
         'field' => $field,
         'instance' => array(
           'label' => t('Title'),
-          'description' => t('A field replacing node title.'),
+          'description' => '',
         ) + $instance,
       ),
     ),
@@ -53,7 +53,7 @@ function title_entity_info() {
           'field' => $field,
           'instance' => array(
             'label' => t('Name'),
-            'description' => t('A field replacing taxonomy term name.'),
+            'description' => '',
           ) + $instance,
           'preprocess_key' => 'term_name',
         ),
@@ -64,7 +64,7 @@ function title_entity_info() {
           'instance' => array(
             'required' => FALSE,
             'label' => t('Description'),
-            'description' => t('A field replacing taxonomy term description.'),
+            'description' => '',
             'settings' => array(
               'text_processing' => 1,
             ),
@@ -87,7 +87,7 @@ function title_entity_info() {
           'field' => $field,
           'instance' => array(
             'label' => t('Subject'),
-            'description' => t('A field replacing comment subject.'),
+            'description' => '',
           ) + $instance,
           'preprocess_key' => 'title',
         ),

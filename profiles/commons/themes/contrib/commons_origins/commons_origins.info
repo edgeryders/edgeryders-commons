@@ -421,9 +421,9 @@
   ; Custom CSS
   settings[custom_css] = ''
 
-; Information added by drupal.org packaging script on 2013-04-02
-version = "7.x-3.0+65-dev"
+; Information added by drupal.org packaging script on 2013-02-25
+version = "7.x-3.0"
 core = "7.x"
 project = "commons_origins"
-datestamp = "1364863476"
+datestamp = "1361820335"
 

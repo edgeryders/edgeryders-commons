@@ -9,9 +9,10 @@ dependencies[] = i18n_string
 files[] = custom_search_i18n.module
 files[] = custom_search_i18n.admin.inc
 files[] = custom_search_i18n.install
-; Information added by drupal.org packaging script on 2012-09-04
-version = "7.x-1.11"
+
+; Information added by drush on 2013-04-02
+version = "7.x-1.11+9-dev"
 core = "7.x"
 project = "custom_search"
-datestamp = "1346768523"
+datestamp = "1364928767"
 

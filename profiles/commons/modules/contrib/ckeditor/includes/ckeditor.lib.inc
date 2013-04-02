@@ -2,7 +2,7 @@
 
 /**
  * CKEditor - The text editor for the Internet - http://ckeditor.com
- * Copyright (c) 2003-2012, CKSource - Frederico Knabben. All rights reserved.
+ * Copyright (c) 2003-2013, CKSource - Frederico Knabben. All rights reserved.
  *
  * == BEGIN LICENSE ==
  *
@@ -655,7 +655,7 @@ function _ckeditor_script_path() {
   elseif (file_exists($module_path . '/ckeditor/ckeditor/ckeditor.js')) {
     $jspath = '%m/ckeditor/ckeditor';
   }
-  elseif (file_exists('sites/all/libraries/ckeditor/ckeditor.js')) {
+  elseif (file_exists(ckeditor_library_path('url') . '/ckeditor/ckeditor.js')) {
     $jspath = '%l/ckeditor';
   }
   return $jspath;
@@ -830,8 +830,8 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
   }
 
   //add support for divarea plugin from CKE4
-  if (((isset($conf['use_divarea']) && $conf['use_divarea'] == 't') || !isset($conf['use_divarea'])) && file_exists($editor_local_path . '/plugins/divarea/plugin.js')) {
-    $settings['loadPlugins']['divarea'] = array('name' => 'divarea', 'path' => $editor_path . '/plugins/divarea/', 'buttons' => FALSE, 'default' => 't');
+  if (isset($conf['use_divarea']) && $conf['use_divarea'] == 't' && file_exists($editor_local_path . '/plugins/divarea/plugin.js')) {
+    $settings['loadPlugins']['divarea'] = array('name' => 'divarea', 'path' => $editor_path . '/plugins/divarea/', 'buttons' => FALSE, 'default' => 'f');
   }
 
   if (isset($conf['html_entities']) && $conf['html_entities'] == 'f') {
@@ -952,16 +952,25 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
         $_SESSION['ckeditor'][$profile_name]['UserFilesAbsolutePath'] = strtr('%d%b%f/', array("%f" => variable_get('file_public_path', conf_path() . '/files'), "%u" => $user->uid, "%b" => base_path(), "%d" => ckeditor_get_document_root_full_path(), "%n" => $user->name));
       }
       if (variable_get('file_default_scheme', '') == 'private') {
-        $private_dir = isset($global_profile->settings['private_dir']) ? trim($global_profile->settings['private_dir'], '\/') : '';
+        $private_dir = isset($global_profile->settings['private_dir']) ? trim($global_profile->settings['private_dir'], '/') : '';
         if (!empty($private_dir)) {
           $private_dir = strtr($private_dir, array('%u' => $user->uid, '%n' => $user->name));
           $_SESSION['ckeditor'][$profile_name]['UserFilesPath'] = url('system/files') . '/' . $private_dir . '/';
-          $_SESSION['ckeditor'][$profile_name]['UserFilesAbsolutePath'] = variable_get('file_private_path', '') . DIRECTORY_SEPARATOR . $private_dir . DIRECTORY_SEPARATOR;
+          $private_upload_path = file_uri_target('private://' . variable_get('file_private_path', '')) . '/' . $private_dir;
         }
         else {
           $_SESSION['ckeditor'][$profile_name]['UserFilesPath'] = url('system/files') . '/';
-          $_SESSION['ckeditor'][$profile_name]['UserFilesAbsolutePath'] = variable_get('file_private_path', '') . DIRECTORY_SEPARATOR;
+          $private_upload_path =  file_uri_target('private://' . variable_get('file_private_path', ''));
         }
+        //add '/' to beginning of path if necessary
+        if (strpos(variable_get('file_private_path', ''), '/') === 0 && $private_upload_path[0] != '/') {
+          $private_upload_path = '/' . $private_upload_path;
+        }
+        //check if CKEditor private dir exists and create it if not
+        if ($private_dir && !is_dir($private_upload_path)) {
+          mkdir($private_upload_path, 0755, TRUE);
+        }
+        $_SESSION['ckeditor'][$profile_name]['UserFilesAbsolutePath'] = drupal_realpath($private_upload_path) . '/';
       }
     }
   }

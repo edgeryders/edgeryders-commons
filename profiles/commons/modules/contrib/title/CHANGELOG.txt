@@ -3,6 +3,20 @@ Title 7.x-1.x, xxxx-xx-xx
 -------------------------
 
 
+Title 7.x-1.0-alpha7, 2013-03-18
+--------------------------------
+#1919640 by peximo: Fixed Empty tag shown when the title field is displayed.
+#1869438 by jsacksick: Fixed hook_field_attach_create_bundle() implementation
+  isn't correct.
+#1280962 by mvc: Fixed Better description of field replacement dialogue.
+#1900282: Fixed wrong files[] directive in the title_test module.
+#1898618 by muka: Fixed Handle case when title property is not set (avoiding
+  error).
+#1885356 by peximo: Fixed Empty HTML class in Linked and wrapped format.
+#1865604 by GaëlG, plach: Fixed Title module overrides label callback (prevents
+  term label localization).
+
+
 Title 7.x-1.0-alpha5, 2012-12-18
 --------------------------------
 #1869228 by plach: Updated system dependencies.

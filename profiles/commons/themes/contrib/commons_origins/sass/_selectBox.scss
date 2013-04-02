@@ -26,16 +26,15 @@
     background: transparent;
     border: none;
     box-shadow: none;
-    min-width: inherit;
+    min-width: auto;
+    // width: auto !important;
     color: $white;
     line-height: 1;
     margin-top: 5px;
     margin-left: 9px;
   }
 
-  #views-exposed-form-commons-homepage-content-panel-pane-1 &,
-  #quicktabs-commons_bw &,
-  .views-exposed-widgets & {
+  #views-exposed-form-commons-homepage-content-panel-pane-1 &, #quicktabs-commons_bw & {
     background: $page;
     border: none;
     box-shadow: none;
@@ -82,9 +81,7 @@
     }
   }
 
-  #views-exposed-form-commons-homepage-content-panel-pane-1 &,
-  #quicktabs-commons_bw &,
-  .views-exposed-widgets & {
+  #views-exposed-form-commons-homepage-content-panel-pane-1 &, #quicktabs-commons_bw & {
     width: auto !important;
     padding: 2px 4px;
   }
@@ -103,9 +100,7 @@
     display: none;
   }
 
-  #views-exposed-form-commons-homepage-content-panel-pane-1 &,
-  #quicktabs-commons_bw &,
-  .views-exposed-widgets & {
+  #views-exposed-form-commons-homepage-content-panel-pane-1 &, #quicktabs-commons_bw & {
     display: none;
   }
 }
@@ -150,8 +145,8 @@
 
 /* Options */
 .selectBox-options,
-.selectBox-options li,
-.selectBox-options li a {
+.selectBox-options LI,
+.selectBox-options LI A {
   list-style: none;
   display: block;
   cursor: default;
@@ -159,7 +154,7 @@
   margin: 0;
 }
 
-.selectBox-options li a {
+.selectBox-options LI A {
   line-height: 1.5;
   padding: 0 .5em;
   white-space: nowrap;
@@ -167,16 +162,16 @@
   background: 6px center no-repeat;
 }
 
-.selectBox-options li.selectBox-hover a {
+.selectBox-options LI.selectBox-hover A {
   background-color: #EEE;
 }
 
-.selectBox-options li.selectBox-disabled a {
+.selectBox-options LI.selectBox-disabled A {
   color: #888;
   background-color: transparent;
 }
 
-.selectBox-options li.selectBox-selected a {
+.selectBox-options LI.selectBox-selected A {
   background-color: #C8DEF4;
 }
 
@@ -205,6 +200,6 @@
   color: #888 !important;
 }
 
-.selectBox-inline.selectBox-disabled .selectBox-options a {
+.selectBox-inline.selectBox-disabled .selectBox-options A {
   background-color: transparent !important;
 }

@@ -26,6 +26,7 @@ dependencies[] = toolbar
 dependencies[] = ctools
 dependencies[] = custom_search
 dependencies[] = diff
+dependencies[] = email_registration
 dependencies[] = entity
 dependencies[] = entityreference
 dependencies[] = entitycache
@@ -93,9 +94,12 @@ dependencies[] = commons_wikis_pages
 dependencies[] = commons_misc
 dependencies[] = commons_location
 dependencies[] = commons_wysiwyg
-; Information added by drupal.org packaging script on 2013-02-06
-version = "7.x-3.0-beta2"
+dependencies[] = commons_social_sharing
+
+
+; Information added by drush on 2013-04-02
+version = "7.x-3.1+1-dev"
 core = "7.x"
 project = "commons"
-datestamp = "1360126095"
+datestamp = "1364928621"
 

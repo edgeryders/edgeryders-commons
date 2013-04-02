@@ -519,6 +519,12 @@ function entity_metadata_field_get_language($entity_type, $entity, $field, $lang
 
   // Determine the right language to use.
   if ($default_langcode != LANGUAGE_NONE && field_is_translatable($entity_type, $field)) {
+    // If the field has a value under LANGUAGE_NONE and doesn't have a value
+    // under the default language, don't force the default language.
+    if (empty($entity->{$field['field_name']}[$default_langcode]) && !empty($entity->{$field['field_name']}[LANGUAGE_NONE])) {
+      return LANGUAGE_NONE;
+    }
+
     $langcode = ($langcode != LANGUAGE_NONE) ? field_valid_language($langcode, $default_langcode) : $default_langcode;
     if (!isset($entity->{$field['field_name']}[$langcode]) && $fallback) {
       $langcode = $default_langcode;

@@ -162,18 +162,25 @@ class TitleAdminSettingsTestCase extends DrupalWebTestCase {
 
   function setUp() {
     parent::setUp('field_test', 'title', 'title_test');
+    $admin_user = $this->drupalCreateUser(array('administer site configuration', 'administer taxonomy'));
+    $this->drupalLogin($admin_user);
   }
 
   /**
    * Check for automated title_field attachment.
    */
   function testAutomatedFieldAttachement() {
-    $admin_user = $this->drupalCreateUser(array('administer site configuration', 'administer taxonomy'));
-    $this->drupalLogin($admin_user);
+    $this->assertAutomatedFieldAttachement(TRUE);
+    $this->assertAutomatedFieldAttachement(FALSE);
+  }
 
+  /**
+   * Check that the fields are replaced or skipped depdening on the given value.
+   */
+  function assertAutomatedFieldAttachement($enabled) {
     $edit = array(
-      'title_taxonomy_term[auto_attach][name]' => TRUE,
-      'title_taxonomy_term[auto_attach][description]' => TRUE,
+      'title_taxonomy_term[auto_attach][name]' => $enabled,
+      'title_taxonomy_term[auto_attach][description]' => $enabled,
     );
     $this->drupalPost('admin/config/content/title', $edit, t('Save configuration'));
 
@@ -187,8 +194,8 @@ class TitleAdminSettingsTestCase extends DrupalWebTestCase {
     $entity_type = 'taxonomy_term';
     $bundle = $edit['machine_name'];
     field_info_cache_clear();
-    $this->assertTrue(title_field_replacement_enabled($entity_type, $bundle, 'name'), 'Name field automatically attached.');
-    $this->assertTrue(title_field_replacement_enabled($entity_type, $bundle, 'description', 'Description field automatically attached.'));
+    $this->assertTrue(title_field_replacement_enabled($entity_type, $bundle, 'name') == $enabled, 'Name field correctly processed.');
+    $this->assertTrue(title_field_replacement_enabled($entity_type, $bundle, 'description') == $enabled, 'Description field correctly processed.');
   }
 }
 

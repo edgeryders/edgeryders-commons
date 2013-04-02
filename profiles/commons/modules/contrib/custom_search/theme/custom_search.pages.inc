@@ -41,6 +41,7 @@ function custom_search_preprocess_search_results(&$variables) {
       if (!isset($variables['filter-title'])) $variables['filter-title'] = variable_get('custom_search_filter_label', CUSTOM_SEARCH_FILTER_LABEL_DEFAULT);
       if (count($items) > 2) $variables['filter'] = theme('item_list', array('items' => $items, 'title' => $variables['filter-title']));
     }
+  $variables['theme_hook_suggestions'][] = 'custom_search_results';
   }
 }
 
@@ -61,4 +62,5 @@ function custom_search_preprocess_search_result(&$variables) {
     }
   }
   $variables['info'] = implode(' - ', $infos);
+  $variables['theme_hook_suggestions'][] = 'custom_search_result';
 }

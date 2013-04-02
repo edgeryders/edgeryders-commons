@@ -11,9 +11,10 @@ features[radioactivity_decay_profile][] = default_daily
 features[radioactivity_decay_profile][] = default_now
 features[radioactivity_decay_profile][] = default_weekly
 
-; Information added by drupal.org packaging script on 2013-01-31
-version = "7.x-2.8"
+
+; Information added by drush on 2013-04-02
+version = "7.x-2.8+1-dev"
 core = "7.x"
 project = "radioactivity"
-datestamp = "1359640019"
+datestamp = "1364928730"
 

@@ -14,8 +14,8 @@ function features_test_user_default_permissions() {
   $permissions['create features_test content'] = array(
     'name' => 'create features_test content',
     'roles' => array(
-      'anonymous user' => 'anonymous user',
-      'authenticated user' => 'authenticated user',
+      0 => 'anonymous user',
+      1 => 'authenticated user',
     ),
     'module' => 'node',
   );

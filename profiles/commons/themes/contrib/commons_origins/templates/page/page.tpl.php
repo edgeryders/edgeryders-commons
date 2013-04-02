@@ -132,13 +132,14 @@
     <?php print render($page['header']); ?>
   </header>
 
-  <div id="columns" class="columns clearfix">
-    <!-- Messages and Help -->
-    <?php print $messages; ?>
-    <?php print render($page['help']); ?>
+  <!-- Messages and Help -->
+  <?php print $messages; ?>
+  <?php print render($page['help']); ?>
 
-    <!-- region: Secondary Content -->
-    <?php print render($page['secondary_content']); ?>
+  <!-- region: Secondary Content -->
+  <?php print render($page['secondary_content']); ?>
+
+  <div id="columns" class="columns clearfix">
 
     <div id="page-top">
       <!-- Breadcrumbs -->

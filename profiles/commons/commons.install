@@ -13,9 +13,13 @@
  * @see system_install()
  */
 function commons_install() {
-  // Enable the Skye theme and set it as the default theme.
-  theme_enable(array('adaptivetheme', 'commons_origins'));
+  // Enable the Origins theme and set it as the default.
+  theme_enable(array('adaptivetheme', 'commons_origins', 'adaptivetheme_admin'));
   variable_set('theme_default', 'commons_origins');
+  // Set a default administrative theme:
+  variable_set('admin_theme', 'adaptivetheme_admin');
+  variable_set('node_admin_theme', FALSE);
+  commons_set_default_avatar();
 
   // Place site blocks in the menu_bar and header regions.
   $menu_block = array(
@@ -80,4 +84,39 @@ function commons_install() {
     $form_state['values'] = array();
     drupal_form_submit('system_theme_settings', $form_state);
   }
+}
+
+/**
+ * Enable the Origins theme and set it as the default. *
+ */
+function commons_update_3101() {
+  theme_enable(array('adaptivetheme_admin'));
+  variable_set('theme_default', 'commons_origins');
+  variable_set('node_admin_theme', FALSE);
+  return array();
+}
+
+/**
+ * Reset the default avatar if the associated file doesn't exist in the file_managed table.
+ */
+function commons_update_3102() {
+  $reset_avatar = FALSE;
+  $file = variable_get('user_picture_default', '');
+  if(!$file) {
+    $reset_avatar = TRUE;
+  }
+  if(!$reset_avatar) {
+    $results = db_select('file_managed', 'f')
+      ->fields('f', array('fid'))
+      ->condition('filename', $file,'=')
+      ->execute()
+      ->fetchAll();
+    if(count($results) === 0) {
+      $reset_avatar = TRUE;
+    }
+  }
+  if($reset_avatar) {
+    commons_set_default_avatar();
+  }
+  return array();
 }

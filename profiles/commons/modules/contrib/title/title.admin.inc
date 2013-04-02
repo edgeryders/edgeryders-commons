@@ -22,7 +22,7 @@ function title_form_field_ui_overview(&$form, &$form_state) {
           '#type' => 'link',
           '#title' => t('replace'),
           '#href' => $admin_path . '/fields/replace/' . $field_name,
-          '#options' => array('attributes' => array('title' => t('Replace %field with a field instance.', array('%field' => $field_name)))),
+          '#options' => array('attributes' => array('title' => t('Replace %field with a customizable field instance that can be translated.', array('%field' => $field_name)))),
         );
       }
       else {
@@ -48,8 +48,8 @@ function title_field_replacement_form($form, $form_state, $entity_type, $bundle,
 
   $form['enabled'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Replace %field with a field instance.', array('%field' => $field_name)),
-    '#description' => t('If this is enabled the %field legacy field will be replaced with a regular field and will disappear from the <em>Manage fields</em> page. It will get back if the replacing field instance is deleted.', array('%field' => $field_name)),
+    '#title' => t('Replace %field with a field instance', array('%field' => $field_name)),
+    '#description' => t('If this is enabled the %field will be replaced with a customizable field that can be translated.', array('%field' => $field_name)),
     '#default_value' => $enabled,
     '#disabled' => $enabled,
   );

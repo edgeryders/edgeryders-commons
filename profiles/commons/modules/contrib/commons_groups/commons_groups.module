@@ -253,12 +253,6 @@ function commons_groups_og_user_access_alter(&$temp_perm, $context) {
     // og_user_access_alter()=>commons_groups_og_user_access_alter().
     // See also: http://drupal.org/node/1910874.
 
-    // In most cases users who don't have access to post content should already be false. But just in case they aren't, we'll set the permission here.
-    if ($context['string'] == "create $type content" && !user_access("create $type content", $context['account'])) {
-      $temp_perm["create $type content"] = FALSE;
-      return;
-    }
-
     // If a group is not restricted, or the user is a member, and the user can create content of a certain type, let them post temporarily
     if ($context['string'] == "create $type content" && (!$group_content_restricted || $user_is_member) && user_access("create $type content", $context['account'])) {
       $temp_perm["create $type content"] = TRUE;
@@ -502,6 +496,11 @@ function commons_groups_get_group_content_entity_types() {
 * grant her the contributor role within that group.
 */
 function commons_groups_first_contribution($account, $node) {
+  // Anonymous users should never be added to a group automatically
+  if ($account->uid == 0) {
+    return;
+  }
+
   // Find the groups that this piece of content belongs to.
   $groups = og_get_entity_groups('node', $node);
   if (!empty($groups)) {

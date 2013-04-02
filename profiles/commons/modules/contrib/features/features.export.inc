@@ -178,7 +178,7 @@ function _features_export_maximize_dependencies($dependencies, $module_name = ''
  *  Boolean flag for resetting the module cache. Only set to true when
  *  doing a final export for delivery.
  */
-function features_export_prepare($export, $module_name, $reset = FALSE, $add_deprecated = TRUE) {
+function features_export_prepare($export, $module_name, $reset = FALSE) {
   $existing = features_get_modules($module_name, $reset);
 
   // copy certain exports directly into info
@@ -197,7 +197,7 @@ function features_export_prepare($export, $module_name, $reset = FALSE, $add_dep
   // Cleanup info array
   foreach ($export['features'] as $component => $data) {
     // if performing the final export, do not export deprecated components
-    if (($reset || !$add_deprecated) && !empty($deprecated[$component])) {
+    if ($reset && !empty($deprecated[$component])) {
       unset($export['features'][$component]);
     }
     else {
@@ -219,7 +219,7 @@ function features_export_prepare($export, $module_name, $reset = FALSE, $add_dep
     }
   }
 
-  $export = features_array_diff_assoc_recursive($export, $standard_info);
+  $export = array_diff_assoc($export, $standard_info);
   ksort($export);
   return array_merge($standard_info, $export);
 }
@@ -378,7 +378,7 @@ function features_detect_overrides($module) {
   if (!isset($cache[$module->name])) {
     // Rebuild feature from .info file description and prepare an export from current DB state.
     $export = features_populate($module->info, $module->name);
-    $export = features_export_prepare($export, $module->name, FALSE, FALSE);
+    $export = features_export_prepare($export, $module->name);
 
     $overridden = array();
 
@@ -559,12 +559,6 @@ function features_var_export($var, $prefix = '', $init = TRUE) {
   }
   else if (is_bool($var)) {
     $output = $var ? 'TRUE' : 'FALSE';
-  }
-  else if (is_int($var)) {
-    $output = intval($var);
-  }
-  else if (is_numeric($var)) {
-    $output = floatval($var);
   }
   else if (is_string($var) && strpos($var, "\n") !== FALSE) {
     // Replace line breaks in strings with a token for replacement

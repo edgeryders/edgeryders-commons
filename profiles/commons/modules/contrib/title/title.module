@@ -69,6 +69,10 @@ function title_entity_info_alter(&$info) {
 
         // Support add explicit support for entity_label().
         if (isset($entity_info['entity keys']['label']) && $entity_info['entity keys']['label'] == $legacy_field) {
+          // Store the original label callback for compatibility reasons.
+          if (isset($info[$entity_type]['label callback'])) {
+            $info[$entity_type]['label fallback']['title'] = $info[$entity_type]['label callback'];
+          }
           $info[$entity_type]['label callback'] = 'title_entity_label';
           $fr_info += array('preprocess_key' => $info[$entity_type]['entity keys']['label']);
         }
@@ -118,12 +122,17 @@ function title_entity_label($entity, $type, $langcode = NULL) {
   $info = $entity_info['field replacement'][$legacy_field];
   list(, , $bundle) = entity_extract_ids($type, $entity);
 
+  // If field replacement is enabled we use the replacing field value.
   if (title_field_replacement_enabled($type, $bundle, $legacy_field)) {
     $langcode = field_language($type, $entity, $info['field']['field_name'], $langcode);
     return $info['callbacks']['sync_get']($type, $entity, $legacy_field, $info, $langcode);
   }
+  // Otherwise if we have a fallback defined we use the original label callback.
+  elseif (isset($entity_info['label fallback']['title']) && function_exists($entity_info['label fallback']['title'])) {
+    return $entity_info['label fallback']['title']($entity, $type, $langcode);
+  }
   else {
-    return $entity->{$legacy_field};
+    return (property_exists($entity, $legacy_field)) ? $entity->{$legacy_field} : NULL;
   }
 }
 
@@ -234,7 +243,6 @@ function title_field_replacement_enabled($entity_type, $bundle, $legacy_field) {
  */
 function title_field_replacement_toggle($entity_type, $bundle, $legacy_field) {
   $info = title_field_replacement_info($entity_type, $legacy_field);
-
   if (!$info) {
     return;
   }
@@ -820,24 +828,26 @@ function title_field_attach_create_bundle($entity_type, $bundle) {
 
   $options = variable_get('title_' . $entity_type, array());
 
-  foreach (array_keys($entity_info['field replacement']) as $field_name) {
-    if (!isset($options['auto_attach'][$field_name])) {
+  foreach (array_keys($entity_info['field replacement']) as $legacy_field) {
+    if (empty($options['auto_attach'][$legacy_field])) {
       continue;
     }
 
     // Do not continue if the replacement field already exists.
+    $field_name = $entity_info['field replacement'][$legacy_field]['field']['field_name'];
     if (field_info_instance($entity_type, $field_name, $bundle)) {
       continue;
     }
 
-    title_field_replacement_toggle($entity_type, $bundle, $field_name);
+    title_field_replacement_toggle($entity_type, $bundle, $legacy_field);
 
     $instance = field_info_instance($entity_type, $field_name, $bundle);
-    $params = array(
-      '@entity_label' => drupal_strtolower($entity_info['label']),
-      '%field_name' => t($entity_info['field replacement'][$field_name]['instance']['label']),
-     );
-
-    drupal_set_message(t('The @entity_label %field_name field was automatically replaced.', $params));
+    if ($instance) {
+      $params = array(
+        '@entity_label' => drupal_strtolower($entity_info['label']),
+        '%field_name' => $instance['label'],
+      );
+      drupal_set_message(t('The @entity_label %field_name field was automatically replaced.', $params));
+    }
   }
 }

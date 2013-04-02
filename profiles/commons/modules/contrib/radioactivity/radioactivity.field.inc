@@ -375,7 +375,7 @@ function radioactivity_field_widget_form(&$form, &$form_state, $field, $instance
     return $element;
   }
 
-  if (isset($items[$delta]) && $items[$delta][RADIOACTIVITY_FIELD_TIMESTAMP] > 0) {
+  if (isset($items[$delta][RADIOACTIVITY_FIELD_TIMESTAMP]) && $items[$delta][RADIOACTIVITY_FIELD_TIMESTAMP] > 0) {
     $seconds = time() - $items[$delta][RADIOACTIVITY_FIELD_TIMESTAMP];
     $minutes = floor($seconds / 60);
     $hours   = floor($minutes / 60);
