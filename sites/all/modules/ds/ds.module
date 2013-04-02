@@ -401,6 +401,7 @@ function ds_get_layout($entity_type, $bundle, $view_mode, $fallback = TRUE) {
  *   Collection of fields.
  */
 function ds_get_fields($entity_type, $cache = TRUE) {
+  global $language;
 
   static $static_fields, $fields_cached = array();
   static $loaded = FALSE;
@@ -408,7 +409,7 @@ function ds_get_fields($entity_type, $cache = TRUE) {
   // Get fields from cache.
   if (!$loaded) {
     $loaded = TRUE;
-    if ($cache && $cached_fields = cache_get('ds_fields:' . $GLOBALS[LANGUAGE_TYPE_CONTENT]->language)) {
+    if ($cache && $cached_fields = cache_get('ds_fields:' . $language->language)) {
       $fields_cached = $static_fields = $cached_fields->data;
     }
   }
@@ -443,7 +444,7 @@ function ds_get_fields($entity_type, $cache = TRUE) {
 
       // Cache the fields.
       if ($cache) {
-        cache_set('ds_fields:' . $GLOBALS[LANGUAGE_TYPE_CONTENT]->language, $fields_cached, 'cache');
+        cache_set('ds_fields:' . $language->language, $fields_cached, 'cache');
       }
     }
     else {
@@ -645,6 +646,7 @@ function ds_field_attach_view_alter(&$build, $context) {
         $build[$key] = array(
           '#theme' => 'field',
           '#field_type' => 'ds',
+          '#skip_edit' => TRUE,
           '#title' => $field['title'],
           '#weight' => isset($field_values[$key]['weight']) ? $field_values[$key]['weight'] : 0,
           '#label_display' => isset($field_values[$key]['label']) ? $field_values[$key]['label'] : 'inline',
@@ -1017,6 +1019,8 @@ function ds_render_block_field($field) {
  */
 function ds_render_field($field) {
 
+  $title_field = FALSE;
+
   $output = '';
   $settings = isset($field['formatter_settings']) ? $field['formatter_settings'] : array();
   $settings += $field['properties']['default'];
@@ -1030,6 +1034,7 @@ function ds_render_field($field) {
       $output = format_username($field['entity']);
     }
     else {
+      $title_field = $field['properties']['entity_render_key'] == 'title' && $field['entity_type'] == 'node' &&
       $output = $field['entity']->{$field['properties']['entity_render_key']};
     }
   }
@@ -1048,9 +1053,15 @@ function ds_render_field($field) {
       $path = $uri_info['path'];
     }
     $output = l($output, $path);
+    if ($title_field) {
+      $output = ds_edit_support('title', $output, $field);
+    }
   }
   else {
     $output = check_plain($output);
+    if ($title_field) {
+      $output = ds_edit_support('title', $output, $field);
+    }
   }
 
   // Wrapper and class.
@@ -1064,22 +1075,48 @@ function ds_render_field($field) {
 }
 
 /**
+ * Support for edit module.
+ *
+ * @param $field_name
+ *   The name of the field.
+ * @param $output
+ *   The output of the field.
+ * @param $field
+ *   The complete field array.
+ *
+ * @return
+ *   The field ready for edit module or the same value in case
+ *   the edit module is not enabled.
+ */
+function ds_edit_support($field_name, $output, $field) {
+
+  if (module_exists('edit')) {
+    $edit_id = "node/" . $field['entity']->nid . "/" . $field_name . "/" . $field['entity']->language . "/" . $field['view_mode'];
+    $output = edit_wrap_pseudofield($output, $edit_id);
+  }
+
+  return $output;
+}
+
+/**
  * Render an author field.
  */
 function ds_render_author_field($field) {
 
   // Users without a user name are anonymous users. These are never linked.
   if (empty($field['entity']->name)) {
-    return check_plain(variable_get('anonymous', t('Anonymous')));
+    $output = check_plain(variable_get('anonymous', t('Anonymous')));
   }
 
   if ($field['formatter'] == 'author') {
-    return $field['entity']->name;
+    $output = check_plain($field['entity']->name);
   }
 
   if ($field['formatter'] == 'author_linked') {
-    return theme('username', array('account' => $field['entity']));
+    $output = theme('username', array('account' => $field['entity']));
   }
+
+  return ds_edit_support('author', $output, $field);
 }
 
 /**
@@ -1100,9 +1137,7 @@ function ds_return_picture($entity) {
 
   // Gravatar support.
   if (module_exists('gravatar')) {
-    if (!isset($entity->mail)) {
-      $entity = _gravatar_load_account($entity);
-    }
+    $entity = _gravatar_load_account($entity);
     $entity->picture = _gravatar_get_account_user_picture($entity);
   }
 
@@ -1156,7 +1191,7 @@ function ds_render_user_picture($field) {
  */
 function ds_render_date_field($field) {
   $date_format = str_replace('ds_post_date_', '', $field['formatter']);
-  return format_date($field['entity']->created, $date_format);
+  return ds_edit_support('created', format_date($field['entity']->created, $date_format), $field);
 }
 
 /**
@@ -1212,7 +1247,7 @@ function ds_field_formatter_view($entity_type, $entity, $field, $instance, $lang
     foreach ($items as $delta => $item) {
       if ($item['tid'] == 'autocreate') {
         // We don't necessarily have a link when this is
-        // an autocreated term, ususally in preview.
+        // an autocreated term, usually in preview.
         // So just send the term as check plained markup.
         $build['#markup'] = check_plain($item['name']);
       }
@@ -1230,7 +1265,8 @@ function ds_field_formatter_view($entity_type, $entity, $field, $instance, $lang
     foreach ($items as $delta => $item) {
       if ($item['tid'] == 'autocreate') {
         // We don't necessarily have a link when this is
-        // an autocreated term, ususally in preview.
+        // an autocreated term, usually in preview.
+        // So just send the term as check plained markup.
         $item_display = check_plain($item['name']);
       }
       else {

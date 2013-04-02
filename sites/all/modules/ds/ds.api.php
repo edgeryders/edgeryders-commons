@@ -553,6 +553,28 @@ function ds_views_row_adv_VIEWS_NAME(&$vars, $view_mode) {
 }
 
 /**
+ * Modify the entity render array in the context of a view.
+ *
+ * @param array $content
+ *   By reference. An entity view render array.
+ * @param array $context
+ *   By reference. An associative array containing:
+ *   - row: The current active row object being rendered.
+ *   - view: By reference. The current view object.
+ *   - view_mode: The view mode which is set in the Views' options.
+ *   - load_comments: The same param passed to each row function.
+ *
+ * @see ds_views_row_render_entity()
+ */
+function hook_ds_views_row_render_entity_alter(&$content, &$context) {
+  if ($context['view_mode'] == 'my_mode') {
+    // Modify the view, or the content render array in the context of a view.
+    $view = &$context['view'];
+    $element = &drupal_array_get_nested_value($content, array('field_example', 0));
+  }
+}
+
+/**
  * Alter the strings used to separate taxonomy terms.
  */
 function hook_ds_taxonomy_term_separators(&$separators) {

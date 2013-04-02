@@ -209,7 +209,7 @@ function ds_shared_form_validate($form, &$form_state) {
   $field->properties = array();
   $field->field = $form_state['values']['field'];
   $field->label = $form_state['values']['name'];
-  $field->ui_limit = $form_state['values']['ui_limit'];
+  $field->ui_limit = str_replace("\r", '', $form_state['values']['ui_limit']);
 
   $entities = $form_state['values']['entities'];
   foreach ($entities as $key => $value) {

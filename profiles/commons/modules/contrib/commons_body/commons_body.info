@@ -2,7 +2,6 @@ name = Commons Body Field
 description = Provides a simple body field for re-use by various Commons content types
 core = 7.x
 package = Commons - Building blocks
-version = 7.x-3.0-alpha1
 project = commons_body
 dependencies[] = features
 dependencies[] = field_sql_storage
@@ -10,9 +9,9 @@ dependencies[] = text
 features[features_api][] = api:1
 features[field_base][] = body
 
-; Information added by drupal.org packaging script on 2013-01-08
-version = "7.x-3.x-dev"
+; Information added by drupal.org packaging script on 2013-02-26
+version = "7.x-3.0+2-dev"
 core = "7.x"
 project = "commons_body"
-datestamp = "1357606017"
+datestamp = "1361839452"
 

@@ -746,20 +746,13 @@ function message_delete_multiple($mids = array()) {
  * Access callback for the message entity.
  */
 function message_access($op, $entity, $account = NULL, $entity_type = 'message') {
-  return user_access('create messages', $account);
+  return user_access('create messages');
 }
 
 /**
  * Access callback for the message type entities.
  */
 function message_type_access($op, $entity, $account, $entity_type) {
-  return user_access('administer message types', $account);
-}
-
-/**
- * Access callback for the message type categories.
- */
-function message_type_category_access($op, $entity, $account, $entity_type) {
   return user_access('administer message types', $account);
 }
 

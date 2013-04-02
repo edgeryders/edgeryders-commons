@@ -3,16 +3,9 @@ name = Commons Tabbed Browsing Widget
 package = "Commons - Building blocks"
 dependencies[] = quicktabs
 dependencies[] = quicktabs_tabstyles
-
-; Information added by drush on 2012-11-21
-version = ""
-project = "commons_bw"
-datestamp = "1353557792"
-
-
-; Information added by drupal.org packaging script on 2013-02-16
-version = "7.x-3.x-dev"
+; Information added by drupal.org packaging script on 2013-02-26
+version = "7.x-3.0+0-dev"
 core = "7.x"
 project = "commons_bw"
-datestamp = "1360975698"
+datestamp = "1361839454"
 

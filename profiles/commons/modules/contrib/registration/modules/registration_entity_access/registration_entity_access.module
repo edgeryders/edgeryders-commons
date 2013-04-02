@@ -24,7 +24,7 @@ function registration_entity_access_registration_entity_settings($settings) {
 /**
  * Implements hook_registration_access().
  */
-function registration_entity_access_registration_access($op, $entity_type, $registration = NULL, $account = NULL) {
+function registration_entity_access_registration_access($op, $registration, $account = NULL) {
   if ($op == 'create' && ($registration->entity_type && $registration->entity_id) && $account) {
     $settings = registration_entity_settings($registration->entity_type, $registration->entity_id);
     $entity_access_roles = & $settings['settings']['registration_entity_access_roles'];

@@ -2,7 +2,6 @@ name = Commons Events - Solr
 description = Provides the Solr based faceted search for events
 core = 7.x
 package = Commons - Search
-version = 7.x-3.x-dev
 project = commons_events_solr
 dependencies[] = apachesolr_search
 dependencies[] = commons_events
@@ -22,9 +21,9 @@ features[page_manager_existing_pages][] = solr_events_search
 features[page_manager_handlers][] = pm_existing_pages_solr_events_search_panel_context
 features[variable][] = pm_existing_pages_disabled_solr_events_search
 
-; Information added by drupal.org packaging script on 2013-02-16
-version = "7.x-3.x-dev"
+; Information added by drupal.org packaging script on 2013-03-28
+version = "7.x-3.1+0-dev"
 core = "7.x"
 project = "commons_events"
-datestamp = "1360975702"
+datestamp = "1364431516"
 

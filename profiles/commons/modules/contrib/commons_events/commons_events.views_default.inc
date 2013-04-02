@@ -51,7 +51,7 @@ function commons_events_views_default_views() {
   $handler->display->display_options['fields']['picture']['relationship'] = 'user_uid';
   $handler->display->display_options['fields']['picture']['label'] = '';
   $handler->display->display_options['fields']['picture']['element_label_colon'] = FALSE;
-  $handler->display->display_options['fields']['picture']['image_style'] = 'thumbnail';
+  $handler->display->display_options['fields']['picture']['image_style'] = '50x50';
   /* Field: User: Name */
   $handler->display->display_options['fields']['name']['id'] = 'name';
   $handler->display->display_options['fields']['name']['table'] = 'users';
@@ -148,7 +148,7 @@ function commons_events_views_default_views() {
   $handler->display->display_options['fields']['field_date']['label'] = '';
   $handler->display->display_options['fields']['field_date']['element_label_colon'] = FALSE;
   $handler->display->display_options['fields']['field_date']['settings'] = array(
-    'format_type' => 'long',
+    'format_type' => 'event_datetime',
     'fromto' => 'both',
     'multiple_number' => '',
     'multiple_from' => '',
@@ -265,7 +265,7 @@ function commons_events_views_default_views() {
   $handler->display->display_options['fields']['field_date']['label'] = '';
   $handler->display->display_options['fields']['field_date']['element_label_colon'] = FALSE;
   $handler->display->display_options['fields']['field_date']['settings'] = array(
-    'format_type' => 'long',
+    'format_type' => 'event_datetime',
     'fromto' => 'both',
     'multiple_number' => '',
     'multiple_from' => '',
@@ -327,16 +327,18 @@ function commons_events_views_default_views() {
   $handler->display->display_options['defaults']['row_options'] = FALSE;
   $handler->display->display_options['defaults']['header'] = FALSE;
   $handler->display->display_options['defaults']['sorts'] = FALSE;
-  /* Sort criterion: Content: Date -  start date (field_date) */
-  $handler->display->display_options['sorts']['field_date_value']['id'] = 'field_date_value';
-  $handler->display->display_options['sorts']['field_date_value']['table'] = 'field_data_field_date';
-  $handler->display->display_options['sorts']['field_date_value']['field'] = 'field_date_value';
   /* Sort criterion: Content: Promoted to front page */
   $handler->display->display_options['sorts']['promote']['id'] = 'promote';
   $handler->display->display_options['sorts']['promote']['table'] = 'node';
   $handler->display->display_options['sorts']['promote']['field'] = 'promote';
   $handler->display->display_options['sorts']['promote']['exposed'] = TRUE;
   $handler->display->display_options['sorts']['promote']['expose']['label'] = 'Featured';
+  /* Sort criterion: Content: Date -  start date (field_date) */
+  $handler->display->display_options['sorts']['field_date_value']['id'] = 'field_date_value';
+  $handler->display->display_options['sorts']['field_date_value']['table'] = 'field_data_field_date';
+  $handler->display->display_options['sorts']['field_date_value']['field'] = 'field_date_value';
+  $handler->display->display_options['sorts']['field_date_value']['exposed'] = TRUE;
+  $handler->display->display_options['sorts']['field_date_value']['expose']['label'] = 'Date';
   $export['commons_events_upcoming'] = $view;
 
   $view = new view();
@@ -438,6 +440,7 @@ function commons_events_views_default_views() {
     'comment_count' => 'comment_count',
   );
   $handler->display->display_options['defaults']['row_options'] = FALSE;
+  $handler->display->display_options['defaults']['empty'] = FALSE;
   $handler->display->display_options['defaults']['fields'] = FALSE;
   /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
@@ -505,13 +508,6 @@ function commons_events_views_default_views() {
   );
   $handler->display->display_options['defaults']['row_options'] = FALSE;
   $handler->display->display_options['defaults']['empty'] = FALSE;
-  /* No results behavior: Global: Text area */
-  $handler->display->display_options['empty']['area']['id'] = 'area';
-  $handler->display->display_options['empty']['area']['table'] = 'views';
-  $handler->display->display_options['empty']['area']['field'] = 'area';
-  $handler->display->display_options['empty']['area']['empty'] = TRUE;
-  $handler->display->display_options['empty']['area']['content'] = 'You have not created any events.';
-  $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
   $handler->display->display_options['defaults']['relationships'] = FALSE;
   $handler->display->display_options['defaults']['fields'] = FALSE;
   /* Field: Content: Title */
@@ -579,13 +575,6 @@ function commons_events_views_default_views() {
   );
   $handler->display->display_options['defaults']['row_options'] = FALSE;
   $handler->display->display_options['defaults']['empty'] = FALSE;
-  /* No results behavior: Global: Text area */
-  $handler->display->display_options['empty']['area']['id'] = 'area';
-  $handler->display->display_options['empty']['area']['table'] = 'views';
-  $handler->display->display_options['empty']['area']['field'] = 'area';
-  $handler->display->display_options['empty']['area']['empty'] = TRUE;
-  $handler->display->display_options['empty']['area']['content'] = 'You are not following any upcoming events.';
-  $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
   $handler->display->display_options['defaults']['relationships'] = FALSE;
   /* Relationship: Flags: commons_follow_node */
   $handler->display->display_options['relationships']['flag_content_rel']['id'] = 'flag_content_rel';
@@ -633,6 +622,65 @@ function commons_events_views_default_views() {
   $handler->display->display_options['fields']['comment_count']['separator'] = '';
   $handler->display->display_options['defaults']['arguments'] = FALSE;
   $export['commons_events_user_upcoming_events'] = $view;
+
+  $view = new view();
+  $view->name = 'commons_events_organizers';
+  $view->description = 'Event organizer panel pane.';
+  $view->tag = 'commons_events';
+  $view->base_table = 'node';
+  $view->human_name = 'Commons Events - Organizers';
+  $view->core = 7;
+  $view->api_version = '3.0';
+  $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+
+  /* Display: Master */
+  $handler = $view->new_display('default', 'Master', 'default');
+  $handler->display->display_options['title'] = 'Organizers';
+  $handler->display->display_options['use_more_always'] = FALSE;
+  $handler->display->display_options['access']['type'] = 'perm';
+  $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
+  $handler->display->display_options['exposed_form']['type'] = 'basic';
+  $handler->display->display_options['pager']['type'] = 'none';
+  $handler->display->display_options['pager']['options']['offset'] = '0';
+  $handler->display->display_options['style_plugin'] = 'grid';
+  $handler->display->display_options['row_plugin'] = 'fields';
+  /* Relationship: Entity Reference: Referenced Entity */
+  $handler->display->display_options['relationships']['field_organizers_target_id']['id'] = 'field_organizers_target_id';
+  $handler->display->display_options['relationships']['field_organizers_target_id']['table'] = 'field_data_field_organizers';
+  $handler->display->display_options['relationships']['field_organizers_target_id']['field'] = 'field_organizers_target_id';
+  $handler->display->display_options['relationships']['field_organizers_target_id']['required'] = TRUE;
+  /* Field: User: Picture */
+  $handler->display->display_options['fields']['picture']['id'] = 'picture';
+  $handler->display->display_options['fields']['picture']['table'] = 'users';
+  $handler->display->display_options['fields']['picture']['field'] = 'picture';
+  $handler->display->display_options['fields']['picture']['relationship'] = 'field_organizers_target_id';
+  $handler->display->display_options['fields']['picture']['label'] = '';
+  $handler->display->display_options['fields']['picture']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['picture']['image_style'] = '50x50';
+  /* Contextual filter: Content: Nid */
+  $handler->display->display_options['arguments']['nid']['id'] = 'nid';
+  $handler->display->display_options['arguments']['nid']['table'] = 'node';
+  $handler->display->display_options['arguments']['nid']['field'] = 'nid';
+  $handler->display->display_options['arguments']['nid']['default_action'] = 'not found';
+  $handler->display->display_options['arguments']['nid']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['nid']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['nid']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['nid']['summary_options']['items_per_page'] = '25';
+
+  /* Display: Content pane */
+  $handler = $view->new_display('panel_pane', 'Content pane', 'panel_pane_1');
+  $handler->display->display_options['argument_input'] = array(
+    'nid' => array(
+      'type' => 'context',
+      'context' => 'entity:node.nid',
+      'context_optional' => 0,
+      'panel' => '0',
+      'fixed' => '',
+      'label' => 'Content: Nid',
+    ),
+  );
+  $export['commons_events_organizers'] = $view;
 
   return $export;
 }

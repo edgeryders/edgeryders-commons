@@ -31,7 +31,7 @@ function commons_events_field_default_field_instances() {
           'trim_length' => 600,
         ),
         'type' => 'text_summary_or_trimmed',
-        'weight' => 0,
+        'weight' => '3',
       ),
     ),
     'entity_type' => 'node',
@@ -39,7 +39,7 @@ function commons_events_field_default_field_instances() {
     'label' => 'Description',
     'required' => 1,
     'settings' => array(
-      'display_summary' => 1,
+      'display_summary' => FALSE,
       'text_processing' => '1',
       'user_register_form' => FALSE,
     ),
@@ -85,10 +85,16 @@ function commons_events_field_default_field_instances() {
         'weight' => '2',
       ),
       'teaser' => array(
-        'label' => 'above',
-        'settings' => array(),
-        'type' => 'hidden',
-        'weight' => 0,
+        'label' => 'hidden',
+        'module' => 'addressfield',
+        'settings' => array(
+          'format_handlers' => array(
+            0 => 'address'
+          ),
+          'use_widget_handlers' => 1,
+        ),
+        'type' => 'addressfield_default',
+        'weight' => '2',
       ),
     ),
     'entity_type' => 'node',
@@ -112,7 +118,7 @@ function commons_events_field_default_field_instances() {
         ),
       ),
       'type' => 'addressfield_standard',
-      'weight' => '6',
+      'weight' => '8',
     ),
   );
 
@@ -126,7 +132,7 @@ function commons_events_field_default_field_instances() {
         'label' => 'hidden',
         'module' => 'date',
         'settings' => array(
-          'format_type' => 'long',
+          'format_type' => 'event_datetime',
           'fromto' => 'both',
           'multiple_from' => '',
           'multiple_number' => '',
@@ -136,10 +142,14 @@ function commons_events_field_default_field_instances() {
         'weight' => '1',
       ),
       'teaser' => array(
-        'label' => 'above',
-        'settings' => array(),
-        'type' => 'hidden',
-        'weight' => 0,
+        'label' => 'hidden',
+        'module' => 'date',
+        'settings' => array(
+          'format_type' => 'event_datetime',
+          'fromto' => 'both',
+        ),
+        'type' => 'date_default',
+        'weight' => '1',
       ),
     ),
     'entity_type' => 'node',
@@ -165,7 +175,7 @@ function commons_events_field_default_field_instances() {
         'year_range' => '-3:+3',
       ),
       'type' => 'date_popup',
-      'weight' => '4',
+      'weight' => '5',
     ),
   );
 
@@ -190,7 +200,7 @@ function commons_events_field_default_field_instances() {
         'label' => 'above',
         'settings' => array(),
         'type' => 'hidden',
-        'weight' => 0,
+        'weight' => '0',
       ),
     ),
     'entity_type' => 'node',
@@ -205,7 +215,7 @@ function commons_events_field_default_field_instances() {
       'module' => 'options',
       'settings' => array(),
       'type' => 'options_select',
-      'weight' => '5',
+      'weight' => '7',
     ),
   );
 
@@ -220,16 +230,19 @@ function commons_events_field_default_field_instances() {
         'module' => 'image',
         'settings' => array(
           'image_link' => '',
-          'image_style' => '',
+          'image_style' => '50x50',
         ),
         'type' => 'image',
         'weight' => '0',
       ),
       'teaser' => array(
         'label' => 'hidden',
-        'settings' => array(),
-        'type' => 'hidden',
-        'weight' => 0,
+        'module' => 'image',
+        'settings' => array(
+          'image_style' => '50x50',
+        ),
+        'type' => 'image',
+        'weight' => '0',
       ),
     ),
     'entity_type' => 'node',
@@ -251,11 +264,11 @@ function commons_events_field_default_field_instances() {
       'active' => 1,
       'module' => 'image',
       'settings' => array(
-        'preview_image_style' => 'thumbnail',
+        'preview_image_style' => '50x50',
         'progress_indicator' => 'throbber',
       ),
       'type' => 'image_image',
-      'weight' => '8',
+      'weight' => '9',
     ),
   );
 
@@ -299,7 +312,7 @@ function commons_events_field_default_field_instances() {
       'module' => 'number',
       'settings' => array(),
       'type' => 'number',
-      'weight' => '11',
+      'weight' => '12',
     ),
   );
 
@@ -339,6 +352,55 @@ function commons_events_field_default_field_instances() {
         'size' => '60',
       ),
       'type' => 'text_textfield',
+      'weight' => '3',
+    ),
+  );
+
+  // Exported field_instance: 'node-event-field_organizers'
+  $field_instances['node-event-field_organizers'] = array(
+    'bundle' => 'event',
+    'default_value' => NULL,
+    'default_value_function' => '',
+    'deleted' => '0',
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'entityreference',
+        'settings' => array(
+          'link' => FALSE,
+        ),
+        'type' => 'hidden',
+        'weight' => 12,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_organizers',
+    'label' => 'Organizers',
+    'required' => 1,
+    'settings' => array(
+      'behaviors' => array(
+        'prepopulate' => array(
+          'status' => 0,
+        ),
+      ),
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'entityreference',
+      'settings' => array(
+        'match_operator' => 'CONTAINS',
+        'path' => '',
+        'size' => '60',
+      ),
+      'type' => 'entityreference_autocomplete_tags',
       'weight' => '2',
     ),
   );
@@ -398,7 +460,7 @@ function commons_events_field_default_field_instances() {
       'module' => 'registration',
       'settings' => array(),
       'type' => 'registration_select',
-      'weight' => '9',
+      'weight' => '10',
     ),
   );
 
@@ -434,7 +496,7 @@ function commons_events_field_default_field_instances() {
       'module' => 'options',
       'settings' => array(),
       'type' => 'options_select',
-      'weight' => '10',
+      'weight' => '11',
     ),
   );
 
@@ -474,7 +536,7 @@ function commons_events_field_default_field_instances() {
         'size' => 60,
       ),
       'type' => 'taxonomy_autocomplete',
-      'weight' => '12',
+      'weight' => '13',
     ),
   );
 
@@ -487,6 +549,7 @@ function commons_events_field_default_field_instances() {
   t('Event logo');
   t('Location');
   t('Maximum number of attendees');
+  t('Organizers');
   t('Registration');
   t('Registration type');
   t('URL');

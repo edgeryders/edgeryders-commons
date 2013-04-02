@@ -213,6 +213,7 @@ function ds_search_settings($form, $form_state) {
     '#type' => 'textfield',
     '#default_value' => variable_get('ds_search_node_limit', 10),
     '#title' => t('Node search limit'),
+    '#description' => t('The number of items to display per page. Enter 0 for no limit.'),
   );
 
   if (module_exists('apachesolr')) {

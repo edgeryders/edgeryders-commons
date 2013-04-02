@@ -19,9 +19,9 @@ features[panelizer_defaults][] = node:group:default
 features[panelizer_defaults][] = node:group:default:teaser
 features[variable][] = panelizer_defaults_node_group
 
-; Information added by drupal.org packaging script on 2013-02-08
-version = "7.x-3.x-dev"
+; Information added by drupal.org packaging script on 2013-03-28
+version = "7.x-3.0+20-dev"
 core = "7.x"
 project = "commons_groups"
-datestamp = "1360284584"
+datestamp = "1364431523"
 

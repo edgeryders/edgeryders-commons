@@ -572,7 +572,7 @@ class RegistrationAPITestCase extends RegistrationTestCase {
     $registration = $this->createRegistration($registration_values);
     $random = $this->randomString();
     $registration->hook_registration_access = $random;
-    $this->assertEqual($random, module_invoke('registration_test_api', 'registration_access', 'view', $registration, $account, 'registration'), t('Manually invoke hook_registration_access()'), 'Registration');
+    $this->assertEqual($random, module_invoke('registration_test_api', 'registration_access', 'view', $registration, $account), t('Manually invoke hook_registration_access()'), 'Registration');
 
     // Default access (none)
     foreach ($crud as $op) {

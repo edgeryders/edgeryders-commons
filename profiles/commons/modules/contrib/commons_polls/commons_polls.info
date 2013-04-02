@@ -3,7 +3,6 @@ description = Commons poll content type
 core = 7.x
 package = Commons - Content types
 php = 5.2.4
-version = 7.x-3.0-alpha1
 project = commons_polls
 dependencies[] = commons_body
 dependencies[] = commons_topics
@@ -46,9 +45,9 @@ features[variable][] = node_options_poll
 features[variable][] = node_preview_poll
 features[variable][] = node_submitted_poll
 features[views_view][] = commons_bw_polls
-; Information added by drupal.org packaging script on 2013-02-05
-version = "7.x-3.x-dev"
+; Information added by drupal.org packaging script on 2013-04-02
+version = "7.x-3.0+1-dev"
 core = "7.x"
 project = "commons_polls"
-datestamp = "1360068531"
+datestamp = "1364863480"
 

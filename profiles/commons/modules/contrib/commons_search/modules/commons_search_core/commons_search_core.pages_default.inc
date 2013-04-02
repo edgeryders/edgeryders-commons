@@ -19,7 +19,7 @@ function commons_search_core_default_page_manager_handlers() {
   $handler->handler = 'panel_context';
   $handler->weight = 0;
   $handler->conf = array(
-    'title' => 'Search',
+    'title' => 'Non-empty keywords, two column',
     'no_blocks' => 0,
     'pipeline' => 'ipe',
     'body_classes_to_remove' => '',
@@ -28,6 +28,20 @@ function commons_search_core_default_page_manager_handlers() {
     'css' => '',
     'contexts' => array(),
     'relationships' => array(),
+    'access' => array(
+      'plugins' => array(
+        0 => array(
+          'name' => 'string_length',
+          'settings' => array(
+            'operator' => '>',
+            'length' => '0',
+          ),
+          'context' => 'argument_string_1',
+          'not' => FALSE,
+        ),
+      ),
+      'logic' => 'and',
+    ),
   );
   $display = new panels_display();
   $display->layout = 'two_33_66';
@@ -169,7 +183,7 @@ function commons_search_core_default_page_manager_handlers() {
       'no_key' => '',
       'no_key_format' => 'plain_text',
       'context' => 'argument_string_1',
-      'override_title' => 0,
+      'override_title' => 1,
       'override_title_text' => '',
     );
     $pane->cache = array();
@@ -210,10 +224,93 @@ function commons_search_core_default_page_manager_handlers() {
     $pane->locks = array();
     $display->content['new-7'] = $pane;
     $display->panels['two_33_66_top'][0] = 'new-7';
-  $display->hide_title = PANELS_TITLE_FIXED;
+  $display->hide_title = PANELS_TITLE_PANE;
   $display->title_pane = 'new-6';
   $handler->conf['display'] = $display;
   $export['search_search_facetapi_panel_context'] = $handler;
+
+  $handler = new stdClass();
+  $handler->disabled = FALSE; /* Edit this to true to make a default handler disabled initially */
+  $handler->api_version = 1;
+  $handler->name = 'search_search_facetapi_panel_context_2';
+  $handler->task = 'search';
+  $handler->subtask = 'search_facetapi';
+  $handler->handler = 'panel_context';
+  $handler->weight = 1;
+  $handler->conf = array(
+    'title' => 'Empty keywords, single column',
+    'no_blocks' => 0,
+    'pipeline' => 'ipe',
+    'body_classes_to_remove' => '',
+    'body_classes_to_add' => '',
+    'css_id' => '',
+    'css' => '',
+    'contexts' => array(),
+    'relationships' => array(),
+    'access' => array(
+      'plugins' => array(
+        0 => array(
+          'name' => 'string_length',
+          'settings' => array(
+            'operator' => '=',
+            'length' => '0',
+          ),
+          'context' => 'argument_string_1',
+          'not' => FALSE,
+        ),
+      ),
+      'logic' => 'and',
+    ),
+  );
+  $display = new panels_display();
+  $display->layout = 'one';
+  $display->layout_settings = array();
+  $display->panel_settings = array(
+    'style_settings' => array(
+      'default' => NULL,
+      'two_33_66_top' => NULL,
+      'two_33_66_first' => NULL,
+      'two_33_66_second' => NULL,
+      'two_33_66_bottom' => NULL,
+      'one_main' => NULL,
+    ),
+  );
+  $display->cache = array();
+  $display->title = '';
+  $display->content = array();
+  $display->panels = array();
+    $pane = new stdClass();
+    $pane->pid = 'new-8';
+    $pane->panel = 'one_main';
+    $pane->type = 'search_form';
+    $pane->subtype = 'search_form';
+    $pane->shown = TRUE;
+    $pane->access = array();
+    $pane->configuration = array(
+      'type' => 'search_facetapi',
+      'form' => 'simple',
+      'path_type' => 'default',
+      'path' => '',
+      'override_prompt' => 0,
+      'prompt' => '',
+      'context' => 'argument_string_1',
+      'override_title' => 0,
+      'override_title_text' => '',
+    );
+    $pane->cache = array();
+    $pane->style = array(
+      'settings' => NULL,
+    );
+    $pane->css = array();
+    $pane->extras = array();
+    $pane->position = 0;
+    $pane->locks = array();
+    $display->content['new-8'] = $pane;
+    $display->panels['one_main'][0] = 'new-8';
+  $display->hide_title = PANELS_TITLE_PANE;
+  $display->title_pane = '0';
+  $handler->conf['display'] = $display;
+  $export['search_search_facetapi_panel_context_2'] = $handler;
 
   return $export;
 }

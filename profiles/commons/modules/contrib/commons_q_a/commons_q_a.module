@@ -7,6 +7,19 @@
 include_once 'commons_q_a.features.inc';
 
 /**
+ * Implements hook_theme().
+ */
+function commons_q_a_theme() {
+  return array(
+    'rate_template_commons_thumbs_up_down' => array(
+      'variables' => array('links' => NULL, 'results' => NULL, 'mode' => NULL, 'just_voted' => FALSE, 'content_type' => NULL, 'content_id' => NULL, 'display_options' => NULL),
+      'template' => 'commons-thumbs-up-down',
+    ),
+  );
+}
+
+
+/**
 * Implements hook_commons_bw_group_widget().
 */
 function commons_q_a_commons_bw_group_widget() {
@@ -21,6 +34,27 @@ function commons_q_a_commons_bw_group_widget() {
   );
 }
 
+function commons_q_a_node_view($node, $view_mode) {
+  if($node->type == 'question' && $view_mode == 'full') {
+    // Remove add comment link.
+    unset($node->content['links']['comment']);
+    // Add the answer link below.
+    $node->content['links']['answer'] = array(
+      '#theme' => 'links__node__answer',
+      '#links' => array(
+        'answer-add' => array(
+          'title' => t('Answer'),
+          'attributes' => array(
+            'title' => t('Answer this question')
+          ),
+          'href' => 'node/'.$node->nid,
+          'fragment' => 'answer',
+        ),
+      ),
+    );
+    return $node;
+  }
+}
 /**
  * Implements hook_views_default_views_alter().
  */
@@ -67,7 +101,7 @@ function commons_q_a_views_pre_render(&$view) {
         $_GET['field_related_question'] = $view->args[0];
         $answer_form = drupal_get_form('answer_node_form', $node);
         $answer_form['header'] = array(
-          '#markup' => '<h3>' . t('Add a new answer') . '</h3>',
+          '#markup' => '<h3 id="answer" name="answer">' . t('Add a new answer') . '</h3>',
           '#weight' => -10,
         );
         // Hide any vertical tabs that might be present.
@@ -84,6 +118,18 @@ function commons_q_a_views_pre_render(&$view) {
   }
 }
 
+/*
+ * Implements hook_module_implements_alter().
+ * Set commons_q_a form alter to happen after node so the title doesn't get reset.
+ */
+function commons_q_a_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'form_alter') {
+    $group = $implementations['commons_q_a'];
+    unset($implementations['commons_q_a']);
+    $implementations['commons_q_a'] = $group;
+  }
+}
+
 /**
 * Implements hook_form_alter().
 */
@@ -94,8 +140,24 @@ function commons_q_a_form_alter(&$form, &$form_state, $form_id) {
     $form['og_group_ref']['#access'] = FALSE;
     $form['actions']['submit']['#submit'][] = 'commons_q_a_answer_submit';
   }
-  if ($form_id == 'question_node_form' && empty($form['node']->nid)) {
-    drupal_set_title(t('Ask a question'));
+  if ($form_id == 'question_node_form' && empty($form['#node']->nid)) {
+    drupal_set_title('Ask a question');
+  }
+  if ($form_id == 'comment_node_question_form' || $form_id == 'comment_node_answer_form') {
+    $form['container'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Add new comment'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => 2,
+    );
+    $form['container']['author'] = $form['author'];
+    $form['container']['comment_body'] = $form['comment_body'];
+    $form['container']['actions'] = $form['actions'];
+    unset($form['author']);
+    unset($form['subject']);  // We don't need a subject, they're pointless within comments.
+    unset($form['comment_body']);
+    unset($form['actions']);
   }
 }
 
@@ -115,7 +177,7 @@ function commons_q_a_field_attach_submit($entity_type, &$entity, $form, &$form_s
  */
 function commons_q_a_commons_bw_create_all_widget($group) {
    if (og_user_access('node', $group->nid, 'create question content')) {
-      $link = l('Ask a question','node/add/question',
+      $link = l(t('Ask a question'),'node/add/question',
       array('attributes' => array('class' => 'commons-q-a-create'), 'query' => array('og_group_ref' => $group->nid))
     );
     return array(
@@ -162,6 +224,53 @@ function commons_q_a_commons_activity_streams_message_selection_alter(&$message_
   }
 }
 
+/**
+ * Preprocess function for the commons_like template.
+ */
+function commons_q_a_preprocess_rate_template_commons_thumbs_up_down(&$variables) {
+  extract($variables);
+
+  $up_classes = 'rate-number-up-down-btn-up';
+  $down_classes = 'rate-number-up-down-btn-down';
+  if (isset($results['user_vote'])) {
+    switch ($results['user_vote']) {
+      case $links[0]['value']:
+        $up_classes .= ' rate-voted';
+        break;
+      case $links[1]['value']:
+        $down_classes .= ' rate-voted';
+        break;
+    }
+  }
+
+  $variables['up_button'] = theme('rate_button', array('text' => $links[0]['text'], 'href' => $links[0]['href'], 'class' => $up_classes));
+  $variables['down_button'] = theme('rate_button', array('text' => $links[1]['text'], 'href' => $links[1]['href'], 'class' => $down_classes));
+  if ($results['rating'] > 0) {
+    $score = $results['rating'];
+    $score_class = 'positive';
+  }
+  elseif ($results['rating'] < 0) {
+    $score = $results['rating'];
+    $score_class = 'negative';
+  }
+  else {
+    $score = 0;
+    $score_class = 'neutral';
+  }
+  $variables['score'] = $score;
+  $variables['score_class'] = $score_class;
+
+  $info = array();
+  if ($mode == RATE_CLOSED) {
+    $info[] = t('Voting is closed.');
+  }
+  if ($mode != RATE_COMPACT && $mode != RATE_COMPACT_DISABLED) {
+    if (isset($results['user_vote'])) {
+      $info[] = t('You voted \'@option\'.', array('@option' => $results['user_vote'] == 1 ? $links[0]['text'] : $links[1]['text']));
+    }
+  }
+  $variables['info'] = implode(' ', $info);
+}
 
 /**
  * Implements hook_rate_templates().
@@ -175,8 +284,8 @@ function commons_q_a_rate_templates() {
     array(1, 'up'),
     array(-1, 'down'),
   );
-  $templates['commons_thumbs_up_down']->theme = 'commons_template_commons_thumbs_up_down';
-  $templates['commons_thumbs_up_down']->css = drupal_get_path('module', 'commons_q_a') . '/templates/commons_thumbs_up_down/commons-thumbs-up-down.css';
+  $templates['commons_thumbs_up_down']->theme = 'rate_template_commons_thumbs_up_down';
+  $templates['commons_thumbs_up_down']->css = drupal_get_path('module', 'commons_q_a') . '/commons-thumbs-up-down.css';
   $templates['commons_thumbs_up_down']->customizable = FALSE;
   $templates['commons_thumbs_up_down']->translate = TRUE;
   $templates['commons_thumbs_up_down']->use_source_translation = TRUE;
@@ -232,15 +341,15 @@ function commons_q_a_rate_widget() {
       1 => 0,
     ),
     'allow_voting_by_author' => 1,
-    'noperm_behaviour' => '1',
+    'noperm_behaviour' => '3',
     'displayed' => '1',
-    'displayed_just_voted' => '2',
+    'displayed_just_voted' => '1',
     'description' => '',
     'description_in_compact' => TRUE,
     'delete_vote_on_second_click' => '1',
     'value_type' => 'points',
-    'theme' => 'commons_template_commons_thumbs_up_down',
-    'css' => 'profiles/commons/modules/contrib/commons_q_a/templates/commons_thumbs_up_down/commons-thumbs-up-down.css',
+    'theme' => 'rate_template_commons_thumbs_up_down',
+    'css' => 'profiles/commons/modules/contrib/commons_q_a/commons-thumbs-up-down.css',
     'translate' => TRUE,
     'use_source_translation' => TRUE,
   );

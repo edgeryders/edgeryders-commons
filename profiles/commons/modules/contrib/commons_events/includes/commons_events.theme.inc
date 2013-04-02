@@ -10,6 +10,7 @@
 function theme_commons_events_attending_event($variables = array()) {
   global $user;
   $event = $variables['event'];
+  $attendee_count = $variables['attendee_count'];
   if (!registration_status('node', $event->nid, TRUE)) {
     return "";
   }
@@ -18,6 +19,7 @@ function theme_commons_events_attending_event($variables = array()) {
     'entity_type' => 'node',
     'entity_id' => $event->nid,
     'type' => $registration_type,
+    'author_uid' => $user->uid,
   ));
   if (!function_exists('commons_events_attend_event_form')
     || !function_exists('commons_events_cancel_event_form')) {
@@ -25,7 +27,7 @@ function theme_commons_events_attending_event($variables = array()) {
   }
   if (!registration_is_registered($registration, NULL, $user->uid)
     && registration_access('create', $registration, $user, $registration->type)) {
-    return drupal_get_form('commons_events_attend_event_form', $event, $registration);
+    return drupal_get_form('commons_events_attend_event_form', $event, $registration, $attendee_count);
   }
   else if (registration_access('delete', $registration, $user, $registration->type)) {
     return drupal_get_form('commons_events_cancel_event_form', $event);

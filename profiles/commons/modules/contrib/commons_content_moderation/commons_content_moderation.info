@@ -21,9 +21,9 @@ features[views_view][] = commons_content_moderation_reported_comments
 features[views_view][] = commons_content_moderation_reported_nodes
 features_exclude[dependencies][features] = features
 
-; Information added by drupal.org packaging script on 2013-02-05
-version = "7.x-3.x-dev"
+; Information added by drupal.org packaging script on 2013-03-27
+version = "7.x-3.1"
 core = "7.x"
 project = "commons_content_moderation"
-datestamp = "1360025327"
+datestamp = "1364416512"
 

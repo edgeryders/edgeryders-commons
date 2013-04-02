@@ -3,7 +3,6 @@ description = Allows community members to ask questions and vote for the best an
 core = 7.x
 package = Commons - Content types
 php = 5.2.4
-version = 7.x-3.0-alpha1
 project = commons_q_a
 dependencies[] = ctools
 dependencies[] = entity
@@ -89,10 +88,9 @@ features_exclude[field_instance][node-question-og_group_ref_other_groups] = node
 features_exclude[field_instance][og_group_ref] = og_group_ref
 features_exclude[field_instance][node-answer-og_group_ref] = node-answer-og_group_ref
 features_exclude[field_instance][node-question-og_group_ref] = node-question-og_group_ref
-
-; Information added by drupal.org packaging script on 2013-02-10
-version = "7.x-3.x-dev"
+; Information added by drupal.org packaging script on 2013-04-02
+version = "7.x-3.1+1-dev"
 core = "7.x"
 project = "commons_q_a"
-datestamp = "1360457795"
+datestamp = "1364863485"
 

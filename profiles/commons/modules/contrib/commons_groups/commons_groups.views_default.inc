@@ -47,7 +47,7 @@ function commons_groups_views_default_views() {
   $handler->display->display_options['empty']['area']['id'] = 'area';
   $handler->display->display_options['empty']['area']['table'] = 'views';
   $handler->display->display_options['empty']['area']['field'] = 'area';
-  $handler->display->display_options['empty']['area']['content'] = 'There are no results.';
+  $handler->display->display_options['empty']['area']['content'] = 'Nobody has posted into this group yet.';
   $handler->display->display_options['empty']['area']['format'] = 'plain_text';
   /* Relationship: OG membership: OG membership from Node */
   $handler->display->display_options['relationships']['og_membership_rel']['id'] = 'og_membership_rel';
@@ -119,7 +119,7 @@ function commons_groups_views_default_views() {
 
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
-  $handler->display->display_options['title'] = 'Contributors';
+  $handler->display->display_options['title'] = 'Group contributors';
   $handler->display->display_options['use_more'] = TRUE;
   $handler->display->display_options['use_more_always'] = FALSE;
   $handler->display->display_options['access']['type'] = 'perm';
@@ -169,14 +169,11 @@ function commons_groups_views_default_views() {
   $handler->display->display_options['filters']['status']['value'] = '1';
   $handler->display->display_options['filters']['status']['group'] = 1;
   $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
-  /* Filter criterion: User: Picture */
-  $handler->display->display_options['filters']['picture']['id'] = 'picture';
-  $handler->display->display_options['filters']['picture']['table'] = 'users';
-  $handler->display->display_options['filters']['picture']['field'] = 'picture';
-  $handler->display->display_options['filters']['picture']['value'] = '1';
 
   /* Display: group teaser */
   $handler = $view->new_display('panel_pane', 'group teaser', 'panel_pane_1');
+  $handler->display->display_options['defaults']['title'] = FALSE;
+  $handler->display->display_options['title'] = 'Recent contributors';
   $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
   $handler->display->display_options['defaults']['pager'] = FALSE;
   $handler->display->display_options['pager']['type'] = 'some';
@@ -253,6 +250,7 @@ function commons_groups_views_default_views() {
   $handler->display->display_options['fields']['picture']['field'] = 'picture';
   $handler->display->display_options['fields']['picture']['label'] = '';
   $handler->display->display_options['fields']['picture']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['picture']['image_style'] = '50x50';
   /* Field: OG membership: OG user roles in group */
   $handler->display->display_options['fields']['og_roles']['id'] = 'og_roles';
   $handler->display->display_options['fields']['og_roles']['table'] = 'og_membership';
@@ -261,7 +259,7 @@ function commons_groups_views_default_views() {
   $handler->display->display_options['fields']['og_roles']['label'] = '';
   $handler->display->display_options['fields']['og_roles']['exclude'] = TRUE;
   $handler->display->display_options['fields']['og_roles']['element_label_colon'] = FALSE;
-  $handler->display->display_options['fields']['og_roles']['type'] = 'ul';
+  $handler->display->display_options['fields']['og_roles']['empty'] = 'Contributors';
   $handler->display->display_options['argument_input'] = array(
     'gid' => array(
       'type' => 'context',
@@ -853,6 +851,7 @@ function commons_groups_views_default_views() {
   $handler->display->display_options['fields']['picture']['field'] = 'picture';
   $handler->display->display_options['fields']['picture']['label'] = '';
   $handler->display->display_options['fields']['picture']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['picture']['image_style'] = '50x50';
   /* Sort criterion: User: Created date */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
   $handler->display->display_options['sorts']['created']['table'] = 'users';
@@ -865,11 +864,6 @@ function commons_groups_views_default_views() {
   $handler->display->display_options['filters']['status']['value'] = '1';
   $handler->display->display_options['filters']['status']['group'] = 1;
   $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
-  /* Filter criterion: User: Picture */
-  $handler->display->display_options['filters']['picture']['id'] = 'picture';
-  $handler->display->display_options['filters']['picture']['table'] = 'users';
-  $handler->display->display_options['filters']['picture']['field'] = 'picture';
-  $handler->display->display_options['filters']['picture']['value'] = '1';
 
   /* Display: Content pane */
   $handler = $view->new_display('panel_pane', 'Content pane', 'panel_pane_1');
@@ -892,7 +886,7 @@ function commons_groups_views_default_views() {
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['title'] = 'Groups';
-  $handler->display->display_options['use_ajax'] = TRUE;
+  $handler->display->display_options['use_ajax'] = FALSE;
   $handler->display->display_options['use_more_always'] = FALSE;
   $handler->display->display_options['access']['type'] = 'perm';
   $handler->display->display_options['cache']['type'] = 'none';

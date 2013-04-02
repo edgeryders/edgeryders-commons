@@ -2,7 +2,7 @@
 
 /**
  * CKEditor - The text editor for the Internet - http://ckeditor.com
- * Copyright (c) 2003-2013, CKSource - Frederico Knabben. All rights reserved.
+ * Copyright (c) 2003-2012, CKSource - Frederico Knabben. All rights reserved.
  *
  * == BEGIN LICENSE ==
  *
@@ -361,22 +361,14 @@ function ckeditor_module_path($mode = 'relative') {
  *   Path of library in the Drupal installation.
  */
 function ckeditor_library_path($mode = 'relative') {
-  $lib_path = 'sites/all/libraries';
-
-  if (function_exists('libraries_get_path')) {
-    $path = libraries_get_path('ckeditor');
-    if ($path !== FALSE) {
-      $lib_path = drupal_substr($path, 0, strlen($path) - 9);
-    }
-  }
   switch ($mode) {
     default:
     case 'relative':
-      return ckeditor_base_path('relative') . '/' . $lib_path;
+      return ckeditor_base_path('relative') . '/sites/all/libraries';
     case 'local':
-      return ckeditor_base_path('local') . '/' . $lib_path;
+      return ckeditor_base_path('local') . '/sites/all/libraries';
     case 'url':
-      return $lib_path;
+      return 'sites/all/libraries';
   }
 }
 
@@ -611,10 +603,6 @@ function ckeditor_file_download($uri) {
  */
 function ckeditor_modules_enabled($modules) {
   module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
-  if (in_array('libraries', $modules)) {
-    // Check and update path to CKEditor in the global profile
-    _ckeditor_requirements_isinstalled();
-  }
   $profiles_list = ckeditor_profile_input_formats();
   $plugins_list = ckeditor_load_plugins();
   foreach ($profiles_list AS $_profile => $_inputs) {
@@ -650,7 +638,6 @@ function ckeditor_modules_disabled($modules) {
   foreach ($profiles_list AS $_profile => $_inputs) {
     $changed = FALSE;
     $profile = ckeditor_profile_load($_profile);
-    if (!isset($profile->settings['loadPlugins'])) continue;
     foreach (array_keys((array) $profile->settings['loadPlugins']) as $plugin_name) {
       if (!array_key_exists($plugin_name, $plugins_list)) {
         $profile->settings['loadPlugins'][$plugin_name]['active'] = 0;
@@ -680,7 +667,6 @@ function ckeditor_modules_uninstalled($modules) {
   foreach ($profiles_list AS $_profile => $_inputs) {
     $changed = FALSE;
     $profile = ckeditor_profile_load($_profile);
-    if (!isset($profile->settings['loadPlugins'])) continue;
     foreach (array_keys((array) $profile->settings['loadPlugins']) as $plugin_name) {
       if (!array_key_exists($plugin_name, $plugins_list)) {
         unset($profile->settings['loadPlugins'][$plugin_name]);

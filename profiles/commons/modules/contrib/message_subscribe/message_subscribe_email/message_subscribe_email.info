@@ -1,6 +1,5 @@
 name = Message subscribe email
 core = 7.x
-package = Features
 php = 5.2.4
 version = 7.x-1.0
 project = message_subscribe_email
@@ -8,15 +7,10 @@ dependencies[] = flag
 dependencies[] = list
 dependencies[] = message_subscribe_ui
 dependencies[] = views
-features[ctools][] = views:views_default:3.0
-features[features_api][] = api:1
-features[views_view][] = subscribe_node_email
-features[views_view][] = subscribe_taxonomy_term_email
-features[views_view][] = subscribe_user_email
 
-; Information added by drupal.org packaging script on 2013-01-17
-version = "7.x-1.0-alpha3+1-dev"
+; Information added by drupal.org packaging script on 2013-03-11
+version = "7.x-1.0-alpha4"
 core = "7.x"
 project = "message_subscribe"
-datestamp = "1358429405"
+datestamp = "1362997519"
 

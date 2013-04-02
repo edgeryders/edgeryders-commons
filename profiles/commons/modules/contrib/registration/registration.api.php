@@ -8,13 +8,12 @@
  * Override registration_access with custom access control logic.
  *
  * @param $op
- * @param null $registration
- * @param null $account
- * @param $entity_type
+ * @param Registration $registration
+ * @param object $account
  *
  * @return bool
  */
-function hook_registration_access($op, $entity_type, $registration = NULL, $account = NULL) {
+function hook_registration_access($op, $registration, $account = NULL) {
   if ($registration->user_uid == $account->uid) {
     return TRUE;
   }

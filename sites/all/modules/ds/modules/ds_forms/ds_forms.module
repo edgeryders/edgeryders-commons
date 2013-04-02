@@ -95,7 +95,7 @@ function ds_build_load($form, $form_id) {
   $ds_form = FALSE;
 
   if (isset($form['#entity_type']) && isset($form['#bundle']) && $form_id != 'field_ui_field_overview_form' && $form_id != 'field_ui_display_overview_form'
-      && $form_id != 'field_ui_field_settings_form' && $form_id != 'field_ui_widget_type_form' && $form_id != 'field_ui_field_edit_form') {
+      && $form_id != 'field_ui_field_settings_form' && $form_id != 'field_ui_widget_type_form' && $form_id != 'field_ui_field_edit_form' && !preg_match('/^editablefields_form_/', $form_id)) {
     $ds_form = new stdClass();
     $ds_form->entity_type = $form['#entity_type'];
     $ds_form->bundle = $form['#bundle'];

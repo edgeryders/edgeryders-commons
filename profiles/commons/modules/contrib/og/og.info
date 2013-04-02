@@ -29,9 +29,11 @@ files[] = includes/views/handlers/og_handler_field_group_audience_state.inc
 files[] = includes/views/handlers/og_handler_field_prerender_list.inc
 files[] = includes/views/handlers/og_handler_field_user_roles.inc
 files[] = includes/views/handlers/og_handler_field_group_permissions.inc
+files[] = includes/views/handlers/og_handler_field_og_membership_link_edit.inc
 
 ; Views filters
 files[] = includes/views/handlers/og_handler_filter_group_audience_state.inc
+files[] = includes/views/handlers/og_handler_filter_user_roles.inc
 
 ; Views relationships
 files[] = includes/views/handlers/og_handler_relationship.inc
@@ -53,9 +55,9 @@ files[] = includes/migrate/7200/og_user_roles.migrate.inc
 
 
 
-; Information added by drupal.org packaging script on 2013-02-10
-version = "7.x-2.0-rc4"
+; Information added by drupal.org packaging script on 2013-03-27
+version = "7.x-2.1"
 core = "7.x"
 project = "og"
-datestamp = "1360499327"
+datestamp = "1364376614"
 

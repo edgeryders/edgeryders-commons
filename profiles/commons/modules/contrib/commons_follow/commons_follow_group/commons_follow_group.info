@@ -15,9 +15,9 @@ features[flag][] = commons_follow_group
 features[flag][] = email_group
 features[variable][] = message_subscribe_og
 
-; Information added by drupal.org packaging script on 2013-02-15
-version = "7.x-3.x-dev"
+; Information added by drupal.org packaging script on 2013-02-26
+version = "7.x-3.0+0-dev"
 core = "7.x"
 project = "commons_follow"
-datestamp = "1360889358"
+datestamp = "1361839459"
 

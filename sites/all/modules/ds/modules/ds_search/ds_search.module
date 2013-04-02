@@ -218,15 +218,7 @@ function ds_entity_view_fallback($entity_type, $entities, $view_mode = 'full', $
 
   // Entity support for entity search.
   if (module_exists('entity')) {
-    $info = entity_get_info($entity_type);
-    if (isset($info['view callback'])) {
-      $entities = ds_entity_key_array_by_property($entities, $info['entity keys']['id']);
-      return $info['view callback']($entities, $view_mode, $langcode, $entity_type);
-    }
-    elseif (in_array('EntityAPIControllerInterface', class_implements($info['controller class']))) {
-      return entity_get_controller($entity_type)->view($entities, $view_mode, $langcode, $page);
-    }
-    return FALSE;
+    return entity_view($entity_type, $entities, $view_mode, $langcode, $page);
   }
   else {
     if ($entity_type == 'node') {
@@ -236,18 +228,6 @@ function ds_entity_view_fallback($entity_type, $entities, $view_mode = 'full', $
       return file_view_multiple($entities, $view_mode);
     }
   }
-}
-
-/**
- * DS entity key array by property.
- */
-function ds_entity_key_array_by_property(array $entities, $property) {
-  $ret = array();
-  foreach ($entities as $entity) {
-    $key = isset($entity->$property) ? $entity->$property : NULL;
-    $ret[$key] = $entity;
-  }
-  return $ret;
 }
 
 /**
@@ -421,7 +401,7 @@ function ds_search_search_page($results) {
  */
 function node_ds_search_execute($keys = NULL, $conditions = NULL) {
   // Build matching conditions
-  $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery')->extend('PagerDefault');
+  $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery')->extend('PagerDefault');;
   $query->join('node', 'n', 'n.nid = i.sid');
   $query
     ->condition('n.status', 1)
@@ -448,10 +428,11 @@ function node_ds_search_execute($keys = NULL, $conditions = NULL) {
   // Add the ranking expressions.
   _node_rankings($query);
 
+  $limit = variable_get('ds_search_node_limit', 10);
+  $query->limit($limit);
+
   // Load results.
-  $find = $query
-    ->limit(variable_get('ds_search_node_limit', 10))
-    ->execute();
+  $find = $query->execute();
   $results = array();
   foreach ($find as $item) {
     $node = node_load($item->sid);

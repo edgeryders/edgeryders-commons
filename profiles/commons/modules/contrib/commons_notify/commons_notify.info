@@ -45,9 +45,9 @@ features_exclude[field_base][message_text] = message_text
 features_exclude[field_base][field_target_nodes] = field_target_nodes
 features_exclude[field_base][field_target_comments] = field_target_comments
 
-; Information added by drupal.org packaging script on 2013-02-08
-version = "7.x-3.x-dev"
+; Information added by drupal.org packaging script on 2013-02-25
+version = "7.x-3.0"
 core = "7.x"
 project = "commons_notify"
-datestamp = "1360284588"
+datestamp = "1361820332"
 

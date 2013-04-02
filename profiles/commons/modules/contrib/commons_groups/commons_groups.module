@@ -151,6 +151,11 @@ function commons_groups_module_implements_alter(&$implementations, $hook) {
 * Implements hook_form_alter().
 */
 function commons_groups_form_alter(&$form, &$form_state, $form_id) {
+  if($form_id == 'views_exposed_form' && strstr($form['#id'], 'views-exposed-form-commons-groups-directory')) {
+    $form['groups-keys']['#attributes'] = array(
+        'placeholder' => t('Separate keywords with commas'),
+      );
+  }
   if((strstr($form_id, 'views_form_commons_group_moderation_page'))) {
     $form['select']['action::views_bulk_operations_delete_item']['#weight'] = 9;
   }
@@ -165,7 +170,8 @@ function commons_groups_form_alter(&$form, &$form_state, $form_id) {
       $types = node_type_get_types();
       $type = $form['#node']->type;
       // Use 'a' or 'an' appropriately.
-      $verb = strtolower($type[0]) == 'a' ? 'Create an' : 'Create a';
+      $vowels = array('a', 'e', 'i', 'o', 'u');
+      $verb = strtolower(in_array($type[0], $vowels)) ? 'Create an' : 'Create a';
       drupal_set_title(t("$verb @name", array('@name' => $types[$type]->name)), PASS_THROUGH);
     }
     // Customizations to the node form for entitites that are group content.
@@ -217,6 +223,9 @@ function commons_groups_system_info_alter(&$info, $file, $type) {
   }
 }
 
+/**
+ * Implements hook_default_message_type_alter().
+ */
 function commons_groups_default_message_type_alter(&$defaults) {
   foreach (array('commons_activity_streams_comment_created', 'commons_activity_streams_node_created') as $name) {
     if (!empty($defaults[$name])) {
@@ -238,11 +247,19 @@ function commons_groups_og_user_access_alter(&$temp_perm, $context) {
   $user_is_member = (bool)og_is_member('node', $context['group']->nid, 'user', $context['account']);
   foreach ($commons_groups_entity_types['node'] as $type => $options) {
     // We do a literal user_access() check on the create permission here
-    // because we can't call node_access() without causing recursion.
+    // because we can't call node_access() OR og_user_access without causing recursion.
     // The code flow is:
     // node_access()>og_node_access()=>og_user_access_entity=>og_user_access=>
     // og_user_access_alter()=>commons_groups_og_user_access_alter().
     // See also: http://drupal.org/node/1910874.
+
+    // In most cases users who don't have access to post content should already be false. But just in case they aren't, we'll set the permission here.
+    if ($context['string'] == "create $type content" && !user_access("create $type content", $context['account'])) {
+      $temp_perm["create $type content"] = FALSE;
+      return;
+    }
+
+    // If a group is not restricted, or the user is a member, and the user can create content of a certain type, let them post temporarily
     if ($context['string'] == "create $type content" && (!$group_content_restricted || $user_is_member) && user_access("create $type content", $context['account'])) {
       $temp_perm["create $type content"] = TRUE;
       return;
@@ -429,12 +446,14 @@ function commons_groups_entityreference_default_value($entity_type, $entity, $fi
   }
 }
 
- function commons_groups_default_rules_configuration_alter(&$configs) {
+function commons_groups_default_rules_configuration_alter(&$configs) {
   // Disable default OG new content notifications.
   // The language doesn't correspond to Commons' open groups model and we use
   // commons_follow and commons_follow_notify for new content notifications.
-  $configs['rules_og_member_active']->active = FALSE;
- }
+  if (isset($configs['rules_og_member_active'])) {
+    $configs['rules_og_member_active']->active = FALSE;
+  }
+}
 
 /**
 * Implements hook_node_update().
@@ -493,6 +512,10 @@ function commons_groups_first_contribution($account, $node) {
       $account_groups = array();
     }
     // For groups where this user is not already a member, add her to the group.
+    // Anonymous users should never be added to a group automatically
+    if ($account->uid == 0) {
+      return;
+    }
     $new_groups = array_diff($node_groups, $account_groups);
     if (!empty($new_groups)) {
       foreach ($new_groups as $new_group_nid) {
@@ -516,4 +539,15 @@ function commons_groups_commons_bw_group_widget() {
       'default' => 1,
     ),
   );
+}
+
+/**
+ * Implements hook_preprocess_views_view_grid().
+ */
+function commons_groups_preprocess_views_view_grid(&$variables, $hook) {
+  // Change the displayed role name in the group contributors block to
+  // "Organizers".
+  if ($variables['view']->name == 'commons_contributors_group' && !empty($variables['title']) && $variables['title'] == 'administrator member') {
+    $variables['title'] = t('Organizers');
+  }
 }

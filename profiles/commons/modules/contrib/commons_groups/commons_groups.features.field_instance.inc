@@ -42,7 +42,7 @@ function commons_groups_field_default_field_instances() {
     ),
     'entity_type' => 'node',
     'field_name' => 'body',
-    'label' => 'Body',
+    'label' => 'Description',
     'required' => 0,
     'settings' => array(
       'display_summary' => 0,
@@ -209,7 +209,7 @@ function commons_groups_field_definition(&$field_instances, $entity_type, $bundl
     'default_value' => NULL,
     'default_value_function' => 'commons_groups_entityreference_default_value',
     'deleted' => '0',
-    'description' => '',
+    'description' => 'Separate group names with commas',
     'display' => array(
       'default' => array(
         'label' => 'above',

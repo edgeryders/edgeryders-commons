@@ -17,7 +17,7 @@ function realname_schema() {
       'realname' => array(
         'description' => 'The generated real name of the user.',
         'type' => 'varchar',
-        'length' => '255',
+        'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),

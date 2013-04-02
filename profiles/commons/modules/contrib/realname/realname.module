@@ -5,10 +5,8 @@
  * Provides token-based name displays for users.
  *
  * @todo Add a 'view realname' permission enabled by default
- * @todo Alter the username autocomplete
  * @todo Allow users to login with their real name
  * @todo Disable the username field
- * @todo Allow users to override their real name
  */
 
 /**
@@ -45,6 +43,14 @@ function realname_menu() {
   );
 
   return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function realname_menu_alter(&$items) {
+  // Implement realname autocomplete.
+  $items['user/autocomplete']['page callback'] = 'realname_autocomplete';
 }
 
 /**
@@ -127,7 +133,7 @@ function realname_user_operations() {
 function realname_user_operations_realname_update(array $uids) {
   $accounts = user_load_multiple($uids);
   foreach ($accounts as $account) {
-    realname_update($account);
+    realname_delete($account->uid);
   }
 }
 
@@ -142,6 +148,26 @@ function realname_action_info() {
   );
 
   return $info;
+}
+
+/**
+ * Implements hook_rules_action_info().
+ */
+function realname_rules_action_info() {
+  $items['user_realname_update'] = array(
+    'label' => t('Update real name'),
+    'base' => 'realname_action_realname_update',
+    'parameter' => array(
+      'account' => array(
+        'type' => 'user',
+        'label' => t('User'),
+        'save' => FALSE,
+      ),
+    ),
+    'group' => t('User'),
+    'access callback' => 'rules_user_integration_access',
+  );
+  return $items;
 }
 
 /**
@@ -295,13 +321,19 @@ function realname_autocomplete($string = '') {
     $query = db_select('users', 'u');
     $query->leftJoin('realname', 'rn', 'u.uid = rn.uid');
     $query->fields('u', array('uid'));
-    $query->condition('rn.realname', db_like($string) . '%', 'LIKE');
+    $name_like = db_or();
+    $name_like->condition('rn.realname', db_like($string) . '%', 'LIKE');
+    $name_like->condition('u.name', db_like($string) . '%', 'LIKE');
+    $query->condition($name_like);
     $query->range(0, 10);
     $uids = $query->execute()->fetchCol();
     $accounts = user_load_multiple($uids);
 
     foreach ($accounts as $account) {
       $matches[$account->name] = format_username($account);
+      if ($matches[$account->name] != $account->name) {
+        $matches[$account->name] .= ' (' . check_plain($account->name) . ')';
+      }
     }
   }
 

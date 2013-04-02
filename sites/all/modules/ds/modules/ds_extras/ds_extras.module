@@ -966,8 +966,8 @@ function ds_extras_preprocess_field(&$variables) {
     $variables['theme_hook_suggestions'][] = $suggestion . '__' . $variables['element']['#bundle'];
     $variables['theme_hook_suggestions'][] = $suggestion . '__' . $field_name . '__' . $variables['element']['#bundle'];
   }
-  // Default theming function.
-  else {
+  // Use Display Suite Extras Default theming function.
+  elseif (!isset($config['func']) || empty($config['func'])) {
     $field_theme_function = variable_get('ft-default', 'theme_field');
     if ($field_theme_function != 'theme_field') {
       $variables['theme_hook_suggestions'] = array();

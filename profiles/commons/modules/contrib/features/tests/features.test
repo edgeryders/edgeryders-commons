@@ -45,8 +45,7 @@ class FeaturesUserTestCase extends DrupalWebTestCase {
     module_load_include('inc', 'features', 'features.export');
 
     $components = array_filter(array(
-      'field_base' => 'field_base',
-      'field_instance' => 'field_instance',
+      'field' => 'field',
       'filter' => 'filter',
       'image' => 'image',
       'node' => 'node',
@@ -86,19 +85,7 @@ class FeaturesUserTestCase extends DrupalWebTestCase {
     }
   }
 
-  protected function _test_field_base($op = 'load') {
-    switch ($op) {
-      case 'load':
-        return field_info_field('field_features_test');
-      case 'override':
-        $field_base = field_info_field('field_features_test');
-        $field_base['settings']['max_length'] = 100;
-        field_update_field($field_base);
-        break;
-    }
-  }
-
-  protected function _test_field_instance($op = 'load') {
+  protected function _test_field($op = 'load') {
     switch ($op) {
       case 'load':
         return field_info_instance('node', 'field_features_test', 'features_test');
@@ -279,6 +266,13 @@ class FeaturesCtoolsIntegrationTest extends DrupalWebTestCase {
       $this->assertFalse(function_exists($function), 'Chaos tools functions for ' . $module . ' do not exist while it is disabled.');
       // Module enable will trigger declaring the new functions.
       module_enable(array($module));
+    }
+
+    // CTools hooks only created when there is an actual feature exportable
+    // enabled.
+    module_enable(array('features_test'));
+
+    foreach ($try as $module) {
       if (module_exists($module)) {
         $function_exists = function_exists($function);
         if ($function_exists) {

@@ -11,8 +11,7 @@ dependencies[] = views
 features[ctools][] = strongarm:strongarm:1
 features[ctools][] = views:views_default:3.0
 features[features_api][] = api:1
-features[field_base][] = "field_features_test"
-features[field_instance][] = "node-features_test-field_features_test"
+features[field][] = node-features_test-field_features_test
 features[filter][] = features_test
 features[image][] = features_test
 features[node][] = features_test
@@ -21,9 +20,9 @@ features[user_permission][] = create features_test content
 features[views_view][] = features_test
 hidden = TRUE
 
-; Information added by drupal.org packaging script on 2012-12-08
-version = "7.x-2.0-beta1+5-dev"
+; Information added by drupal.org packaging script on 2013-03-29
+version = "7.x-2.0-beta2"
 core = "7.x"
 project = "features"
-datestamp = "1354928180"
+datestamp = "1364589018"
 
