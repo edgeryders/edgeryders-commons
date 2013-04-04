@@ -12,9 +12,9 @@ dependencies[] = message_notify
 files[] = message_subscribe.test
 
 
-; Information added by drush on 2013-04-02
+; Information added by drush on 2013-04-04
 version = "7.x-1.0-alpha3+3-dev"
 core = "7.x"
 project = "message_subscribe"
-datestamp = "1364928741"
+datestamp = "1365087610"
 

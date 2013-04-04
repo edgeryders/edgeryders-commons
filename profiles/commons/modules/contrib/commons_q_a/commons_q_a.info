@@ -88,9 +88,9 @@ features_exclude[field_instance][node-question-og_group_ref_other_groups] = node
 features_exclude[field_instance][og_group_ref] = og_group_ref
 features_exclude[field_instance][node-answer-og_group_ref] = node-answer-og_group_ref
 features_exclude[field_instance][node-question-og_group_ref] = node-question-og_group_ref
-; Information added by drupal.org packaging script on 2013-03-27
-version = "7.x-3.1"
+; Information added by drupal.org packaging script on 2013-04-04
+version = "7.x-3.2"
 core = "7.x"
 project = "commons_q_a"
-datestamp = "1364416212"
+datestamp = "1365036911"
 

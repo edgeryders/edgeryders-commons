@@ -44,9 +44,9 @@ features[variable][] = node_options_post
 features[variable][] = node_preview_post
 features[variable][] = node_submitted_post
 features[views_view][] = commons_bw_posts
-; Information added by drupal.org packaging script on 2013-02-25
-version = "7.x-3.0"
+; Information added by drupal.org packaging script on 2013-04-04
+version = "7.x-3.2"
 core = "7.x"
 project = "commons_posts"
-datestamp = "1361820343"
+datestamp = "1365037214"
 

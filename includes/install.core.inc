@@ -1017,20 +1017,7 @@ function install_select_profile(&$install_state) {
   $install_state['profiles'] += install_find_profiles();
   if (empty($install_state['parameters']['profile'])) {
     // Try to find a profile.
-    $profiles = $install_state['profiles'];
-    foreach ($profiles as $key => $profile) {
-      $details = install_profile_info($profile->name);
-      // Remove hidden profiles (such as the testing profile, which only exists
-      // to speed up test runs) from the list. This prevents them from being
-      // displayed in the user interface, and also means that if there is only
-      // one non-hidden profile, _install_select_profile() will choose it
-      // automatically.
-      if (!empty($details['hidden'])) {
-        unset($profiles[$key]);
-      }
-    }
-    $profile = _install_select_profile($profiles);
-    $install_state['profiles'] = $profiles;
+    $profile = _install_select_profile($install_state['profiles']);
     if (empty($profile)) {
       // We still don't have a profile, so display a form for selecting one.
       // Only do this in the case of interactive installations, since this is
@@ -1054,7 +1041,21 @@ function install_select_profile(&$install_state) {
 }
 
 /**
- * Selects an installation profile from a list or from a $_POST submission.
+ * Selects an installation profile.
+ *
+ * A profile will be selected if:
+ * - Only one profile is available,
+ * - A profile was submitted through $_POST,
+ * - Exactly one of the profiles is marked as "exclusive".
+ * If multiple profiles are marked as "exclusive" then no profile will be
+ * selected.
+ *
+ * @param array $profiles
+ *   An associative array of profiles with the machine-readable names as keys.
+ *
+ * @return
+ *   The machine-readable name of the selected profile or NULL if no profile was
+ *   selected.
  */
 function _install_select_profile($profiles) {
   if (sizeof($profiles) == 0) {
@@ -1074,6 +1075,23 @@ function _install_select_profile($profiles) {
       }
     }
   }
+  // Check for a profile marked as "exclusive" and ensure that only one
+  // profile is marked as such.
+  $exclusive_profile = NULL;
+  foreach ($profiles as $profile) {
+    $profile_info = install_profile_info($profile->name);
+    if (!empty($profile_info['exclusive'])) {
+      if (empty($exclusive_profile)) {
+        $exclusive_profile = $profile->name;
+      }
+      else {
+        // We found a second "exclusive" profile. There's no way to choose
+        // between them, so we ignore the property.
+        return;
+      }
+    }
+  }
+  return $exclusive_profile;
 }
 
 /**
@@ -1095,6 +1113,11 @@ function install_select_profile_form($form, &$form_state, $profile_files) {
     include_once DRUPAL_ROOT . '/' . $profile->uri;
 
     $details = install_profile_info($profile->name);
+    // Don't show hidden profiles. This is used by to hide the testing profile,
+    // which only exists to speed up test runs.
+    if ($details['hidden'] === TRUE) {
+      continue;
+    }
     $profiles[$profile->name] = $details;
 
     // Determine the name of the profile; default to file name if defined name

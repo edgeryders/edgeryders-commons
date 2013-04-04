@@ -49,10 +49,7 @@ projects[ckeditor][patch][] = "http://drupal.org/files/ckeditor-install-lib-1898
 
 projects[ctools][type] = "module"
 projects[ctools][subdir] = "contrib"
-projects[ctools][version] = "1.2"
-
-; http://drupal.org/node/1494860#comment-6204438
-projects[ctools][patch][] = "http://drupal.org/files/ctools-dependent-js-broken-with-jquery-1.7-1494860-30.patch"
+projects[ctools][version] = "1.3"
 
 projects[custom_search][type] = "module"
 projects[custom_search][subdir] = "contrib"
@@ -308,7 +305,7 @@ projects[sharethis][version] = "2.5"
 
 projects[facetapi][type] = "module"
 projects[facetapi][subdir] = "contrib"
-projects[facetapi][version] = "1.2"
+projects[facetapi][version] = "1.3"
 
 projects[rich_snippets][type] = "module"
 projects[rich_snippets][subdir] = "contrib"

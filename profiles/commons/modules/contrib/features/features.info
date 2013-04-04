@@ -5,9 +5,9 @@ package = "Features"
 files[] = tests/features.test
 
 
-; Information added by drush on 2013-04-02
+; Information added by drush on 2013-04-04
 version = "7.x-2.0-beta1+5-dev"
 core = "7.x"
 project = "features"
-datestamp = "1364928764"
+datestamp = "1365087622"
 

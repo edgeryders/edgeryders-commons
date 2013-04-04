@@ -36,9 +36,9 @@ features[variable][] = node_options_document
 features[variable][] = node_preview_document
 features[variable][] = node_submitted_document
 features[views_view][] = commons_bw_documents
-; Information added by drupal.org packaging script on 2013-02-25
-version = "7.x-3.0"
+; Information added by drupal.org packaging script on 2013-04-04
+version = "7.x-3.2"
 core = "7.x"
 project = "commons_documents"
-datestamp = "1361820312"
+datestamp = "1365037212"
 

@@ -24,7 +24,7 @@ function commons_wikis_module_implements_alter(&$implementations, $hook) {
  */
 function commons_wikis_commons_bw_create_all_widget($group) {
    if (og_user_access('node', $group->nid, 'create wiki content')) {
-      $link = l('Start a wiki','node/add/wiki',
+      $link = l(t('Start a wiki'), 'node/add/wiki',
       array('attributes' => array('class' => 'commons-wikis-create'), 'query' => array('og_group_ref' => $group->nid))
     );
     return array(
@@ -105,7 +105,7 @@ function commons_wikis_views_pre_render(&$view) {
   if ($view->name == 'commons_bw_wikis') {
     $group_id = $view->args[0];
     if (og_user_access('node', $group_id, 'create wiki content') && node_access('create', 'wiki')) {
-      $view->attachment_before = l('Create a wiki', 'node/add/wiki', array('query' => array('og_group_ref' => $group_id)));
+      $view->attachment_before = l(t('Create a wiki'), 'node/add/wiki', array('query' => array('og_group_ref' => $group_id)));
     }
   }
 }

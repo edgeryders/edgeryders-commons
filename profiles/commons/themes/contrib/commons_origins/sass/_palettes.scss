@@ -55,12 +55,30 @@
     }
 
     // Quicktabs buttons styles
-    .quicktabs-style-commons-pills ul.quicktabs-tabs li.active a, ul.primary.tabs li.active a {
-      background-color: $palette_color_dark;
-    }
 
-    .quicktabs-style-commons-pills ul.quicktabs-tabs li.active a:after {
-      border-color: $palette_color_dark transparent transparent transparent;
+    .quicktabs-style-commons-pills ul.quicktabs-tabs,
+    ul.primary.tabs {
+      li {
+        a {
+          &,
+          span {
+            color: $palette_color_light;
+          }
+
+          &:hover {
+            color: darken($palette_color_light, 10%)
+          }
+        }
+
+        &.active {
+          a {
+            &,
+            span {
+              color: $dark_gray;
+            }
+          }
+        }
+      }
     }
 
     .block-search {

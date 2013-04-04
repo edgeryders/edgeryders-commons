@@ -79,7 +79,7 @@ input[type="button"] {
   -webkit-background-clip: padding;
   -moz-background-clip: padding;
   background-clip: padding-box;
-  background: #dddddd url('../images/button.png?1361802894') repeat-x;
+  background: #dddddd url('../images/button.png?1363371593') repeat-x;
   background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffffff), color-stop(100%, #dddddd));
   background-image: -webkit-linear-gradient(#ffffff, #dddddd);
   background-image: -moz-linear-gradient(#ffffff, #dddddd);
@@ -313,7 +313,7 @@ optgroup::-moz-focus-inner {
 .ie6_button,
 * html button,
 * html a.button {
-  background: #dddddd url('../images/button.png?1361802894') repeat-x;
+  background: #dddddd url('../images/button.png?1363371593') repeat-x;
   border: 1px solid;
   border-color: #dddddd #bbbbbb #999999;
   cursor: pointer;
@@ -366,7 +366,7 @@ optgroup::-moz-focus-inner {
 .selectBox-dropdown {
   min-width: 150px;
   position: relative;
-  border: solid 1px #bbbbbb;
+  border: solid 1px #BBB;
   line-height: 1.5;
   text-decoration: none;
   text-align: left;
@@ -390,13 +390,13 @@ optgroup::-moz-focus-inner {
   background: transparent;
   border: none;
   box-shadow: none;
-  min-width: auto;
+  min-width: inherit;
   color: white;
   line-height: 1;
   margin-top: 5px;
   margin-left: 9px;
 }
-#views-exposed-form-commons-homepage-content-panel-pane-1 .selectBox-dropdown, #quicktabs-commons_bw .selectBox-dropdown {
+#views-exposed-form-commons-homepage-content-panel-pane-1 .selectBox-dropdown, #quicktabs-commons_bw .selectBox-dropdown, .views-exposed-widgets .selectBox-dropdown {
   background: #e6e6e6;
   border: none;
   box-shadow: none;
@@ -443,7 +443,7 @@ optgroup::-moz-focus-inner {
   top: 1px;
   margin-left: 5px;
 }
-#views-exposed-form-commons-homepage-content-panel-pane-1 .selectBox-dropdown .selectBox-label, #quicktabs-commons_bw .selectBox-dropdown .selectBox-label {
+#views-exposed-form-commons-homepage-content-panel-pane-1 .selectBox-dropdown .selectBox-label, #quicktabs-commons_bw .selectBox-dropdown .selectBox-label, .views-exposed-widgets .selectBox-dropdown .selectBox-label {
   width: auto !important;
   padding: 2px 4px;
 }
@@ -454,13 +454,13 @@ optgroup::-moz-focus-inner {
   right: 0;
   width: 23px;
   height: 100%;
-  background: url('../images/jquery.selectBox-arrow.gif?1361802894') 50% center no-repeat;
-  border-left: solid 1px #bbbbbb;
+  background: url('../images/jquery.selectBox-arrow.gif?1363371593') 50% center no-repeat;
+  border-left: solid 1px #BBB;
 }
 .block-search .selectBox-dropdown .selectBox-arrow {
   display: none;
 }
-#views-exposed-form-commons-homepage-content-panel-pane-1 .selectBox-dropdown .selectBox-arrow, #quicktabs-commons_bw .selectBox-dropdown .selectBox-arrow {
+#views-exposed-form-commons-homepage-content-panel-pane-1 .selectBox-dropdown .selectBox-arrow, #quicktabs-commons_bw .selectBox-dropdown .selectBox-arrow, .views-exposed-widgets .selectBox-dropdown .selectBox-arrow {
   display: none;
 }
 
@@ -470,7 +470,7 @@ optgroup::-moz-focus-inner {
   z-index: 99999;
   max-height: 200px;
   min-height: 1em;
-  border: solid 1px #bbbbbb;
+  border: solid 1px #BBB;
   /* should be the same border width as .selectBox-dropdown */
   background: #FFF;
   -moz-box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -484,7 +484,7 @@ optgroup::-moz-focus-inner {
 .selectBox-inline {
   min-width: 150px;
   outline: none;
-  border: solid 1px #bbbbbb;
+  border: solid 1px #BBB;
   background: #FFF;
   display: inline-block;
   -webkit-border-radius: 4px;
@@ -499,8 +499,8 @@ optgroup::-moz-focus-inner {
 
 /* Options */
 .selectBox-options,
-.selectBox-options LI,
-.selectBox-options LI A {
+.selectBox-options li,
+.selectBox-options li a {
   list-style: none;
   display: block;
   cursor: default;
@@ -508,24 +508,24 @@ optgroup::-moz-focus-inner {
   margin: 0;
 }
 
-.selectBox-options LI A {
+.selectBox-options li a {
   line-height: 1.5;
-  padding: 0 0.5em;
+  padding: 0 .5em;
   white-space: nowrap;
   overflow: hidden;
   background: 6px center no-repeat;
 }
 
-.selectBox-options LI.selectBox-hover A {
+.selectBox-options li.selectBox-hover a {
   background-color: #EEE;
 }
 
-.selectBox-options LI.selectBox-disabled A {
+.selectBox-options li.selectBox-disabled a {
   color: #888;
   background-color: transparent;
 }
 
-.selectBox-options LI.selectBox-selected A {
+.selectBox-options li.selectBox-selected a {
   background-color: #C8DEF4;
 }
 
@@ -534,13 +534,13 @@ optgroup::-moz-focus-inner {
   background: #EEE;
   font-weight: bold;
   line-height: 1.5;
-  padding: 0 0.3em;
+  padding: 0 .3em;
   white-space: nowrap;
 }
 
 /* Disabled state */
 .selectBox.selectBox-disabled {
-  color: #888888 !important;
+  color: #888 !important;
 }
 
 .selectBox-dropdown.selectBox-disabled .selectBox-arrow {
@@ -550,10 +550,10 @@ optgroup::-moz-focus-inner {
 }
 
 .selectBox-inline.selectBox-disabled {
-  color: #888888 !important;
+  color: #888 !important;
 }
 
-.selectBox-inline.selectBox-disabled .selectBox-options A {
+.selectBox-inline.selectBox-disabled .selectBox-options a {
   background-color: transparent !important;
 }
 
@@ -631,8 +631,7 @@ audio:not([controls]) {
 html {
   font-size: 100%;
   -webkit-text-size-adjust: 100%;
-  line-height: 1.5;
-  height: 100%;
+  line-height: 1.7;
   overflow-y: scroll;
 }
 
@@ -768,7 +767,7 @@ code,
 kbd,
 samp {
   font-family: monospace, serif;
-  _font-family: "courier new", monospace;
+  _font-family: 'courier new', monospace;
   font-size: 1em;
 }
 
@@ -1025,37 +1024,6 @@ table {
   border-collapse: collapse;
   font-size: inherit;
   font: 100%;
-}
-
-/* =============================================================================
-    Gutters
-   ========================================================================== */
-/*
- * If gutters are set in theme settings they will override these values,
- * see Extensions > Modify Output > Design
- * $gutter-width is set in _base.scss
- */
-#main-content,
-.block-inner,
-.pane-inner,
-.menu-wrapper,
-.branding-elements,
-.breadcrumb-wrapper,
-.attribution,
-.at-panel .rounded-corner,
-div.messages {
-  margin-left: 10px;
-  margin-right: 10px;
-}
-
-/*
- * Panel pages need negative margin equal to the gutter width applied to #content,
- * this is taken care of in theme settings as per above for normal gutters
- */
-#content .panel-display,
-#content .panel-flexible {
-  margin-left: -10px;
-  margin-right: -10px;
 }
 
 /* =============================================================================

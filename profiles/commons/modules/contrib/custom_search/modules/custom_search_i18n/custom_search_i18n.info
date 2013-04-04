@@ -10,9 +10,9 @@ files[] = custom_search_i18n.module
 files[] = custom_search_i18n.admin.inc
 files[] = custom_search_i18n.install
 
-; Information added by drush on 2013-04-02
+; Information added by drush on 2013-04-04
 version = "7.x-1.11+9-dev"
 core = "7.x"
 project = "custom_search"
-datestamp = "1364928767"
+datestamp = "1365087641"
 

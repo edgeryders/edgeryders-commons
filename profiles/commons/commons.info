@@ -97,9 +97,9 @@ dependencies[] = commons_wysiwyg
 dependencies[] = commons_social_sharing
 
 
-; Information added by drush on 2013-04-02
-version = "7.x-3.1+1-dev"
+; Information added by drush on 2013-04-04
+version = "7.x-3.2+0-dev"
 core = "7.x"
 project = "commons"
-datestamp = "1364928621"
+datestamp = "1365087508"
 

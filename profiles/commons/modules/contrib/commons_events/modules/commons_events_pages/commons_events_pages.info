@@ -15,9 +15,9 @@ features[variable][] = panelizer_defaults_node_event
 files[] = commons_events_pages.features.inc
 files[] = commons_events_pages.strongarm.inc
 
-; Information added by drupal.org packaging script on 2013-03-27
-version = "7.x-3.1"
+; Information added by drupal.org packaging script on 2013-04-04
+version = "7.x-3.2"
 core = "7.x"
 project = "commons_events"
-datestamp = "1364416515"
+datestamp = "1365037511"
 

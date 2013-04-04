@@ -41,9 +41,9 @@ features_exclude[field][message-commons_activity_streams_comment_created-field_t
 features_exclude[field][message-commons_activity_streams_node_created-field_target_nodes] = message-commons_activity_streams_node_created-field_target_nodes
 features_exclude[field][message-commons_activity_streams_user_profile_updated-field_target_users] = message-commons_activity_streams_user_profile_updated-field_target_users
 
-; Information added by drupal.org packaging script on 2013-03-27
-version = "7.x-3.1"
+; Information added by drupal.org packaging script on 2013-04-04
+version = "7.x-3.2"
 core = "7.x"
 project = "commons_activity_streams"
-datestamp = "1364415912"
+datestamp = "1365037816"
 

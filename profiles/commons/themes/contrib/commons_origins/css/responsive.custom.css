@@ -28,14 +28,14 @@
     padding-top: 0 !important;
   }
 
-  /* 
+  /*
    * Float Region blocks example:
    * In smaller screen sizes we can remove the float and widths so all blocks
    * stack instead of displaying horizonally. The selector used here is an
    * "attribute selector" which will match on any float block class. Use your
    * inspector or Firebug to get the classes from the page output if you need
    * more granular control over block alignment and stacking.
-   * 
+   *
    * "Float Region blocks" is an extension for floating blocks in regions, see
    * your themes appearance settings, under the Extensions tab.
    */
@@ -53,9 +53,7 @@
   }
 
   .commons-bw-create-all-widget-types {
-    left: -100px;
-    top: auto;
-    bottom: 0;
+    left: auto;
   }
 
   .page-node-add #edit-additional-settings {
@@ -105,6 +103,14 @@
   .view-commons-follow-taxonomy-term .views-field-ops-1 {
     width: 33.333%;
   }
+
+  .primary-fields,
+  .supplementary-fields {
+    display: block;
+    float: none;
+    width: auto;
+    padding: 0;
+  }
 }
 /*
  * Tablet sizes and down
@@ -131,7 +137,7 @@
  */
 @media only screen and (min-width: 768px) {
   body.front.not-logged-in #content {
-    background: url('../images/commons-drop.png?1361802894') right top no-repeat;
+    background: url('../images/commons-drop.png?1363371593') right top no-repeat;
   }
   body.front.not-logged-in .region-three-33-top {
     margin-bottom: 24px;

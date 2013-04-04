@@ -9,9 +9,9 @@ configure = admin/structure/quicktabs
 dependencies[] = "ctools"
 
 
-; Information added by drush on 2013-04-02
+; Information added by drush on 2013-04-04
 version = "7.x-3.4+2-dev"
 core = "7.x"
 project = "quicktabs"
-datestamp = "1364928725"
+datestamp = "1365087596"
 

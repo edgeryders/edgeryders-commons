@@ -14,9 +14,9 @@ features[features_api][] = api:1
 features[panelizer_defaults][] = node:wiki:default
 features[variable][] = panelizer_defaults_node_wiki
 
-; Information added by drupal.org packaging script on 2013-03-27
-version = "7.x-3.1"
+; Information added by drupal.org packaging script on 2013-04-04
+version = "7.x-3.2"
 core = "7.x"
 project = "commons_wikis"
-datestamp = "1364416811"
+datestamp = "1365036913"
 

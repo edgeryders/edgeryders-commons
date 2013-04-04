@@ -45,9 +45,9 @@ features[variable][] = node_options_poll
 features[variable][] = node_preview_poll
 features[variable][] = node_submitted_poll
 features[views_view][] = commons_bw_polls
-; Information added by drupal.org packaging script on 2013-02-25
-version = "7.x-3.0"
+; Information added by drupal.org packaging script on 2013-04-04
+version = "7.x-3.2"
 core = "7.x"
 project = "commons_polls"
-datestamp = "1361820341"
+datestamp = "1365038717"
 

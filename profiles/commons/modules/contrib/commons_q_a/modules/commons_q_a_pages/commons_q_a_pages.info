@@ -13,9 +13,9 @@ features[panelizer_defaults][] = node:question:default
 features[variable][] = panelizer_defaults_node_answer
 features[variable][] = panelizer_defaults_node_question
 
-; Information added by drupal.org packaging script on 2013-03-27
-version = "7.x-3.1"
+; Information added by drupal.org packaging script on 2013-04-04
+version = "7.x-3.2"
 core = "7.x"
 project = "commons_q_a"
-datestamp = "1364416212"
+datestamp = "1365036911"
 
