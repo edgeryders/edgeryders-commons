@@ -6,10 +6,9 @@ hidden = TRUE
 
 files[] = plugins/notifier/MessageNotifierTest.class.php
 
-
-; Information added by drush on 2013-04-04
-version = "7.x-2.3+3-dev"
+; Information added by drupal.org packaging script on 2013-03-11
+version = "7.x-2.4"
 core = "7.x"
 project = "message_notify"
-datestamp = "1365087613"
+datestamp = "1362997513"
 

@@ -224,12 +224,5 @@ function metatag_metatag_info() {
     'description' => "Used to indicate the URL that broke the story, and can link to either an internal URL or an external source. If the full URL is not known it is acceptable to use a partial URL or just the domain name.",
   );
 
-  $info['tags']['author'] = array(
-    'label' => t('Author URL'),
-    'description' => 'Used by some search engines to aid confirm authorship of the content on a page. Should be either the full URL for the author\'s Google+ profile page or a local page with information about the author.',
-    'class' => 'DrupalLinkMetaTag',
-    'group' => 'advanced',
-  );
-
   return $info;
 }

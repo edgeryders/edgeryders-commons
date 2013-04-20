@@ -89,8 +89,8 @@ function radioactivity_admin_general_form() {
     '#collapsible' => TRUE,
     '#description' => t('Settings for the Memcache incident storage'),
   );
-  global $conf;
-  if (class_exists("Memcache") || $conf['cache_default_class'] == 'MemCacheDrupal') {
+
+  if (class_exists("Memcache")) {
     $form['memcache'] = array(
       '#type' => 'fieldset',
       '#title' => t('Memcached settings'),
@@ -191,8 +191,7 @@ function radioactivity_admin_general_form_submit($form_id, $form_state) {
   variable_set('radioactivity_drupal_root', $form_state['values']['radioactivity_drupal_root']);
   variable_set('radioactivity_temp_dir', $form_state['values']['radioactivity_temp_dir']);
 
-  global $conf;
-  if (class_exists("Memcache") || $conf['cache_default_class'] == 'MemCacheDrupal') {
+  if (class_exists('Memcache')) {
     variable_set('radioactivity_memcached_host', $form_state['values']['radioactivity_memcached_host']);
     variable_set('radioactivity_memcached_port', $form_state['values']['radioactivity_memcached_port']);
   }

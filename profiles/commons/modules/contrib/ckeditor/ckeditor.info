@@ -3,11 +3,10 @@ description = "Enables CKEditor (WYSIWYG HTML editor) for use instead of plain t
 core        = 7.x
 package     = User interface
 configure   = admin/config/content/ckeditor
-files[]     = includes/ckeditor.user.inc
 
-; Information added by drush on 2013-04-04
-version = "7.x-1.12+7-dev"
+; Information added by drupal.org packaging script on 2013-04-12
+version = "7.x-1.13"
 core = "7.x"
 project = "ckeditor"
-datestamp = "1365087666"
+datestamp = "1365759619"
 

@@ -676,7 +676,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     '#type' => 'item',
     '#title' => t('Security filters'),
     '#description' => t(
-        'Below is a list of security filters along with their status for each text format.<br/><br/>The following statuses are available:!img_enabled - the filter is configured for a given text format and will be run on the content during the filtering proces.!img_disabled - the filter is disabled for a given text format and will not be run on the content during the filtering process.<br/><br/>In order to modify the security filters settings for each of the text formats, you need to visit the text format configuration sections as listed below: !elem_format_config', array(
+      'Below is a list of security filters along with their status for each text format.<br /><br />The following statuses are available: !img_enabled - the filter is configured for a given text format and will be run on the content during the filtering process. !img_disabled - the filter is disabled for a given text format and will not be run on the content during the filtering process.<br /><br />In order to modify the security filters settings for each of the text formats, you need to visit the text format configuration sections as listed below: !elem_format_config', array(
       '!img_enabled' => '</br><img src="' . $module_drupal_path . '/images/tick.png"/>',
       '!img_disabled' => '</br><img src="' . $module_drupal_path . '/images/delete.png"/>',
       '!elem_format_config' => '<ul class="text-formats-config"></ul>'
@@ -1744,7 +1744,7 @@ function _ckeditor_admin_profile_form_security_filters(&$form, $profile, $securi
           '#type' => 'item',
           '#title' => t("@data", array('@data' => $filter_conf['title'])),
           '#description' => t("!data", array('!data' => $filter_conf['description'])),
-          '#prefix' => t("<div class=\"filter-wrapper\"></div>!formats", array("!formats" => $filter_text_formats)),
+          '#prefix' => "<div class=\"filter-wrapper\"></div>" . $filter_text_formats,
           '#suffix' => "</div>"
         );
       }

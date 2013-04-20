@@ -300,9 +300,10 @@ function _ckeditor_requirements_ckfinder_config_check($profile_name) {
   $config_path = ckfinder_path('local') . '/config.php';
 
   if (!file_exists($config_path)) {
-    return t('!ckfinder is not installed correctly: <code>!config</code> not found. Make sure that you uploaded all files and did not accidentally remove the configuration file.', array(
+    return t('!ckfinder is not installed correctly: <code>!config</code> not found. Make sure that you uploaded all files and did not accidentally remove the configuration file. If you installed CKFinder in other location (e.g. in the libraries folder), make sure to update the path to CKFinder in !global.', array(
           '!config' => $config_path,
-          '!ckfinder' => '<a href="http://cksource.com/ckfinder">CKFinder</a>'
+          '!ckfinder' => '<a href="http://cksource.com/ckfinder">CKFinder</a>',
+          '!global' => l(t('CKEditor Global Profile'), 'admin/config/content/ckeditor/editg')
         ));
   }
 

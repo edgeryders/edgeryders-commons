@@ -73,7 +73,7 @@ function ckeditor_profile_features_export_render($module_name, $data) {
   $profiles = array();
   $roles = user_roles();
   foreach ($data as $name) {
-    $profile = (array) ckeditor_profile_load($name);
+    $profile = (array) ckeditor_profile_load($name, TRUE, FALSE);
 
     $profiles[$name] = $profile;
   }

@@ -1,7 +1,18 @@
-2013-01-15
-New stable release 7.x-1.x
+2013-04-12
+New stable release 7.x-1.13
 
 Bug fixes:
+
+[#1063482] by nod_, wwalc, roderik, helior, hadsie: Use Libraries API for CKEditor
+[#1898294] by kscheirer: Fatal error if Libraries module is enabled after CKEditor
+[#1961596] by jcisio: Added 'feature_source()' option so that ckeditor_profile() component is visible in drush.
+[#1356026] by Volx, hctom: Fixed Profile loses text formats when exported into a feature using Drush.
+[#1895278] by wwalc WYSIWYG editor should allow Drupal to trigger 'formUpdated' event
+[#1957066] by rudiedirkx: Use field_extra_fields to be able to position the "Rich text editor settings" fieldset
+[#1959754] by wwalc: CKFinder is not installed correctly - improve information in the status report
+[#1810910] by mokaspar, jcisio, DeFr: Fixed Comments gets filtered out by ckeditor_filter_xss().
+[#1909318] by Simon Georges: Useless file inclusion in ckeditor.info.
+[#1603014] by anou, SebCorbin: Corrected strings used in Security section.
 [#1889010] by michal_cksource: Problem with CKFinder files upload when private download method is used
 [#1885950] by michal_cksource: Fix HTML validation for iframe in profile configuration
 [#1885938] by michal_cksource: Disable div based editor on default

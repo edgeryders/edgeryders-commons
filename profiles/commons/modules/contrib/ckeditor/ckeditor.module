@@ -299,7 +299,7 @@ function ckeditor_pre_render_text_format($element) {
 /**
  * Load all profiles. Just load one profile if $name is passed in.
  */
-function ckeditor_profile_load($name = '', $clear = FALSE) {
+function ckeditor_profile_load($name = '', $clear = FALSE, $check_access = TRUE) {
   static $profiles = array();
   global $user;
 
@@ -311,7 +311,12 @@ function ckeditor_profile_load($name = '', $clear = FALSE) {
 
       $profiles[$data->name] = $data;
     }
-    $input_formats = filter_formats($user);
+    if ($check_access === FALSE) {
+      // don't check if user has access to filter formats, needed for exporting as feature with drush
+      $input_formats = filter_formats();
+    } else {
+      $input_formats = filter_formats($user);
+    }
     $result = db_select('ckeditor_input_format', 'f')->fields('f')->execute();
     foreach ($result as $data) {
       if (isset($input_formats[$data->format])) {
@@ -553,6 +558,7 @@ function ckeditor_features_api() {
   return array(
     'ckeditor_profile' => array(
       'name' => t('CKEditor profiles'),
+      'feature_source' => TRUE,
       'default_hook' => 'ckeditor_profile_defaults',
       'default_file' => FEATURES_DEFAULTS_INCLUDED,
       'file' => drupal_get_path('module', 'ckeditor') . '/includes/ckeditor.features.inc',
@@ -696,4 +702,17 @@ function ckeditor_modules_uninstalled($modules) {
           ->execute();
     }
   }
+}
+
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function ckeditor_field_extra_fields() {
+  $fields['user']['user']['form']['ckeditor'] = array(
+    'label' => t('Rich text editor settings'),
+    'description' => t('Rich text editor settings'),
+    'weight' => 10,
+  );
+  return $fields;
 }

@@ -215,7 +215,7 @@ function ckeditor_filter_xss() {
     if ($name == 'filter_html' && $security_filters['filters']['filter_html'] == 1) {
       preg_match_all("|</?([a-z][a-z0-9]*)(?:\b[^>]*)>|i", $text, $matches);
       if ($matches[1]) {
-        $tags = array_unique($matches[1]);
+        $tags = array_unique(array_merge($matches[1], array('!--')));
         $text = filter_xss($text, $tags);
       }
       continue;

@@ -23,8 +23,17 @@ The primary features include:
 
 * Multi-lingual support using the Entity Translation module.
 
+* Translation support using the Internationalization (i18n) module.
+
 * Per-path control over meta tags using the "Meta tags: Context" submodule
   (requires the Context module).
+
+* Integration with the Views module allowing meta tags to be controlled for
+  individual Views pages, with each display in the view able to have different
+  meta tags, by using the "Meta tags: Views" submodule.
+
+* Integration with the Panels module allowing meta tags to be controlled for
+  individual Panels pages, by using the "Meta tags: Panels" submodule.
 
 * The fifteen Dublin Core Basic Element Set 1.1 meta tags may be added by
   enabling the "Meta tags: Dublin Core" submodule.
@@ -67,6 +76,14 @@ Configuration
     the "Custom Display Settings" section ensure that "Tokens" is checked (save
     the form if necessary), then to customize the tokens go to:
     admin/structure/types/manage/article/display/token
+
+
+Internationalization: i18n.module
+------------------------------------------------------------------------------
+All default configurations may be translated using the Internationalization
+(i18n) module. The custom strings that are assigned to e.g. the "Global: Front
+page" configuration will show up in the Translate Interface admin page
+(admin/config/regional/translate/translate) and may be customized per language.
 
 
 Fine Tuning

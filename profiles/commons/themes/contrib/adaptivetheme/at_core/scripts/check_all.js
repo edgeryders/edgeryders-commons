@@ -3,7 +3,7 @@
  * Unset CSS extension checkboxes, there can be a lot of them.
  */
 (function ($) {
-  Drupal.behaviors.ATcheckAll = {
+  Drupal.behaviors.checkAll = {
     attach: function (context) {
       // Core
       $(":input[name=core_check_all]").click(function()
