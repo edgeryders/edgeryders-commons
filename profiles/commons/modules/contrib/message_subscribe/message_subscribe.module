@@ -358,6 +358,12 @@ function message_subscribe_message_subscribe_get_subscribers(Message $message, $
       continue;
     }
 
+    // Do not create notifications about followed users, as a workaround for issue http://drupal.org/node/1912520 .
+    // (Added by matthias, 2013-04-24.)
+    if ($entity_type == 'user') {
+      continue;
+    }
+
     // Get all flags on given entity type.
     if (!$flags = message_subscribe_flag_get_flags($entity_type)) {
       continue;
