@@ -25,27 +25,33 @@ The primary features include:
 
 * Translation support using the Internationalization (i18n) module.
 
-* Per-path control over meta tags using the "Meta tags: Context" submodule
+* Per-path control over meta tags using the "Metatag: Context" submodule
   (requires the Context module).
 
 * Integration with the Views module allowing meta tags to be controlled for
   individual Views pages, with each display in the view able to have different
-  meta tags, by using the "Meta tags: Views" submodule.
+  meta tags, by using the "Metatag: Views" submodule.
 
 * Integration with the Panels module allowing meta tags to be controlled for
-  individual Panels pages, by using the "Meta tags: Panels" submodule.
+  individual Panels pages, by using the "Metatag: Panels" submodule.
 
 * The fifteen Dublin Core Basic Element Set 1.1 meta tags may be added by
-  enabling the "Meta tags: Dublin Core" submodule.
+  enabling the "Metatag: Dublin Core" submodule.
 
 * The Open Graph Protocol meta tags, as used by Facebook, may be added by
-  enabling the "Meta tags: Open Graph" submodule.
+  enabling the "Metatag: Open Graph" submodule.
 
-* The Twitter Cards meta tags may be added by enabling the "Meta tags: Twitter
+* The Twitter Cards meta tags may be added by enabling the "Metatag: Twitter
   Cards" submodule.
 
 * An API allowing for additional meta tags to be added, beyond what is provided
   by this module - see metatag.api.php for full details.
+
+* Support for the Migrate module for migrating data from another system - see
+  metatag.migrate.inc for full details.
+
+* Support for the Feeds module for importing data from external data sources or
+  file uploads.
 
 
 Configuration

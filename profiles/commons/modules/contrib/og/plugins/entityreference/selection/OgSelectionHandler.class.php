@@ -12,48 +12,6 @@ class OgSelectionHandler extends EntityReference_SelectionHandler_Generic {
   public static function getInstance($field, $instance = NULL, $entity_type = NULL, $entity = NULL) {
     return new OgSelectionHandler($field, $instance, $entity_type, $entity);
   }
-    /**
-   * Implements EntityReferenceHandler::getReferencableEntities().
-   */
-  public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
-    $options = array();
-    $entity_type = $this->field['settings']['target_type'];
-    $node_type = $this->instance['bundle'];
-    $node = $this->entity;
-    // Execute our initial query: This will ensure that our initial result set
-    // includes only gropu entities.
-    $query = $this->buildEntityFieldQuery($match, $match_operator);
-    if ($limit > 0) {
-      $query->range(0, $limit);
-    }
-    $results = $query->execute();
-    if (!empty($results[$entity_type])) {
-      // Assemble a list of group $ids where the user has permission
-      // create content.
-      foreach ($results[$entity_type] as $gid => $values) {
-        // Check if user has "create" permissions on those groups.
-        // If the user doesn't have create permission, check if perhaps the
-        // content already exists and the user has edit permission.
-        if (og_user_access($entity_type, $gid, "create $node_type content")) {
-          $ids[] = $gid;
-        }
-        elseif (!empty($node->nid) && (og_user_access($entity_type, $gid, "update any $node_type content") || ($user->uid == $node->uid && og_user_access($group_type, $gid, "update own $node_type content")))) {
-          $node_groups = isset($node_groups) ? $node_groups : og_get_entity_groups('node', $node->nid);
-          if (in_array($gid, $node_groups['node'])) {
-            $ids[] = $gid;
-          }
-        }
-      }
-      if (!empty($ids)) {
-        $entities = entity_load($entity_type, array_keys($results[$entity_type]));
-        foreach ($entities as $entity_id => $entity) {
-          list(,, $bundle) = entity_extract_ids($entity_type, $entity);
-          $options[$bundle][$entity_id] = check_plain($this->getLabel($entity));
-        }
-      }
-    }
-    return $options;
-  }
 
   /**
    * Override EntityReferenceHandler::settingsForm().
@@ -152,7 +110,41 @@ class OgSelectionHandler extends EntityReference_SelectionHandler_Generic {
 
 
     // Show the user only the groups they belong to.
-    if ($field_mode == 'admin' && $user_groups) {
+    if ($field_mode == 'default') {
+      if ($user_groups && !empty($this->instance) && $this->instance['entity_type'] == 'node') {
+        // Determine which groups should be selectable.
+        $node = $this->entity;
+        $node_type = $this->instance['bundle'];
+        $ids = array();
+        foreach ($user_groups as $gid) {
+          // Check if user has "create" permissions on those groups.
+          // If the user doesn't have create permission, check if perhaps the
+          // content already exists and the user has edit permission.
+          if (og_user_access($group_type, $gid, "create $node_type content")) {
+            $ids[] = $gid;
+          }
+          elseif (!empty($node->nid) && (og_user_access($group_type, $gid, "update any $node_type content") || ($user->uid == $node->uid && og_user_access($group_type, $gid, "update own $node_type content")))) {
+            $node_groups = isset($node_groups) ? $node_groups : og_get_entity_groups('node', $node->nid);
+            if (in_array($gid, $node_groups['node'])) {
+              $ids[] = $gid;
+            }
+          }
+        }
+      }
+      else {
+        $ids = $user_groups;
+      }
+
+      if ($ids) {
+        $query->propertyCondition($entity_info['entity keys']['id'], $ids, 'IN');
+      }
+      else {
+        // User doesn't have permission to select any group so falsify this
+        // query.
+        $query->propertyCondition($entity_info['entity keys']['id'], -1, '=');
+      }
+    }
+    elseif ($field_mode == 'admin' && $user_groups) {
       // Show only groups the user doesn't belong to.
       if (!empty($this->instance) && $this->instance['entity_type'] == 'node') {
         // Don't include the groups, the user doesn't have create
@@ -168,6 +160,7 @@ class OgSelectionHandler extends EntityReference_SelectionHandler_Generic {
         $query->propertyCondition($entity_info['entity keys']['id'], $user_groups, 'NOT IN');
       }
     }
+
     return $query;
   }
 
@@ -192,8 +185,9 @@ class OgSelectionHandler extends EntityReference_SelectionHandler_Generic {
     if (!module_exists('entityreference_prepopulate') || empty($this->instance['settings']['behaviors']['prepopulate'])) {
       return array();
     }
+
     // Don't try to validate the IDs.
-    if (!$ids = entityreference_prepopulate_get_values($this->field, $this->instance, TRUE, FALSE)) {
+    if (!$ids = entityreference_prepopulate_get_values($this->field, $this->instance, FALSE)) {
       return array();
     }
     $node_type = $this->instance['bundle'];

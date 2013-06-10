@@ -15,4 +15,6 @@ fieldset.custom_search-popup {
   position:absolute;
   top:auto;
   margin:0;
+  z-index:1;
+  background-color:#fff;
 }

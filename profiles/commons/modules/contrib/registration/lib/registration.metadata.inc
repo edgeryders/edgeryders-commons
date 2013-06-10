@@ -109,7 +109,7 @@ class RegistrationMetadataController extends EntityDefaultMetadataController {
 
     $properties['user'] = array(
       'label' => t("User entity"),
-      'type' => 'user',
+      'type' => 'entity',
       'schema field' => 'user_uid',
       'description' => t("The entity for which the registration belongs to. Usually a user."),
       'getter callback' => 'registration_property_user_get',

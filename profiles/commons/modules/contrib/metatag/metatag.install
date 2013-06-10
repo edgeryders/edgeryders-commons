@@ -158,7 +158,19 @@ function metatag_requirements($phase) {
         'severity' => REQUIREMENT_INFO,
         'title' => 'Metatag',
         'value' => $t('Possible conflicts with Exclude Node Title module'),
-        'description' => $t('The Metatag module\'s default setitngs for content types (nodes) uses [node:title] for the page title. Unfortunately, Exclude Node Title hides this so the page title ends up blank. It is recommended to <a href="!config">change the "title" field\'s default value</a> to "[current-page:title]" instead of "[node:title]" for any content types affected by Exclude Node Title.', array('!config' => 'admin/config/search/metatags')),
+        'description' => $t('The Metatag module\'s default settings for content types (nodes) uses [node:title] for the page title. Unfortunately, Exclude Node Title hides this so the page title ends up blank. It is recommended to <a href="!config">change the "title" field\'s default value</a> to "[current-page:title]" instead of "[node:title]" for any content types affected by Exclude Node Title.', array('!config' => 'admin/config/search/metatags')),
+      );
+    }
+
+    // Add a note if the deprecated metatag.entity_translation.inc file still
+    // exists.
+    $filename = 'metatag.entity_translation.inc';
+    if (file_exists(dirname(__FILE__) . '/' . $filename)) {
+      $requirements['metatag_deprecated_et_file'] = array(
+        'severity' => REQUIREMENT_ERROR,
+        'title' => 'Metatag',
+        'value' => $t('Unwanted :filename file found', array(':filename' => $filename)),
+        'description' => $t("The :filename file was removed in v7.x-1.0-beta5 but it still exists in the site's Metatag module's directory and will cause problems. This file needs to be removed. The file's path in the Drupal directory structure is:<br /><code>!short_path</code><br />The file's full path is:<br /><code>!full_path</code>", array(':filename' => $filename, '!short_path' => drupal_get_path('module', 'metatag') . '/' . $filename, '!full_path' => dirname(__FILE__) . $filename)),
       );
     }
   }
@@ -218,7 +230,12 @@ function metatag_update_7001() {
   $keys = array('primary key' => array($field_name));
 
   // Before making any changes, drop the existing primary key.
-  db_drop_primary_key($table_name);
+  try {
+    db_drop_primary_key($table_name);
+  }
+  catch (Exception $e) {
+    drupal_set_message('Caught an exception: ', $e->getMessage());
+  }
 
   // Rejig the field, and turn on the primary key again.
   db_change_field($table_name, $field_name, $field_name, $field_spec, $keys);
@@ -284,7 +301,7 @@ function metatag_update_7005() {
 
 /**
  * Remove {metatag} records that were added by old versions of the module for
- * entities that don't actually support meta tags. A more complete version of
+ * entities that don't actually support Metatag. A more complete version of
  * this will be added later on after it's (hopefully) guaranteed that all
  * modules have updated to the correct API usage.
  */
@@ -320,9 +337,9 @@ function metatag_update_7007() {
   $nodes = db_query("SELECT m.entity_id
     FROM {metatag} m
     LEFT OUTER JOIN {node} n
-    	ON m.entity_id=n.nid
+      ON m.entity_id=n.nid
     WHERE m.entity_type='node'
-    	AND n.nid IS NULL")
+      AND n.nid IS NULL")
     ->fetchCol();
   if (count($nodes) > 0) {
     $deleted = db_delete('metatag')
@@ -340,9 +357,9 @@ function metatag_update_7007() {
   $users = db_query("SELECT m.entity_id
     FROM {metatag} m
     LEFT OUTER JOIN {users} u
-    	ON m.entity_id=u.uid
+      ON m.entity_id=u.uid
     WHERE m.entity_type='user'
-    	AND u.uid IS NULL")
+      AND u.uid IS NULL")
     ->fetchCol();
   if (count($users) > 0) {
     $deleted = db_delete('metatag')
@@ -362,9 +379,9 @@ function metatag_update_7007() {
     $terms = db_query("SELECT m.entity_id
       FROM {metatag} m
       LEFT OUTER JOIN {taxonomy_term_data} t
-      	ON m.entity_id=t.tid
+        ON m.entity_id=t.tid
       WHERE m.entity_type='taxonomy_term'
-      	AND t.tid IS NULL")
+        AND t.tid IS NULL")
       ->fetchCol();
     if (count($terms) > 0) {
       $deleted = db_delete('metatag')

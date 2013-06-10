@@ -178,6 +178,62 @@ function captcha_uninstall() {
 /**
  * Implementation of hook_update_N()
  */
+function captcha_update_1() {
+  $items = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $items[] = update_sql("CREATE TABLE {captcha_points} (
+        form_id varchar(128) NOT NULL,
+        module varchar(64) default NULL,
+        type varchar(64) default NULL,
+        PRIMARY KEY (form_id)
+        ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
+      );
+      $succes = TRUE;
+      break;
+    case 'pgsql':
+      $items[] = update_sql("CREATE TABLE {captcha_points} (
+        form_id varchar(128) NOT NULL,
+        module varchar(64) default NULL,
+        type varchar(64) default NULL,
+        PRIMARY KEY (form_id)
+        );"
+      );
+      $succes = TRUE;
+      break;
+    default:
+      drupal_set_message(t('Unsupported database.'), 'error');
+      $succes = FALSE;
+      break;
+  }
+  if ($succes) {
+    // insert some defaults
+    $form_ids = array('comment_form', 'contact_mail_user', 'contact_mail_page',
+      'user_register', 'user_pass');
+    foreach ($form_ids as $form_id) {
+      $items[] = update_sql("INSERT INTO {captcha_points} (form_id, module, type) VALUES ('$form_id', NULL, NULL)");
+    }
+  }
+  return $items;
+}
+
+/**
+ * Implementation of hook_update_N()
+ */
+function captcha_update_2() {
+  $items = array();
+  // insert some defaults
+  $form_ids = array('user_login', 'user_login_block');
+  foreach ($form_ids as $form_id) {
+    $items[] = update_sql("INSERT INTO {captcha_points} (form_id, module, type) VALUES ('$form_id', NULL, NULL)");
+  }
+  return $items;
+}
+
+/**
+ * Implementation of hook_update_N()
+ */
 function captcha_update_6200() {
   $items = array();
 

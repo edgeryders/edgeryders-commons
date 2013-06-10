@@ -22,6 +22,7 @@ function custom_search_uninstall() {
   variable_del('custom_search_label_visibility');
   variable_del('custom_search_label');
   variable_del('custom_search_text');
+  variable_del('custom_search_hint_text');
   variable_del('custom_search_size');
   variable_del('custom_search_max_length');
   variable_del('custom_search_submit_text');

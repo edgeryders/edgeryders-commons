@@ -282,6 +282,25 @@ class RegistrationStandardTestCase extends RegistrationTestCase {
    * Capacity, opening, and closing dates.
    */
   function testHostRegistrationStatus() {
+    global $user;
+
+    $permissions = array(
+      'create ' . $this->registration_type_name . ' registration',
+    );
+
+    $this->checkPermissions($permissions, TRUE);
+    $basic_user = $this->drupalCreateUser($permissions);
+
+    $permissions = array(
+      'administer ' . $this->registration_type_name . ' registration',
+    );
+
+    $this->checkPermissions($permissions, TRUE);
+    $admin_user = $this->drupalCreateUser($permissions);
+
+    // Start with the basic user
+    $user = $basic_user;
+
     $this->assertFalse(registration_status($this->host_entity_type, $this->host_entity_id, TRUE), t('Default host entity status is closed.'), 'Registration');
 
     $this->setHostEntitySettings(array('status' => 1, 'capacity' => 10));
@@ -293,6 +312,13 @@ class RegistrationStandardTestCase extends RegistrationTestCase {
       $registrations[$i] = $this->createRegistration(array('count' => 2));
     }
     $this->assertFalse(registration_status($this->host_entity_type, $this->host_entity_id, TRUE), t('Host entity status is closed, filled with registrations.'), 'Registration');
+
+    // Switch to admin user
+    $user = $admin_user;
+    $this->assertTrue(registration_status($this->host_entity_type, $this->host_entity_id, TRUE), t('Host entity status is open for user with admin permission, filled with registrations.'), 'Registration');
+
+    // Switch back to basic user
+    $user = $basic_user;
 
     // unfill capacity by one registration
     entity_delete('registration', end($registrations)->registration_id);
@@ -546,7 +572,7 @@ class RegistrationAPITestCase extends RegistrationTestCase {
     $registration = $this->createRegistration($registration_values);
     $random = $this->randomString();
     $registration->hook_registration_access = $random;
-    $this->assertEqual($random, module_invoke('registration_test_api', 'registration_access', 'view', $registration, $account, 'registration'), t('Manually invoke hook_registration_access()'), 'Registration');
+    $this->assertEqual($random, module_invoke('registration_test_api', 'registration_access', 'view', $registration, $account), t('Manually invoke hook_registration_access()'), 'Registration');
 
     // Default access (none)
     foreach ($crud as $op) {

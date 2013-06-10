@@ -12,18 +12,18 @@
  *   An associative array of template variables.
  */
 function rich_snippets_default_preprocessor(&$variables) {
-  // Rich snippets should not go any further if the result doesn't contain a node object
-  if (!isset($variables['result']['node'])) {
-    return;
-  }
-  // Build the date, remove it from search info.
-  $date = theme('rich_snippets_date', array('date' => $variables['result']['date']));
-  $variables['snippet'] = $date . ' ' . $variables['snippet'];
-  unset($variables['info_split']['date']);
 
+  // Build the date, remove it from search info.
+  if (isset($variables['result']['date'])) {
+    $date = theme('rich_snippets_date', array('date' => $variables['result']['date']));
+    $variables['snippet'] = $date . ' ' . $variables['snippet'];
+    unset($variables['info_split']['date']);
+  }
   // Re-format the author info.
-  $user_args = array('!user' => $variables['info_split']['user']);
-  $variables['info_split']['user'] = t('By !user', $user_args);
+  if (isset($variables['info_split']['user'])) {
+    $user_args = array('!user' => $variables['info_split']['user']);
+    $variables['info_split']['user'] = t('By !user', $user_args);
+  }
 }
 
 /**

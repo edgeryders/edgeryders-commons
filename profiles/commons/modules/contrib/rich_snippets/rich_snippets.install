@@ -9,8 +9,8 @@
  * Implements hook_install().
  */
 function rich_snippets_install() {
-  variable_set('date_format_rich_snippets_published_date', 'M t, Y');
-  variable_set('date_format_rich_snippets_event_date', 'D, M t, Y');
+  variable_set('date_format_rich_snippets_published_date', 'M j, Y');
+  variable_set('date_format_rich_snippets_event_date', 'D, M j, Y');
 }
 
 /**
@@ -29,7 +29,25 @@ function rich_snippets_update_7100() {
   variable_set('date_format_rich_snippets_event_date', 'D, M j, Y');
   variable_set('date_format_rich_snippets_published_date', 'M j, Y');
 
-  // Delete the bad formats form the database.
+  // Delete the bad formats from the database.
+  db_delete('date_formats')
+    ->condition('type', 'rich_snippets_published_date')
+    ->condition('format', 'M t, Y')
+    ->execute();
+  db_delete('date_formats')
+    ->condition('type', 'rich_snippets_event_date')
+    ->condition('format', 'D, M t, Y')
+    ->execute();
+}
+
+/**
+ * Forgot to update the install function. Recheck everything!
+ */
+function rich_snippets_update_7101() {
+  variable_set('date_format_rich_snippets_published_date', 'M j, Y');
+  variable_set('date_format_rich_snippets_event_date', 'D, M j, Y');
+
+  // Delete the bad formats from the database.
   db_delete('date_formats')
     ->condition('type', 'rich_snippets_published_date')
     ->condition('format', 'M t, Y')

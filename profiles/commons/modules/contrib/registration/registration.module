@@ -739,6 +739,17 @@ function registration_event_count($entity_type, $entity_id, $registration_id = N
     $count = ($count == '') ? 0 : $count;
   }
 
+  // Allow other mods to override count.
+  $settings = registration_entity_settings($entity_type, $entity_id);
+  $context = array(
+    'entity_type' => $entity_type,
+    'entity_id' => $entity_id,
+    'registration_id' => $registration_id,
+    'settings' => $settings,
+  );
+
+  drupal_alter('registration_event_count', $count, $context);
+
   return $count;
 }
 
@@ -1609,23 +1620,18 @@ function registration_save(Registration $registration) {
  * Checks if a user has permission to execute an operation on a registration
  * entity.
  *
- * Implements hook_registration_access(). Modules may return a boolean value,
- * or NULL if they do not care one way or the other.
- *
  * @param string $op
  *   Operation user wishes to perform.
  * @param object $registration
- *   (optional) A Fully loaded registration object.
+ *   A Fully loaded registration object.
  * @param object $account
  *   (optional) An user object, or omit for logged in user.
- * @param string $entity_type
- *   (optional) Entity type of $registration. Usually 'registration'.
  *
  * @return bool
  *
  * @see registration_entity_info()
  */
-function registration_access($op, $registration = NULL, $account = NULL, $entity_type) {
+function registration_access($op, $registration, $account = NULL) {
   $account = isset($account) ? $account : $GLOBALS['user'];
   $type = $registration->type;
 
@@ -1651,7 +1657,7 @@ function registration_access($op, $registration = NULL, $account = NULL, $entity
 
   // First grant access to the entity for the specified operation if no other
   // module denies it and at least one other module says to grant access.
-  $access_results = module_invoke_all('registration_access', $op, $entity_type, $registration, $account);
+  $access_results = module_invoke_all('registration_access', $op, $registration, $account);
   if (in_array(FALSE, $access_results, TRUE)) {
     return FALSE;
   }

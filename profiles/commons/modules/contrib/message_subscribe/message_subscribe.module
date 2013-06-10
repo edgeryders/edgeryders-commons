@@ -54,7 +54,7 @@
  * @return
  *   The message object.
  */
-function message_subscribe_process_message($entity_type, $entity, Message $message, $notify_options = array(), $subscribe_options = array(), $context = array()) {
+function message_subscribe_send_message($entity_type, $entity, Message $message, $notify_options = array(), $subscribe_options = array(), $context = array()) {
   $use_queue = isset($subscribe_options['use queue']) ? $subscribe_options['use queue'] : variable_get('message_subscribe_use_queue', FALSE);
 
   // Save message by default.
@@ -358,12 +358,6 @@ function message_subscribe_message_subscribe_get_subscribers(Message $message, $
       continue;
     }
 
-    // Do not create notifications about followed users, as a workaround for issue http://drupal.org/node/1912520 .
-    // (Added by matthias, 2013-04-24.)
-    if ($entity_type == 'user') {
-      continue;
-    }
-
     // Get all flags on given entity type.
     if (!$flags = message_subscribe_flag_get_flags($entity_type)) {
       continue;
@@ -660,5 +654,5 @@ function message_subscribe_queue_worker($data, $end_time = FALSE) {
   $message = message_load($mid);
   $subscribe_options['queue'] = TRUE;
 
-  message_subscribe_process_message($entity_type, $entity, $message, $notify_options, $subscribe_options, $context);
+  message_subscribe_send_message($entity_type, $entity, $message, $notify_options, $subscribe_options, $context);
 }

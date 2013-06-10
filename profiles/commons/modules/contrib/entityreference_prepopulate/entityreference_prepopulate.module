@@ -48,46 +48,6 @@ function entityreference_prepopulate_field_update_instance($instance, $prior_ins
 
 
 /**
- * Field default value callback.
- *
- * Set the default from the URL context. This works even if the widget is
- * not shown, e.g. due to restricted field access.
- */
-function entityreference_prepopulate_field_default_value($entity_type, $entity, $field, $instance, $langcode) {
-  if (module_exists('og') && og_is_group_audience_field($instance['field_name'])) {
-    return entityreference_prepopulate_og_field_default_value($entity_type, $entity, $field, $instance, $langcode);
-  }
-  if ($items = entityreference_prepopulate_get_values($field, $instance)) {
-    // TODO: Check field cardinality.
-    return $items;
-  }
-}
-
-/**
- * Default value callback for Organic groups; Filter results by field-mode.
- */
-function entityreference_prepopulate_og_field_default_value($entity_type, $entity, $field, $instance, $langcode) {
-  if (empty($instance['field_mode'])) {
-    return array();
-  }
-  if ($items = entityreference_prepopulate_get_values($field, $instance)) {
-    // Filter out the items that don't match the field-mode.
-    $gids = array();
-    foreach ($items as $item) {
-      $gids[] = $item['target_id'];
-    }
-    if (!$valid_ids = entityreference_get_selection_handler($field, $instance, $entity_type, $entity)->validateReferencableEntities($gids)) {
-      return;
-    }
-    $valid_items = array();
-    foreach ($valid_ids as $valid_id) {
-      $valid_items[] = array('target_id' => $valid_id);
-    }
-    return $valid_items;
-  }
-}
-
-/**
  * Implements hook_field_attach_form().
  */
 function entityreference_prepopulate_field_attach_form($entity_type, $entity, &$form, &$form_state, $langcode) {
@@ -128,7 +88,16 @@ function entityreference_prepopulate_field_attach_form($entity_type, $entity, &$
       }
 
       $field = $value['field'];
-      if (entityreference_prepopulate_get_values($field, $instance) || ($id && !empty($settings['action_on_edit']))) {
+
+      // Store prepopulated values in the form state to make them persistent,
+      // in case the form is rebuilt by AJAX requests.
+      $field_name = $field['field_name'];
+
+      if ($ids = entityreference_prepopulate_get_values($field, $instance)) {
+        $form_state['entityreference_prepopulate'][$instance['entity_type']][$instance['bundle']][$field_name] = $ids;
+      }
+
+      if ($ids || ($id && !empty($settings['action_on_edit']))) {
         // New entity with prepopualte values, or an existing entity,
         // we might need to disable/ hide the group-audience field.
         if ($settings['action'] == 'disable') {
@@ -141,7 +110,7 @@ function entityreference_prepopulate_field_attach_form($entity_type, $entity, &$
         }
       }
       elseif (in_array($settings['fallback'], array('form_error', 'redirect'))) {
-        $message = t('Field @label must be populated via URL', array('@label' => $instance['label']));
+        $message = t('Field @label must be populated via URL.', array('@label' => $instance['label']));
         if ($settings['fallback'] == 'form_error') {
           form_error($form, $message);
         }
@@ -183,38 +152,195 @@ function entityreference_prepopulate_field_access($op, $field, $entity_type, $en
   if (!empty($settings['skip_perm']) && user_access($settings['skip_perm'])) {
     return;
   }
-  $items = entityreference_prepopulate_get_values($field, $instance);
+  $ids = entityreference_prepopulate_get_values($field, $instance);
 
-  if (empty($items) && $settings['fallback'] == 'hide') {
+  if (!$ids && $settings['fallback'] == 'hide') {
     return FALSE;
   }
 }
 
 /**
+ * Field default value callback.
+ *
+ * Set the default from the URL context. This works even if the widget is
+ * not shown, e.g. due to restricted field access.
+ *
+ * @todo Check field cardinality.
+ */
+function entityreference_prepopulate_field_default_value($entity_type, $entity, $field, $instance, $langcode) {
+  $items = array();
+  if ($ids = entityreference_prepopulate_get_values($field, $instance)) {
+    $items = array();
+    foreach ($ids as $id) {
+      $items[] = array('target_id' => $id);
+    }
+  }
+  return $items;
+}
+
+/**
  * Wrapper function to get context (e.g. from URL or OG-context).
+ *
+ * @param $entity_type
+ *   The entity type the entity.
+ * @param $entity
+ *   The entity object that is being checked.
+ * @param $field
+ *   The field info array.
+ * @param $instance
+ *   The instance info array.
+ * @param $validate
+ *   Determine if access validation should be performed. Defaults to TRUE.
+ *
+ * @return
+ *   Array of IDs a user may view.
+ */
+function entityreference_prepopulate_get_values($field, $instance, $validate = TRUE) {
+  if (!$instance['settings']['behaviors']['prepopulate']['status']) {
+    // Do nothing when prepopulate is disabled for this field.
+    return;
+  }
+
+  $field_name = $field['field_name'];
+
+  $cache = &drupal_static(__FUNCTION__, array());
+  $identifier = array(
+    $instance['entity_type'],
+    $instance['bundle'],
+    $field_name,
+    $validate,
+  );
+
+  if (module_exists('og') && og_is_group_audience_field($field_name)) {
+    if (empty($instance['field_mode'])) {
+      // Group audience field, but no field-mode provided.
+      // So we iterate over the "default" and possibly "admin" field-modes,
+      // and return those values together.
+      $ids = array();
+      $field_modes = !user_access('administer group') ? array('default') : array('default', 'admin');
+      foreach ($field_modes as $field_mode) {
+        $instance['field_mode'] = $field_mode;
+        if ($og_ids = entityreference_prepopulate_get_values($field, $instance)) {
+          $ids = array_merge($ids, $og_ids);
+        }
+      }
+
+      // Return the values.
+      return $ids;
+    }
+
+    $identifier[] = $instance['field_mode'];
+  }
+
+  $identifier = implode(':', $identifier);
+
+  if (isset($cache[$identifier])) {
+    return $cache[$identifier];
+  }
+
+  $cache[$identifier] = $ids = array();
+
+  // Check if we have cached values.
+  if (!$ids) {
+    $ids = entityreference_prepopulate_get_values_from_cache($field, $instance);
+  }
+
+  // Check if we have OG-context integration.
+  if (!$ids) {
+    $ids = entityreference_prepopulate_get_values_from_og_context($field, $instance);
+  }
+
+  // Check if there are values in the URL.
+  if (!$ids) {
+    $ids = entityreference_prepopulate_get_values_from_url($field, $instance);
+  }
+
+  if (!$ids || !$validate) {
+    // No IDs found, or no validation is needed.
+    $cache[$identifier] = $ids;
+    return $ids;
+  }
+
+  $handler = entityreference_get_selection_handler($field, $instance);
+  if (!$ids = $handler->validateReferencableEntities($ids)) {
+    $cache[$identifier] = FALSE;
+    return;
+  }
+
+  // Check access to the provided entities.
+  $target_type = $field['settings']['target_type'];
+  entity_load($target_type, $ids);
+  foreach ($ids as $delta => $id) {
+    $entity = entity_load_single($target_type, $id);
+    if (!$entity || !entity_access('view', $target_type, $entity)) {
+      unset($ids[$delta]);
+    }
+  }
+
+  $cache[$identifier] = $ids;
+  return $ids;
+}
+
+/**
+ * Get the values from the cached form.
  *
  * @param $field
  *   The field info array.
  * @param $instance
  *   The instance info array.
- * @param $flat_array.
- *   TRUE if the group IDs should be sent as a simple array. FALSE, if we
- *   need to build array suited for field API's $items value.
+ *
+ * @see
+ *   entityreference_prepopulate_get_values()
  */
-function entityreference_prepopulate_get_values($field, $instance, $flat_array = FALSE) {
-  $settings = $instance['settings']['behaviors']['prepopulate'];
-
-  if (!empty($settings['og_context']) && module_exists('og_context')) {
-    return entityreference_prepopulate_get_values_from_og_context($field, $instance, $flat_array);
+function entityreference_prepopulate_get_values_from_cache($field, $instance) {
+  // Try to get the form out of cache.
+  if (!$form_build_id = isset($_GET['form_build_id']) ? $_GET['form_build_id'] : isset($_POST['form_build_id']) ? $_POST['form_build_id'] : NULL) {
+    return;
   }
 
-  return entityreference_prepopulate_get_values_from_url($field, $instance, $flat_array);
-}
-
-function entityreference_prepopulate_get_values_from_og_context($field, $instance, $flat_array = FALSE) {
   $field_name = $field['field_name'];
 
-  if (!og_is_group_audience_field($field_name) || !$og_context = og_context()) {
+  $form_state = array();
+  form_get_cache($form_build_id, $form_state);
+
+  // If successful, get the value from the form_state.
+  return isset($form_state['entityreference_prepopulate'][$instance['entity_type']][$instance['bundle']][$field_name]) ? $form_state['entityreference_prepopulate'][$instance['entity_type']][$instance['bundle']][$field_name] : FALSE;
+}
+
+/**
+ * Get values for prepopulating fields via URL.
+ *
+ * @param $field
+ *   The field info array.
+ * @param $instance
+ *   The instance info array.
+ *
+ * @see
+ *   entityreference_prepopulate_get_values()
+ */
+function entityreference_prepopulate_get_values_from_url($field, $instance) {
+  $field_name = $field['field_name'];
+  if (!empty($_GET[$field_name]) && is_string($_GET[$field_name])) {
+    return explode(',', $_GET[$field_name]);
+  }
+}
+
+
+/**
+ * Get values for prepopulating fields OG-context.
+ *
+ * @param $field
+ *   The field info array.
+ * @param $instance
+ *   The instance info array.
+ *
+ * @see
+ *   entityreference_prepopulate_get_values()
+ */
+function entityreference_prepopulate_get_values_from_og_context($field, $instance) {
+  $field_name = $field['field_name'];
+
+  if (!module_exists('og_context') || !og_is_group_audience_field($field_name) || !$og_context = og_context()) {
     return;
   }
 
@@ -223,63 +349,9 @@ function entityreference_prepopulate_get_values_from_og_context($field, $instanc
     return;
   }
 
-  $items = array();
-  $items[] = !$flat_array ? array('target_id' => $og_context['gid']) : $og_context['gid'];
-  return $items;
+  return array($og_context['gid']);
 }
 
-/**
- * Get values for prepopulating fields, via URL.
- *
- * @param $field
- *   The field info array.
- * @param $instance
- *   The instance info array.
- * @param $flat_array.
- *   TRUE if the group IDs should be sent as a simple array. FALSE, if we
- *   need to build array suited for field API's $items value.
- *
- * @see
- *   entityreference_prepopulate_get_values()
- */
-function entityreference_prepopulate_get_values_from_url($field, $instance, $flat_array = FALSE) {
-  $cache = &drupal_static(__FUNCTION__, array());
-  $field_name = $field['field_name'];
-  $identifier = $instance['entity_type'] . ':' . $instance['bundle'] . ':' . $field_name . ':' . $flat_array;
-  if (isset($cache[$identifier])) {
-    return $cache[$identifier];
-  }
-  $cache[$identifier] = FALSE;
-
-  if (empty($_GET[$field_name]) || !is_string($_GET[$field_name])) {
-    return;
-  }
-
-  if (empty($instance['settings']['behaviors']['prepopulate']['status'])) {
-    return;
-  }
-
-  $ids = explode(',', $_GET[$field_name]);
-
-  // Check if the IDs are valid, and get filter out the ones that are not valid.
-  $handler = entityreference_get_selection_handler($field, $instance);
-  if (!$ids = $handler->validateReferencableEntities($ids)) {
-    return;
-  }
-
-  // Check access to the provided entities.
-  $target_type = $field['settings']['target_type'];
-  entity_load($target_type, $ids);
-  $items = array();
-  foreach ($ids as $id) {
-    $entity = entity_load_single($target_type, $id);
-    if (entity_access('view', $target_type, $entity)) {
-      $items[] = !$flat_array ? array('target_id' => $id) : $id;
-    }
-  }
-  $cache[$identifier] = $items;
-  return $items;
-}
 
 /**
  * Return a form element with crafted links to create nodes for a group.

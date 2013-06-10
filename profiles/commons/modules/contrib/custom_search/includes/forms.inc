@@ -37,6 +37,12 @@ function _custom_search_default_admin_form($delta = '') {
     '#default_value'  => variable_get('custom_search_' . $delta . 'text', ''),
     '#description'    => t('This will change the default text inside the search form. Leave blank for no text. This field is blank by default.'),
   );
+  $form['search_box']['custom_search_' . $delta . 'hint_text'] = array(
+    '#type'           => 'textfield',
+    '#title'          => t('Search box hint text'),
+    '#default_value'  => variable_get('custom_search_' . $delta . 'hint_text', CUSTOM_SEARCH_HINT_TEXT_DEFAULT),
+    '#description'    => t('Enter the text that will be displayed when hovering the input field (HTML <em>title</em> attritube).'),
+  );
   $form['search_box']['custom_search_' . $delta . 'size'] = array(
     '#type'           => 'textfield',
     '#title'          => t('Search box size'),
@@ -148,7 +154,7 @@ function _custom_search_default_admin_form($delta = '') {
   if (module_exists('search_api_page')) {
     $search_api_pages = search_api_page_load_multiple();
     $options[0] = t('None');
-    foreach($search_api_pages as $page) {
+    foreach ($search_api_pages as $page) {
       $options[$page->id] = $page->name;
     }
     $form['searchapi'] = array(

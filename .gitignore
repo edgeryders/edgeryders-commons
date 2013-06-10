@@ -18,3 +18,5 @@ htaccess
 htaccess-development
 robots.txt-development
 
+# Ignore the downloads directory, to not expose the password in the htaccess file in it.
+downloads-6vFr43Kj87Dsat

@@ -32,8 +32,9 @@ function _custom_search_i18n_admin_form($delta = '') {
     '#type'           => 'select',
     '#title'          => t('Search content from'),
     '#options'        => array(
-      'all'     => t('any language'),
-      'current' => t('current language'),
+      'all'             => t('any language'),
+      'current'         => t('current language'),
+      'current_neutral' => t('current language and language neutral'),
     ),
     '#description'    => t('Choose which language will be used to search content.'),
     '#default_value'  => variable_get('custom_search_i18n_' . $delta . 'search_language', 'all'),

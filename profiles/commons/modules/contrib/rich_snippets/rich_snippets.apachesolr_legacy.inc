@@ -118,5 +118,8 @@ function apachesolr_get_index_key_map($entity_type) {
     }
   }
 
-  return $index_key_map[$entity_type];
+  if (isset($index_key_map[$entity_type])) {
+    return $index_key_map[$entity_type];
+  }
+  return false;
 }

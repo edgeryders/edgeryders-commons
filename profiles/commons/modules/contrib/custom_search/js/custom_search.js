@@ -6,7 +6,7 @@
         // Check if the search box is not empty on submit
         $('form.search-form', context).submit(function(){
           var box = $(this).find('input.custom-search-box');
-          if (box.val() != undefined && (box.val() == '' || box.val() == $(this).find('input.default-text').val())) {
+          if (box.val() != undefined && box.val() == '') {
             $(this).find('input.custom-search-box').addClass('error');
             return false;
           }
@@ -22,27 +22,15 @@
       // Search from target
       $('form.search-form').attr('target', Drupal.settings.custom_search.form_target);
 
-      // Clear default text on focus, and put it back on blur. Also displays Popup.
-      $('form.search-form input.custom-search-box', context)
-        .blur(function(){
-          $this = $(this);
-          $parentForm = $this.parents('form');
-          if ($this.val() == '') {
-            $this.addClass('custom-search-default-value');
-            $this.val($parentForm.find('input.default-text').val());
-          }
-        })
-        .bind('click focus', function(e){
-          $this = $(this);
-          $parentForm = $this.parents('form');
-          if ($this.val() == $parentForm.find('input.default-text').val()) $this.val('');
-          $this.removeClass('custom-search-default-value');
-          // check if there's something in the popup and displays it
-          var popup = $parentForm.find('fieldset.custom_search-popup');
-          if (popup.find('input,select').length && !popup.hasClass('opened')) popup.fadeIn().addClass('opened');
-          e.stopPropagation();
-        }
-      );
+      // Displays Popup.
+      $('form.search-form input.custom-search-box', context).bind('click focus', function(e){
+        $this = $(this);
+        $parentForm = $this.parents('form');
+        // check if there's something in the popup and displays it
+        var popup = $parentForm.find('fieldset.custom_search-popup');
+        if (popup.find('input,select').length && !popup.hasClass('opened')) popup.fadeIn().addClass('opened');
+        e.stopPropagation();
+      });
       $(document).bind('click focus', function(){
         $('fieldset.custom_search-popup').hide().removeClass('opened');
       });

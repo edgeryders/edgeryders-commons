@@ -25,10 +25,10 @@ function registration_form($form, &$form_state, Registration $registration) {
   // default value for who is registering
   $who_default = NULL;
   if (isset($registration->registration_id)) {
-    $who_default = $registration->registrant_type($user);
+    $who_default = $registration->registrant_type($GLOBALS['user']);
   }
   elseif (count($who_options) == 1) {
-    $who_default = key($who_options);
+    $who_default = reset(array_keys($who_options));
   }
 
   // show a message if there's only one option as we're going to hide the form
@@ -153,7 +153,7 @@ function registration_form_validate($form, &$form_state) {
     entity_load_single($registration->entity_type, $registration->entity_id));
 
   // Test status on new registrations.
-  if ($registration->is_new) {
+  if (isset($registration->is_new) && $registration->is_new) {
     $registration_status = registration_status($registration->entity_type, $registration->entity_id, FALSE, $count, $registration->registration_id, $errors);
 
     if (!$registration_status) {
@@ -162,8 +162,8 @@ function registration_form_validate($form, &$form_state) {
       ));
     }
   }
-  // Only check capacity for existing registrations.
-  else {
+  // Only check capacity for existing registrations that are active.
+  else if (in_array($registration->state, registration_get_active_states())) {
     $has_room = registration_has_room($registration->entity_type, $registration->entity_id, $count, $registration->registration_id);
     if (!$has_room) {
       form_set_error('', t('Sorry, unable to register for %label due to: insufficient slots remaining.',
@@ -766,10 +766,6 @@ function registration_state_form_submit(&$form, &$form_state) {
 function registration_state_overview_form($form, &$form_state) {
   $registration_states = registration_states();
 
-  $form['#attached']['js'] = array(
-    drupal_get_path('module', 'registration') . '/registration.js',
-  );
-
   // Form elements for existing states .
   $form['state']['#tree'] = TRUE;
   if (!empty($registration_states)) {
@@ -788,10 +784,11 @@ function registration_state_overview_form($form, &$form_state) {
         '#required' => TRUE,
       );
       $form['state'][$sid]['default_state'] = array(
-        '#title' => t('Default'),
-        '#type' => 'checkbox',
-        '#default_value' => $state->default_state,
-        '#attributes' => array('class' => array('reg-default')),
+        '#type' => 'radio',
+        '#name' => 'default_state',
+        '#return_value' => $sid,
+        '#tree' => FALSE,
+        '#default_value' => ($state->default_state) ? $sid : FALSE,
       );
       $form['state'][$sid]['weight'] = array(
         '#title' => t('Weight'),
@@ -830,8 +827,7 @@ function registration_state_overview_form($form, &$form_state) {
 
   $form['help'] = array(
     '#type' => 'item',
-    '#description' => t("This table defines the registration states available on this site.
-    The Default will be used if no states are marked as Show on Form. "),
+    '#description' => t("This table defines the registration states available on this site. A default is required and will be used if no states are marked as 'Show on Form'."),
   );
 
 
@@ -848,22 +844,20 @@ function registration_state_overview_form($form, &$form_state) {
  */
 function registration_state_overview_form_submit($form, &$form_state) {
 
+  $default_state = $form_state['values']['default_state'];
   foreach ($form_state['input']['state'] as $state) {
-
     $registration_state = entity_load_single('registration_state', $state['sid']);
     $registration_state->label = $state['label'];
-    $registration_state->default_state = isset($state['default_state']) ? $state['default_state'] : 0;
+    $registration_state->default_state = $state['sid'] == $default_state;
     $registration_state->active = isset($state['active']) ? $state['active'] : 0;
     $registration_state->show_on_form = isset($state['show_on_form']) ? $state['show_on_form'] : 0;
     $registration_state->weight = $state['weight'];
     $registration_state->description = $state['description'];
 
     $registration_state->save();
-
   }
 
   drupal_set_message(t('Your registration states have been saved.'));
-
 }
 
 /*

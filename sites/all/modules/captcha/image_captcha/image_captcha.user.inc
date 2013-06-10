@@ -11,16 +11,15 @@
 /**
  * Menu callback function that generates the CAPTCHA image.
  */
-function image_captcha_image() {
+function image_captcha_image($captcha_sid=NULL) {
   // If output buffering is on: discard current content and disable further buffering
   if (ob_get_level()) {
     ob_end_clean();
   }
-
-  if (!isset($_GET['sid'])) {
+  
+  if (!$captcha_sid) {
     exit();
   }
-  $captcha_sid = $_GET['sid'];
 
   // Get solution (the code to show).
   $code = db_query("SELECT solution FROM {captcha_sessions} WHERE csid = :csid",
@@ -97,12 +96,8 @@ function _image_captcha_generate_image($code) {
   }
   imagefilledrectangle($image, 0, 0, $width, $height, $background_color);
 
-  // Do we need to draw in RTL mode?
-  global $language;
-  $rtl = $language->direction && ((bool) variable_get('image_captcha_rtl_support', 0));
-
   // draw text
-  $result = _image_captcha_image_generator_print_string($image, $width, $height, $fonts, $font_size, $code, $rtl);
+  $result = _image_captcha_image_generator_print_string($image, $width, $height, $fonts, $font_size, $code);
   if (!$result) {
     return FALSE;
   }
@@ -235,7 +230,7 @@ function _image_captcha_image_generator_add_dots(&$image, $width, $height, $colo
 /**
  * Helper function for drawing text on the image.
  */
-function _image_captcha_image_generator_print_string(&$image, $width, $height, $fonts, $font_size, $text, $rtl=FALSE) {
+function _image_captcha_image_generator_print_string(&$image, $width, $height, $fonts, $font_size, $text) {
   // get characters
   $characters = _image_captcha_utf8_split($text);
   $character_quantity = count($characters);
@@ -265,9 +260,6 @@ function _image_captcha_image_generator_print_string(&$image, $width, $height, $
   foreach ($characters as $c => $character) {
     // initial position of character: in the center of its cage
     $center_x = ($c + 0.5) * $ccage_width;
-    if ($rtl) {
-      $center_x = $width - $center_x;
-    }
     $center_y = 0.5 * $height;
 
     // Pick a random font from the list.

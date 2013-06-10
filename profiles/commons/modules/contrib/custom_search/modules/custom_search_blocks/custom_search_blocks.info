@@ -1,19 +1,15 @@
 name = Custom Search Blocks
 description = Provides additional search blocks.
 core = 7.x
-package = Custom Search
+package = Search
 
 dependencies[] = block
 dependencies[] = custom_search
 
-files[] = custom_search_blocks.admin.inc
-files[] = custom_search_blocks.module
-files[] = custom_search_blocks.install
-
 configure = admin/config/search/custom_search/blocks
-; Information added by drupal.org packaging script on 2012-09-04
-version = "7.x-1.11"
+; Information added by drupal.org packaging script on 2013-04-23
+version = "7.x-1.12"
 core = "7.x"
 project = "custom_search"
-datestamp = "1346768523"
+datestamp = "1366729866"
 

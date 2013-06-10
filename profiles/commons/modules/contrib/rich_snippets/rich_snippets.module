@@ -333,9 +333,11 @@ function rich_snippets_get_schema_from_predicates(array $rdf_mapping, $field_nam
  */
 function rich_snippets_get_result_schema($entity_type, $bundle) {
   $mapping = rdf_mapping_load($entity_type, $bundle);
-  foreach ($mapping['rdftype'] as $typeof) {
-    if (0 === strpos($typeof, 'schema:')) {
-      return substr($typeof, 7);
+  if (isset($mapping['rdftype']) && !empty($mapping['rdftype'])) {
+    foreach ($mapping['rdftype'] as $typeof) {
+      if (0 === strpos($typeof, 'schema:')) {
+        return substr($typeof, 7);
+      }
     }
   }
   return FALSE;

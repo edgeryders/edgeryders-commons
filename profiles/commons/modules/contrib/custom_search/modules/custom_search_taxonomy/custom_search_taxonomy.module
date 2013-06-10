@@ -29,6 +29,66 @@ function custom_search_taxonomy_menu() {
 }
 
 /**
+ * Implements hook_custom_search_box().
+ */
+function custom_search_taxonomy_custom_search_box(&$form, $form_id, $delta = '') {
+  $vocabularies = taxonomy_get_vocabularies();
+  foreach ($vocabularies as $voc) {
+    if (variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector', 'disabled') != 'disabled') {
+      $options = array();
+      $options['c-all'] = variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_all', CUSTOM_SEARCH_ALL_TEXT_DEFAULT);
+      $vocabulary_depth = (!variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_depth', 0)) ? NULL : variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_depth', 0);
+      $terms = taxonomy_get_tree($voc->vid, 0, $vocabulary_depth);
+      foreach ($terms as $term) {
+        $options['c-' . $term->tid] = (drupal_substr(variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector', 'disabled'), 0, 6) == 'select') ? str_repeat('-', $term->depth) . ' ' . $term->name : $term->name ;
+      }
+      $selector_type = variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector', 'select');
+      if ($selector_type == 'selectmultiple') {
+        $selector_type = 'select';
+        $multiple = TRUE;
+      }
+      else $multiple = FALSE;
+      $form['custom_search_vocabulary_' . $voc->vid] = array(
+        '#type'           => $selector_type,
+        '#multiple'       => $multiple,
+        '#title'          => variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_label', $voc->name),
+        '#options'        => $options,
+        '#default_value'  => ($selector_type == 'checkboxes') ? array('c-all') : 'c-all',
+        '#attributes'     => array('class' => array('custom-search-selector', 'custom-search-vocabulary')),
+        '#weight'         => variable_get('custom_search_' . $delta . 'taxonomy' . $voc->vid . '_weight', 2),
+      );
+
+      if (module_exists('hs_taxonomy') && $selector_type == 'hierarchical_select') {
+        $hs_config = hierarchical_select_common_config_get('taxonomy-' . $voc->vid);
+        $hs_config['module'] = 'hs_taxonomy';
+        $hs_config['params'] = array(
+          'vid'                         => $voc->vid,
+          'exclude_tid'                 => 0,
+          'root_term'                   => 0,
+          'entity_count_for_node_type'  => 0,
+        );
+        $form['custom_search_vocabulary_' . $voc->vid]['#config'] = $hs_config;
+        unset($form['custom_search_vocabulary_' . $voc->vid]['#options']);
+      }
+
+      if (variable_get('custom_search_' . $delta . 'taxonomy' . $voc->vid . '_region', 'block') == 'popup') {
+        $form['popup']['custom_search_vocabulary_' . $voc->vid] = $form['custom_search_vocabulary_' . $voc->vid];
+        unset($form['custom_search_vocabulary_' . $voc->vid]);
+      }
+      if (!variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_label_visibility', TRUE)) $form['custom_search_vocabulary_' . $voc->vid]['#title_display'] = 'invisible';
+    }
+  }
+
+  // Custom paths
+  if (variable_get('custom_search_' . $delta . 'paths', '') != '') {
+    $form['custom_search_paths_terms_separator'] = array(
+      '#type'           => 'hidden',
+      '#default_value'  => variable_get('custom_search_' . $delta . 'paths_terms_separator', CUSTOM_SEARCH_PATHS_TERMS_SEPARATOR_DEFAULT),
+    );
+  }
+}
+
+/**
  * Implements hook_form_alter().
  */
 function custom_search_taxonomy_form_alter(&$form, &$form_state, $form_id) {
@@ -44,69 +104,6 @@ function custom_search_taxonomy_form_alter(&$form, &$form_state, $form_id) {
   }
 
   switch ($form_id_processed) {
-
-    case 'search_theme_form':
-    case 'search_block_form':
-    case 'custom_search_blocks_form':
-
-      if (user_access('use custom search')) {
-        $vocabularies = taxonomy_get_vocabularies();
-        foreach ($vocabularies as $voc) {
-          if (variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector', 'disabled') != 'disabled') {
-            $options = array();
-            $options['c-all'] = variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_all', CUSTOM_SEARCH_ALL_TEXT_DEFAULT);
-            $vocabulary_depth = (!variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_depth', 0)) ? NULL : variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_depth', 0);
-            $terms = taxonomy_get_tree($voc->vid, 0, $vocabulary_depth);
-            foreach ($terms as $term) {
-              $options['c-' . $term->tid] = (drupal_substr(variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector', 'disabled'), 0, 6) == 'select') ? str_repeat('-', $term->depth) . ' ' . $term->name : $term->name ;
-            }
-            $selector_type = variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector', 'select');
-            if ($selector_type == 'selectmultiple') {
-              $selector_type = 'select';
-              $multiple = TRUE;
-            }
-            else $multiple = FALSE;
-            $form['custom_search_vocabulary_' . $voc->vid] = array(
-              '#type'           => $selector_type,
-              '#multiple'       => $multiple,
-              '#title'          => variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_label', $voc->name),
-              '#options'        => $options,
-              '#default_value'  => ($selector_type == 'checkboxes') ? array('c-all') : 'c-all',
-              '#attributes'     => array('class' => array('custom-search-selector', 'custom-search-vocabulary')),
-              '#weight'         => variable_get('custom_search_' . $delta . 'taxonomy' . $voc->vid . '_weight', 2),
-            );
-
-            if (module_exists('hs_taxonomy') && $selector_type == 'hierarchical_select') {
-              $hs_config = hierarchical_select_common_config_get('taxonomy-' . $voc->vid);
-              $hs_config['module'] = 'hs_taxonomy';
-              $hs_config['params'] = array(
-                'vid'                         => $voc->vid,
-                'exclude_tid'                 => 0,
-                'root_term'                   => 0,
-                'entity_count_for_node_type'  => 0,
-              );
-              $form['custom_search_vocabulary_' . $voc->vid]['#config'] = $hs_config;
-              unset($form['custom_search_vocabulary_' . $voc->vid]['#options']);
-            }
-
-            if (variable_get('custom_search_' . $delta . 'taxonomy' . $voc->vid . '_region', 'block') == 'popup') {
-              $form['popup']['custom_search_vocabulary_' . $voc->vid] = $form['custom_search_vocabulary_' . $voc->vid];
-              unset($form['custom_search_vocabulary_' . $voc->vid]);
-            }
-            if (!variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_label_visibility', TRUE)) $form['custom_search_vocabulary_' . $voc->vid]['#title_display'] = 'invisible';
-          }
-        }
-
-        // Custom paths
-        if (variable_get('custom_search_' . $delta . 'paths', '') != '') {
-          $form['custom_search_paths_terms_separator'] = array(
-            '#type'           => 'hidden',
-            '#default_value'  => variable_get('custom_search_' . $delta . 'paths_terms_separator', CUSTOM_SEARCH_PATHS_TERMS_SEPARATOR_DEFAULT),
-          );
-        }
-      }
-      
-    break;
 
     case 'block_admin_configure':
       if (isset($form['module']) && $form['module']['#value'] == 'custom_search_blocks') {

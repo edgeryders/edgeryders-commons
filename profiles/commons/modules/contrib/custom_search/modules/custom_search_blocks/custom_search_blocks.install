@@ -24,6 +24,7 @@ function custom_search_blocks_uninstall() {
     variable_del('custom_search_blocks_' . $delta . '_label_visibility');
     variable_del('custom_search_blocks_' . $delta . '_label');
     variable_del('custom_search_blocks_' . $delta . '_text');
+    variable_del('custom_search_blocks_' . $delta . '_hint_text');
     variable_del('custom_search_blocks_' . $delta . '_size');
     variable_del('custom_search_blocks_' . $delta . '_max_length');
     variable_del('custom_search_blocks_' . $delta . '_submit_text');
