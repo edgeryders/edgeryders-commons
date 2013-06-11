@@ -1,0 +1,64 @@
+<?php
+/**
+ * @file
+ * Test definitions for the Project Management Note module
+ */
+class pmnoteTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Project Management Note Functionality'),
+      'description' => t('Test the functionality of the Project Management Note module'),
+      'group' => 'Project Management',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp('views', 'pm', 'pmorganization', 'pmproject', 'pmtask', 'pmnote');
+  }
+
+  public function testpmnoteAccess() {
+    $this->drupalGet('pm/notes');
+    $this->assertResponse(403, t('Make sure access is denied to Project Management Notes list for anonymous user'));
+
+    $basic_user = $this->drupalCreateUser();
+    $this->drupalLogin($basic_user);
+    $this->drupalGet('pm/notes');
+    $this->assertResponse(403, t('Make sure access is denied to Project Management Notes list for basic user'));
+
+    $privileged_user = $this->drupalCreateUser(array('Project Management Note: access'));
+    $this->drupalLogin($privileged_user);
+    $this->drupalGet('pm/notes');
+    $this->assertText(t('Notes'), t('Make sure the correct page has been displayed by checking that the title is "Notes".'));
+  }
+
+  public function testpmnoteCreate() {
+    // Create and login user
+    $user = $this->drupalCreateUser(array('Project Management Organization: add', 'Project Management Organization: view all', 'Project Management Project: add', 'Project Management Project: view all', 'Project Management Task: add', 'Project Management Task: view all', 'Project Management Note: add', 'Project Management Note: view all'));
+    $this->drupalLogin($user);
+
+    // Create organization and invoice
+    $org = array(
+      'title' => $this->randomName(32),
+      'body' => $this->randomName(64),
+    );
+    $prj = array(
+      'title' => $this->randomName(32),
+      'organization_nid' => '1',
+    );
+    $task = array(
+      'title' => $this->randomName(32),
+      'body' => $this->randomName(64),
+    );
+    $note = array(
+      'title' => $this->randomName(32),
+      'body' => $this->randomName(64),
+    );
+    $this->drupalPost('node/add/pmorganization', $org, t('Save'));
+    $this->drupalPost('node/add/pmproject', $prj, t('Save'));
+    $this->drupalPost('node/add/pmtask', $task, t('Save'));
+    $this->drupalPost('node/add/pmnote', $note, t('Save'));
+
+    $this->assertText(t('Note @title has been created.', array('@title' => $note['title'])));;
+  }
+}

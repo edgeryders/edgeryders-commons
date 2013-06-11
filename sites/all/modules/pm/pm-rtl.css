@@ -1,0 +1,145 @@
+
+table.formgroup tr td {
+padding-right: 0px;
+padding-left: 5px;
+}
+
+th.pm_list_operations {
+text-align: left;
+}
+
+td.pm_list_operations {
+text-align: left;
+}
+
+div.pm_popup_title {
+float: right;
+}
+
+ul.pm_quick_shortcuts li {
+float: right;
+margin: 0 0 1pt 1pt;
+}
+
+div.pmdashboard {
+float: right;
+}
+
+dt.pmcomponent {
+padding-right: 40px;
+}
+
+dt.pmcomponent a {
+margin-left: 5px;
+}
+
+dt#pmorganizations {
+background: transparent url(images/organizations.png) no-repeat top right;
+}
+
+dt#pmprojects {
+background: transparent url(images/projects.png) no-repeat top right;
+}
+
+dt#pmtasks {
+background: transparent url(images/tasks.png) no-repeat top right;
+}
+
+dt#pmtickets {
+background: transparent url(images/tickets.png) no-repeat top right;
+}
+
+dt#pmpeople {
+background: transparent url(images/people.png) no-repeat top right;
+}
+
+dt#pmteammembers {
+background: transparent url(images/teammembers.png) no-repeat top right;
+}
+
+dt#pmknowledgebase {
+background: transparent url(images/knowledgebase.png) no-repeat top right;
+}
+
+dt#pmtimetrackings {
+background: transparent url(images/timetrackings.png) no-repeat top right;
+}
+
+dt#pmnotes {
+background: transparent url(images/notes.png) no-repeat top right;
+}
+
+dt#pminvoices {
+background: transparent url(images/invoices.png) no-repeat top right;
+}
+
+dt#pmexpenses {
+background: transparent url(images/expenses.png) no-repeat top right;
+}
+
+dt#pmattributes {
+background: transparent url(images/attributes.png) no-repeat top right;
+}
+
+dt#pmconfiguration {
+background: transparent url(images/configuration.png) no-repeat top right;
+}
+
+div.pmcomponent {
+overflow: hidden;
+}
+
+div.pmcomponent #fields {
+float: right;
+}
+
+div.pmcomponent #fields div.label{
+float: right;
+text-align: left;
+clear: right;
+}
+
+div.pmcomponent #fields div.value {
+float: right;
+margin-right: 4px;
+}
+
+div.pmcomponent #links {
+float: left;
+}
+
+div.pmcomponent #links div {
+padding-right: 34px;
+}
+
+div.pmcomponent div.projects {
+background: transparent url(images/projects.png) no-repeat top right;
+}
+
+div.pmcomponent div.people {
+background: transparent url(images/people.png) no-repeat top right;
+}
+
+div.pmcomponent div.tickets {
+background: transparent url(images/tickets.png) no-repeat top right;
+}
+
+div.pmcomponent div.invoices {
+background: transparent url(images/invoices.png) no-repeat top right;
+}
+
+div.pmcomponent div.notes {
+background: transparent url(images/notes.png) no-repeat top right;
+}
+
+div.pmcomponent div.timetrackings {
+background: transparent url(images/timetrackings.png) no-repeat top right;
+}
+
+div.pmcomponent div.print_html {
+background: transparent url(images/html.png) no-repeat top right;
+}
+
+div.pmcomponent div.print_pdf {
+background: transparent url(images/pdf.png) no-repeat top right;
+}

@@ -1,0 +1,42 @@
+Index: jsgantt.js
+===================================================================
+RCS file: /cvs/drupal-contrib/contributions/modules/pm/pmtask/jsgantt/Attic/jsgantt.js,v
+retrieving revision 1.1.2.1
+diff -u -r1.1.2.1 jsgantt.js
+--- jsgantt.js   2 Jul 2009 08:47:19 -0000   1.1.2.1
++++ jsgantt.js   2 Jul 2009 09:00:45 -0000
+@@ -478,7 +478,7 @@
+         
+          // DRAW the Left-side of the chart (names, resources, comp%)
+          vLeftTable =
+-            '<DIV class=scroll id=leftside style="width:' + vLeftWidth + 'px"><TABLE cellSpacing=0 cellPadding=0 border=0><TBODY>' +
++            '<DIV class=scroll id=leftside style="width: ' + 400 + 'px"><TABLE cellSpacing=0 cellPadding=0 border=0><TBODY>' +
+             '<TR style="HEIGHT: 17px">' +
+             '  <TD style="WIDTH: 15px; HEIGHT: 17px"></TD>' +
+             '  <TD style="WIDTH: ' + vNameWidth + 'px; HEIGHT: 17px"><NOBR></NOBR></TD>'; 
+@@ -1451,7 +1451,9 @@
+     if(pWidth)  vWidth =pWidth;  else vWidth =400;
+     if(pHeight) vHeight=pHeight; else vHeight=400;
+ 
+-    var OpenWindow=window.open(pRef, "newwin", "height="+vHeight+",width="+vWidth); 
++    // Prevent forced opening of new window/tab
++    //var OpenWindow=window.open(pRef, "newwin", "height="+vHeight+",width="+vWidth); 
++    var OpenWindow=window.location.href=pRef;
+ 
+   }
+ 
+Index: jsgantt.css
+===================================================================
+RCS file: /cvs/drupal-contrib/contributions/modules/pm/pmtask/jsgantt/Attic/jsgantt.css,v
+retrieving revision 1.1.2.1
+diff -u -r1.1.2.1 jsgantt.css
+--- jsgantt.css   2 Jul 2009 08:47:19 -0000   1.1.2.1
++++ jsgantt.css   11 Jul 2009 18:48:50 -0000
+@@ -51,3 +51,6 @@
+ 
+ DIV.scroll2 { position:relative; PADDING-RIGHT: 0px; overflow:auto ;overflow-x:scroll;overflow-y:hidden; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; WIDTH: 482px; PADDING-TOP: 0px; BACKGROUND-COLOR: #ffffff }
+ 
++#GanttChartDIV table{
++margin:0;
++}
+\ No newline at end of file

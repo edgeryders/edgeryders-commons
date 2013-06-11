@@ -1,0 +1,200 @@
+<?php
+/**
+ * @file
+ * Install, disable, uninstall and update functions for pmtask module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function pmtask_install() {
+  variable_set('node_options_pmtask', array('status'));
+  variable_set('node_permissions_pmtask', 0);
+
+  // Uncache node types
+  node_types_rebuild();
+
+  // Fetch list of current node types and add body field to pmtask
+  $types = node_type_get_types();
+  node_add_body_field($types['pmtask'], 'Description');
+
+  $attributes = array();
+
+  $attributes['Task status'] = array(
+    'inserted' => 'inserted',
+    'in progress' => 'in progress',
+    'on hold' => 'on hold',
+    'completed' => 'completed'
+  );
+
+  $attributes['Task status search'] = array(
+    '-' => 'all',
+    'inserted,in progress,on hold' => 'open',
+    'inserted' => '-- inserted',
+    'in progress' => '-- in progress',
+    'on hold' => '-- on hold',
+    'completed' => 'completed'
+  );
+
+  $attributes['Task category'] = array(
+    'bug' => 'bug',
+    'feature request' => 'feature request',
+    'support' => 'support',
+    'task' => 'task'
+  );
+
+  $attributes['Task priority'] = array(
+    '1-low' => 'low',
+    '2-normal' => 'normal',
+    '3-high' => 'high',
+    '4-urgent' => 'urgent'
+  );
+
+  $attributes['Task priority search'] = array(
+    '-' => 'all',
+    '1-low' => 'low',
+    '2-normal' => 'normal',
+    '3-high' => 'high',
+    '4-urgent' => 'urgent'
+  );
+
+  $attributes['Task category search'] = array(
+    '-' => 'all',
+    'bug' => 'bug',
+    'feature request' => 'feature request',
+    'support' => 'support',
+    'task' => 'task'
+  );
+
+  $prevdomain = '';
+  $weight = 0;
+  foreach ($attributes as $domain => $attribute) {
+    if ($domain != $prevdomain) $weight=0;
+    foreach ($attribute as $key => $value) {
+      db_insert('pmattribute')
+        ->fields(array(
+          'domain' => $domain,
+          'akey' => $key,
+          'avalue' => $value,
+          'weight' => $weight,
+        ))
+        ->execute();
+
+      $weight++;
+    }
+    $prevdomain = $domain;
+  }
+
+  db_update('pmattribute')
+    ->fields(array('isdefault' => '1'))
+    ->condition('domain', 'task category')
+    ->condition('akey', 'task')
+    ->execute();
+}
+
+/**
+ * Implements hook_disable().
+ */
+function pmtask_disable() {
+  node_access_needs_rebuild(TRUE);
+  drupal_set_message(t('Nodes of type "Task" have not been deleted on disabling Project Management Task. Please note that they will now have reduced functionality, and will not be protected by Project Management Task access controls.'), 'warning');
+}
+
+/**
+ * Implements hook_enable().
+ */
+function pmtask_enable() {
+  node_access_needs_rebuild(TRUE);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function pmtask_uninstall() {
+  drupal_uninstall_schema('pmtask');
+
+  db_delete('pmattribute')
+    ->condition('domain', array('Task status', 'Task status search', 'Task category', 'Task category search', 'Task priority', 'Task priority search'), 'IN')
+    ->execute();
+}
+
+/**
+ * Implements hook_schema().
+ */
+function pmtask_schema() {
+  $schema['pmtask'] = array(
+    'fields'        => array(
+      'vid'                 => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'nid'                 => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'stepno'              => array('type' => 'varchar', 'length' => 50),
+      'organization_nid'    => array('type' => 'int'),
+      'organization_title'  => array('type' => 'varchar', 'length' => 150),
+      'project_nid'         => array('type' => 'int'),
+      'project_title'       => array('type' => 'varchar', 'length' => 150),
+      'parent_nid'          => array('type' => 'int'),
+      'weight'              => array('type' => 'int'),
+      'taskstatus'          => array('type' => 'varchar', 'length' => 100),
+      'taskcategory'        => array('type' => 'varchar', 'length' => 100),
+      'taskpriority'        => array('type' => 'varchar', 'length' => 100),
+      'pricemode'           => array('type' => 'varchar', 'length' => 100),
+      'price'               => array('type' => 'float'),
+      'currency'            => array('type' => 'varchar', 'length' => 100),
+      'datebegin'           => array('type' => 'int', 'default' => 0),
+      'dateend'             => array('type' => 'int', 'default' => 0),
+      'durationunit'        => array('type' => 'varchar', 'length' => 100),
+      'duration'            => array('type' => 'float', 'default' => 0),
+      'assigned_nid'        => array('type' => 'int'),
+      'assigned_title'      => array('type' => 'varchar', 'length' => 100),
+      'billable'            => array('type' => 'int', 'default' => 0),
+      'billed'              => array('type' => 'int', 'default' => 0),
+    ),
+    'primary key' => array('vid'),
+    'indexes'     => array(
+      'nid'               => array('nid'),
+      'organization_nid'  => array('organization_nid'),
+      'project_nid'       => array('project_nid'),
+      'assigned_nid'      => array('assigned_nid'),
+      'parent_nid'        => array('parent_nid'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function pmtask_update_last_removed() {
+  return 6202;
+}
+
+/**
+ * Adds Drupal 7 style body field to Project Management Task nodes
+ */
+function pmtask_update_7100() {
+  // Uncache node types
+  node_types_rebuild();
+
+  // Fetch list of current node types
+  $types = node_type_get_types();
+
+  // Add body field to Project Management Task
+  node_add_body_field($types['pmtask'], 'Description');
+
+  return 'Added D7 style body field to Project Management Task nodes';
+}
+
+/**
+ * Allow Project Management to override the default content type permissions
+ */
+function pmtask_update_7101() {
+  variable_set('node_permissions_pmtask', 0);
+  return 'PM Task permissions overridden';
+}
+
+/**
+ * Display message to admin regarding need to rebuild permission.
+ */
+function pmtask_update_7102() {
+  node_access_needs_rebuild(TRUE);
+}

@@ -1,0 +1,195 @@
+<?php
+/**
+ * @file
+ * Installation functions for the Project Management project module
+ */
+
+/**
+ * Implements hook_install().
+ */
+function pmticket_install() {
+  variable_set('node_options_pmticket', array('status'));
+  variable_set('node_permissions_pmticket', 0);
+
+  // Uncache node types
+  node_types_rebuild();
+
+  // Fetch list of current node types and add body field to pmticket
+  $types = node_type_get_types();
+  node_add_body_field($types['pmticket'], 'Description');
+
+  $attributes = array();
+
+  $attributes['Ticket status'] = array(
+    'inserted' => 'inserted',
+    'in progress' => 'in progress',
+    'on hold' => 'on hold',
+    'completed' => 'completed'
+  );
+
+  $attributes['Ticket status search'] = array(
+    '-' => 'all',
+    'inserted,in progress,on hold' => 'open',
+    'inserted' => '-- inserted',
+    'in progress' => '-- in progress',
+    'on hold' => '-- on hold',
+    'completed' => 'completed'
+  );
+
+  $attributes['Ticket category'] = array(
+    'estimate' => 'estimate',
+    'bug' => 'bug',
+    'feature request' => 'feature request',
+    'support' => 'support',
+    'task' => 'task'
+  );
+
+  $attributes['Ticket category search'] = array(
+    '-' => 'all',
+    'estimate' => 'estimate',
+    'bug' => 'bug',
+    'feature request' => 'feature request',
+    'support' => 'support',
+    'task' => 'task'
+  );
+
+  $attributes['Ticket priority'] = array(
+    '1-low' => 'low',
+    '2-normal' => 'normal',
+    '3-high' => 'high',
+    '4-urgent' => 'urgent'
+  );
+
+  $attributes['Ticket priority search'] = array(
+    '-' => 'all',
+    '1-low' => 'low',
+    '2-normal' => 'normal',
+    '3-high' => 'high',
+    '4-urgent' => 'urgent'
+  );
+
+  $s = "INSERT INTO {pmattribute} (domain, akey, avalue, weight) VALUES ('%s', '%s', '%s', %d)";
+  $prevdomain = '';
+  $weight = 0;
+  foreach ($attributes as $domain => $attribute) {
+    if ($domain != $prevdomain) $weight=0;
+    foreach ($attribute as $key => $value) {
+      db_insert('pmattribute')
+        ->fields(array(
+          'domain' => $domain,
+          'akey' => $key,
+          'avalue' => $value,
+          'weight' => $weight,
+        ))
+        ->execute();
+
+      $weight++;
+    }
+    $prevdomain = $domain;
+  }
+}
+
+/**
+ * Implement hook_enable().
+ */
+function pmticket_enable() {
+  node_access_needs_rebuild(TRUE);
+}
+
+/**
+ * Implements hook_disable().
+ */
+function pmticket_disable() {
+  node_access_needs_rebuild(TRUE);
+  drupal_set_message(t('Nodes of type "Ticket" have not been deleted on disabling Project Management Ticket. Please note that they will now have reduced functionality, and will not be protected by Project Management Ticket access controls.'), 'warning');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function pmticket_uninstall() {
+  drupal_uninstall_schema('pmticket');
+
+  db_delete('pmattribute')
+    ->condition('domain', array('Ticket status', 'Ticket status search', 'Ticket category', 'Ticket category search', 'Ticket priority', 'Ticket priority search'), 'IN')
+    ->execute();
+}
+
+/**
+ * Implements hook_schema().
+ */
+function pmticket_schema() {
+  $schema['pmticket'] = array(
+    'fields'        => array(
+      'vid'                 => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'nid'                 => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'organization_nid'    => array('type' => 'int'),
+      'organization_title'  => array('type' => 'varchar', 'length' => 128),
+      'project_nid'         => array('type' => 'int'),
+      'project_title'       => array('type' => 'varchar', 'length' => 128),
+      'task_nid'            => array('type' => 'int'),
+      'task_stepno'         => array('type' => 'varchar', 'length' => 128),
+      'task_title'          => array('type' => 'varchar', 'length' => 128),
+      'ticketcategory'      => array('type' => 'varchar', 'length' => 100),
+      'ticketstatus'        => array('type' => 'varchar', 'length' => 100),
+      'ticketpriority'      => array('type' => 'varchar', 'length' => 100),
+      'pricemode'           => array('type' => 'varchar', 'length' => 100),
+      'price'               => array('type' => 'float'),
+      'currency'            => array('type' => 'varchar', 'length' => 100),
+      'datebegin'           => array('type' => 'int', 'default' => 0),
+      'dateend'             => array('type' => 'int', 'default' => 0),
+      'durationunit'        => array('type' => 'varchar', 'length' => 100),
+      'duration'            => array('type' => 'float', 'default' => 0),
+      'assigned_nid'        => array('type' => 'int'),
+      'assigned_title'      => array('type' => 'varchar', 'length' => 100),
+      'billable'            => array('type' => 'int', 'default' => 0),
+      'billed'              => array('type' => 'int', 'default' => 0),
+    ),
+    'primary key' => array('vid'),
+    'indexes'     => array(
+      'nid'               => array('nid'),
+      'organization_nid'  => array('organization_nid'),
+      'project_nid'       => array('project_nid'),
+      'task_nid'          => array('task_nid'),
+      'assigned_nid'      => array('assigned_nid'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function pmticket_update_last_removed() {
+  return 6202;
+}
+
+/**
+ * Adds Drupal 7 style body field to Project Management Ticket nodes
+ */
+function pmticket_update_7100() {
+  // Uncache node types
+  node_types_rebuild();
+
+  // Fetch list of current node types and add body field to Project Management Task
+  $types = node_type_get_types();
+  node_add_body_field($types['pmticket'], 'Description');
+
+  return 'Added D7 style body field to Project Management Ticket nodes';
+}
+
+/**
+ * Allow pm to override the default Ticket content type CRUD permissions
+ */
+function pmticket_update_7101() {
+  variable_set('node_permissions_pmticket', 0);
+  return 'PM Ticket permissions overridden';
+}
+
+/**
+ * Display message to admin regarding need to rebuild permission.
+ */
+function pmticket_update_7102() {
+  node_access_needs_rebuild(TRUE);
+}

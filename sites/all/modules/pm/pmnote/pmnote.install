@@ -1,0 +1,72 @@
+<?php
+/**
+ * @file
+ */
+
+function pmnote_install() {
+  variable_set('node_options_pmnote', array('status'));
+  variable_set('node_permissions_pmnote', 0);
+}
+
+function pmnote_disable() {
+  drupal_set_message(t('Nodes of type "Note" have not been deleted on disabling Project Management Note. Please note that they will now have reduced functionality, and will not be protected by Project Management Note access controls.'), 'warning');
+}
+
+function pmnote_uninstall() {
+  drupal_uninstall_schema('pmnote');
+}
+
+function pmnote_schema() {
+  $schema['pmnote'] = array(
+    'fields'                => array(
+      'vid'                 => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'nid'                 => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'organization_nid'    => array('type' => 'int'),
+      'organization_title'  => array('type' => 'varchar', 'length' => 128),
+      'project_nid'         => array('type' => 'int'),
+      'project_title'       => array('type' => 'varchar', 'length' => 128),
+      'task_nid'            => array('type' => 'int'),
+      'task_title'          => array('type' => 'varchar', 'length' => 128),
+    ),
+    'primary key' => array('vid'),
+    'indexes'     => array(
+      'nid'               => array('nid'),
+      'organization_nid'  => array('organization_nid'),
+      'project_nid'       => array('project_nid'),
+      'task_nid'          => array('task_nid'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * @function
+ * Implements hook_update_last_removed()
+ */
+function pmnote_update_last_removed() {
+  return 6201;
+}
+
+
+/**
+ * Adds Drupal 7 style body field to Project Management Note nodes
+ */
+function pmnote_update_7100() {
+  // Uncache node types
+  node_types_rebuild();
+
+  // Fetch list of current node types and add body field to Project Management Task
+  $types = node_type_get_types();
+  node_add_body_field($types['pmnote'], 'Description');
+
+  return 'Added D7 style body field to Project Management Note nodes';
+}
+
+/**
+ * Allow Project Management to override the default Note content type CRUD permissions
+ */
+function pmnote_update_7101() {
+  variable_set('node_permissions_pmnote', 0);
+  return 'PM Note permissions overridden';
+}

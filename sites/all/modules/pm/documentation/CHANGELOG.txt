@@ -1,0 +1,6 @@
+** New issues added should be added at the TOP of the list for each version as they are committed. **
+
+Version 7.x-1.x-dev:
+- Task #510742: Port to Drupal 7. No functionality changes.
+
+[Changelog begins at version 6.x-2.0]

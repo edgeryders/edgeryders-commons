@@ -1,0 +1,170 @@
+table.formgroup {
+width: auto;
+margin: 0;
+clear: both;
+border: none;
+}
+
+table.formgroup tr td {
+padding-left: 0px;
+padding-right: 5px;
+border: none;
+}
+
+table.formgroup tr td div.form-item{
+margin-top: 0px;
+margin-bottom: 5px;
+}
+
+tbody {
+border:none !important;
+}
+
+th.pm_list_operations {
+text-align: right;
+white-space: nowrap;
+padding: 0.3em 0.5em;
+}
+
+td.pm_list_operations {
+text-align: right;
+white-space: nowrap;
+}
+
+div.pm_popup {
+display:none;
+z-index: 100;
+border: 1px solid black;
+background-color: #fff;
+}
+
+div.pm_popup_inner {
+text-align: center;
+}
+
+div.pm_popup_inner form div div.form-item {
+margin: 0;
+}
+
+div.pm_popup_inner form div input.form-submit {
+margin: 5px 0 0 0;
+}
+
+div.pm_popup_title {
+float: left;
+text-align: center;
+color: #fff;
+width: 100%;
+background-color: #5294C1;
+}
+
+div.pm_popup_inner {
+clear: both;
+}
+
+div.pm_quick_shortcuts {
+clear: both;
+}
+
+ul.pm_quick_shortcuts {
+list-style-type: none;
+margin: 0;
+}
+
+ul.pm_quick_shortcuts li {
+background: transparent;
+background-color: #5294C1;
+display: inline;
+float: left;
+padding: 0;
+margin: 0 1pt 1pt 0;
+}
+
+ul.pm_quick_shortcuts li a {
+display: block;
+width: 20px;
+height: 20px;
+text-align: center;
+font-weight: bold;
+color: #ffffff;
+}
+
+form.pmcomponent_node_form #edit-preview {
+  display: none;
+}
+
+tr.formgroup {
+  background-color: #ffffff !important;
+  border: none !important;
+}
+
+dt.pmcomponent {
+padding-left: 40px;
+padding-top: 10px;
+height: 40px;
+}
+
+dt.pmcomponent a {
+font-weight: bold;
+margin-right: 5px;
+}
+
+dt#pmorganizations {
+background: transparent url(images/organizations.png) no-repeat top left;
+}
+
+dt#pmprojects {
+background: transparent url(images/projects.png) no-repeat top left;
+}
+
+dt#pmtasks {
+background: transparent url(images/tasks.png) no-repeat top left;
+}
+
+dt#pmtickets {
+background: transparent url(images/tickets.png) no-repeat top left;
+}
+
+dt#pmpeople {
+background: transparent url(images/people.png) no-repeat top left;
+}
+
+dt#pmteams {
+background: transparent url(images/teams.png) no-repeat top left;
+}
+
+dt#pmknowledgebase {
+background: transparent url(images/knowledgebase.png) no-repeat top left;
+}
+
+dt#pmtimetrackings {
+background: transparent url(images/timetrackings.png) no-repeat top left;
+}
+
+dt#pmnotes {
+background: transparent url(images/notes.png) no-repeat top left;
+}
+
+dt#pminvoices {
+background: transparent url(images/invoices.png) no-repeat top left;
+}
+
+dt#pmexpenses {
+background: transparent url(images/expenses.png) no-repeat top left;
+}
+
+dt#pmattributes {
+background: transparent url(images/attributes.png) no-repeat top left;
+}
+
+dt#pmconfiguration {
+background: transparent url(images/configuration.png) no-repeat top left;
+}
+
+.container-inline .container-inline-date div, .container-inline div.container-inline-date, .container-inline .container-inline-date input {
+  display: block;
+}
+
+.view .attachment .pm-icon-add-view {
+  float: right;
+}

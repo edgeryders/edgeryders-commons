@@ -1,0 +1,1194 @@
+<?php
+
+/**
+ * @file
+ *
+ * 1: Hooks
+ * 2: Access functions
+ */
+
+/**
+ * Implements hook_help().
+ */
+function pmticket_help($path, $arg) {
+  $o = '';
+
+  switch ($path) {
+    case "admin/help#pmticket":
+      $o = '<p>' . t("Provides ticket support for Project Management") . '</p>';
+      break;
+  }
+  return $o;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function pmticket_permission() {
+  return array(
+    'Project Management Ticket: access' => array(
+      'title' => t('Access Project Management Ticket lists'),
+    ),
+    'Project Management Ticket: add' => array(
+      'title' => t('Add Project Management Tickets'),
+    ),
+    'Project Management Ticket: delete all' => array(
+      'title' => t('Delete Any Project Management Ticket'),
+    ),
+    'Project Management Ticket: delete own' => array(
+      'title' => t('Delete Authored Project Management Ticket'),
+    ),
+    'Project Management Ticket: delete of user organization' => array(
+      'title' => t('Delete Project Management Ticket in own organization'),
+    ),
+    'Project Management Ticket: delete if assigned to ticket' => array(
+      'title' => t('Delete Project Management Ticket if user assigned to ticket'),
+    ),
+    'Project Management Ticket: edit all' => array(
+      'title' => t('Edit Any Project Management Ticket'),
+    ),
+    'Project Management Ticket: edit own' => array(
+      'title' => t('Edit Authored Project Management Ticket'),
+    ),
+    'Project Management Ticket: edit of user organization' => array(
+      'title' => t('Edit Project Management Ticket in own Organization'),
+    ),
+    'Project Management Ticket: edit if assigned to ticket' => array(
+      'title' => t('Edit Project Management Ticket if assigned to ticket'),
+    ),
+    'Project Management Ticket: view all' => array(
+      'title' => t('View Any Project Management Ticket'),
+    ),
+    'Project Management Ticket: view own' => array(
+      'title' => t('View Authored Project Management Ticket'),
+    ),
+    'Project Management Ticket: view of user organization' => array(
+      'title' => t('View Project Management Ticket in own Organization'),
+    ),
+    'Project Management Ticket: view if assigned to ticket' => array(
+      'title' => t('View Project Management Ticket if assigned to user'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function pmticket_node_access($node, $op, $account = NULL) {
+  $type = is_string($node) ? $node : $node->type;
+  if ($type == 'pmticket') {
+    // If no account is specified, assume that the check is against the current logged in user
+    if (is_null($account)) {
+      global $user;
+      $account = $user;
+    }
+    if ($op == 'create' AND user_access('Project Management Ticket: add', $account)) {
+      return NODE_ACCESS_ALLOW;
+    }
+  }
+  return NODE_ACCESS_IGNORE;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function pmticket_menu() {
+  $items = array();
+
+  $items['admin/config/pm/ticket'] = array(
+    'title' => 'Project Management Ticket',
+    'description' => 'Project Management Ticket administration page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pmticket_admin_settings'),
+    'access arguments' => array('Project Management: access administration pages'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pmticket_theme() {
+  return array(
+    'pmticket_view' => array(
+      'file'      => 'pmticket.theme.inc',
+      'variables' => array('node', 'view_mode'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_info().
+ */
+function pmticket_node_info() {
+  return array(
+    'pmticket' => array(
+      'name' => t('Ticket'),
+      'base' => 'pmticket',
+      'description' => t("A ticket for Project Management."),
+      'title_label' => t("Title"),
+      'body_label' => t("Description"),
+    )
+  );
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function pmticket_field_extra_fields() {
+  $extra['node']['pmticket'] =  array(
+    'form' => array(
+      'group1' => array(
+        'label' => 'Organization/Project/Task Group',
+        'weight' => -20,
+      ),
+      'group2' => array(
+        'label' => 'Category/Status/Priority Group',
+        'weight' => -19,
+      ),
+      'group3' => array(
+        'label' => 'Date/Duration Group',
+        'weight' => -17,
+      ),
+      'group4' => array(
+        'label' => 'Price Group',
+        'weight' => -16,
+      ),
+      'group5' => array(
+        'label' => 'Assigned to',
+        'weight' => -15,
+      ),
+      'group6' => array(
+        'label' => 'Billable / Billed Group',
+        'weight' => -14,
+      ),
+    )
+  );
+  return $extra;
+}
+
+/**
+ * Implements hook_field_extra_fields_alter().
+ */
+function pmticket_field_extra_fields_alter(&$info) {
+  $info['node']['pmticket']['form']['title']['weight'] = -18;
+}
+
+/**
+ * Implements hook_pmorganization_change().
+ */
+function pmticket_pmorganization_change($organization_nid, $organization_title) {
+  db_update('pmticket')
+    ->fields(array('organization_title' => $organization_title))
+    ->condition('organization_nid', $organization_nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_pmproject_change().
+ */
+function pmticket_pmproject_change($project_nid, $project_title) {
+  db_update('pmticket')
+    ->fields(array('project_title' => $project_title))
+    ->condition('project_nid', $project_nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_pmtask_change().
+ */
+function pmticket_pmtask_change($task_nid, $task_title, $task_stepno) {
+  db_update('pmticket')
+    ->fields(array(
+      'task_title' => $task_title,
+      'task_stepno' => $task_stepno,
+    ))
+    ->condition('task_nid', $task_nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_pmproject_change_hierarchy().
+ */
+function pmticket_pmproject_change_hierarchy($project_nid, $organization_nid, $organization_title) {
+  db_update('pmticket')
+    ->fields(array(
+      'organization_nid' => $organization_nid,
+      'organization_title' => $organization_title,
+    ))
+    ->condition('project_nid', $project_nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_pmtask_change_hierarchy().
+ */
+function pmticket_pmtask_change_hierarchy($task_nid, $organization_nid, $organization_title, $project_nid, $project_title) {
+  db_update('pmticket')
+    ->fields(array(
+      'organization_nid' => $organization_nid,
+      'organization_title' => $organization_title,
+      'project_nid' => $project_nid,
+      'project_title' => $project_title,
+    ))
+    ->condition('task_nid', $task_nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_form().
+ */
+function pmticket_form(&$node, $form_state) {
+  $breadcrumb = array();
+  $breadcrumb[] = l(t('Project Management'), 'pm');
+  $breadcrumb[] = l(t('Tickets'), 'pm/tickets');
+  drupal_set_breadcrumb($breadcrumb);
+
+  if (arg(1)=='add') {
+    $node->datebegin = time();
+
+    if (array_key_exists('organization_nid', $_GET) && !$node->organization_nid) {
+      $node->organization_nid = $_GET['organization_nid'];
+    }
+    if (array_key_exists('project_nid', $_GET) && !$node->project_nid) {
+      $node->project_nid = $_GET['project_nid'];
+      $p = node_load($node->project_nid);
+      $node->organization_nid = $p->organization_nid;
+      if (!pmorganization_node_access($node->organization_nid, 'view')) {
+        drupal_set_message(t("You cannot add a ticket for this project, as you do not have access to view the organization's profile"));
+        drupal_goto('node/' . $node->project_nid);
+      }
+    }
+    if (array_key_exists('task_nid', $_GET) && !$node->task_nid) {
+      $node->task_nid = $_GET['task_nid'];
+      $t = node_load($node->task_nid);
+      $node->organization_nid = $t->organization_nid;
+      $node->project_nid = $t->project_nid;
+      // $project_access deals with the case whereby the project could be blank, hence access rules not required
+      $project_access = $node->project_nid ? pmproject_access('view', $node->project_nid) : TRUE;
+      if (!pmorganization_node_access($node->organization_nid, 'view') || !pmproject_access('view', $node->project_nid)) {
+        drupal_set_message(t("You cannot add a ticket for this task, as you do not have access to view the both the organization and project's profile"));
+        drupal_goto('node/' . $node->task_nid);
+      }
+    }
+
+    if (isset($_SESSION['pmticket_list_filter']['organization_nid']) && !$node->organization_nid) {
+      $node->organization_nid = $_SESSION['pmticket_list_filter']['organization_nid'];
+    }
+    if (isset($_SESSION['pmticket_list_filter']['project_nid']) && !$node->project_nid) {
+      $node->project_nid = $_SESSION['pmticket_list_filter']['project_nid'];
+    }
+    if (isset($_SESSION['pmticket_list_filter']['task_nid']) && !$node->task_nid) {
+      $node->task_nid = $_SESSION['pmticket_list_filter']['task_nid'];
+    }
+
+    if (array_key_exists('organization_nid', $_GET)) $node->organization_nid = $_GET['organization_nid'];
+    if (array_key_exists('project_nid', $_GET)) $node->project_nid = $_GET['project_nid'];
+    if (array_key_exists('task_nid', $_GET)) $node->task_nid = $_GET['task_nid'];
+  }
+
+  $type = node_type_get_type($node);
+  $info = field_info_extra_fields('node', 'pmticket', 'form');
+
+  $form['#attributes']['class'] = 'pmcomponent_node_form';
+
+  $form['group1'] = array(
+    '#type' => 'markup',
+    '#theme' => 'pm_form_group',
+    '#weight' => $info['group1']['weight'],
+  );
+
+  $org_query = db_select('node', 'n');
+  $org_query->join('pmorganization', 'sor', 'n.vid = sor.vid');
+  $org_query
+    ->fields('n', array('nid', 'title'))
+    ->condition('n.status', 1)
+    ->condition('n.type', 'pmorganization')
+    ->orderBy('n.title', 'ASC');
+
+  $org_result = $org_query->execute();
+  $organizations = array();
+  foreach ($org_result as $organization) {
+    $organizations[$organization->nid] = $organization->title;
+    if (!isset($node->organization_nid)) {
+      $node->organization_nid = $organization->nid;
+    }
+  }
+
+  $form['group1']['organization_nid'] = array(
+    '#type' => 'select',
+    '#title' => t('Organization'),
+    '#default_value' => isset($node->organization_nid) ? $node->organization_nid : NULL,
+    '#options' => $organizations,
+    '#required' => TRUE,
+    '#ajax' => array(
+      'callback' => 'pmticket_ajax_organization_nid',
+      'wrapper' => 'pmticket-project-nid',
+    ),
+  );
+
+  if (isset($node->organization_nid)) {
+    $organization_nid = isset($form_state['values']['organization_nid']) ? $form_state['values']['organization_nid'] : $node->organization_nid;
+  }
+  else {
+    drupal_set_message(t('Please add an organization to the system before trying to add a ticket.'), 'error');
+  }
+
+  $pro_query = db_select('node', 'n');
+  $pro_query->join('pmproject', 'spr', 'n.vid = spr.vid');
+  $pro_result = $pro_query
+    ->fields('n', array('nid', 'title'))
+    ->condition('spr.organization_nid', $organization_nid)
+    ->condition('n.status', 1)
+    ->condition('n.type', 'pmproject')
+    ->orderBy('n.title', 'ASC')
+    ->addTag('node_access')
+    ->execute();
+
+  $projects = array();
+  foreach ($pro_result as $project) {
+    $projects[$project->nid] = $project->title;
+  }
+  $form['group1']['project_nid'] = array(
+    '#type' => 'select',
+    '#title' => t('Project'),
+    '#default_value' => isset($node->project_nid) ? $node->project_nid : 0,
+    '#options' => array(0 => '-') + $projects,
+    '#prefix' => '<div id="pmticket-project-nid">',
+    '#suffix' => '</div>',
+    '#ajax' => array(
+      'callback' => 'pmticket_ajax_project_nid',
+      'wrapper' => 'pmticket-task-nid',
+    ),
+  );
+
+  $project_nid = isset($form_state['values']['project_nid']) ? $form_state['values']['project_nid'] : (isset($node->project_nid) ? $node->project_nid : 0);
+
+  $tree = isset($project_nid) ? _pmtask_get_tree($project_nid) : array();
+  $tasks = _pmtask_plain_tree($tree);
+  $form['group1']['task_nid'] = array(
+    '#type' => 'select',
+    '#title' => t('Task'),
+    '#default_value' => isset($node->task_nid) ? $node->task_nid : 0,
+    '#options' => array(0 => '-') + $tasks,
+    '#prefix' => '<div id="pmticket-task-nid">',
+    '#suffix' => '</div>',
+  );
+
+  $form['group1']['task_nid_old'] = array(
+    '#type' => 'hidden',
+    '#default_value' => isset($node->task_nid) ? $node->task_nid : NULL,
+  );
+
+  $form['group2'] = array(
+    '#type' => 'markup',
+    '#theme' => 'pm_form_group',
+    '#weight' => $info['group2']['weight'],
+  );
+
+  $category_list = pm_attributes_bydomain('Ticket category');
+  $form['group2']['ticketcategory'] = array(
+    '#type' => 'select',
+    '#title' => t('Category'),
+    '#default_value' => $node->ticketcategory,
+    '#options' => $category_list['values'],
+  );
+
+  $status_list = pm_attributes_bydomain('Ticket status');
+  $form['group2']['ticketstatus'] = array(
+    '#type' => 'select',
+    '#title' => t('Status'),
+    '#default_value' => $node->ticketstatus,
+    '#options' => $status_list['values'],
+  );
+
+  $priority_list = pm_attributes_bydomain('Ticket priority');
+  $form['group2']['ticketpriority'] = array(
+    '#type' => 'select',
+    '#title' => t('Priority'),
+    '#default_value' => $node->ticketpriority,
+    '#options' => $priority_list['values'],
+  );
+
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => check_plain($type->title_label),
+    '#required' => TRUE,
+    '#default_value' => $node->title,
+    '#weight' => $info['title']['weight'],
+  );
+
+  $form['group3'] = array(
+    '#type' => 'markup',
+    '#theme' => 'pm_form_group',
+    '#weight' => $info['group3']['weight'],
+  );
+
+  $form['group3']['datebegin'] = array(
+    '#type' => 'dateext',
+    '#title' => t('Date begin'),
+    '#withnull' => TRUE,
+    '#default_value' => $node->datebegin,
+  );
+
+  $form['group3']['dateend'] = array(
+    '#type' => 'dateext',
+    '#title' => t('Date end'),
+    '#withnull' => TRUE,
+    '#default_value' => isset($node->dateend) ? $node->dateend : NULL,
+  );
+
+  $durationunits = pm_attributes_bydomain('Duration unit');
+  $form['group3']['durationunit'] = array(
+    '#type' => 'select',
+    '#title' => t('Duration unit'),
+    '#default_value' => $node->durationunit,
+    '#options' => $durationunits['values'],
+  );
+
+  $form['group3']['duration'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Duration'),
+    '#size' => 20,
+    '#default_value' => isset($node->duration) ? $node->duration : NULL,
+  );
+
+  $form['group4'] = array(
+    '#type' => 'markup',
+    '#theme' => 'pm_form_group',
+    '#weight' => 3,
+    '#weight' => $info['group4']['weight'],
+  );
+
+  $pricemodes = pm_attributes_bydomain('Price mode');
+  $form['group4']['pricemode'] = array(
+    '#type' => 'select',
+    '#title' => t('Price mode'),
+    '#default_value' => $node->pricemode,
+    '#options' => array('-' => '-') + $pricemodes['values'],
+  );
+
+  $form['group4']['price'] = array(
+    '#title' => t('Price'),
+    '#type' => 'textfield',
+    '#size' => 15,
+    '#default_value' => isset($node->price) ? $node->price : NULL,
+  );
+
+  $currencies = pm_attributes_bydomain('Currency');
+  $form['group4']['currency'] = array(
+    '#type' => 'select',
+    '#title' => t('Price currency'),
+    '#default_value' => $node->currency,
+    '#options' => array('-' => '-') + $currencies['values'],
+  );
+
+  $form['group5'] = array(
+    '#type' => 'markup',
+    '#theme' => 'pm_form_group',
+    '#weight' => $info['group5']['weight'],
+  );
+
+  $options = isset($project_nid) ? pm_get_assignment_options($node->organization_nid, $project_nid) : pm_get_assignment_options($node->organization_nid);
+
+  $form['group5']['assigned_nid'] = array(
+    '#type' => 'select',
+    '#title' => t('Assigned to'),
+    '#options' => $options,
+    '#default_value' => isset($node->assigned_nid) ? $node->assigned_nid : NULL,
+  );
+
+  $form['group6'] = array(
+    '#type' => 'markup',
+    '#theme' => 'pm_form_group',
+    '#weight' => $info['group6']['weight'],
+  );
+
+  $form['group6']['billable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Billable'),
+    '#default_value' => isset($node->billable) ? $node->billable : variable_get('pmticket_billable_default', FALSE),
+    '#weight' => 1,
+  );
+
+  $form['group6']['billed'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Billed'),
+    '#default_value' => isset($node->billed) ? $node->billed : 0,
+    '#weight' => 2,
+  );
+
+  // Check to see if the body field is still there, if so, display it.
+  $body = field_get_items('pmticket', $node, 'body');
+  if ($body) {
+    $form['body_field'] = $body;
+  }
+
+  $form['title_old'] = array(
+    '#type' => 'hidden',
+    '#default_value' => isset($node->title_old) ? $node->title_old : NULL,
+  );
+
+  return $form;
+}
+
+/**
+ * Ajax callback for the organization nid field on a pmticket node.
+ */
+function pmticket_ajax_organization_nid(&$form, &$form_state) {
+  return $form['group1']['project_nid'];
+}
+
+/**
+ * Ajax callback for the project nid field on a pmticket node.
+ */
+function pmticket_ajax_project_nid(&$form, &$form_state) {
+  return $form['group1']['task_nid'];
+}
+
+/**
+ * Implements hook_insert().
+ */
+function pmticket_insert($node) {
+  _pmticket_beforesave($node);
+
+  db_insert('pmticket')
+    ->fields(array(
+      'vid' => $node->vid,
+      'nid' => $node->nid,
+      'organization_nid' => $node->organization_nid,
+      'organization_title' => $node->organization_title,
+      'project_nid' => $node->project_nid,
+      'project_title' => $node->project_title,
+      'task_nid' => $node->task_nid,
+      'task_title' => $node->task_title,
+      'task_stepno' => $node->task_stepno,
+      'ticketcategory' => $node->ticketcategory,
+      'ticketstatus' => $node->ticketstatus,
+      'ticketpriority' => $node->ticketpriority,
+      'datebegin' => $node->datebegin,
+      'dateend' => $node->dateend,
+      'durationunit' => $node->durationunit,
+//      'duration' => $node->duration,
+      'pricemode' => $node->pricemode,
+//      'price' => $node->price,
+      'currency' => $node->currency,
+      'assigned_nid' => $node->assigned_nid,
+      'assigned_title' => $node->assigned_title,
+      'billable' => $node->billable,
+      'billed' => $node->billed,
+    ))
+    ->execute();
+}
+
+/**
+ * Implements hook_update().
+ */
+function pmticket_update($node) {
+  $org_query = db_select('node', 'n');
+  $org_query->join('pmorganization', 'sor', 'n.vid = sor.vid');
+  $org_result = $org_query
+    ->fields('n', array('title'))
+    ->condition('n.type', 'pmorganization')
+    ->condition('n.nid', $node->organization_nid)
+    ->execute();
+
+  $o = $org_result->fetchObject();
+  $node->organization_title = $o->title;
+
+  $pro_query = db_select('node', 'n');
+  $pro_query->join('pmproject', 'spr', 'n.vid = spr.vid');
+  $pro_result = $pro_query
+    ->fields('n', array('title'))
+    ->condition('n.type', 'pmproject')
+    ->condition('n.nid', $node->project_nid)
+    ->execute();
+
+  $p = $pro_result->fetchObject();
+  $node->project_title = $p->title;
+
+  $task_query = db_select('node', 'n');
+  $task_query->join('pmtask', 'sta', 'n.vid = sta.vid');
+  $task_result = $task_query
+    ->fields('n', array('title'))
+    ->condition('n.type', 'pmtask')
+    ->condition('n.nid', $node->task_nid)
+    ->execute();
+
+  if ($ta = $task_result->fetchObject()) {
+    $node->task_title = $ta->title;
+  }
+
+  if ($node->task_nid != $node->task_nid_old) {
+    module_invoke_all('pmticket_change_hierarchy', $node->nid, $node->organization_nid, $node->organization_title, $node->project_nid, $node->project_title, $node->task_nid, $node->task_title);
+  }
+
+  // if this is a new node or we're adding a new revision,
+  if ($node->revision) {
+    pmticket_insert($node);
+  }
+  else {
+    _pmticket_beforesave($node);
+
+    db_update('pmticket')
+      ->fields(array(
+        'organization_nid' => $node->organization_nid,
+        'organization_title' => $node->organization_title,
+        'project_nid' => $node->project_nid,
+        'project_title' => $node->project_title,
+        'task_nid' => $node->task_nid,
+        'task_title' => $node->task_title,
+        'task_stepno' => $node->task_stepno,
+        'ticketcategory' => $node->ticketcategory,
+        'ticketstatus' => $node->ticketstatus,
+        'ticketpriority' => $node->ticketpriority,
+        'datebegin' => $node->datebegin,
+        'dateend' => $node->dateend,
+        'durationunit' => $node->durationunit,
+        'duration' => $node->duration,
+        'pricemode' => $node->pricemode,
+//        'price' => $node->price,
+        'currency' => $node->currency,
+        'assigned_nid' => $node->assigned_nid,
+        'assigned_title' => $node->assigned_title,
+        'billable' => $node->billable,
+        'billed' => $node->billed,
+      ))
+      ->condition('vid', $node->vid)
+      ->execute();
+
+    if ($node->title != $node->title_old) {
+      module_invoke_all('pmticket_change', $node->nid, $node->title);
+    }
+  }
+}
+
+/**
+ * Prepares pmticket for saving.
+ */
+function _pmticket_beforesave(&$node) {
+  $org_query = db_select('node', 'n');
+  $org_query->join('pmorganization', 'sor', 'n.vid = sor.vid');
+  $org_result = $org_query
+    ->fields('n', array('title'))
+    ->condition('n.type', 'pmorganization')
+    ->condition('n.nid', $node->organization_nid)
+    ->execute();
+  $o = $org_result->fetchObject();
+  $node->organization_title = $o->title;
+
+  $pro_query = db_select('node', 'n');
+  $pro_query->join('pmproject', 'spr', 'n.vid = spr.vid');
+  $pro_result = $pro_query
+    ->fields('n', array('title'))
+    ->condition('n.type', 'pmproject')
+    ->condition('n.nid', $node->project_nid)
+    ->execute();
+  $p = $pro_result->fetchObject();
+  $node->project_title = isset($p->title) ? $p->title : '';
+
+  $task_query = db_select('node', 'n');
+  $task_query->join('pmtask', 'sta', 'n.vid = sta.vid');
+  $task_result = $task_query
+    ->fields('n', array('title'))
+    ->fields('sta', array('stepno'))
+    ->condition('n.type', 'pmtask')
+    ->condition('n.nid', $node->task_nid)
+    ->execute();
+  $ta = $task_result->fetchObject();
+  $node->task_title = isset($ta->title) ? $ta->title : '';
+  $node->task_stepno = isset($ta->stepno) ? $ta->stepno : '';
+
+  $assigned = node_load($node->assigned_nid);
+  $node->assigned_title = isset($assigned->title) ? $assigned->title : '';
+
+  // Allow use of comma when inputting numerical values - str_replace with period decimal
+  $node->duration = str_replace(',', '.', $node->duration);
+  $node->price = str_replace(',', '.', $node->price);
+
+  if (is_array($node->datebegin)) $node->datebegin = _pm_date_to_gmtimestamp($node->datebegin);
+  if (is_array($node->dateend)) $node->dateend = _pm_date_to_gmtimestamp($node->dateend);
+}
+
+/**
+ * Implements hook_node_prepare().
+ */
+function pmticket_node_prepare($node) {
+  if (!isset($node->nid)) {
+    $category_list = pm_attributes_bydomain('Ticket category');
+    $node->ticketcategory = $category_list['default'];
+
+    $status_list = pm_attributes_bydomain('Ticket status');
+    $node->ticketstatus = $status_list['default'];
+
+    $priority_list = pm_attributes_bydomain('Ticket priority');
+    $node->ticketpriority = $priority_list['default'];
+  }
+}
+
+/**
+ * Implements hook_node_revision_delete().
+ */
+function pmticket_node_revision_delete($node) {
+  // Notice that we're matching a single revision based on the node's vid.
+  db_delete('pmticket')
+    ->condition('vid', $node->vid)
+    ->execute();
+}
+
+/**
+ * Implements hook_delete().
+ */
+function pmticket_delete($node) {
+  // Notice that we're matching all revision, by using the node's nid.
+  db_delete('pmticket')
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_load().
+ */
+function pmticket_load($nodes) {
+  foreach ($nodes as $nid => &$node) {
+    $result = db_select('pmticket', 'sti')
+      ->fields('sti')
+      ->condition('vid', $node->vid)
+      ->execute();
+    $record = $result->fetchAssoc();
+
+    foreach ($record as $key => $value) {
+      $node->$key = $value;
+    }
+
+    $node->title_old = $node->title;
+  }
+}
+
+/**
+ * Implements hook_view().
+ */
+function pmticket_view($node, $view_mode) {
+  $breadcrumb = array();
+  $breadcrumb[] = l(t('Project Management'), 'pm');
+  $breadcrumb[] = l(t('Tickets'), 'pm/tickets');
+  drupal_set_breadcrumb($breadcrumb);
+
+  return theme('pmticket_view', array('node' => $node, 'view_mode' => $view_mode));
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function pmticket_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'pmticket'),
+  );
+}
+
+/**
+ * Admin settings form for pmproject module.
+ */
+function pmticket_admin_settings() {
+  $form = array();
+
+  $form['pmticket_billable_default'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Default Value for billable field.'),
+    '#default_value' => variable_get('pmticket_billable_default', FALSE),
+    '#description' => t('When checked, Project Management will set the ticket to billable by default'),
+    '#size' => 5,
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_pminvoice_auto_add().
+ */
+function pmticket_pminvoice_auto_add($node, $invoice_nid = NULL) {
+  if (!module_exists('pminvoice')) {
+    drupal_set_message(t('This function should only be called from within Project Management Invoice'));
+    return;
+  }
+  elseif ($node->billed) {
+    drupal_set_message(t('This ticket has already been billed!'));
+    return;
+  }
+  elseif (!$node->billable) {
+    drupal_set_message(t('This ticket is marked unbillable!'));
+    return;
+  }
+  else {
+    global $user;
+
+    if (!$invoice_nid) {
+
+      $new_invoice = new StdClass;
+
+      // Code copied with edits from node form
+      $new_invoice->requestdate = time();
+      $new_invoice->duedate = $new_invoice->requestdate + (variable_get('pminvoice_payment_days', 30) * 86400);
+      $new_invoice->number = pminvoice_get_invoice_number($new_invoice->requestdate);
+
+      $new_invoice->title = $node->title;
+      $new_invoice->uid = $user->uid;
+      $new_invoice->type = 'pminvoice';
+      // $new_invoice->reference
+      $new_invoice->organization_nid = $node->organization_nid;
+      $new_invoice->organization_title = $node->organization_title;
+      $new_invoice->project_nid = $node->project_nid;
+      $new_invoice->project_title = $node->project_title;
+      // $new_invoice->amount
+      // $new_invoice->tax
+      // $new_invoice->total
+      // $new_invoice->totalcustomercurr
+      // $new_invoice->taxexempt
+      $new_invoice->src_nid = $node->nid;
+      $new_invoice->src_vid = $node->vid;
+
+      node_save($new_invoice);
+      $invoice_nid = $new_invoice->nid;
+    }
+    else {
+      $new_invoice = node_load($invoice_nid);
+    }
+
+    $rate_array = array('pricemode_used' => '', 'rate_to_use' => 0);
+
+    $rate_array = pminvoice_get_rate($node);
+
+    $count = count($new_invoice->items);
+
+    $new_invoice->items[$count]->description = pminvoice_get_item_desc($rate_array, $node);
+
+    $new_invoice->items[$count]->amount = pminvoice_get_item_amount($rate_array, $node);
+
+    // Tax percent simply uses default at the moment
+    $new_invoice->items[$count]->tax1percent = variable_get('pm_tax1_percent', 20);
+    // $new_invoice_item->items[$count]->tax1
+    // $new_invoice_item->items[$count]->total
+    $new_invoice->items[$count]->src_nid = $node->nid;
+    $new_invoice->items[$count]->src_vid = $node->vid;
+
+    pm_taxation($new_invoice->items[$count]);
+    pminvoice_update($new_invoice);
+  }
+
+  // Mark task as billed.
+  db_query("UPDATE {pmticket} SET billed=%d WHERE vid=%d", 1, $node->vid);
+
+  return $invoice_nid;
+}
+
+/**
+ * Implements hook_token_list().
+ */
+function pmticket_token_list($type='all') {
+  $tokens = array();
+  if (($type == 'node') || ($type == 'all')) {
+    $tokens['node']['pmticket-organization-nid'] = t('Project Management Ticket: Organization Node ID.');
+    $tokens['node']['pmticket-organization-title'] = t('Project Management Ticket: Organization Title.');
+    $tokens['node']['pmticket-project-nid'] = t('Project Management Ticket: Project Node ID.');
+    $tokens['node']['pmticket-project-title'] = t('Project Management Ticket: Project Title.');
+    $tokens['node']['pmticket-ticketstatus'] = t('Project Management Ticket: Project Status.');
+    $tokens['node']['pmticket-ticketcategory'] = t('Project Management Ticket: Ticket Category.');
+    $tokens['node']['pmticket-ticketpriority'] = t('Project Management Ticket: Ticket Priority.');
+    $tokens['node']['pmticket-durationunit'] = t('Project Management Ticket: Ticket Duration Unit.');
+    $tokens['node']['pmticket-duration'] = t('Project Management Ticket: Ticket Duration.');
+    $tokens['node']['pmticket-datebegin'] = t('Project Management Ticket: Ticket Begin Date.');
+    $tokens['node']['pmticket-dateend'] = t('Project Management Ticket: Ticket End Date.');
+    $tokens['node']['pmticket-billable'] = t('Project Management Ticket: Ticket Billable.');
+    $tokens['node']['pmticket-billed'] = t('Project Management Ticket: Ticket Billed.');
+    $tokens['node']['pmticket-price'] = t('Project Management Ticket: Ticket Price.');
+    $tokens['node']['pmticket-pricemode'] = t('Project Management Ticket: Ticket Price Mode.');
+    if (module_exists('pmperson')) {
+      // Assignee(s)
+      $tokens['node']['pmticket-assigned-to-email'] = t('Project Management Ticket: Ticket Assignee(s) Email Address(s).');
+      $tokens['node']['pmticket-assigned-title'] = t('Project Management Ticket: Ticket Assignee(s) Title(s).');
+    }
+  }
+  return $tokens;
+}
+
+/**
+ * Implements hook_token_values().
+ */
+function pmticket_token_values($type, $object = NULL) {
+  $values = array();
+  $node = $object;
+  if ((($type == 'node') || ($type == 'all')) && ($node->type === 'pmticket')) {
+    $values['pmticket-organization-nid'] = $node->organization_nid;
+    $values['pmticket-organization-title'] = $node->organization_title;
+    $values['pmticket-project-nid'] = $node->project_nid;
+    $values['pmticket-project-title'] = $node->project_title;
+    $values['pmticket-ticketstatus'] = $node->ticketstatus;
+    $values['pmticket-ticketpriority'] = $node->ticketpriority;
+    $values['pmticket-ticketcategory'] = $node->ticketcategory;
+    $values['pmticket-durationunit'] = $node->durationunit;
+    $values['pmticket-duration'] = $node->duration;
+    $values['pmticket-datebegin'] = format_date($node->datebegin, 'medium', '', variable_get('date_default_timezone', NULL));
+    $values['pmticket-dateend'] = format_date($node->dateend, 'medium', '', variable_get('date_default_timezone', NULL));
+    $values['pmticket-price'] = $node->price;
+    $values['pmticket-pricemode'] = $node->pricemode;
+    $values['pmticket-billable'] = $node->billable;
+    $values['pmticket-billed'] = $node->billed;
+    if (module_exists('pmperson')) {
+      // Project Assignee(s) e-mail
+      if ($node->assigned_nid) {
+        $values['pmticket-assigned-title'] = $node->assigned_title;
+        $assignees_node = node_load($node->assigned_nid);
+        // Assigned to one person
+        if ($assignees_node->type === 'pmperson') {
+          $values['pmticket-assigned-to-email'] = pmperson_primary_email($assignees_node);
+        }
+        // Assigned to a team
+        else {
+          $assignees_array = $assignees_node->members_array;
+          $assignees = array();
+          foreach ($assignees_array as $nid => $name) {
+            $assignee = node_load($nid);
+            $assignees[] = pmperson_primary_email($assignee);
+          }
+          $assigned = implode(", ", $assignees);
+          // Return comma separated list of emails
+          $values['pmticket-assigned-to-email'] = $assigned;
+        }
+      }
+      else {
+        $values['pmticket-assigned-to-email'] = NULL;
+      }
+    }
+  }
+  return $values;
+}
+
+/**
+ * Implements hook_node_access_records().
+ */
+function pmticket_node_access_records($node) {
+  if (empty($node->status)) {
+    // Lets Drupal take care of permission to unpublished nodes.
+    return array();
+  }
+  $type = is_string($node) ? $node : $node->type;
+  $grants = array();
+  if ($type == 'pmticket') {
+    // Project Management Ticket: view all
+    $grants[] = array(
+      'realm' => 'pmticket_view_all',
+      'gid' => 0,
+      'grant_view' => 1,
+      'grant_update' => 0,
+      'grant_delete' => 0,
+      'priority' => 0,
+    );
+    // Project Management Ticket: view own
+    $grants[] = array(
+      'realm' => 'pmticket_view_own',
+      'gid' => $node->uid,
+      'grant_view' => 1,
+      'grant_update' => 0,
+      'grant_delete' => 0,
+      'priority' => 0,
+    );
+    // Project Management Ticket: view of user organization
+    if ( isset($node->organization_nid) && !empty($node->organization_nid)) {
+      $grants[] = array(
+        'realm' => 'pmticket_view_if_user_organization',
+        'gid' => $node->organization_nid,
+        'grant_view' => 1,
+        'grant_update' => 0,
+        'grant_delete' => 0,
+        'priority' => 0,
+      );
+    }
+    // Project Management Ticket: view if assigned to ticket
+    if ( isset($node->assigned_nid) && !empty($node->assigned_nid)) {
+      $grants[] = array(
+        'realm' => 'pmticket_view_if_assigned',
+        'gid' => $node->assigned_nid,
+        'grant_view' => 1,
+        'grant_update' => 0,
+        'grant_delete' => 0,
+        'priority' => 0,
+      );
+    }
+    // Project Management Ticket: edit all
+    $grants[] = array(
+      'realm' => 'pmticket_update_all',
+      'gid' => 0,
+      'grant_view' => 0,
+      'grant_update' => 1,
+      'grant_delete' => 0,
+      'priority' => 0,
+    );
+    // Project Management Ticket: edit own
+    $grants[] = array(
+      'realm' => 'pmticket_update_own',
+      'gid' => $node->uid,
+      'grant_view' => 0,
+      'grant_update' => 1,
+      'grant_delete' => 0,
+      'priority' => 0,
+    );
+    // Project Management Ticket: edit of user organization
+    if ( isset($node->organization_nid) && !empty($node->organization_nid)) {
+      $grants[] = array(
+        'realm' => 'pmticket_update_if_user_organization',
+        'gid' => $node->organization_nid,
+        'grant_view' => 0,
+        'grant_update' => 1,
+        'grant_delete' => 0,
+        'priority' => 0,
+      );
+    }
+    // Project Management Ticket: edit if assigned to ticket
+    if ( isset($node->assigned_nid) && !empty($node->assigned_nid)) {
+      $grants[] = array(
+        'realm' => 'pmticket_update_if_assigned',
+        'gid' => $node->assigned_nid,
+        'grant_view' => 0,
+        'grant_update' => 1,
+        'grant_delete' => 0,
+        'priority' => 0,
+      );
+    }
+    // Project Management Ticket: delete all
+    $grants[] = array(
+      'realm' => 'pmticket_delete_all',
+      'gid' => 0,
+      'grant_view' => 0,
+      'grant_update' => 0,
+      'grant_delete' => 1,
+      'priority' => 0,
+    );
+    // Project Management Ticket: delete own
+    $grants[] = array(
+      'realm' => 'pmticket_delete_own',
+      'gid' => $node->uid,
+      'grant_view' => 0,
+      'grant_update' => 0,
+      'grant_delete' => 1,
+      'priority' => 0,
+    );
+    // Project Management Ticket: delete of user organization
+    if ( isset($node->organization_nid) && !empty($node->organization_nid)) {
+      $grants[] = array(
+        'realm' => 'pmticket_delete_if_user_organization',
+        'gid' => $node->organization_nid,
+        'grant_view' => 0,
+        'grant_update' => 0,
+        'grant_delete' => 1,
+        'priority' => 0,
+      );
+    }
+    // Project Management Ticket: delete if assigned to ticket
+    if ( isset($node->assigned_nid) && !empty($node->assigned_nid)) {
+      $grants[] = array(
+        'realm' => 'pmticket_delete_if_assigned',
+        'gid' => $node->assigned_nid,
+        'grant_view' => 0,
+        'grant_update' => 0,
+        'grant_delete' => 1,
+        'priority' => 0,
+      );
+    }
+  }
+  return $grants;
+}
+
+/**
+ * Implements hook_node_grants().
+ */
+function pmticket_node_grants($account, $op) {
+
+  if (module_exists('pmperson')) {
+    _pmperson_user_load($account);
+    if (!empty($account->pmteam) AND is_array($account->pmteam)) {
+      $assigned_nids = $account->pmteam;
+    }
+    if (isset($account->pmperson_nid) AND !empty($account->pmperson_nid)) {
+      $assigned_nids[] = $account->pmperson_nid;
+    }
+  }
+  $grants = array();
+  switch ($op) {
+    case 'view':
+      if (user_access('Project Management Ticket: view all', $account)) {
+        $grants['pmticket_view_all'] = array(0);
+      }
+      if (user_access('Project Management Ticket: view own', $account)) {
+        $grants['pmticket_view_own'] = array($account->uid);
+      }
+      if (user_access('Project Management Ticket: view of user organization', $account) AND !empty($account->pmorganization_nid)) {
+        $grants['pmticket_view_if_user_organization'] = array($account->pmorganization_nid);
+      }
+      if (isset($account->pmperson_nid)) {
+        if (user_access('Project Management Ticket: view if assigned to ticket', $account)) {
+          $grants['pmticket_view_if_assigned'] = $assigned_nids;
+        }
+      }
+      break;
+
+    case 'update':
+      if (user_access('Project Management Ticket: edit all', $account)) {
+        $grants['pmticket_update_all'] = array(0);
+      }
+      if (user_access('Project Management Ticket: edit own', $account)) {
+        $grants['pmticket_update_own'] = array($account->uid);
+      }
+      if (user_access('Project Management Ticket: edit of user organization', $account) AND !empty($account->pmorganization_nid)) {
+        $grants['pmticket_update_if_user_organization'] = array($account->pmorganization_nid);
+      }
+      if (isset($account->pmperson_nid)) {
+        if (user_access('Project Management Ticket: edit if assigned to ticket', $account)) {
+          $grants['pmticket_update_if_assigned'] = $assigned_nids;
+        }
+      }
+      break;
+
+    case 'delete':
+      if (user_access('Project Management Ticket: delete all', $account)) {
+        $grants['pmticket_delete_all'] = array(0);
+      }
+      if (user_access('Project Management Ticket: delete own', $account)) {
+        $grants['pmticket_delete_own'] = array($account->uid);
+      }
+      if (user_access('Project Management Ticket: delete of user organization', $account) AND !empty($account->pmorganization_nid)) {
+        $grants['pmticket_delete_if_user_organization'] = array($account->pmorganization_nid);
+      }
+      if (isset($account->pmperson_nid)) {
+        if (user_access('Project Management Ticket: delete if assigned to ticket', $account)) {
+          $grants['pmticket_delete_if_assigned'] = $assigned_nids;
+        }
+      }
+      break;
+  }
+  return $grants;
+}
+
+/**
+ * Implements hook_pm_dashboard_links().
+ */
+function pmticket_pm_dashboard_links($type) {
+  $links = array();
+  if ($type == 'page' || $type == 'block') {
+    $links[] = array(
+      'theme' => 'pm_dashboard_link',
+      'title' => t('Tickets'),
+      'icon' => 'pmtickets',
+      'path' => 'pm/tickets',
+      'params' => array(),
+      'access_arguments' => 'Project Management Ticket: access',
+      'node_type' => 'pmticket',
+      'add_type' => 'pmticket',
+      'map' => array(),
+      'weight' => 6,
+    );
+  }
+  return $links;
+}

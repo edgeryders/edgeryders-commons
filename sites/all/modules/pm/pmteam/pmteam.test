@@ -1,0 +1,47 @@
+<?php
+/**
+ * @file
+ * Test definitions for the Project Management Team module.
+ */
+
+/**
+ * Class defining Project Management Team test cases.
+ */
+class PMTeamTestCase extends DrupalWebTestCase {
+
+  /**
+   * Defines meta data for Project Management test cases.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Project Management Team Functionality'),
+      'description' => t('Test the functionality of the Project Management Team module'),
+      'group' => 'Project Management',
+    );
+  }
+
+  /**
+   * Sets up all Project Management test cases.
+   */
+  public function setUp() {
+    parent::setUp('views', 'pm', 'pmorganization', 'pmperson', 'pmteam');
+  }
+
+  /**
+   * Tests creation of pmteam nodes.
+   */
+  public function testpmteamCreate() {
+    // Create and login user
+    $user = $this->drupalCreateUser(array('Project Management Team: add', 'Project Management Team: view all', 'Project Management Person: add', 'Project Management Person: view all'));
+    $this->drupalLogin($user);
+
+    // Create a team
+    $team = array(
+      'title' => $this->randomName(32),
+    );
+
+//    $this->drupalPost('node/add/pmteam', $team, t('Save'));
+
+//    $this->assertText(t('Team @title has been created.', array('@title' => $team['title'])));;
+  }
+}

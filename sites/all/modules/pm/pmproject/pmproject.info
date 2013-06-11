@@ -1,0 +1,15 @@
+name = Project Management Project
+description = "Allows recording of projects based on Project Management Organizations"
+dependencies[] = views
+dependencies[] = pm
+dependencies[] = pmorganization
+package = Project Management
+core = 7.x
+files[] = pmproject.test
+
+; Information added by drupal.org packaging script on 2013-06-11
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "pm"
+datestamp = "1370914183"
+

@@ -1,0 +1,32 @@
+/* Creates two columns, each 50% of page width */
+
+#pmdashboard {
+width: 100%
+}
+
+div.pmdashboard {
+float: left;
+width: 50%;
+}
+
+#pmdashboard-block {
+  overflow: hidden;
+}
+
+#pmdashboard-block .pmdashboard-icon {
+  display:inline;
+  float: left
+}
+
+#pmdashboard-block .pmdashboard-icon dt.pmcomponent {
+  height: 32px;
+  padding-top: 5px;
+}
+
+#header-region #pmdashboard-block * {
+  display: inline-block;
+}
+
+#header-region #pmdashboard-block .popups-form img {
+  margin-top: 0;
+}
