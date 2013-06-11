@@ -681,6 +681,12 @@ function entity_metadata_user_properties_access($op, $property, $entity = NULL, 
  * Access callback for the comment entity.
  */
 function entity_metadata_comment_access($op, $entity = NULL, $account = NULL) {
+  // Added by Matthias Ansorg, 2013-06-11. 
+  if (isset($entity->nid) && $op == 'view') {
+    if (!entity_access($op, 'node', node_load($entity->nid), $account)) {
+      return FALSE;
+    }
+  }
   if (isset($entity) && !isset($account) && comment_access($op, $entity)) {
     return TRUE;
   }
