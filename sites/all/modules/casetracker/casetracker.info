@@ -1,0 +1,35 @@
+name = Case Tracker
+description = "Enables the handling of projects and their cases."
+core = 7.x
+package = "Case Tracker"
+dependencies[] = views
+dependencies[] = comment
+
+configure = admin/config/casetracker/settings
+
+files[] = includes/casetracker_views_handler_argument_priority.inc
+files[] = includes/casetracker_views_handler_argument_status.inc
+files[] = includes/casetracker_views_handler_argument_type.inc
+files[] = includes/casetracker_views_handler_field_case_count.inc
+files[] = includes/casetracker_views_handler_field_priority_name.inc
+files[] = includes/casetracker_views_handler_field_project_name.inc
+files[] = includes/casetracker_views_handler_field_status_name.inc
+files[] = includes/casetracker_views_handler_field_type_name.inc
+files[] = includes/casetracker_views_handler_field_user_name.inc
+files[] = includes/casetracker_views_handler_filter_case.inc
+files[] = includes/casetracker_views_handler_filter_priority_options.inc
+files[] = includes/casetracker_views_handler_filter_project.inc
+files[] = includes/casetracker_views_handler_filter_project_options.inc
+files[] = includes/casetracker_views_handler_filter_project_published.inc
+files[] = includes/casetracker_views_handler_filter_status_options.inc
+files[] = includes/casetracker_views_handler_filter_type_options.inc
+files[] = includes/casetracker_views_handler_filter_user_options.inc
+files[] = tests/casetracker_admin.test
+files[] = tests/casetracker_basic.test
+
+; Information added by drupal.org packaging script on 2013-03-27
+version = "7.x-1.0-alpha1"
+core = "7.x"
+project = "casetracker"
+datestamp = "1364356517"
+

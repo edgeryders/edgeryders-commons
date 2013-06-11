@@ -1,0 +1,21 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the casetracker_actions module.
+ * Updates actions on installation/purges orphaned actions on disable.
+ *
+ */
+
+/**
+ * Installs Casetracker actions
+ */
+function casetracker_actions_install() {
+  actions_synchronize(TRUE);
+}
+
+/**
+ *  Disables Casetracker actions
+ */
+function casetracker_actions_disable() {
+  actions_synchronize(TRUE);
+}

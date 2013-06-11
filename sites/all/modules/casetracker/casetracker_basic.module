@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * @file
+ * Enables a basic project node type for use with Case Tracker.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function casetracker_basic_permission() {
+  return array(
+    'create projects' => array(
+      'title' => t('Create projects'),
+    ),
+    'create cases' => array(
+      'title' => t('Create cases'),
+    ),
+    'edit own projects' => array(
+      'title' => t('Edit own projects'),
+    ),
+    'edit own cases' => array(
+      'title' => t('Edit own cases'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_info().
+ */
+function casetracker_basic_node_info() {
+  return array(
+    'casetracker_basic_project' => array(
+      'name' => t('Project'),
+      'base' => 'casetracker_basic_project',
+      'description' => t('Create a basic project for use with Case Tracker.'),
+      'help' => t('Create a basic project for use with Case Tracker.'),
+    ),
+    'casetracker_basic_case' => array(
+      'name' => t('Case'),
+      'base' => 'casetracker_basic_case',
+      'description' => t('Open a new case assigned to a particular project.'),
+      'help' => t('Open a new case assigned to a particular project.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form().
+ */
+function casetracker_basic_project_form($node, $form_state) {
+  return node_content_form($node, $form_state);
+}
+
+/**
+ * Implements hook_form().
+ */
+function casetracker_basic_case_form($node, $form_state) {
+  return node_content_form($node, $form_state);
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function casetracker_basic_project_node_access($node, $op, $account) {
+  switch ($op) {
+    case 'create':
+      return user_access('create projects', $account);
+      break;
+    case 'update':
+    case 'delete':
+      if (user_access('edit own projects', $account) && ($account->uid == $node->uid)) {
+        return TRUE;
+      }
+      break;
+  }
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function casetracker_basic_case_node_access($node, $op) {
+  global $user;
+
+  switch ($op) {
+    case 'create':
+      return user_access('create cases');
+    case 'update':
+    case 'delete':
+      if (user_access('edit own cases') && ($user->uid == $node->uid)) {
+        return TRUE;
+      }
+      break;
+  }
+}

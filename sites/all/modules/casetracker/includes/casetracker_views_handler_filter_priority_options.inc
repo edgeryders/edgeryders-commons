@@ -1,0 +1,11 @@
+<?php
+
+/**
+ * //
+ */
+class casetracker_views_handler_filter_priority_options extends views_handler_filter_many_to_one {
+
+  function get_value_options() {
+    $this->value_options = casetracker_realm_load('priority');
+  }
+}

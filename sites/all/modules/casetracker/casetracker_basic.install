@@ -1,0 +1,39 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the casetracker module.
+ *
+ */
+
+/**
+ * Implements hook_install().
+ */
+function casetracker_basic_install() {
+  // Ensure the node type is available.
+  node_types_rebuild();
+  $types = node_type_get_types();
+  node_add_body_field($types['casetracker_basic_project'], 'Description');
+  node_add_body_field($types['casetracker_basic_case'], 'Description');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function casetracker_basic_uninstall() {
+  db_delete('node')
+  ->condition('type', 'casetracker_basic_project')
+  ->execute();
+
+  db_delete('node')
+  ->condition('type', 'casetracker_basic_case')
+  ->execute();
+
+  db_delete('node_type')
+  ->condition('type', 'casetracker_basic_project')
+  ->execute();
+
+  db_delete('node_type')
+  ->condition('type', 'casetracker_basic_case')
+  ->execute();
+}
+
