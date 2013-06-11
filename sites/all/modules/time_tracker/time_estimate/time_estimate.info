@@ -1,0 +1,14 @@
+name = Time Estimate
+description = Provides time estimate functionality.
+package = Time Tracker
+core = 7.x
+dependencies[] = time_tracker
+
+files[] = time_estimate.admin.inc
+
+; Information added by drupal.org packaging script on 2013-06-05
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "time_tracker"
+datestamp = "1370449610"
+

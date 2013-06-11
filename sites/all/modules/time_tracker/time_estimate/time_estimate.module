@@ -1,0 +1,212 @@
+<?php
+
+/**
+ * @file
+ * Enables time estimates on entities.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function time_estimate_permission() {
+  return array(
+    'view time estimates' => array(
+      'title' => t('View time estimate entries'),
+      'description' => t('TODO: Add descriptions'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_help().
+ */
+function time_estimate_help($section, $arg) {
+  switch ($section) {
+    case 'admin/help#time_estimate':
+      return t("<h2>Time Tracker Estimage</h2>
+        <p>Adds a time estimate field to entities that are tracking time.</p>
+        ");
+      break;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function time_estimate_menu() {
+  $items = array();
+
+  return $items;
+}
+
+/**
+ * Helper function to create field instances on time tracking entities.
+ */
+function _time_estimate_create_instance($type, $bundle){
+
+  $instance = array(
+    'field_name' => 'time_estimate',
+    'entity_type' => $type,
+    'bundle' => $bundle,
+    'label' => t('Time Estimate'),
+    'required' => 0,
+    'settings' => array(
+      'suffix' => t('hours'),
+    ),
+  );
+
+  field_create_instance($instance);
+
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function time_estimate_form_time_tracker_entity_settings_form_alter(&$form, &$form_state, $form_id){
+  $entity_types = entity_get_info();
+
+  $form['description'] = array(
+    '#markup' => '<p>Foreach entity select the bundles that you want to track time on.</p>',
+  );
+  foreach($entity_types as $key => $type) {
+    if (!in_array($key, array('time_tracker_activity', 'time_tracker_entry', 'comment'))){
+      foreach($type['bundles'] as $bkey => $bundle){
+        $form[$key][$bkey]['time_estimate-' . $key . '-' . $bkey] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Enable Time estimates for this entity.'),
+          '#default_value' => variable_get('time_estimate-' . $key . '-' . $bkey),
+        );
+        if(variable_get('time_estimate-' . $key . '-' . $bkey)){
+          $form[$key][$bkey]['time_estimate-' . $key . '-' . $bkey]['#description'] = t('Disabling this will not result in data loss. It will be up to you to delete the field.');
+        }
+      }
+    }
+  }
+
+  $form['#submit'][] = 'time_estimate_entity_form_submit';
+}
+
+/**
+ * Submit handler for the time_tracker_entity_settings_form.
+ */
+function time_estimate_entity_form_submit($form, $form_state){
+
+  $entity_types = entity_get_info();
+  foreach($entity_types as $key => $type) {
+    if (!in_array($key, array('time_tracker_activity', 'time_tracker_entry', 'comment'))){
+      foreach($type['bundles'] as $bkey => $bundle){
+        if(time_tracker_is_tracking_time($key, $bkey)){
+          $read = field_read_instance($key, 'time_estimate', $bkey);
+          if(!$read){
+            _time_estimate_create_instance($key, $bkey);
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_view().
+ */
+function time_estimate_entity_view($entity, $type, $view_mode, $langcode) {
+  $info = entity_extract_ids($type, $entity);
+  $bundle = $info[2];
+  $entity_id = $info[0];
+
+  if (time_tracker_is_tracking_time($type, $bundle)) {
+    $time_estimate = field_get_items($type, $entity, 'time_estimate', $langcode);
+    $time_estimate = $time_estimate[0]['value'];
+    if(!empty($time_estimate)){
+      $entries = db_query("SELECT * FROM {time_tracker_entry} WHERE entity_id = :entity_id AND entity_type = :entity_type",
+        array(':entity_id' => $entity_id, ':entity_type' => $type));
+      $time_tracker_time = 0;
+      foreach($entries as $entry) {
+        $time_tracker_time += $entry->duration - $entry->deductions;
+      }
+
+      if ($time_estimate > 0 && user_access('view time estimates')) {
+        // We are going to override the time_tracker time logged display entirely
+        unset($entity->content['time_tracker']['time_tracker_summary']);
+        $variables = array(
+          'time' => $time_tracker_time,
+          'estimate' => $time_estimate,
+        );
+        $entity->content['time_tracker']['time_estimate_summary'] = array(
+          '#markup' => theme('time_estimate_summary', $variables),
+          '#weight' => -7,
+        );
+      }
+    }
+  }
+}
+
+/************************************************************************
+  THEME FUNCTIONS
+*************************************************************************/
+
+/**
+ * Implements of hook_theme().
+ */
+function time_estimate_theme() {
+  return array(
+    'time_estimate_summary' => array(
+      'arguments' => array('variables' => NULL),
+    ),
+  );
+}
+
+/**
+ * Theme function for the time estimate summary
+ *
+ * This theme function is meant to replace the Time Tracker Summary
+ * output by theme_time_tracker_summary in module time_tracker
+ *
+ * @param $time_tracker_time
+ *    Time logged so far in hours
+ *
+ * @param $time_estimate_time
+ *    Time estimate in hours
+ */
+function theme_time_estimate_summary($variables) {
+  $time = $variables['time'];
+  $estimate = $variables['estimate'];
+  $rows = array();
+
+  if ($estimate > $time) {
+    $class = 'time_under';
+    $remaining = _time_tracker_format_hours_to_hours_and_minutes($estimate - $time, FALSE, TRUE) . t(' remaining');
+  }
+  else {
+    $class = 'time_over';
+    $remaining = t('over by: ') . _time_tracker_format_hours_to_hours_and_minutes(abs($estimate - $time), FALSE, TRUE);
+  }
+
+  $headers = array(
+    array('data' => t('Estimated Time:')),
+    array('data' => t('Time Logged:')),
+  );
+
+  $rows[] = array(
+    array(
+      'data' => '<span class="time_estimate_time">' .
+                _time_tracker_format_hours_to_hours_and_minutes($estimate) . '</span>',
+      'class' => array('time_estimate'),
+    ),
+    array(
+      'data' => '<span class="time_tracker_time">' .
+                _time_tracker_format_hours_to_hours_and_minutes($time) .
+                '</span> <span class="time_tracker_remaining ' . $class .
+                '">(' . $remaining . ')</span>',
+      'class' => array('time_tracker'),
+    ),
+  );
+  $table = array(
+    'header' => $headers,
+    'rows' => $rows,
+    'attributes' => array('class' => array('time_estimate_summary')),
+  );
+
+  return theme('table', $table);
+}
+
