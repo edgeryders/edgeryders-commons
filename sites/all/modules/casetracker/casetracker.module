@@ -143,7 +143,8 @@ function casetracker_node_delete($node) {
         ->condition('nid', $node->nid)
         ->execute();
   }
-  else if (casetracker_is_project($node->type)) {
+
+  if (casetracker_is_project($node->type)) {
     // projects: delete all the cases under the project and all the comments under each case.
     $case_results = db_select('casetracker_case', 'c')
         ->fields('c', array('nid'))
@@ -204,6 +205,9 @@ function casetracker_node_load($nodes, $types) {
           ->execute()
           ->fetchObject();
       if ($casetracker) {
+        if ($casetracker->pid == '0') {
+          $casetracker->pid = $node->nid;
+        }
         $nodes[$node->nid]->casetracker = $casetracker;
       }
     }
@@ -255,7 +259,8 @@ function casetracker_node_view($node, $view_mode, $langcode) {
       '#weight' => -10,
     );
   }
-  else if (casetracker_is_project($node->type)) {
+
+  if (casetracker_is_project($node->type)) {
     if ($view_mode == "full") {
       $trail = array(
         l(t('Home'), NULL),
@@ -269,6 +274,19 @@ function casetracker_node_view($node, $view_mode, $langcode) {
       '#project' => $node,
       '#weight' => -10,
     );
+  }
+}
+
+/**
+ * Implements hook_node_validate().
+ */
+function casetracker_node_validate($node, $form, &$form_state) {
+
+  // Add case options to our basic case type.
+  if (casetracker_is_case($node->type)) {
+    if (empty($node->casetracker['pid']) && !casetracker_is_project($node->type)) {
+      form_set_error('time', t('You must create a project before adding cases.'));
+    }
   }
 }
 
@@ -393,18 +411,11 @@ function casetracker_form_alter(&$form, &$form_state, $form_id) {
 
     // Add case options to our basic case type.
     if (casetracker_is_case($node->type)) {
-      $count = count(casetracker_project_options());
-      if ($count == 0) {
-        drupal_set_message(t('You must create a project before adding cases.'), 'error');
-        return;
+      $default_project = null;
+      if (!isset($node->nid) && is_numeric(arg(3))) {
+        $default_project = arg(3);
       }
-      else {
-        $default_project = null;
-        if (!isset($form['#node']->nid) && is_numeric(arg(3))) {
-          $default_project = arg(3);
-        }
-        casetracker_case_form_common($form, $default_project);
-      }
+      casetracker_case_form_common($form, $default_project);
     }
   }
 }
@@ -471,12 +482,23 @@ function casetracker_case_form_common(&$form, $default_project = NULL) {
   // we'll create a select menu for the user; otherwise, we'll save
   // the passed (or only) project ID into a hidden field.
   if (count($project_options) > 1) {
-    $form['casetracker']['pid'] = array(
-      '#title' => t('Project'),
-      '#type' => 'select',
-      '#default_value' => $default_project,
-      '#options' => $project_options,
-    );
+    if (casetracker_is_project($node->type)) {
+      $project_options[0] = NULL;
+      $form['casetracker']['pid'] = array(
+        '#title' => t('Project'),
+        '#type' => 'select',
+        '#description' => 'Select self if leave empty.',
+        '#default_value' => $default_project,
+        '#options' => $project_options,
+      );
+    } else {
+      $form['casetracker']['pid'] = array(
+        '#title' => t('Project'),
+        '#type' => 'select',
+        '#default_value' => $default_project,
+        '#options' => $project_options,
+      );
+    }
   }
   else {
     $form['casetracker']['pid'] = array(
