@@ -1,0 +1,92 @@
+<?php
+/**
+ * @file
+ * Code for the Commons Tasks feature.
+ */
+
+include_once 'commons_tasks.features.inc';
+
+/**
+* Implements hook_commons_bw_group_widget().
+*/
+function commons_tasks_commons_bw_group_widget() {
+  return array(
+    'commons_tasks' => array(
+      'title' => 'Tasks',
+      'type' => 'view',
+      'vid' => 'commons_bw_tasks',
+      'display' => 'default',
+      'weight' => -1,
+    ),
+  );
+}
+
+/**
+ * Implements hook_commons_bw_create_all_widget().
+ */
+function commons_tasks_commons_bw_create_all_widget($group) {
+  if (og_user_access('node', $group->nid, 'create task content')) {
+    $link = l(t('Create a task'),"node/add/task/$group->nid",
+    array('attributes' => array('class' => 'commons-tasks-create'), 'query' => array('destination' => '', 'og_group_ref' => $group->nid))
+    );
+    return array(
+      'casetracker' => array(
+        'default' => TRUE,
+        'link' => $link,
+        'text' =>  t('Collaborate with others using tasks'),
+        '#weight' => -1,
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_commons_entity_integration.
+ */
+function commons_tasks_commons_entity_integration() {
+  return array(
+    'node' => array(
+      'task' => array(
+      ),
+    ),
+  );
+}
+
+/**
+* Implements hook_views_pre_render().
+*/
+function commons_tasks_views_pre_render(&$view) {
+  if ($view->name == 'commons_bw_tasks') {
+    $group_id = $view->args[0];
+    if (og_user_access('node', $group_id, 'create task content')) {
+      $view->attachment_before = l(t('Create a task'), 'node/add/task', array('query' => array('og_group_ref' => $group_id)));
+    }
+  }
+}
+
+/**
+* Implements hook_strongarm_alter().
+*/
+ function commons_tasks_strongarm_alter(&$items) {
+  // Expose the Task content type for 'liking' via the Commons_like module
+  // by altering the configuration for the Rate.module widget that it provides.
+  if (!empty($items['rate_widgets']->value)) {
+    foreach($items['rate_widgets']->value as $key => $widget) {
+      if ($widget->name == 'commons_like') {
+        if (!in_array('task', $items['rate_widgets']->value[$key]->node_types)) {
+          $items['rate_widgets']->value[$key]->node_types[] = 'task';
+        }
+        if (!in_array('task', $items['rate_widgets']->value[$key]->comment_types)) {
+          $items['rate_widgets']->value[$key]->comment_types[] = 'task';
+        }
+      }
+    }
+  }
+  // Expose the task content type for integration with Commons Radioactivity
+  // and Commons Groups.
+  foreach (array('commons_radioactivity_entity_types', 'commons_groups_entity_types') as $key) {
+    if (isset($items[$key])) {
+      $items[$key]->value['node']['task'] = 1;
+    }
+  }
+}
