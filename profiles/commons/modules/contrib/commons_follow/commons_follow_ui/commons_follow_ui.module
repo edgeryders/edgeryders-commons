@@ -138,7 +138,7 @@ function commons_follow_ui_tab_title($account, $flag_name = NULL) {
     '@count' => $count,
     '@name' => format_username($account),
   );
-  return $account->uid == $user->uid ? t('@flag you follow <span class="user-follow-count">@count</span>', $params) : t('@flag @name follows <span class="user-follow-count">@count</span>', $params);
+  return $account->uid == $user->uid ? t('@flag you follow (@count)', $params) : t('@flag @name follows (@count)', $params);
 }
 
 
