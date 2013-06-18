@@ -7,7 +7,7 @@
 function commons_events_install() {
   db_insert('date_formats')
     ->fields(array(
-      'format' => 'M d Y - g:ia T',
+      'format' => 'M d Y, g:ia T',
       'type' => 'event_datetime',
       'locked' => 1,
     ))
@@ -21,7 +21,7 @@ function commons_events_install() {
     ))
     ->execute();
 
-  variable_set('date_format_event_datetime', 'M d Y - g:ia T');
+  variable_set('date_format_event_datetime', 'M d Y, g:ia T');
 }
 
 /**
@@ -102,8 +102,8 @@ function commons_events_update_7003() {
 }
 
 /**
-* Create the event_datetime date format.
-*/
+ * Create the event_datetime date format.
+ */
 function commons_events_update_7004() {
   db_insert('date_formats')
     ->fields(array(
@@ -129,5 +129,75 @@ function commons_events_update_7004() {
     'commons_events' => array('views_view'),
   );
   features_revert($revert);
+  return array();
+}
+
+/**
+ * Set event nodes to use site default country set during install as default.
+ */
+function commons_events_update_7005() {
+  $revert = array(
+    'commons_events' => array('field_instance'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Upcoming events view pane exposed sort should redirect to the view pane and
+ * not the feed.
+ */
+function commons_events_update_7006() {
+  $revert = array(
+    'commons_events' => array('views_view'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Change event displays to abbreviate state names.
+ */
+function commons_events_update_7007() {
+  $revert = array(
+    'commons_events' => array('field_instance'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/*
+ * Alter the event display formatter, it should be a ',' and not '-'
+ */
+/**
+ * Create the event_datetime date format.
+ */
+function commons_events_update_7008() {
+  db_update('date_formats')
+    ->fields(array(
+      'format' => 'M d Y, g:ia T',
+      'type' => 'event_datetime',
+      'locked' => 1,
+    ))
+    ->condition('format', 'M d Y - g:ia T', '=')
+    ->condition('type', 'event_datetime', '=')
+    ->execute();
+
+  variable_set('date_format_event_datetime', 'M d Y, g:ia T');
+
+  // Revert commons_events to make sure its referencing the event_datetime module.
+  $revert = array(
+    'commons_events' => array('field_instance'),
+    'commons_events' => array('views_view'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Need to force update so that Drupal sees the new hook_forms implementation.
+ */
+function commons_events_update_7009() {
+  cache_clear_all('module_implements', 'cache_bootstrap');
   return array();
 }
