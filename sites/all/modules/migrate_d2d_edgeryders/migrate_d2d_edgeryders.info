@@ -1,0 +1,16 @@
+name = "Edgeryders D6 to D7 migration"
+description = "Migrate edgeryders.eu content from D6 site to D7."
+package = "Development"
+core = 7.x
+;hidden = TRUE
+
+dependencies[] = migrate
+dependencies[] = migrate_d2d
+
+files[] = migrations.inc
+
+; Information added by drupal.org packaging
+version = "7.x-1.0"
+core = "7.x"
+project = "migrate_d2d_edgeryders"
+

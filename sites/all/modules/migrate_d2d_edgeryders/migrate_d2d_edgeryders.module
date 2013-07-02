@@ -1,0 +1,215 @@
+<?php
+
+/**
+ * Implements hook_migrate_api().
+ */
+function migrate_d2d_edgeryders_migrate_api() {
+  $api = array(
+    'api' => 2,
+  );
+  return $api;
+}
+
+/**
+ * Implements hook_flush_caches().
+ *
+ * Done to automatically register the migration on "drush cc all".
+ */
+function migrate_d2d_edgeryders_flush_caches() {
+  migrate_d2d_edgeryders_register_migrations();
+}
+
+/**
+ * Register all D6->D7 migrations.
+ */
+function migrate_d2d_edgeryders_register_migrations() {
+  /**
+   * Each migration being registered takes an array of arguments, some required
+   * and some optional. Start with the common arguments required by all - the
+   * source_connection (connection key, set up in settings.php, pointing to
+   * the Drupal 6 database) and source_version (major version of Drupal).
+   */
+  $common_arguments = array(
+    'source_connection' => 'legacy',
+    'source_version' => 6,
+    'group' => 'EdgerydersDrupal', // Where to sort the below migrations in when listing them.
+  );
+
+
+  /*
+   * User Picture Migration
+   */
+
+  $user_picture_arguments =  array(
+    'machine_name' => 'EdgerydersDrupalUserPicture',
+    'class_name' => 'EdgerydersDrupalUserPictureMigration',
+    'description' => t('Migration of Edgeryders user pictures from Drupal 6.'),
+    'source_dir' => '/var/www/vhosts/edgeryders.eu/httpdocs',
+  );
+  $arguments = $user_picture_arguments + $common_arguments;
+
+  Migration::registerMigration($arguments['class_name'], $arguments['machine_name'], $arguments);
+
+
+  /*
+   * User Migration
+   */
+
+  // The description and the migration machine name are also required arguments,
+  // which will be unique for each migration you register.
+  $user_arguments =  array(
+    'machine_name' => 'EdgerydersDrupalUser',    
+    'class_name' => 'EdgerydersDrupalUserMigration',
+    'description' => t('Migration of Edgeryders users from Drupal 6.'),
+    'dependencies' => array('EdgerydersDrupalUserPicture'),
+  );
+  $arguments = $user_arguments + $common_arguments;
+
+  Migration::registerMigration($arguments['class_name'], $arguments['machine_name'], $arguments);
+
+
+  /*
+   * File Migration
+   */
+
+  $file_arguments = array(
+    'machine_name' => 'EdgerydersDrupalFile',
+    'class_name' => 'EdgerydersDrupalFileMigration',
+    'description' => t('Migration of Edgeryders files from Drupal 6.'),
+    'user_migration' => 'EdgerydersDrupalUser',
+    'source_dir' => '/var/www/vhosts/edgeryders.eu/httpdocs',
+  );
+  $arguments = $file_arguments + $common_arguments;
+
+  Migration::registerMigration($arguments['class_name'], $arguments['machine_name'], $arguments);
+
+
+  /*
+   * Node Migration
+   */
+
+  // Each node migration has its own class derived from the migrate_d2d class, specifying its particular field mappings 
+  // and transformations. source_type and destination_type are required arguments.
+
+  $campaign_arguments =  array(
+    'machine_name' => 'EdgerydersDrupalCampaign',      
+    'class_name' => 'EdgerydersDrupalCampaignMigration',
+    'description' => t('Migration of Campaign nodes from Drupal 6.'),
+    'source_type' => 'campaign',
+    'destination_type' => 'group',
+    'user_migration' => 'EdgerydersDrupalUser',
+  );
+
+  $missionbrief_arguments = array(
+    'machine_name' => 'EdgerydersDrupalMissionBrief',
+    'class_name' => 'EdgerydersDrupalMissionBriefMigration',
+    'description' => t('Migration of Mission Brief nodes from Drupal 6.'),
+    'source_type' => 'mission_brief',
+    'destination_type' => 'group',
+    'user_migration' => 'EdgerydersDrupalUser',
+  );
+
+  $missioncase_arguments =  array(
+    'machine_name' => 'EdgerydersDrupalMissionCase',
+    'class_name' => 'EdgerydersDrupalMissionCaseMigration',
+    'description' => t('Migration of Mission Case nodes from Drupal 6 (the main content).'),
+    'source_type' => 'mission_case',
+    'destination_type' => 'post',
+    'user_migration' => 'EdgerydersDrupalUser',  // Machine name of our user migration above, to correctly map authorship info to D7.
+    'dependencies' => array('EdgerydersDrupalMissionBrief', 'EdgerydersDrupalFile'), // EdgerydersDrupalUser is implied in user_migration above as per http://bit.ly/S1Qgl4 .
+  );
+
+  foreach ([$campaign_arguments, $missionbrief_arguments, $missioncase_arguments] as $node_arguments) {
+    $arguments = $node_arguments + $common_arguments;
+    Migration::registerMigration($arguments['class_name'], $arguments['machine_name'], $arguments);
+  }
+
+
+  /*
+   * Comment Migration
+   */
+
+  $missioncase_comment_arguments = array(
+    'machine_name' => 'EdgerydersDrupalMissionCaseComment',    
+    'user_migration' => 'EdgerydersDrupalUser',
+    'default_uid' => 0,
+    'description' => t('Migration of Mission Case comments from Drupal 6.'),
+    'source_type' => 'mission_case',
+    'destination_type' => 'post',
+    'node_migration' => 'EdgerydersDrupalMissionCase',
+  );
+  $arguments = $missioncase_comment_arguments + $common_arguments;
+
+  Migration::registerMigration('DrupalComment6Migration', $arguments['machine_name'], $arguments);
+
+
+  /*
+   * Vocabulary Migration
+   */
+
+  /*
+  // For vocabulary migrations, source_vocabulary and destination_vocabulary are
+  // required arguments. Note that in Drupal 6 vocabularies did not have machine
+  // names, so we use the vocabulary ID to uniquely identify them.
+  $vocabulary_arguments = array(
+    array(
+      'description' => t('Migration of Countries terms from Drupal 6'),
+      'machine_name' => 'Countries',
+      'source_vocabulary' => '1',  // D6 Vocabulary ID
+      'destination_vocabulary' => 'countries',
+    ),
+    array(
+      'description' => t('Migration of Topics terms from Drupal 6'),
+      'machine_name' => 'Topics',
+      'source_vocabulary' => '2',  // D6 Vocabulary ID
+      'destination_vocabulary' => 'topics',
+    ),
+  );
+
+  // Again, we're using the migrate_d2d class directly.
+  // The soft dependency says that while we don't have to run the user migration
+  // first, we want to make sure it's listed first so the vocubularies are
+  // listed right ahead of the node migrations.
+  $common_vocabulary_arguments = $common_arguments + array(
+    'class_name' => 'DrupalTerm6Migration',
+    'soft_dependencies' => array('User'),
+  );
+  foreach ($vocabulary_arguments as $arguments) {
+    $arguments += $common_vocabulary_arguments;
+    Migration::registerMigration($arguments['class_name'], $arguments['machine_name'],
+                                 $arguments);
+  }
+  */
+
+
+  /*
+   * Menu Migration
+   */
+
+  /*
+  // Menu migrations -- same requirements as users
+  $menu_arguments = $common_arguments + array(
+    'description' => t('Migration of menus from Drupal 6'),
+    'machine_name' => 'Menu',
+  );
+
+  // We just use the migrate_d2d D6 migration class as-is.
+  Migration::registerMigration('DrupalMenu6Migration', $menu_arguments['machine_name'], $menu_arguments);
+  */
+
+
+  /*
+   * Menu Links Migration
+   */
+
+  /*
+  // Menu links migrations -- basic requirements, plus must set up menu dependency
+  $menu_links_arguments = $common_arguments + array(
+    'description' => t('Migration of menu links from Drupal 6'),
+    'machine_name' => 'MenuLinks',
+    'menu_migration' => $menu_arguments['machine_name'],
+  );
+  Migration::registerMigration('DrupalMenuLinks6Migration', $menu_links_arguments['machine_name'], $menu_links_arguments);
+  */
+
+}
