@@ -119,7 +119,7 @@ function migrate_d2d_edgeryders_register_migrations() {
     'dependencies' => array('EdgerydersDrupalMissionBrief', 'EdgerydersDrupalFile'), // EdgerydersDrupalUser is implied in user_migration above as per http://bit.ly/S1Qgl4 .
   );
 
-  foreach ([$campaign_arguments, $missionbrief_arguments, $missioncase_arguments] as $node_arguments) {
+  foreach (array($campaign_arguments, $missionbrief_arguments, $missioncase_arguments) as $node_arguments) {
     $arguments = $node_arguments + $common_arguments;
     Migration::registerMigration($arguments['class_name'], $arguments['machine_name'], $arguments);
   }
