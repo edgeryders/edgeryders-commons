@@ -59,7 +59,7 @@ class EdgerydersDrupalUserPictureMigration extends Migration {
       $uri = str_replace('sites/edgeriders.ppa.coe.int/files/', 'sites/default/files/', $uri);
       $uri = str_replace('sites/edgeryders.ppa.coe.int/files/', 'sites/default/files/', $uri);
 
-      drush_print("Debug: Cleaned picture path is: $uri");
+      // drush_print("Debug: Cleaned picture path is: $uri");
 
       return $uri;
    }
@@ -260,7 +260,7 @@ class EdgerydersDrupalFileMigration extends Migration {
       $uri = str_replace('sites/edgeriders.ppa.coe.int/files/', 'sites/default/files/', $uri);
       $uri = str_replace('sites/edgeryders.ppa.coe.int/files/', 'sites/default/files/', $uri);
 
-      drush_print("Debug: Cleaned picture path is: $uri");
+      // drush_print("Debug: Cleaned picture path is: $uri");
 
       return $uri;
    }
@@ -391,8 +391,9 @@ class EdgerydersDrupalMissionCaseMigration extends EdgerydersDrupalNodeMigration
     $fids = $query->execute()->fetchCol(); // fetchCol() API docs: http://bit.ly/14LCdo8
     if (!empty($fids)) {
       $row->field_images_fids = $fids;
-      drush_print("Debug: Assigned \$row->field_images_fids = ");
-      drush_print_r($fids);
+
+      // drush_print("Debug: Assigned \$row->field_images_fids = ");
+      // drush_print_r($fids);
     }
 
     // Avoid creating records with the empty string.
