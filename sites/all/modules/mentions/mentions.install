@@ -1,0 +1,95 @@
+<?php
+/**
+ * @file
+ * Contains database schema for the Mentions module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function mentions_schema() {
+  $schema['mentions'] = array(
+    'fields' => array(
+      'mid' => array(
+        'description' => 'The primary identifier for a mention.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'user' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'author' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'mid' => array(
+        'mid',
+      ),
+    ),
+    'primary key' => array('mid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function mentions_uninstall() {
+  variable_del('mentions');
+}
+
+/**
+ * Update from drupal 6 mentions
+ */
+function mentions_update_7100() {
+  // @TODO - upgrade path for database schema.
+
+  // Load variables to transform to new format
+  $defaults = array(
+    'input_prefix' => variable_get('mentions_input_prefix', '[@'),
+    'input_suffix' => variable_get('mentions_input_suffix', ']'),
+    'output_prefix' => variable_get('mentions_output_prefix', '@'),
+    'output_suffix' => variable_get('mentions_output_suffix', ''),
+    'token_content' => variable_get('mentions_output_content', '[user:name]'),
+    'token_link' => '',
+  );
+  variable_set('mentions', $settings);
+
+  // Remove old variables entries
+  variable_del('mentions_input_prefix');
+  variable_del('mentions_input_suffix');
+  variable_del('mentions_output_prefix');
+  variable_del('mentions_output_prefix');
+  variable_del('mentions_output_content');
+}

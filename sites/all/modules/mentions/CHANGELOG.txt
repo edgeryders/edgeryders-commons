@@ -1,0 +1,4 @@
+Mentions 7.x-1.x-dev, xxxx-xx-xx (development release)
+----------------------------
+
+- Initial Drupal 7 release.
