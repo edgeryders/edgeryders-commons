@@ -2,6 +2,7 @@ name = Commons Notify
 core = 7.x
 package = Commons - Building blocks
 php = 5.2.4
+version = 7.x-3.0+4-dev
 project = commons_notify
 dependencies[] = commons_follow
 dependencies[] = ctools
@@ -16,7 +17,7 @@ dependencies[] = number
 dependencies[] = options
 dependencies[] = strongarm
 dependencies[] = text
-datestamp = 1354747303
+datestamp = 1370444087
 features[ctools][] = strongarm:strongarm:1
 features[features_api][] = api:2
 features[field_base][] = field_message_rendered_body
@@ -49,10 +50,3 @@ features[variable][] = field_bundle_settings_message__commons_notify_node_create
 features_exclude[field_base][message_text] = message_text
 features_exclude[field_base][field_target_nodes] = field_target_nodes
 features_exclude[field_base][field_target_comments] = field_target_comments
-
-; Information added by drupal.org packaging script on 2013-06-05
-version = "7.x-3.0+4-dev"
-core = "7.x"
-project = "commons_notify"
-datestamp = "1370444087"
-
