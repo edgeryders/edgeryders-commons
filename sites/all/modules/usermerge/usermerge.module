@@ -1,0 +1,263 @@
+<?php
+/**
+ * @file
+ * Main file for the user merge module, which re-assigns data from an abandoned account to a live one.
+ *
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function usermerge_permission() {
+  return array(
+    'merge users' => array(
+      'title' => t('merge users'),
+      'description' => t('Merge users using the user merge module'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function usermerge_menu() {
+  $items['admin/user/merge'] = array(
+    'title' => 'Merge users',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('usermerge_merge_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('merge users'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['usermerge'] = array(
+    'title' => 'Merge users',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('usermerge_merge_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('merge users'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Form to collect the two uids.
+ *
+ */
+function usermerge_merge_form($form, &$form_state) {
+
+  // Find out what's supported.
+  $supported_actions = module_invoke_all('usermerge_actions_supported');
+  $form['general']['supported_actions'] = array(
+    '#value' => t('Supported actions:') . theme('item_list', array('items' => $supported_actions)),
+  );
+
+  $form['general']['usermerge_user_delete'] = array(
+    '#type' => 'textfield',
+    '#title' => t('The name of the account to remove'),
+    '#description' => t('All content associated with this user will be changed so it is associated with the other user.'),
+    '#autocomplete_path' => 'user/autocomplete',
+    '#required' => TRUE,
+  );
+
+  $form['general']['usermerge_user_keep'] = array(
+    '#type' => 'textfield',
+    '#title' => t('The name of the account to keep'),
+    '#description' => t('The account to use in the future.'),
+    '#autocomplete_path' => 'user/autocomplete',
+    '#required' => TRUE,
+  );
+
+  $form['general']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Merge accounts now!'),
+  );
+
+  return $form;
+}
+
+/**
+ * Validates contents of form for user validation
+ */
+function usermerge_merge_form_validate($form, &$form_state) {
+  // Can't be the same user.
+  if ($form_state['values']['usermerge_user_keep'] == $form_state['values']['usermerge_user_delete']) {
+    form_set_error('usermerge_user', 'You cannot have the same username in both fields.');
+  }
+
+  // Load up the users. We store these in the form_state['values'] so that we don't have to load again later.
+  $form_state['values']['user_to_delete'] = array_shift(user_load_multiple(array(), array('name' => $form_state['values']['usermerge_user_delete'])));
+  $form_state['values']['user_to_keep'] = array_shift(user_load_multiple(array(), array('name' => $form_state['values']['usermerge_user_keep'])));
+
+  // Use the validate helper function.
+  usermerge_validate_merge($form_state['values']['user_to_delete'], $form_state['values']['user_to_keep']);
+}
+
+/**
+ * Helper validation function used by the form submit and the API.
+ *
+ * @param int $user_to_delete uid of user to delete
+ * @param int $user_to_keep uid of user to keep
+ */
+function usermerge_validate_merge($user_to_delete, $user_to_keep) {
+  $valid = TRUE;
+  if (empty($user_to_delete->uid)) {
+    form_set_error('usermerge_user_delete', 'This user name does not exist.');
+    $valid = FALSE;
+  }
+  if (empty($user_to_keep->uid)) {
+    form_set_error('usermerge_user_keep', 'This user name does not exist.');
+    $valid = FALSE;
+  }
+
+  // Don't remove UID 1.
+  if ($user_to_delete->uid == 1) {
+    form_set_error('usermerge_user_delete', 'Woah buddy, blocking user 1 is not a good idea.');
+    $valid = FALSE;
+  }
+  return $valid;
+}
+
+
+/**
+ * Merges two users after submitting merge form
+ */
+function usermerge_merge_form_submit($form, &$form_state) {
+  usermerge_do_the_merge($form_state['values']['user_to_delete'], $form_state['values']['user_to_keep']);
+}
+
+/**
+ * The function to do the work.  Custom developers: use this as your API entry point.
+ *
+ * @param object $user_to_delete
+ *   A fully loaded user object from user_load() that will be merged and blocked.
+ * @param object $user_to_keep
+ *   A fully loaded user object from user_load() that will be merged and retained.
+ * @return boolean
+ *   TRUE if they are merged, FALSE if the validation failed.
+ */
+function usermerge_do_the_merge($user_to_delete, $user_to_keep) {
+  if (usermerge_validate_merge($user_to_delete, $user_to_keep)) {
+    module_invoke_all('usermerge_merge_users', $user_to_delete, $user_to_keep);
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Implements hook_usermerge_actions_supported().
+ */
+function usermerge_usermerge_actions_supported() {
+  return array(
+    'node' => t('Change all pieces of content and the revisions to be associated with the new account.'),
+    'comment' => t('Associate comments with the new account.'),
+    'user' => t('Block the user account.'),
+    'user_roles' => t('Migrate user roles to the new user account.'),
+  );
+}
+
+/**
+ * Implement hook_usermerge_actions_supported() on behalf of profile module.
+ * Note: This uses the D6 profile module and not the entity API
+ */
+function profile_usermerge_actions_supported() {
+  return array(
+    'profile' => t('Merge profile data using the new account where it is populated.'),
+  );
+}
+
+
+/**
+ * Implements hook_usermerge_merge_users().
+ */
+function usermerge_usermerge_merge_users($user_to_delete, $user_to_keep) {
+  // Comment: change the uid to the new one.
+
+  if (module_exists('comment')) {
+    db_update('comment')
+      ->fields(array(
+              'uid' => $user_to_keep->uid,
+      ))
+      ->condition('uid', $user_to_delete->uid, '=')
+      ->execute();
+  }
+
+//updating node table
+  db_update('node')
+  ->fields(array(
+    'uid' => $user_to_keep->uid,
+  ))
+  ->condition('uid', $user_to_delete->uid, '=')
+  ->execute();
+
+//updating node_revisions table
+  db_update('node_revision')
+  ->fields(array(
+    'uid' => $user_to_keep->uid,
+  ))
+  ->condition('uid', $user_to_delete->uid, '=')
+  ->execute();
+
+  //Update roles
+  $merged_roles = $user_to_keep->roles + $user_to_delete->roles;
+
+  // First, remove all roles from the user to keep to prevent duplicate key errors.
+  db_delete('users_roles')
+  ->condition('uid', $user_to_keep->uid)
+  ->execute();
+
+  // Then add them on to the user to keep.
+  foreach (array_keys($merged_roles) as $rid) {
+    if (!in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
+      $id = db_insert('users_roles')
+       ->fields(array(
+          'uid' => $user_to_keep->uid,
+          'rid' => $rid,
+        ))
+     ->execute();
+    }
+  }
+  // Block the old user.
+  user_block_user_action($user_to_delete);
+
+  // Success!
+  drupal_set_message(t('We successfully merged %user_to_delete into %user_to_keep', array('%user_to_delete' => $user_to_delete->name, '%user_to_keep' => $user_to_keep->name)));
+}
+
+/**
+ * Implement hook_usermerge_merge_users() on behalf of profile module.
+ */
+function profile_usermerge_merge_users($user_to_delete, $user_to_keep) {
+  // retrieve kept-user's user field values
+  if (module_exists('profile')) { //testing for profile, which is hidden in D6
+      $result = db_query("SELECT fid FROM {profile_values} WHERE uid = :uid AND VALUE <> ''", array(':uid' => $user_to_keep->uid));
+      $kept = array();
+      while ($record = db_fetch_array($result)) {
+        $kept[] = $record['fid'];
+      }
+      if (!empty($kept)) {
+         // Remove profile values for blocked-user that kept-user has.
+        db_delete('profile_values')
+        ->condition('uid', $user_to_delete->uid)
+        ->condition('fid', implode(',', $kept), 'IN')
+        ->execute();
+      }
+
+      // Remove empty profile values for kept-user.
+      db_delete('profile_values')
+      ->condition('uid', $user_to_keep->uid)
+      ->condition('VALUE', '')
+      ->execute();
+
+      // Change uid.
+      db_update('profile_values')
+      ->fields(array(
+        'uid' => $user_to_keep->uid,
+      ))
+      ->condition('uid', $user_to_delete->uid)
+      ->execute();
+    }
+}
