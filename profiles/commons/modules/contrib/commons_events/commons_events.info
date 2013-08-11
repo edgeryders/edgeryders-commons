@@ -105,9 +105,9 @@ files[] = commons_events.strongarm.inc
 files[] = includes/commons_events.forms.inc
 files[] = includes/commons_events.theme.inc
 
-; Information added by drupal.org packaging script on 2013-06-14
-version = "7.x-3.1+17-dev"
+; Information added by drupal.org packaging script on 2013-08-09
+version = "7.x-3.3"
 core = "7.x"
 project = "commons_events"
-datestamp = "1371170675"
+datestamp = "1376014363"
 

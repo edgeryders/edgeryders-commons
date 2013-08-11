@@ -28,9 +28,9 @@ features[variable][] = node_preview_notice
 features[variable][] = node_submitted_notice
 features[views_view][] = commons_notices_latest_notices
 
-; Information added by drupal.org packaging script on 2013-02-25
-version = "7.x-3.0"
+; Information added by drupal.org packaging script on 2013-08-09
+version = "7.x-3.3"
 core = "7.x"
 project = "commons_notices"
-datestamp = "1361820330"
+datestamp = "1376015171"
 

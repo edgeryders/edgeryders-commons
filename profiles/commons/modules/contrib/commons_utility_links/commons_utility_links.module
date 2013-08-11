@@ -7,6 +7,10 @@ function commons_utility_links_block_info() {
   $blocks['commons_utility_links'] = array(
     'info' => t('Commons utility links'),
     'cache' => DRUPAL_NO_CACHE,
+    'visibility' => 0,
+    'status' => 1,
+    'pages' => 0,
+    'weight' => 1,
   );
   return $blocks;
 }
@@ -44,6 +48,12 @@ function commons_utility_links_block_view() {
     );
   }
   drupal_alter('commons_utility_links', $links);
-  $block['content'] = theme('links', array('links' => $links, 'attributes' => array('class' => 'commons-utility-links')));
+  $block['content'] = array(
+    '#theme' => 'links__commons_utility_links',
+    '#links' => $links,
+    '#attributes' => array(
+      'class' => array('commons-utility-links'),
+    ),
+  );
   return $block;
 }

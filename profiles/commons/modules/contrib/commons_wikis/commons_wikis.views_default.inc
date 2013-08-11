@@ -36,6 +36,11 @@ function commons_wikis_views_default_views() {
   $handler->display->display_options['style_plugin'] = 'default';
   $handler->display->display_options['row_plugin'] = 'entity';
   $handler->display->display_options['row_options']['view_mode'] = 'teaser';
+  /* Header: Global: Node partial form */
+  $handler->display->display_options['header']['commons_bw_node_partial_form']['id'] = 'commons_bw_node_partial_form';
+  $handler->display->display_options['header']['commons_bw_node_partial_form']['table'] = 'views';
+  $handler->display->display_options['header']['commons_bw_node_partial_form']['field'] = 'commons_bw_node_partial_form';
+  $handler->display->display_options['header']['commons_bw_node_partial_form']['bundle'] = 'wiki';
   /* No results behavior: Global: Text area */
   $handler->display->display_options['empty']['area']['id'] = 'area';
   $handler->display->display_options['empty']['area']['table'] = 'views';
@@ -47,7 +52,6 @@ function commons_wikis_views_default_views() {
   $handler->display->display_options['relationships']['og_membership_rel']['id'] = 'og_membership_rel';
   $handler->display->display_options['relationships']['og_membership_rel']['table'] = 'node';
   $handler->display->display_options['relationships']['og_membership_rel']['field'] = 'og_membership_rel';
-  $handler->display->display_options['relationships']['og_membership_rel']['required'] = TRUE;
   /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
@@ -92,7 +96,6 @@ function commons_wikis_views_default_views() {
   $handler->display->display_options['arguments']['gid']['table'] = 'og_membership';
   $handler->display->display_options['arguments']['gid']['field'] = 'gid';
   $handler->display->display_options['arguments']['gid']['relationship'] = 'og_membership_rel';
-  $handler->display->display_options['arguments']['gid']['default_action'] = 'empty';
   $handler->display->display_options['arguments']['gid']['default_argument_type'] = 'fixed';
   $handler->display->display_options['arguments']['gid']['summary']['number_of_records'] = '0';
   $handler->display->display_options['arguments']['gid']['summary']['format'] = 'default_summary';
@@ -111,6 +114,30 @@ function commons_wikis_views_default_views() {
   $handler->display->display_options['filters']['type']['value'] = array(
     'wiki' => 'wiki',
   );
+  $translatables['commons_bw_wikis'] = array(
+    t('Master'),
+    t('more'),
+    t('Apply'),
+    t('Reset'),
+    t('Sort by'),
+    t('Asc'),
+    t('Desc'),
+    t('Items per page'),
+    t('- All -'),
+    t('Offset'),
+    t('« first'),
+    t('‹ previous'),
+    t('next ›'),
+    t('last »'),
+    t('No wikis have been added to this group.'),
+    t('OG membership from node'),
+    t('No comments'),
+    t('.'),
+    t(' comments'),
+    t('most recent'),
+    t('most active'),
+    t('All'),
+  );
   $export['commons_bw_wikis'] = $view;
 
   $view = new view();
@@ -128,7 +155,6 @@ function commons_wikis_views_default_views() {
   $handler->display->display_options['title'] = 'Contributors';
   $handler->display->display_options['use_more_always'] = FALSE;
   $handler->display->display_options['access']['type'] = 'perm';
-  $handler->display->display_options['access']['perm'] = 'view revisions';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['distinct'] = TRUE;
@@ -209,6 +235,21 @@ function commons_wikis_views_default_views() {
       'fixed' => '',
       'label' => 'Content: Nid',
     ),
+  );
+  $translatables['commons_wikis_contributor_list'] = array(
+    t('Master'),
+    t('Contributors'),
+    t('more'),
+    t('Apply'),
+    t('Reset'),
+    t('Sort by'),
+    t('Asc'),
+    t('Desc'),
+    t('revision user'),
+    t('[picture]<span>[name]</span>'),
+    t('All'),
+    t('Content pane'),
+    t('Commons'),
   );
   $export['commons_wikis_contributor_list'] = $view;
 

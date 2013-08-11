@@ -46,3 +46,49 @@ function commons_q_a_update_3103() {
   features_revert($revert);
   return array();
 }
+
+/**
+ * Disable comments on Answer nodes.
+ */
+function commons_q_a_update_3104() {
+    $revert = array(
+      'commons_q_a' => array('variable'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Link the 'Answer added' activity stream message to the Answer node as
+ * displayed on the question per http://drupal.org/node/1946120.
+ */
+function commons_q_a_update_3105() {
+    $revert = array(
+      'commons_q_a' => array('field_instance', 'message_type', 'variable'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Use the standard user picture image size.
+ */
+function commons_q_a_update_3106() {
+    $revert = array(
+      'commons_q_a' => array('message_type'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Remove the "Like" widget from answer nodes, since they have a +/- widget.
+ * Related issue: https://drupal.org/node/1935312.
+ */
+function commons_q_a_update_3107() {
+  $revert = array(
+    'commons_like' => array('variable'),
+  );
+  features_revert($revert);
+  return array();
+}

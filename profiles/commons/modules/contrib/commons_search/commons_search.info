@@ -7,7 +7,6 @@ project = commons_search
 dependencies[] = ctools
 dependencies[] = custom_search
 dependencies[] = features
-dependencies[] = rich_snippets
 dependencies[] = search
 dependencies[] = strongarm
 dependencies[] = views
@@ -64,9 +63,9 @@ features[variable][] = custom_search_type_selector_all
 features[variable][] = custom_search_type_selector_label
 features[variable][] = custom_search_type_selector_label_visibility
 features[views_view][] = group_search
-; Information added by drupal.org packaging script on 2013-03-27
-version = "7.x-3.1"
+; Information added by drupal.org packaging script on 2013-08-09
+version = "7.x-3.3"
 core = "7.x"
 project = "commons_search"
-datestamp = "1364416524"
+datestamp = "1376014392"
 

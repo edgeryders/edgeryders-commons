@@ -62,7 +62,7 @@ function commons_groups_update_3105() {
  * (http://drupal.org/node/1821808).
  */
 function commons_groups_update_3106() {
-    $revert = array(
+  $revert = array(
       'commons_groups' => array('views_view'),
   );
   features_revert($revert);
@@ -91,5 +91,60 @@ function commons_groups_update_3107() {
       og_role_grant('node', $record->nid, $record->uid, $organizer_role);
     }
   }
+  return array();
+}
+
+/**
+ * Update the og_group_ref and group privacy fields per
+ * http://drupal.org/node/1961296.
+ */
+function commons_groups_update_3108() {
+  $revert = array(
+    'commons_groups' => array('field_instance', 'views_view'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Update the group_group field per http://drupal.org/node/1948224 and
+ * disable the deprecated Commons Group Privacy module
+ * per https://drupal.org/node/1961296.
+ */
+function commons_groups_update_3109() {
+  // Commons Group Privacy was deprecated in https://drupal.org/node/1961296.
+  module_disable('commons_group_privacy', TRUE);
+  $revert = array(
+    'commons_groups' => array('field_base', 'field_instance'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Update the og group filter inside views per
+ * http://drupal.org/node/2037417.
+ */
+function commons_groups_update_3110() {
+  $revert = array(
+    'commons_groups' => array('views_view'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Set commons_groups to display need update message for those upgrading from 3.2
+ * and revert the view to add the update display
+ * See https://drupal.org/node/2059857#comment-7733465
+ */
+function commons_groups_update_3111() {
+  variable_set('commons_groups_needs_update', TRUE);
+  $revert = array(
+    'commons_groups' => array('views_view'),
+  );
+  features_revert($revert);
+  // Ensure that the menu callback from our new Views display is active.
+  menu_rebuild();
   return array();
 }

@@ -18,9 +18,9 @@ features[ctools][] = views:views_default:3.0
 features[features_api][] = api:1
 features[page_manager_pages][] = groups_directory
 
-; Information added by drupal.org packaging script on 2013-03-27
-version = "7.x-3.1"
+; Information added by drupal.org packaging script on 2013-08-09
+version = "7.x-3.3"
 core = "7.x"
 project = "commons_groups"
-datestamp = "1364416518"
+datestamp = "1376013496"
 

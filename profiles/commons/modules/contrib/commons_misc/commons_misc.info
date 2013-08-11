@@ -26,9 +26,9 @@ features[variable][] = theme_commons_origins_settings
 features[variable][] = user_register
 features_exclude[dependencies][page_manager] = page_manager
 
-; Information added by drupal.org packaging script on 2013-03-27
-version = "7.x-3.1"
+; Information added by drupal.org packaging script on 2013-08-09
+version = "7.x-3.3"
 core = "7.x"
 project = "commons_misc"
-datestamp = "1364416521"
+datestamp = "1376015167"
 
