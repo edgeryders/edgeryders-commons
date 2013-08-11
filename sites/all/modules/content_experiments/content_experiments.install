@@ -1,0 +1,53 @@
+<?php
+/**
+ * @file
+ * Installation file for Content Experiments module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function content_experiments_schema() {
+  $schema['content_experiments'] = array(
+    'description' => 'The content experiments code table.', 
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The primary identifier for a node.', 
+        'type' => 'serial', 
+        'unsigned' => TRUE, 
+        'not null' => TRUE,
+      ), 
+      'code' => array(
+        'description' => 'The title of this node, always treated as non-markup plain text.', 
+        'type' => 'text', 
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function content_experiments_install() {
+  variable_set('content_experiments_visibility', 0);
+
+  // Remove tracking from all administrative pages
+  $pages = array(
+    'admin',
+    'admin/*',
+    'user/*/*',
+    'node/add*',
+    'node/*/*',
+  );
+  variable_set('content_experiments_pages', implode("\n", $pages));
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function content_experiments_uninstall() {
+  variable_del('content_experiments_pages');
+  variable_del('content_experiments_roles');
+}
