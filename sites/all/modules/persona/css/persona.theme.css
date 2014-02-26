@@ -1,0 +1,57 @@
+/**
+ * @file
+ * CSS for Persona buttons.
+ */
+
+button.persona-styled::-moz-focus-inner {
+  padding: 0;
+  border: 0;
+}
+.persona-styled,
+.persona-styled:hover,
+.persona-styled:active,
+.persona-styled:focus {
+  position: relative;
+  display: block;
+  line-height: 28px;
+  padding: 0 10px 0 44px;
+  border: 0;
+  margin-bottom: 10px;
+  white-space: nowrap;
+
+  color: white;
+  font-family: Ubuntu, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: left;
+  text-transform: lowercase;
+  text-shadow: none;
+  cursor: pointer;
+
+  background-position: 0% 0%;
+  background-size: 38px 28px, 100% 100%;
+  background-repeat: no-repeat;
+  background-color: #4e4e4e;
+  background-image: url('button.png'), none;
+  background-image: url('button.png'), -webkit-linear-gradient(top, #606060, #3c3c3c);
+  background-image: url('button.png'),     -ms-linear-gradient(top, #606060, #3c3c3c);
+  background-image: url('button.png'),         linear-gradient(to bottom, #606060, #3c3c3c);
+
+  -ms-border-radius: 5px;
+      border-radius: 5px;
+  -ms-box-shadow: 0 2px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px rgba(0, 0, 0, 0.2);
+}
+.persona-styled:hover,
+.persona-styled:focus {
+  background-color: #3a3a3a;
+  background-image: url('button.png'), -webkit-linear-gradient(top, #484848, #2d2d2d);
+  background-image: url('button.png'),     -ms-linear-gradient(top, #484848, #2d2d2d);
+  background-image: url('button.png'),         linear-gradient(to bottom, #484848, #2d2d2d);
+
+  -ms-box-shadow: 0 0 3px 3px #f07746;
+      box-shadow: 0 0 3px 3px #f07746;
+}
+.persona-styled:active {
+  top: 1px;
+}

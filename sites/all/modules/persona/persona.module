@@ -1,0 +1,656 @@
+<?php
+/**
+ * @file
+ * Main module file for Persona.
+ */
+
+/**
+ * Gets the session's XSRF token, generating it if necessary.
+ *
+ * @return string
+ *   XSRF token.
+ */
+function persona_xsrf_token() {
+  // Make sure we have a session.
+  drupal_session_start();
+  if (!isset($_SESSION['persona_xsrf_token'])) {
+    $_SESSION['persona_xsrf_token'] = drupal_get_token('persona-xsrf');
+  }
+  return $_SESSION['persona_xsrf_token'];
+}
+
+/**
+ * Ensures XSRF token is correct.
+ */
+function persona_check_xsrf_token($token) {
+  if (!isset($_SESSION['persona_xsrf_token']) || ($_SESSION['persona_xsrf_token'] !== $token)) {
+    watchdog('persona', "Bad XSRF token.", array(), WATCHDOG_WARNING);
+    throw new Exception();
+  }
+}
+
+/**
+ * Adds the login.persona.org JavaScript shiv.
+ *
+ * @param bool $every_page
+ *   TRUE if the shiv is to be present on every page for users for whom it is
+ *   present at all. Defaults to TRUE.
+ */
+function persona_add_js_shiv($every_page = TRUE) {
+  // The documentation recommends putting this at the bottom of the page body,
+  // but this causes a significant delay before Drupal behaviours are activated
+  // causing visible page rearrangement.
+  // @see https://developer.mozilla.org/en-US/docs/Persona/Quick_Setup
+  // TODO: Conditionally include this file only for browsers that don't
+  // implement navigator.id natively (currently all of them).
+  // @see https://developer.mozilla.org/en-US/docs/DOM/navigator.id
+  // @see http://drupal.org/node/865536
+  drupal_add_js('https://login.persona.org/include.js', array(
+    'group' => JS_LIBRARY,
+    'every_page' => $every_page,
+  ));
+}
+
+/**
+ * Implements hook_init().
+ */
+function persona_init() {
+  global $user, $is_https, $base_secure_url;
+  // Don't do anything if this is an AJAX request - currentPath would be updated
+  // to incorrect value.
+  // @see https://drupal.org/node/1691394
+  if(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+    return;
+  }
+  // Send X-UA-Compatible HTTP header to force IE to use the most recent
+  // rendering engine or use Chrome's frame rendering engine if available. It is
+  // not possible to use drupal_add_http_header() as Drupal 7 does not store
+  // HTTP headers in the page cache.
+  // @see https://developer.mozilla.org/en-US/docs/Persona/Browser_compatibility
+  $element = array(
+    '#tag' => 'meta',
+    '#attributes' => array(
+      'http-equiv' => 'X-UA-Compatible',
+      'content' => 'IE=edge,chrome=1',
+    ),
+  );
+  drupal_add_html_head($element, 'persona_x_ua_compatible');
+  // Add JavaScript settings.
+  $settings = array(
+    // Tell Persona who is signed in.
+    'uid' => $user->uid,
+    'email' => (isset($_SESSION['persona_sign_in'])) ? $user->mail : NULL,
+    // Add site name to display on Mozilla Persona dialog.
+    'siteName' => variable_get('site_name'),
+    // Add some settings that core doesn't provide.
+    // @see http://drupal.org/node/1691394
+    'cleanUrls' => variable_get('clean_url'),
+    'currentPath' => (current_path() == variable_get('site_frontpage', 'node')) ? '' : current_path(),
+    'fadeOut' => variable_get('persona_fade_out'),
+  );
+  // Don't add the XSRF token if the user is not signed in as the page may be
+  // cached. This also avoids creating a session.
+  if (user_is_logged_in()) {
+    $settings['token'] = persona_xsrf_token();
+  }
+  // Site logo can only be displayed on the Mozilla Persona dialog if the site
+  // is being accessed over HTTPS. It must be an absolute path rather than a
+  // full URL.
+  if ($is_https) {
+    if ($persona_logo = variable_get('persona_logo')) {
+      $settings['siteLogo'] = $persona_logo;
+    }
+    elseif ($site_logo_url = theme_get_setting('logo')) {
+      $settings['siteLogo'] = substr($site_logo_url, strlen($base_secure_url));
+    }
+  }
+  // Add the background color.
+  if ($background_color = variable_get('persona_background_color')) {
+    $settings['backgroundColor'] = $background_color;
+  }
+  // Add the legal documents if they are both provided.
+  if (($terms_link = variable_get('persona_terms_link')) && ($privacy_link = variable_get('persona_privacy_link'))) {
+    $settings += array(
+      'termsOfService' => url($terms_link),
+      'privacyPolicy' => url($privacy_link),
+    );
+  }
+  drupal_add_js(array('persona' => $settings), 'setting');
+  // Add the JavaScript shiv.
+  if (!variable_get('persona_improve_frontend') || user_is_logged_in()) {
+    persona_add_js_shiv();
+  }
+  // Add the button CSS if necessary.
+  if (variable_get('persona_button_style') == 'persona') {
+    drupal_add_css(drupal_get_path('module', 'persona') . '/css/persona.theme.css', array(
+      'every_page' => TRUE,
+    ));
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function persona_menu() {
+  $items['user/persona/get-token'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'persona_xsrf_token',
+    'delivery callback' => 'drupal_json_output',
+    'access callback' => TRUE,
+  );
+  $items['user/persona/sign-in'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'persona_sign_in',
+    'delivery callback' => 'drupal_json_output',
+    'access callback' => TRUE,
+  );
+  $items['user/persona/change-email'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'persona_change_email',
+    'delivery callback' => 'drupal_json_output',
+    'access callback' => TRUE,
+  );
+  $items['user/persona/sign-out'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'persona_sign_out',
+    'delivery callback' => 'drupal_json_output',
+    'access callback' => TRUE,
+  );
+  $items['admin/config/people/persona'] = array(
+    'title' => "Persona settings",
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('persona_admin_form'),
+    'description' => "Configure settings for signing in with Mozilla Persona.",
+    'file' => 'persona.admin.inc',
+    'access arguments' => array('administer site configuration'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function persona_menu_alter(array &$items) {
+  if (variable_get('persona_takeover')) {
+    unset($items['user/register']);
+    unset($items['user/login']);
+    unset($items['user/password']);
+  }
+}
+
+/**
+ * Determines if a user with a specific name already exists.
+ *
+ * @param string $name
+ *   User name to check for.
+ *
+ * @return bool
+ *   TRUE if the name is taken.
+ */
+function _persona_username_exists($name) {
+  // Search for a user entity with the supplied name.
+  $query = new EntityFieldQuery;
+  return (bool) $query->entityCondition('entity_type', 'user')
+    ->propertyCondition('name', $name)
+    ->count()
+    ->execute();
+}
+
+/**
+ * Extracts a unique name from an email address.
+ *
+ * @param string $email
+ *   Email address to extract name from.
+ *
+ * @return string
+ *   Unique extracted name. No existing users will have this name.
+ */
+function _persona_extract_username($email) {
+  // Extract the local-part from the email address if not using email usernames.
+  $name = variable_get('persona_email_usernames') ? $email : strtok($email, '@');
+  // Ensure it is unique.
+  if (_persona_username_exists($name)) {
+    $i = 2;
+    do {
+      $attempt = $name . '-' . $i++;
+    } while (_persona_username_exists($attempt));
+    $name = $attempt;
+  }
+  return $name;
+}
+
+/**
+ * Determines request variables from JSON POST data.
+ *
+ * @return array
+ *   Keyed array of request variables.
+ */
+function _persona_request_variables() {
+  return drupal_json_decode(file_get_contents('php://input'));
+}
+
+/**
+ * Returns the audience URL that assertions should be verified with.
+ *
+ * @return string
+ *   Audience URL.
+ */
+function _persona_audience() {
+  global $is_https;
+  $audience = variable_get('persona_audience');
+  // Determine audience insecurely if not defined.
+  if (!$audience) {
+    $audience = 'http' . ($is_https ? 's'  : '') . '://';
+    $audience .= $_SERVER['HTTP_HOST'];
+    $audience .= ':' . ($is_https ? '443'  : '80');
+  }
+  return $audience;
+}
+
+/**
+ * Verifies a Persona assertion and determines the email address.
+ *
+ * @param string $assertion
+ *   Verifier identity assertion.
+ *
+ * @throws Exception
+ *   Exception is thrown if an invalid response is received from the verifier.
+ *
+ * @return string
+ *   Email address that the user has signed in with.
+ */
+function persona_verify($assertion) {
+  // Verify assertion with Mozilla's Remote Verification API.
+  // TODO: Support local verification once API has stabilized, for example with
+  // https://github.com/Falco20019/php-browseridlib
+  $context_options = array(
+    'ssl' => array(
+      'verify_peer' => TRUE,
+      'cafile' => drupal_get_path('module', 'persona') . '/cacert.pem',
+      'CN_match' => 'www.persona.org',
+    ),
+  );
+  $result = (array) drupal_http_request('https://verifier.login.persona.org/verify', array(
+    'method' => 'POST',
+    'headers' => array('Content-Type' => 'application/json'),
+    'data' => drupal_json_encode(array(
+      'assertion' => $assertion,
+      'audience' => _persona_audience(),
+    )),
+    'context' => stream_context_create($context_options),
+  ));
+  // Get response variables.
+  $response = drupal_json_decode($result['data']);
+  // HTTP status should be 200, and verification status should be 'okay'.
+  if (($result['code'] != 200) || ($response['status'] != 'okay')) {
+    $response_str = var_export($response, TRUE);
+    watchdog('persona', "Bad response: @response; HTTP status: @code", array(
+      '@response' => $response_str,
+      '@code' => $result['code'],
+    ), WATCHDOG_ERROR);
+    throw new Exception("Bad response: " . $response_str, $result['code']);
+  }
+  // Return email address obtained from assertion.
+  return $response['email'];
+}
+
+/**
+ * Signs into an account.
+ *
+ * @param $account
+ *   Account to sign into.
+ */
+function _persona_sign_in($account) {
+  global $user;
+  // Are we already signed in?
+  if (user_is_logged_in()) {
+    // @see user_logout()
+    watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
+    module_invoke_all('user_logout', $user);
+  }
+  $user = $account;
+  user_login_finalize();
+  // Store in the session the fact that the user signed in with Persona.
+  $_SESSION['persona_sign_in'] = TRUE;
+}
+
+/**
+ * Attempts to sign into an existing account.
+ *
+ * @param $account
+ *   Account to sign into.
+ */
+function _persona_existing_account_sign_in($account) {
+  if ($account->status) {
+    watchdog('persona', "Sign into existing account by %email successful.", array('%email' => $account->mail));
+    _persona_sign_in($account);
+    drupal_add_http_header('Status', '204 No Content');
+  }
+  else {
+    watchdog('persona', "Sign in by %email to blocked account denied.", array('%email' => $account->mail), WATCHDOG_WARNING);
+    drupal_set_message(t("The account for %email has not been activated or is blocked.", array('%email' => $account->mail)), 'error');
+    drupal_add_http_header('Status', '403 Forbidden');
+  }
+  return $account->status;
+}
+
+/**
+ * Callback function to sign in with Persona.
+ */
+function persona_sign_in() {
+  global $user;
+  $request = _persona_request_variables();
+  try {
+    persona_check_xsrf_token($request['token']);
+    $email = persona_verify($request['assertion']);
+  }
+  catch (Exception $exception) {
+    drupal_add_http_header('Status', '401 Unauthorized');
+    drupal_set_message(t("Sorry, there was a problem signing you in with Persona."), 'error');
+    return;
+  }
+  $transaction = db_transaction();
+  // Is the browser already signed in as this user.
+  if (user_is_logged_in() && ($user->mail == $email)) {
+    $_SESSION['persona_sign_in'] = TRUE;
+    drupal_add_http_header('Status', '204 No Content');
+  }
+  // Does an account with this email already exist.
+  elseif ($account = user_load_by_mail($email)) {
+    _persona_existing_account_sign_in($account);
+  }
+  // Are users allows to create new accounts?
+  elseif ($user_register = variable_get('user_register', USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL)) {
+    // Create an account for this user.
+    $fields = array(
+      'name' => _persona_extract_username($email),
+      'mail' => $email,
+      'access' => REQUEST_TIME,
+      'status' => $user_register == USER_REGISTER_VISITORS,
+      'init' => $email,
+    );
+    $account = user_save(drupal_anonymous_user(), $fields);
+    // Reload the account to get full object and prevent warnings.
+    $account = user_load($account->uid);
+    // Sign into account if it doesn't need approval.
+    if ($account->status) {
+      watchdog('persona', "Sign in to new account by %email successful.", array('%email' => $email));
+      // Sign the browser into the account.
+      _persona_sign_in($account);
+      drupal_add_http_header('Status', '201 Created');
+      // Redirect to account edit page if new accounts are set to do so.
+      if (variable_get('persona_new_account_edit')) {
+        return 'user/' . $account->uid . '/edit';
+      }
+    }
+    else {
+      watchdog('persona', "Account created during sign in by %email pending approval.", array('%email' => $email));
+      _user_mail_notify('register_pending_approval', $account);
+      drupal_set_message(t("Thank you for applying for an account. Your account is currently pending approval by the site administrator.<br />In the meantime, a welcome message with further instructions has been sent to your email address."));
+      drupal_add_http_header('Status', '403 Forbidden');
+    }
+  }
+  else {
+    // Visitors cannot create accounts.
+    watchdog('persona', "Attempted sign in without an account by %email.", array('%email' => $email), WATCHDOG_WARNING);
+    drupal_set_message(t("Only administrators are permitted to register new accounts on this website."), 'error');
+    drupal_add_http_header('Status', '403 Forbidden');
+  }
+}
+
+/**
+ * Callback function to change email address with Persona.
+ */
+function persona_change_email() {
+  global $user;
+  $request = _persona_request_variables();
+  try {
+    persona_check_xsrf_token($request['token']);
+    $email = persona_verify($request['assertion']);
+  }
+  catch (Exception $exception) {
+    drupal_add_http_header('Status', '401 Unauthorized');
+    drupal_set_message(t("Sorry, there was a problem changing your email address with Persona."), 'error');
+    return;
+  }
+  $transaction = db_transaction();
+  // Check if the user is using this email address in another account.
+  if ($user->mail != $email && ($account = user_load_by_mail($email))) {
+    // Sign into existing account as it is all we can do...
+    if (_persona_existing_account_sign_in($account)) {
+      drupal_set_message(t("You are already using %email for another account, which you have now been signed into.",
+        array('%email' => $user->mail)), 'error');
+    }
+  }
+  else {
+    // Update account email address.
+    $old_email = $user->mail;
+    $user->mail = $email;
+    if (variable_get('persona_email_usernames')) {
+      // Update account username.
+      $user->name = _persona_extract_username($email);
+    }
+    user_save($user);
+    watchdog('persona', "%old_email changed to %email.", array(
+      '%name' => $old_email,
+      '%email' => $email,
+    ));
+    drupal_set_message(t("Your email address has been set to %email.", array('%email' => $user->mail)));
+    drupal_add_http_header('Status', '204 No Content');
+    // Store in the session that the user is now signed in with Persona.
+    $_SESSION['persona_sign_in'] = TRUE;
+  }
+}
+
+/**
+ * Callback function to sign out with Persona.
+ *
+ * Unlike core's sign out handler, this function does not issue an HTTP
+ * redirect.
+ *
+ * @see user_logout()
+ */
+function persona_sign_out() {
+  global $user;
+  $request = _persona_request_variables();
+  try {
+    persona_check_xsrf_token($request['token']);
+  }
+  catch (Exception $exception) {
+    return;
+  }
+  if (user_is_logged_in()) {
+    watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
+    module_invoke_all('user_logout', $user);
+    // Destroy the current session, and reset $user to the anonymous user.
+    session_destroy();
+  }
+  drupal_add_http_header('Status', '204 No Content');
+}
+
+/**
+ * Implements hook_theme().
+ */
+function persona_theme() {
+  return array(
+    'persona_button' => array(
+      'variables' => array(
+        'type' => NULL,
+        'style' => NULL,
+        'attributes' => array(),
+      ),
+    ),
+  );
+}
+
+/**
+ * Renders a Persona button.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - type: Button to render.
+ *
+ * @return string
+ *   HTML of generated button.
+ */
+function theme_persona_button(array $variables) {
+  // Make sure the JavaScript shiv is added.
+  if (variable_get('persona_improve_frontend') && !user_is_logged_in()) {
+    persona_add_js_shiv(FALSE);
+  }
+  // Generate HTML.
+  $variables['type'] = $variables['type'] ?: (user_is_logged_in() ? 'sign-out' : 'sign-in');
+  switch ($variables['type']) {
+    case 'preview':
+      $text = t("Sign in");
+      break;
+    case 'sign-in':
+      $text = user_is_logged_in() ? t("Switch account") : t("Sign in");
+      break;
+    case 'change-email':
+      $text = t("Change email");
+      break;
+    case 'sign-out':
+      $text = t("Sign out");
+      break;
+  }
+  $attributes = drupal_array_merge_deep($variables['attributes'], array(
+    'type' => 'button',
+    'class' => array('persona-' . $variables['type']),
+  ));
+  switch ($variables['style'] ?: variable_get('persona_button_style')) {
+    case 'form':
+      $attributes['class'][] = 'form-submit';
+      $attributes['value'] = $text;
+      return '<input' . drupal_attributes($attributes) . ' />';
+    case 'persona':
+      $attributes['class'][] = 'persona-styled';
+    case 'button':
+      return '<button' . drupal_attributes($attributes) . '>' . $text . '</button>';
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function persona_block_info() {
+  $blocks = array(
+    'sign-in' => array('info' => t("Persona Sign In button")),
+    'change-email' => array('info' => t("Persona Change Email button")),
+    'sign-out' => array('info' => t("Persona Sign Out button")),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function persona_block_view($delta = '') {
+  return array('content' => array('#theme' => 'persona_button', '#type' => $delta));
+}
+
+/**
+ * Implements hook_block_view_alter().
+ */
+function persona_block_view_alter(&$data, $block) {
+  // Make sure $data is an array.
+  // @see https://drupal.org/node/1967802
+  if (!is_array($data)) {
+    return;
+  }
+  if (variable_get('persona_takeover') && $block->module == 'user' && $block->delta == 'login') {
+    $data['content'] = array();
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function persona_form_user_profile_form_alter(array &$form, array &$form_state, $form_id) {
+  global $user;
+  // If the user is signed in with Persona then make sure they can't change
+  // their own email, or Persona will try to make a new account with the old
+  // email.
+  if (($form['#user']->uid == $user->uid) && isset($_SESSION['persona_sign_in'])) {
+    $form['account']['mail']['#type'] = 'value';
+    $form['account']['mail']['#value'] = $form['account']['mail']['#default_value'];
+  }
+  if (variable_get('persona_takeover')) {
+    $form['account']['pass']['#type'] = 'value';
+    $form['account']['current_pass']['#type'] = 'value';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function persona_form_user_login_alter(array &$form, array &$form_state, $form_id) {
+  // Add Persona sign in button to standard sign in page.
+  $form['persona'] = array(
+    '#theme' => 'persona_button',
+    '#weight' => -1,
+  );
+  // Remove standard sign in form if Persona is taking over completely.
+  if (variable_get('persona_takeover')) {
+    unset($form['name']);
+    unset($form['pass']);
+    unset($form['actions']);
+  }
+}
+
+/**
+ * Implements hook_user_view().
+ */
+function persona_user_view($account) {
+  global $user;
+  // Add account email information.
+  $account->content['account'] = array(
+    '#type' => 'user_profile_category',
+    '#title' => t("Account"),
+  );
+  $account->content['account']['email'] = array(
+    '#type' => 'user_profile_item',
+    '#title' => t("Email address"),
+    '#markup' => check_plain($account->mail),
+  );
+  // If displaying the signed in user add the Change Email button.
+  if ($account->uid == $user->uid) {
+    $account->content['account']['email']['#suffix'] = theme('persona_button', array('type' => 'change-email'));
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function persona_preprocess_link(array &$variables) {
+  // Fix bugs in other modules not declaring class as an array.
+  // @see http://drupal.org/node/1978222
+  if (isset($variables['options']['attributes']['class']) && is_string($variables['options']['attributes']['class'])) {
+    $variables['options']['attributes']['class'] = array($variables['options']['attributes']['class']);
+  }
+  if (variable_get('persona_takeover')) {
+    // Make sure Persona handles all sign in links.
+    if (($variables['path'] == 'user/login') || ($variables['path'] == 'user/register')) {
+      $variables['options']['attributes']['class'][] = 'persona-sign-in';
+    }
+  }
+  if (isset($_SESSION['persona_sign_in'])) {
+    // Make sure Persona handles all sign out links.
+    if ($variables['path'] == 'user/logout') {
+      $variables['options']['attributes']['class'][] = 'persona-sign-out';
+    }
+    // Add compatibility with user switching.
+    if ((strpos($variables['path'], 'devel/switch/') === 0) || (strpos($variables['path'], 'masquerade/switch/') === 0)) {
+      $variables['options']['attributes']['class'][] = 'persona-forget';
+    }
+  }
+}
+
+/**
+ * Implements hook_user_logout().
+ */
+function persona_user_logout() {
+  // Add compatibility with user switching.
+  unset($_SESSION['persona_sign_in']);
+}
