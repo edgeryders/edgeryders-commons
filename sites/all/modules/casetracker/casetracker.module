@@ -923,7 +923,7 @@ function theme_casetracker_comment_changes($variables) {
               ->execute()
               ->fetchField();
           $new_title = db_select('node', 'n')
-              ->fields('n', array('title'))
+              ->fields('n', array('node'))
               ->condition('n.nid', $new->pid)
               ->execute()
               ->fetchField();

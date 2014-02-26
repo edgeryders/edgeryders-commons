@@ -30,7 +30,7 @@ function custom_search_taxonomy_uninstall() {
     variable_del('custom_search_taxonomy' . $voc->vid . '_region');
     if (module_exists('custom_search_blocks')) {
       $blocks = variable_get('custom_search_blocks_number', 1);
-      for ($delta=1 ; $delta<=$blocks ; $delta++) {
+      for ($delta = 1; $delta <= $blocks; $delta++) {
         variable_del('custom_search_blocks_' . $delta . '_voc' . $voc->vid . '_selector');
         variable_del('custom_search_blocks_' . $delta . '_voc' . $voc->vid . '_selector_depth');
         variable_del('custom_search_blocks_' . $delta . '_voc' . $voc->vid . '_selector_label_visibility');

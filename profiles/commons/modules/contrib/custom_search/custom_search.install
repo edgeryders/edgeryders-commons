@@ -22,6 +22,7 @@ function custom_search_uninstall() {
   variable_del('custom_search_label_visibility');
   variable_del('custom_search_label');
   variable_del('custom_search_text');
+  variable_del('custom_search_element');
   variable_del('custom_search_hint_text');
   variable_del('custom_search_size');
   variable_del('custom_search_max_length');
@@ -69,12 +70,18 @@ function custom_search_uninstall() {
   variable_del('custom_search_advanced_phrase_display');
   variable_del('custom_search_advanced_negative_display');
   $options = node_type_get_names();
-  foreach ($options as $type => $name) variable_del('custom_search_advanced_type_' . $type . '_display');
+  foreach ($options as $type => $name) {
+    variable_del('custom_search_advanced_type_' . $type . '_display');
+  }
   variable_del('custom_search_results_info_type');
   variable_del('custom_search_results_info_user');
   variable_del('custom_search_results_info_date');
-  if (module_exists('comment')) variable_del('custom_search_results_info_comment');
-  if (module_exists('upload')) variable_del('custom_search_results_info_upload');
+  if (module_exists('comment')) {
+    variable_del('custom_search_results_info_comment');
+  }
+  if (module_exists('upload')) {
+    variable_del('custom_search_results_info_upload');
+  }
   variable_del('custom_search_filter');
   variable_del('custom_search_filter_label');
   variable_del('custom_search_search_api_page');
@@ -95,7 +102,7 @@ function custom_search_update_7100() {
     ->fields(array('weight' => 100))
     ->condition('name', 'custom_search')
     ->execute();
-  return t('Module\'s weight increased.');
+  return t("Module's weight increased.");
 }
 
 /**
@@ -128,12 +135,16 @@ function custom_search_update_7103() {
     if (count($types)) {
       $names = array_keys(node_type_get_names());
       foreach ($names as $name) {
-        if (!in_array($name, $types)) variable_set('custom_search_advanced_type_' . $name . '_display', FALSE);
+        if (!in_array($name, $types)) {
+          variable_set('custom_search_advanced_type_' . $name . '_display', FALSE);
+        }
       }
     }
     $vocabularies = taxonomy_get_vocabularies();
     foreach ($vocabularies as $voc) {
-      if (variable_get('custom_search_voc' . $voc->vid . '_selector', 'disabled') == 'disabled') variable_set('custom_search_advanced_voc' . $voc->vid . '_display', FALSE);
+      if (variable_get('custom_search_voc' . $voc->vid . '_selector', 'disabled') == 'disabled') {
+        variable_set('custom_search_advanced_voc' . $voc->vid . '_display', FALSE);
+      }
     }
   }
   variable_del('custom_search_results_advanced_override');

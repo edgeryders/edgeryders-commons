@@ -27,9 +27,9 @@ files[] = includes/casetracker_views_handler_filter_user_options.inc
 files[] = tests/casetracker_admin.test
 files[] = tests/casetracker_basic.test
 
-; Information added by drupal.org packaging script on 2013-04-02
+; Information added by drupal.org packaging script on 2013-09-30
 version = "7.x-1.0-alpha1+1-dev"
 core = "7.x"
 project = "casetracker"
-datestamp = "1364906508"
+datestamp = "1380557627"
 

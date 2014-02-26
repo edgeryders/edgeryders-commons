@@ -20,10 +20,4 @@ function custom_search_i18n_install() {
  */
 function custom_search_i18n_uninstall() {
   variable_del('custom_search_i18n_search_language');
-  if (module_exists('custom_search_blocks')) {
-    $blocks = variable_get('custom_search_blocks_number', 1);
-    for ($delta=1 ; $delta<=$blocks ; $delta++) {
-      variable_del('custom_search_i18n_' . $delta . '_search_language');
-    }
-  }
 }

@@ -30,12 +30,12 @@ function custom_search_blocks_permission() {
   return array(
     'administer custom search blocks' => array(
       'title'       => t('Administer custom search blocks'),
-      'description' => t('Allow users to administer custom search blocks settings')
+      'description' => t('Allow users to administer custom search blocks settings'),
     ),
     'use custom search blocks' => array(
       'title'       => t('Use custom search blocks'),
-      'description' => t('Allow users to use custom search blocks')
-    )
+      'description' => t('Allow users to use custom search blocks'),
+    ),
   );
 }
 
@@ -44,7 +44,7 @@ function custom_search_blocks_permission() {
  */
 function custom_search_blocks_block_info() {
   $blocks = array();
-  for ($a = 1 ; $a <= variable_get('custom_search_blocks_number', 1) ; $a++) {
+  for ($a = 1; $a <= variable_get('custom_search_blocks_number', 1); $a++) {
     $blocks[$a]['info'] = "Custom Search $a";
     $blocks[$a]['cache'] = DRUPAL_NO_CACHE;
   }
@@ -76,9 +76,9 @@ function custom_search_blocks_block_configure($delta = '') {
     '#collapsed'    => TRUE,
   );
   $form['content'] = array_merge($form['content'], _custom_search_content_admin_form($delta));
-  // Custom search paths
+  // Custom search paths.
   $form = array_merge($form, _custom_search_custom_paths_admin_form($delta));
-  // Ordering
+  // Ordering.
   $form = array_merge($form, _custom_search_ordering_admin_form($delta));
   $form['order']['#weight'] = 50;
 
@@ -90,7 +90,9 @@ function custom_search_blocks_block_configure($delta = '') {
  */
 function custom_search_blocks_block_save($delta = '', $edit = array()) {
   foreach ($edit as $key => $value) {
-    if (drupal_substr($key, 0, 20) == 'custom_search_blocks') variable_set($key, $value);
+    if (drupal_substr($key, 0, 20) == 'custom_search_blocks') {
+      variable_set($key, $value);
+    }
   }
   foreach ($edit['custom_search_blocks_' . $delta . '_order'] as $key => $data) {
     variable_set('custom_search_blocks_' . $delta . '_' . $key . '_weight', $data['sort']);
@@ -108,10 +110,11 @@ function custom_search_blocks_block_save($delta = '', $edit = array()) {
 }
 
 /**
- * Implements hook_forms(). Generates a unique form_id with the same form builder function
+ * Implements hook_forms().
  */
 function custom_search_blocks_forms($form_id, $args) {
-  for ($a = 1 ; $a <= variable_get('custom_search_blocks_number', 1) ; $a++) {
+  $forms = array();
+  for ($a = 1; $a <= variable_get('custom_search_blocks_number', 1); $a++) {
     $forms['custom_search_blocks_form_' . $a] = array(
       'callback'            => 'custom_search_blocks_form',
       'callback arguments'  => array($a),
@@ -137,7 +140,7 @@ function custom_search_blocks_form($form, &$form_state, $delta) {
   $form['#submit'] = array('custom_search_submit');
 
   if (function_exists('apachesolr_autocomplete_variable_get_widget')) {
-    // support for apachesolr_autocomplete module
+    // Support for apachesolr_autocomplete module.
     if (apachesolr_autocomplete_variable_get_widget() == 'custom') {
       $form['custom_search_blocks_form_' . $delta]['#attributes']['class'] = array('apachesolr-autocomplete', 'unprocessed');
     }

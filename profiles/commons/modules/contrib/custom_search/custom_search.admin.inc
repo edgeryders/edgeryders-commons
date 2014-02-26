@@ -11,7 +11,7 @@
 function custom_search_admin() {
   // Basic settings.
   $form = _custom_search_default_admin_form();
-  // Custom search paths
+  // Custom search paths.
   $form = array_merge($form, _custom_search_custom_paths_admin_form());
   // Ordering.
   $form = array_merge($form, _custom_search_ordering_admin_form());
@@ -49,6 +49,9 @@ function custom_search_content_admin() {
   return system_settings_form(_custom_search_content_admin_form());
 }
 
+/**
+ * Results page settings.
+ */
 function custom_search_results_admin() {
   $form['custom_search_target'] = array(
     '#type'     => 'select',

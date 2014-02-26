@@ -20,10 +20,11 @@ function custom_search_blocks_install() {
  */
 function custom_search_blocks_uninstall() {
   $blocks = variable_get('custom_search_blocks_number', 1);
-  for ($delta=1 ; $delta<=$blocks ; $delta++) {
+  for ($delta = 1; $delta <= $blocks; $delta++) {
     variable_del('custom_search_blocks_' . $delta . '_label_visibility');
     variable_del('custom_search_blocks_' . $delta . '_label');
     variable_del('custom_search_blocks_' . $delta . '_text');
+    variable_del('custom_search_blocks_' . $delta . '_element');
     variable_del('custom_search_blocks_' . $delta . '_hint_text');
     variable_del('custom_search_blocks_' . $delta . '_size');
     variable_del('custom_search_blocks_' . $delta . '_max_length');
@@ -64,7 +65,6 @@ function custom_search_blocks_uninstall() {
     variable_del('custom_search_blocks_' . $delta . '_paths_selector_label');
     variable_del('custom_search_blocks_' . $delta . '_paths_selector_label_visibility');
     variable_del('custom_search_blocks_' . $delta . '_search_api_page');
-    if (module_exists('custom_search_i18n')) variable_del('custom_search_i18n_' . $delta . '_search_language');
     if (module_exists('custom_search_taxonomy')) {
       $vocabularies = taxonomy_get_vocabularies();
       foreach ($vocabularies as $voc) {
@@ -93,7 +93,7 @@ function custom_search_blocks_update_7100() {
 
 function custom_search_blocks_update_7101() {
   $blocks = variable_get('custom_search_blocks_number', 1);
-  for ($delta=1 ; $delta<=$blocks ; $delta++) {
+  for ($delta = 1; $delta <= $blocks; $delta++) {
     variable_set('custom_search_blocks_' . $delta . '_submit_text', variable_get('custom_search_submit_text', CUSTOM_SEARCH_SUBMIT_TEXT_DEFAULT));
     variable_set('custom_search_blocks_' . $delta . '_image_path', variable_get('custom_search_image_path', ''));
     variable_set('custom_search_blocks_' . $delta . '_criteria_or_display', variable_get('custom_search_criteria_or_display', FALSE));

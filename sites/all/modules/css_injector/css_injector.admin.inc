@@ -13,9 +13,11 @@ function css_injector_admin_form($form, &$form_state) {
   $form = array();
   $form['#tree'] = TRUE;
 
-  // TODO: Turn these 'submit' buttons back into image_buttons when
-  // http://drupal.org/node/873070 lands. Currently you can't use
-  // #submit with an image_button.
+  // Adding css stylesheet for icons.
+  $form['#attached']['css'] = array(
+    drupal_get_path('module', 'css_injector') . '/css_injector.css',
+  );
+
   foreach ($rules as $rule) {
     $form['rules'][$rule['crid']]['#rule'] = $rule;
     $form['rules'][$rule['crid']]['edit'] = array(
@@ -23,6 +25,7 @@ function css_injector_admin_form($form, &$form_state) {
       '#value' => t('Edit rule'),
       '#name' => 'edit' . $rule['crid'],
       '#submit' => array('css_injector_admin_edit_button'),
+      '#attributes' => array('class' => array('css-inject-edit')),
       '#crid' => $rule['crid'],
     );
     $form['rules'][$rule['crid']]['delete'] = array(
@@ -30,6 +33,7 @@ function css_injector_admin_form($form, &$form_state) {
       '#value' => t('Delete rule'),
       '#name' => 'delete' . $rule['crid'],
       '#submit' => array('css_injector_admin_delete_button'),
+      '#attributes' => array('class' => array('css-inject-delete')),
       '#crid' => $rule['crid'],
     );
   }
@@ -100,7 +104,6 @@ function theme_css_injector_admin_form($variables) {
 function css_injector_edit($form, $form_state, $crid = NULL) {
   if (isset($crid)) {
     $rule = _css_injector_load_rule($crid, TRUE);
-
     $path = _css_injector_rule_uri($rule['crid']);
     if (file_exists($path)) {
       $rule['css_text'] = file_get_contents($path);
@@ -113,19 +116,32 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     $rule = array(
       'title' => '',
       'rule_type' => CSS_INJECTOR_PAGES_NOTLISTED,
+      'rule_themes' => '',
       'rule_conditions' => '',
       'media' => 'all',
       'preprocess' => 1,
       'css_text' => '',
+      'enabled' => 1,
     );
   }
 
+  // Adding css stylesheet for icons.
+  $form['#attached']['js'] = array(
+    drupal_get_path('module', 'css_injector') . '/ace/ace.js',
+    drupal_get_path('module', 'css_injector') . '/syntax_highlighter.js',
+  );
+
+  $form['#attached']['css'] = array(
+    drupal_get_path('module', 'css_injector') . '/syntax_highlighter.css',
+  );
+
   if (isset($crid)) {
-    $form['crid'] = array(
+  $form['crid'] = array(
       '#type' => 'value',
       '#value' => $crid,
     );
   }
+
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Title'),
@@ -141,12 +157,35 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#required' => TRUE,
   );
 
+  $form['css_text_ace'] = array(
+    '#prefix' => '<span class="disable-ace">Disable syntax highlighter</span>',
+    '#markup' => '<div class="ace-editor"><div id="editor">' . $rule['css_text'] . '</div></div>',
+  );
+
+  // Get info of site themes.
+  $themes = array();
+  $theme_list = list_themes();
+  $default_theme = variable_get('theme_default');
+  foreach ($theme_list as $single_theme) {
+    $themes[$single_theme->name] = $single_theme->info['name'];
+  }
+  $rule['rule_themes'] = unserialize($rule['rule_themes']);
+
+  $form['conditional']['rule_themes'] = array(
+  '#type' => 'select',
+  '#title' => 'Themes to show on',
+  '#default_value' => isset($rule['rule_themes']) ? $rule['rule_themes'] : $default_theme,
+  '#options' => $themes,
+  '#description' => t('Select themes css will be applied to. @theme theme is selected by default.', array('@theme' => $themes[$default_theme])),
+  '#multiple' => TRUE,
+  );
+
   // Shamelessly ripped from block.module. Who doesn't use this snippet
   // of code, really?
   $php_access = (user_access('use PHP for settings') && module_exists('php'));
   $options = array(
     CSS_INJECTOR_PAGES_NOTLISTED => t('Add on every page except the listed pages.'),
-    CSS_INJECTOR_PAGES_LISTED => t('Add on only the listed pages.')
+    CSS_INJECTOR_PAGES_LISTED => t('add on only the listed pages.')
   );
   $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
 
@@ -166,12 +205,17 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#default_value' => $rule['rule_conditions'],
     '#description' => $description,
   );
-
-
   $form['media'] = array(
     '#type' => 'select',
     '#title' => t('Media'),
-    '#options' => array('all' => t('All'), 'screen' => t('Screen'), 'print' => t('Print')),
+    '#options' => array(
+      'all' => t('All'),
+      'screen' => t('Screen'),
+      'print' => t('Print'),
+      'IE 7' => t('IE7'),
+      'IE 8' => t('IE8'),
+      'IE 9' => t('IE9'),
+    ),
     '#default_value' => $rule['media'],
   );
 
@@ -179,6 +223,11 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#type' => 'checkbox',
     '#title' => t('Preprocess CSS'),
     '#default_value' => $rule['preprocess'],
+  );
+  $form['enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable rule'),
+    '#default_value' => isset($rule['enabled']) ? $rule['enabled'] : 1,
   );
 
   $form['buttons']['save'] = array(
@@ -218,9 +267,14 @@ function css_injector_edit_validate($form, &$form_state) {
  * Submit button callback for the CSS rule edit form.
  */
 function css_injector_edit_save($form, &$form_state) {
+  //$themes = implode('//', $form_state['values']['themes']);
   $rule = $form_state['values'];
   $crid = !empty($form_state['values']['crid']) ? $form_state['values']['crid'] : NULL;
+  // Serialize themes list before inserting to databse.
+  $rule['rule_themes'] = serialize($rule['rule_themes']);
   drupal_write_record('css_injector_rule', $rule, empty($crid) ? array() : 'crid');
+  // Unserialize themes list for form state.
+  $rule['rule_themes'] = unserialize($rule['rule_themes']);
   $form_state['values']['rule'] = $rule;
   file_unmanaged_save_data($rule['css_text'], _css_injector_rule_uri($rule['crid']), FILE_EXISTS_REPLACE);
   _css_injector_load_rule(NULL, TRUE);

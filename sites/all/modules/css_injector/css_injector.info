@@ -8,9 +8,9 @@ files[] = css_injector.module
 files[] = css_injector.test
 
 configure = admin/config/development/css-injector
-; Information added by drupal.org packaging script on 2013-02-18
-version = "7.x-1.8"
+; Information added by Drupal.org packaging script on 2013-12-17
+version = "7.x-1.10"
 core = "7.x"
 project = "css_injector"
-datestamp = "1361208111"
+datestamp = "1387292932"
 
