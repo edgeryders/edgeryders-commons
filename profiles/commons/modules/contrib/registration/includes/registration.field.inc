@@ -30,6 +30,7 @@ function registration_field_info() {
             ),
           ),
           'settings' => array(
+            'maximum_spaces' => 1,
             'multiple_registrations' => -1,
             'from_address' => variable_get('site_mail', ini_get('sendmail_from')),
           ),
@@ -37,7 +38,7 @@ function registration_field_info() {
       ),
       'default_widget' => 'registration_select',
       'default_formatter' => 'registration_default',
-      'no_ui' => FALSE
+      'no_ui' => FALSE,
     ),
   );
 }

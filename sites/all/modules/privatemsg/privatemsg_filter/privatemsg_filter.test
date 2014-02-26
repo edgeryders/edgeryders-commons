@@ -12,7 +12,7 @@ class PrivatemsgFilterTestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */
-  static function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => t('Privatemsg Filter functionality.'),
       'description' => t('Test filters, tags and inbox/sent handling'),
@@ -125,7 +125,7 @@ class PrivatemsgTagsTestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */
-  static function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => t('Privatemsg Tags functionality.'),
       'description' => t('Test Privatemsg tags use and administration functionality.'),
@@ -438,7 +438,7 @@ class PrivatemsgFilterWidgetTestCase extends PrivatemsgBaseTestCase {
   /**
    * Implements getInfo().
    */
-  function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => t('Privatemsg filter widget'),
       'description' => t('Tests the Privatemsg filter widget displayed on message listings'),

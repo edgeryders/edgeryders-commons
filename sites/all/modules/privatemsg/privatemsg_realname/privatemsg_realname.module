@@ -57,7 +57,7 @@ function privatemsg_realname_query_privatemsg_autocomplete_alter(SelectQueryInte
   $conditions = &$query->conditions();
   foreach ($conditions as $key => $condition) {
     // Figure out which is the condition that checks the username.
-    if ($condition['field'] == 'u.name') {
+    if (isset($condition['field']) && is_string($condition['field']) && $condition['field'] == 'u.name') {
       // Update existing condition.
       if (variable_get('privatemsg_realname_search_username', TRUE)) {
         $condition['field'] = db_or()
@@ -103,7 +103,7 @@ function theme_privatemsg_realname_username($variables) {
     $recipient->uid = $recipient->recipient;
   }
   if (!empty($options['plain'])) {
-    $name = check_plain(format_username($recipient));
+    $name = strip_tags(format_username($recipient));
     if (!empty($options['unique'])) {
       $identifier = variable_get('privatemsg_realname_unique_identifier', 'name');
       $name .= ' [user: ' . $recipient->$identifier . ']';

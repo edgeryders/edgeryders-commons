@@ -37,7 +37,19 @@ function pm_email_notify_privatemsg_message_insert($message) {
       // send them a new pm notification email if they did
       $params['recipient'] = $recipient;
       $params['message'] = $message;
-      $from = variable_get('pm_email_notify_from', '');
+      // token replace for email from address
+      $data = array(
+        'privatemsg_message' => $params['message'],
+        'privatemsg_recipient' => $params['recipient'],
+      );
+      $options = array(
+        'language' => user_preferred_language($params['recipient']),
+        // Don't sanitize output since this is used in an email, not a browser.
+        'sanitize' => FALSE,
+        // Custom token to avoid custom token handling.
+        'privatemsg-display-invalid' => FALSE,
+      );
+      $from = trim(token_replace(variable_get('pm_email_notify_from', ''), $data, $options));
       drupal_mail('pm_email_notify', 'notice', $recipient->mail, user_preferred_language($recipient), $params, !empty($from) ? $from : NULL);
     }
   }

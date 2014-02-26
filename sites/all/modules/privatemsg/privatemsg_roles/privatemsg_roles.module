@@ -30,7 +30,7 @@ function privatemsg_roles_theme() {
 }
 
 /**
- * Implements hook_privatemsg_recipient_types_info().
+ * Implements hook_privatemsg_recipient_type_info().
  */
 function privatemsg_roles_privatemsg_recipient_type_info() {
   return array(

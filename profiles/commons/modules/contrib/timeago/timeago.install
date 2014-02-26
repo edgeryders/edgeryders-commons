@@ -15,13 +15,6 @@ if (!defined('TIMEAGO_LIBRARY_DOWNLOAD_URL')) {
 }
 
 /**
- * Implements hook_install().
- */ 
-function timeago_install() {
-  variable_set('date_format_time_ago_dynamic', TIMEAGO_FORMAT_MEDIUM_US);
-}
-
-/**
  * Implements hook_requirements().
  */
 function timeago_requirements($phase) {
@@ -132,5 +125,4 @@ function timeago_uninstall() {
   variable_del('timeago_node');
   variable_del('timeago_comment');
   variable_del('timeago_elem');
-  variable_del('date_format_time_ago_dynamic');
 }

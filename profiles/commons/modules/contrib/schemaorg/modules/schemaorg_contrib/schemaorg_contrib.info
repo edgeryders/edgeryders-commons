@@ -1,0 +1,13 @@
+name = Schema.org support for contributed modules
+description = Add support for fields from contributed modules such as addressfield and fivestar.
+package = "Schema.org"
+dependencies[] = schemaorg
+core = 7.x
+files[] = schemaorg_contrib.test
+
+; Information added by  packaging script on 2013-11-19
+version = "7.x-1.0-beta4"
+core = "7.x"
+project = "schemaorg"
+datestamp = "1384874931"
+

@@ -238,10 +238,14 @@ class PrivatemsgTestCase extends PrivatemsgBaseTestCase {
    * Test sending message from the /messages/new page between two people
    */
   function testWriteReplyPrivatemsg() {
-    // Create a author and two recipients.
-    $author     = $this->drupalCreateUser(array('write privatemsg', 'select text format for privatemsg', filter_permission_name(filter_format_load('full_html'))));
+    // Create an author and two recipients.
+    $author     = $this->drupalCreateUser(array('read privatemsg', 'write privatemsg', 'select text format for privatemsg', filter_permission_name(filter_format_load('full_html'))));
     $recipient  = $this->drupalCreateUser(array('read privatemsg'));
     $recipient2  = $this->drupalCreateUser(array('read privatemsg', 'write privatemsg'));
+    // Set up a user with "read/write privatemsg" permissions.
+    $blocked_recipient = $this->drupalCreateUser(array('read privatemsg', 'write privatemsg'));
+    // Block this recipient to test users who cancelled their accounts.
+    user_save($blocked_recipient, array('status' => 0));
 
     // Login author and go to new message form.
     $this->drupalLogin($author);
@@ -265,9 +269,21 @@ class PrivatemsgTestCase extends PrivatemsgBaseTestCase {
       'subject'     => $this->randomName(20),
       'body[value]' => $this->randomName(100),
     );
-    // Invalid recipient
+    // Invalid recipient.
     $editinvalid = array(
       'recipient'   => $this->randomName(5),
+      'subject'     => $this->randomName(20),
+      'body[value]' => $this->randomName(100),
+    );
+    // Blocked recipient.
+    $editrecipientblocked = array(
+      'recipient'   => $blocked_recipient->name,
+      'subject'     => $this->randomName(20),
+      'body[value]' => $this->randomName(100),
+    );
+    // Message for which the author will be blocked later.
+    $editauthorblocked = array(
+      'recipient'   => $recipient2->name,
       'subject'     => $this->randomName(20),
       'body[value]' => $this->randomName(100),
     );
@@ -323,6 +339,14 @@ class PrivatemsgTestCase extends PrivatemsgBaseTestCase {
     $this->drupalPost('messages/new', $editinvalid, t('Send message'));
     $this->assertText(t('You must include at least one valid recipient.'), 'Message was not sent.');
     $this->assertText(t('The following users will not receive this private message: @recipients', array('@recipients' => $editinvalid['recipient'])), 'Message about non-existing user displayed.');
+
+    $this->drupalPost('messages/new', $editrecipientblocked, t('Send message'));
+    $this->assertText(t('@recipients has disabled his or her account.', array('@recipients' => $blocked_recipient->name)), 'Message about blocked user displayed.');
+    $this->assertText(t('You are not allowed to send this message because all recipients are blocked.'), 'Message was not sent.');
+
+    // We will block the author later to test whether the reply form appears.
+    $this->drupalPost('messages/new', $editauthorblocked, t('Send message'));
+    $this->assertText(t('A message has been sent to @recipients.', array('@recipients' => $recipient2->name)), 'Message sent confirmation displayed.');
 
     $this->drupalPost('messages/new', $editnobody, t('Send message'));
     $this->assertText(t('A message has been sent to @recipients.', array('@recipients' => $recipient->name)), 'Message sent confirmation displayed.');
@@ -416,6 +440,16 @@ class PrivatemsgTestCase extends PrivatemsgBaseTestCase {
     $this->assertText($edit2['body[value]'], 'Found message body.');
     // Confirm that we can read the reply that was sent.
     $this->assertText($reply['body[value]'], 'Found reply body.');
+
+    // Block the author.
+    user_save($author, array('status' => 0));
+    $this->drupalLogin($recipient2);
+    // Navigate into the message.
+    $this->drupalGet('messages');
+    $this->clickLink($editauthorblocked['subject']);
+    // Confirm that the reply form is not shown.
+    $this->assertNoText(t('Reply'), 'Reply form is not displayed.');
+    $this->assertText(t('You can not reply to this conversation because all recipients are blocked.'));
   }
 
   /**
@@ -854,7 +888,7 @@ class PrivatemsgTestCase extends PrivatemsgBaseTestCase {
     $json = $this->drupalGet('messages/autocomplete/<sc');
     $autocomplete = (array)json_decode($json);
     $this->assertEqual(count($autocomplete), 1, t('Autocomplete object contains one suggestion.'));
-    $this->assertEqual($autocomplete[check_plain($user4->name) . ', '], check_plain($user4->name));
+    $this->assertEqual($autocomplete[strip_tags($user4->name) . ', '], strip_tags($user4->name));
   }
 
   /**

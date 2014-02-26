@@ -867,6 +867,7 @@ function privatemsg_filter_form_submit($form, &$form_state) {
   foreach ($tag_ids as $tag_id) {
     privatemsg_filter_add_tags($form_state['values']['thread_id'], $tag_id);
   }
+  $form_state['redirect'] = current_path();
   drupal_set_message(t('Your conversation tags have been saved.'));
 }
 

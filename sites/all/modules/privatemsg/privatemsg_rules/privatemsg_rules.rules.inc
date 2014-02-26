@@ -32,6 +32,9 @@ function privatemsg_rules_rules_action_info() {
   $fields['subject']['description'] = t('Subject of the message. To use the tokens provided by Privatemsg, use {token}, for example: {privatemsg_message:recipient:name}.');
   $fields['body']['description'] = t('Body of the message. To use the tokens provided by Privatemsg, use {token}, for example: {privatemsg_message:recipient:name}.');
   $fields['body']['long'] = TRUE;
+  // Make subject and body translatable.
+  $fields['subject']['translatable'] = TRUE;
+  $fields['body']['translatable'] = TRUE;
 
   // Reply doesn't have subject either.
   $reply_fields = $fields;
@@ -48,6 +51,12 @@ function privatemsg_rules_rules_action_info() {
           'description' => t('Recipient of the message.'),
         ),
       ) + $fields,
+      'new variables' => array(
+        'thread_id' => array(
+          'type' => 'integer',
+          'label' => t('ID of new thread'),
+        ),
+      ),
       'group' => t('Private messages'),
     ),
    'privatemsg_rules_reply' => array(
@@ -113,6 +122,12 @@ function privatemsg_rules_rules_action_info() {
           'description' => t('Select the roles whose users should receive the message.'),
         ),
       ) + $fields,
+      'new variables' => array(
+        'thread_id' => array(
+          'type' => 'integer',
+          'label' => t('ID of new thread'),
+        ),
+      ),
       'group' => t('Private messages'),
     );
   }
@@ -218,6 +233,18 @@ function privatemsg_rules_new($args, $element) {
   foreach ($result['messages']['warning'] as $args) {
     rules_log('Warning message reported when trying to send message: !warning', array('!warning' => $args), RulesLog::WARN);
   }
+
+  // Return thread ID of new thread (or NULL if failed).
+  if ($result['success']) {
+    return array(
+      'thread_id' => $result['message']->thread_id,
+    );
+  }
+  else {
+    return array(
+      'thread_id' => NULL,
+    );
+  }
 }
 
 /**
@@ -256,6 +283,18 @@ function privatemsg_rules_new_role($args, $element) {
   }
   foreach ($result['messages']['warning'] as $message) {
     rules_log('Warning message reported when trying to send message: !warning.', array('!warning' => $message), RulesLog::WARN);
+  }
+
+  // Return thread ID of new thread (or NULL if failed).
+  if ($result['success']) {
+    return array(
+      'thread_id' => $result['message']->thread_id,
+    );
+  }
+  else {
+    return array(
+      'thread_id' => NULL,
+    );
   }
 }
 

@@ -184,15 +184,6 @@ function timeago_date_formats() {
 }
 
 /**
- * Implements hook_date_format_types().
- */
-function timeago_date_format_types() {
-   return array(
-    'time_ago_dynamic' => t('Time ago (dynamically updating)'), 
-  );
-}
-
-/**
  * Implements hook_init().
  */
 function timeago_init() {
@@ -354,6 +345,8 @@ function timeago_add_js() {
   if (module_exists('libraries') && function_exists('libraries_load')) {
     $library_path = libraries_get_path('timeago');
     libraries_load('timeago');
+    $path = drupal_get_path('module', 'timeago') . '/timeago.js';
+    drupal_add_js($path);
   }
   else {
     $library_path = drupal_get_path('module', 'timeago');

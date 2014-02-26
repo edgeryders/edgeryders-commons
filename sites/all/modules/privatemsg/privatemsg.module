@@ -45,7 +45,7 @@ function privatemsg_permission() {
     ),
     'allow disabling privatemsg' => array(
       'title' => t('Allow disabling private messages'),
-      'description' => t("Allows user to disable privatemsg so that they can't recieve or send any private messages.")
+      'description' => t("Allows user to disable privatemsg so that they can't receive or send any private messages.")
     ),
     'reply only privatemsg' => array(
       'title' => t('Reply to private messages'),
@@ -85,9 +85,11 @@ function _privatemsg_generate_user_array($string, $slice = NULL) {
   $participants = array();
   foreach ($users as $uid) {
     // If it is an integer, it is a user id.
+    if ((int)$uid > 0) {
     $user_ids = privatemsg_user_load_multiple(array($uid));
-    if ((int)$uid > 0 && ($account = array_shift($user_ids))) {
-      $participants[privatemsg_recipient_key($account)] = $account;
+      if ($account = array_shift($user_ids)) {
+        $participants[privatemsg_recipient_key($account)] = $account;
+      }
     }
     elseif (strpos($uid, '_') !== FALSE) {
       list($type, $id) = explode('_', $uid);
@@ -981,7 +983,7 @@ function _privatemsg_parse_userstring($input, $types_limitations = array()) {
  */
 function privatemsg_privatemsg_name_lookup($string) {
   // Remove optional user specifier.
-  $string = trim(str_replace(t('[user]'), '', $string));
+  $string = trim(str_replace('[user]', '', $string));
   // Fall back to the default username lookup.
   if (!$error = module_invoke('user', 'validate_name', $string)) {
     // String is a valid username, look it up.
@@ -1397,6 +1399,13 @@ function privatemsg_privatemsg_block_message($author, $recipients, $context = ar
       $blocked[] = array(
         'recipient' => 'user_' . $recipient->uid,
         'message' => t('%recipient has disabled private message receiving.', array('%recipient' => privatemsg_recipient_format($recipient, array('plain' => TRUE)))),
+      );
+    }
+    // Do not send private messages to blocked users.
+    else if (isset($recipient->status) && (!$recipient->status)) {
+      $blocked[] = array(
+        'recipient' => 'user_' . $recipient->uid,
+        'message' => t('%recipient has disabled his or her account.', array('%recipient' => privatemsg_recipient_format($recipient, array('plain' => TRUE)))),
       );
     }
   }
@@ -1945,6 +1954,11 @@ function privatemsg_get_link($recipients, $account = array(), $subject = NULL) {
  * @ingroup api
  */
 function privatemsg_message_load($pmid, $account = NULL) {
+  // If $pmid is object or array - do nothing
+  // (fixing conflict with message_load() function in message module).
+  if(is_array($pmid) || is_object($pmid)) {
+    return NULL;
+  }
   $conditions = array();
   if ($account) {
     $conditions['account'] = $account;
@@ -2306,13 +2320,16 @@ function privatemsg_entity_info() {
  *   URI array as defined by hook_entity_info().
  */
 function privatemsg_message_uri_callback($message) {
-  $uri = array(
-    'path' => 'messages/view/' . $message->thread_id,
-    'options' => array(),
-  );
-  // Add message fragment, if necessary.
-  if ($message->mid != $message->thread_id) {
-    $uri['options']['fragment'] = 'privatemsg-mid-' . $message->mid;
+  $uri = array();
+  if (isset($message->mid) && isset($message->thread_id)) {
+    $uri = array(
+      'path' => 'messages/view/' . $message->thread_id,
+      'options' => array(),
+    );
+    // Add message fragment, if necessary.
+    if ($message->mid != $message->thread_id) {
+      $uri['options']['fragment'] = 'privatemsg-mid-' . $message->mid;
+    }
   }
   return $uri;
 }
@@ -2333,14 +2350,16 @@ function privatemsg_build_modes($obj_type) {
  */
 function privatemsg_node_view($node, $view_mode) {
   $types = array_filter(variable_get('privatemsg_link_node_types', array()));
-  $url = privatemsg_get_link(user_load($node->uid));
-  if (in_array($node->type, $types) && !empty($url) && ($view_mode == 'full' || (variable_get('privatemsg_display_on_teaser', 1) && $view_mode == 'teaser'))) {
-    $node->content['links']['#links']['privatemsg_link'] = array(
-      'title' => t('Send author a message'),
-      'href' => $url . '/' . t('Message regarding @node', array('@node' => $node->title)),
-      'query' => drupal_get_destination(),
-      'attributes' => array('class' => 'privatemsg-send-link privatemsg-send-link-node'),
-    );
+  if (in_array($node->type, $types) && ($view_mode == 'full' || (variable_get('privatemsg_display_on_teaser', 1) && $view_mode == 'teaser'))) {
+    $url = privatemsg_get_link(user_load($node->uid));
+    if (!empty($url)){
+      $node->content['links']['#links']['privatemsg_link'] = array(
+        'title' => t('Send author a message'),
+        'href' => $url . '/' . t('Message regarding @node', array('@node' => $node->title)),
+        'query' => drupal_get_destination(),
+        'attributes' => array('class' => 'privatemsg-send-link privatemsg-send-link-node'),
+      );
+    }
   }
 }
 
@@ -2349,18 +2368,20 @@ function privatemsg_node_view($node, $view_mode) {
  */
 function privatemsg_comment_view($comment) {
   $types = array_filter(variable_get('privatemsg_link_node_types', array()));
-  $url = privatemsg_get_link(user_load($comment->uid));
-  if (in_array(node_load($comment->nid)->type, $types) && !empty($url) && variable_get('privatemsg_display_on_comments', 0)) {
-    $links['privatemsg_link'] = array(
-      'title' => t('Send author a message'),
-      'href' => $url . '/' . t('Message regarding @comment', array('@comment' => trim($comment->subject))),
-      'query' => drupal_get_destination(),
-    );
-    $comment->content['links']['privatemsg'] = array(
-      '#theme' => 'links',
-      '#links' => $links,
-      '#attributes' => array('class' => array('privatemsg-send-link', 'privatemsg-send-link-node', 'links', 'inline')),
-    );
+  if (in_array(node_load($comment->nid)->type, $types) && variable_get('privatemsg_display_on_comments', 0)) {
+    $url = privatemsg_get_link(user_load($comment->uid));
+    if (!empty($url)){
+      $links['privatemsg_link'] = array(
+        'title' => t('Send author a message'),
+        'href' => $url . '/' . t('Message regarding @comment', array('@comment' => trim($comment->subject))),
+        'query' => drupal_get_destination(),
+      );
+      $comment->content['links']['privatemsg'] = array(
+        '#theme' => 'links',
+        '#links' => $links,
+        '#attributes' => array('class' => array('privatemsg-send-link', 'privatemsg-send-link-node', 'links', 'inline')),
+      );
+    }
   }
 }
 /**
@@ -2646,7 +2667,7 @@ function privatemsg_recipient_format($recipient, $options = array()) {
 }
 
 /**
- * Implements hook_privatemsg_recipient_types_info().
+ * Implements hook_privatemsg_recipient_type_info().
  */
 function privatemsg_privatemsg_recipient_type_info() {
   return array(
@@ -3000,25 +3021,25 @@ function privatemsg_entity_property_info() {
       'type'  => 'integer',
       'label' => t('Private message thread ID'),
       'description' => t('Private message thread ID'),
-      'getter callback' => 'entity_metadata_verbatim_get',
+      'getter callback' => 'entity_property_verbatim_get',
     ),
     'author' => array(
       'type'  => 'user',
       'label' => t('Private message author'),
       'description' => t('Private message author'),
-      'setter callback' => 'entity_metadata_verbatim_set',
+      'setter callback' => 'entity_property_verbatim_set',
     ),
     'subject' => array(
       'type'  => 'text',
       'label' => t('Private message subject'),
       'description' => t('Private message subject'),
-      'setter callback' => 'entity_metadata_verbatim_set',
+      'setter callback' => 'entity_property_verbatim_set',
     ),
     'body' => array(
       'type'  => 'text',
       'label' => t('Private message body'),
       'description' => t('Private message body'),
-      'setter callback' => 'entity_metadata_verbatim_set',
+      'setter callback' => 'entity_property_verbatim_set',
     ),
     'timestamp' => array(
       'type' => 'date',

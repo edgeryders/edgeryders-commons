@@ -232,13 +232,15 @@ function privatemsg_list_submit($form, &$form_state) {
     $operation = $operations[$form_state['values']['operation']];
   }
 
-  // Load all keys where the value is the current op.
-  $keys = array_keys($form_state['values'], $form_state['values']['op']);
+  if (!empty($form_state['values']['op'])) {
+    // Load all keys where the value is the current op.
+    $keys = array_keys($form_state['values'], $form_state['values']['op']);
 
-  // Loop over them and detect if a matching button was pressed.
-  foreach ($keys as $key) {
-    if ($key != 'op' && isset($operations[$key])) {
-      $operation = $operations[$key];
+    // Loop over them and detect if a matching button was pressed.
+    foreach ($keys as $key) {
+      if ($key != 'op' && isset($operations[$key])) {
+        $operation = $operations[$key];
+      }
     }
   }
 
