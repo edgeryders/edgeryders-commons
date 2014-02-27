@@ -37,5 +37,11 @@ function date_facets_facetapi_query_types() {
         'adapter' => 'search',
       ),
     ),
+    'search_api_date_range' => array(
+      'handler' => array(
+        'class' => 'Drupal_SearchApi_Facetapi_QueryType_DateRangeQueryType',
+        'adapter' => 'search_api',
+      ),
+    )
   );
 }

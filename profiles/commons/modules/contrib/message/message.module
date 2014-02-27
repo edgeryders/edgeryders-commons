@@ -801,7 +801,21 @@ function message_delete_multiple($mids = array()) {
  * Access callback for the message entity.
  */
 function message_access($op, $entity, $account = NULL, $entity_type = 'message') {
-  return user_access('create messages', $account);
+  if ($op == 'create') {
+    $access = user_access('create messages', $account);
+  }
+  else {
+    $access = user_access('access content', $account);
+  }
+  $context = array(
+    'op' => $op,
+    'entity' => $entity,
+    'entity_type' => $entity_type,
+    'account' => $account,
+  );
+  // Allow other modules to alter access to a message entity.
+  drupal_alter('message_access', $access, $context);
+  return $access;
 }
 
 /**

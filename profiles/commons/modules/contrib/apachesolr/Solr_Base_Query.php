@@ -150,10 +150,11 @@ class SolrFilterSubQuery {
    * @return boolean
    */
   public static function validFilterValue($filter) {
-    $opening = 0;
-    $closing = 0;
     $name = NULL;
     $value = NULL;
+    $matches = array();
+    $datefields = array();
+    $datefield_match = array();
 
     if (preg_match('/(?P<name>[^:]+):(?P<value>.+)?$/', $filter, $matches)) {
       foreach ($matches as $match_id => $match) {
@@ -168,8 +169,9 @@ class SolrFilterSubQuery {
       }
 
       // For the name we allow any character that fits between the A-Z0-9 range and
-      // any alternative for this in other languages. No special characters allowed
-      if (!preg_match('/^[a-zA-Z0-9_\x7f-\xff]+$/', $name)) {
+      // any alternative for this in other languages. No special characters allowed.
+      // Negative filters may have a leading "-".
+      if (!preg_match('/^-?[a-zA-Z0-9_\x7f-\xff]+$/', $name)) {
         return FALSE;
       }
 
@@ -182,13 +184,15 @@ class SolrFilterSubQuery {
       $valid_brackets = TRUE;
       $brackets['opening']['{'] = substr_count($value, '{');
       $brackets['closing']['}'] = substr_count($value, '}');
-      $valid_brackets = ($brackets['opening']['{'] != $brackets['closing']['}']) ? FALSE : TRUE;
+
+      $valid_brackets = $valid_brackets && ($brackets['opening']['{'] == $brackets['closing']['}']);
       $brackets['opening']['['] = substr_count($value, '[');
       $brackets['closing'][']'] = substr_count($value, ']');
-      $valid_brackets = ($brackets['opening']['['] != $brackets['closing'][']']) ? FALSE : TRUE;
+      $valid_brackets = $valid_brackets && ($brackets['opening']['['] == $brackets['closing'][']']);
       $brackets['opening']['('] = substr_count($value, '(');
       $brackets['closing'][')'] = substr_count($value, ')');
-      $valid_brackets = ($brackets['opening']['('] != $brackets['closing'][')']) ? FALSE : TRUE;
+      $valid_brackets = $valid_brackets && ($brackets['opening']['('] == $brackets['closing'][')']);
+
       if (!$valid_brackets) {
         return FALSE;
       }
@@ -273,7 +277,7 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
    * environment id
    */
   protected $name;
-
+  protected $context = array();
   // Makes sure we always have a valid sort.
   protected $solrsort = array('#name' => 'score', '#direction' => 'desc');
   // A flag to allow the search to be aborted.
@@ -300,11 +304,12 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
    * @param $base_path
    *   The search base path (without the keywords) for this query, without trailing slash.
    */
-  function __construct($name, $solr, array $params = array(), $sortstring = '', $base_path = '') {
+  function __construct($name, $solr, array $params = array(), $sortstring = '', $base_path = '', $context = array()) {
     parent::__construct();
     $this->name = $name;
     $this->solr = $solr;
-    $this->addParams($params);
+    $this->addContext((array) $context);
+    $this->addParams((array) $params);
     $this->available_sorts = $this->defaultSorts();
     $this->sortstring = trim($sortstring);
     $this->parseSortString();
@@ -333,6 +338,25 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
    */
   public function getSearcher() {
     return $this->name . '@' . $this->solr->getId();
+  }
+
+  /**
+   * Get context values.
+   */
+  public function getContext() {
+    return $this->context;
+  }
+
+  /**
+   * Set context value.
+   */
+  public function addContext(array $context) {
+    foreach ($context as $k => $v) {
+      $this->context[$k] = $v;
+    }
+    // The env_id must match that of the actual $solr object
+    $this->context['env_id'] = $this->solr->getId();
+    return $this->context;
   }
 
   protected $single_value_params = array(
@@ -415,6 +439,7 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
     $exclude = FALSE;
     $name = NULL;
     $value = NULL;
+    $matches = array();
 
     // Check if we are dealing with an exclude
     if (preg_match('/^-(.*)/', $string, $matches)) {
@@ -507,6 +532,15 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
     return $this->addParam($name, $value);
   }
 
+  /**
+   * Handles aliases for field to make nicer URLs.
+   *
+   * @param $field_map
+   *   An array keyed with real Solr index field names with the alias as value.
+   *
+   * @return DrupalSolrQueryInterface
+   *   The called object.
+   */
   public function addFieldAliases($field_map) {
     $this->field_map = array_merge($this->field_map, $field_map);
     // We have to re-parse the filters.
@@ -536,12 +570,21 @@ class SolrBaseQuery extends SolrFilterSubQuery implements DrupalSolrQueryInterfa
     }
     else {
       // Validate and set sort parameter
-      $fields = implode('|', array_keys($this->available_sorts));
+      $fields = array_keys($this->available_sorts);
+      // Loop through available sorts and escape them, to allow for function sorts like geodist() in the preg_match() below
+      foreach ($fields as $key => $field) {
+        $fields[$key] = preg_quote($field);
+      }
+      // Implode the escaped available sorts together, then preg_match() against the sort string
+      $fields = implode('|', $fields);
       if (preg_match('/^(?:(' . $fields . ') (asc|desc),?)+$/', $sortstring, $matches)) {
         // We only use the last match.
         $this->solrsort['#name'] = $matches[1];
         $this->solrsort['#direction'] = $matches[2];
         $this->params['sort'] = array($sortstring);
+      }
+      else {
+        return FALSE;
       }
     }
   }

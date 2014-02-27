@@ -49,6 +49,9 @@ function custom_search_content_admin() {
   return system_settings_form(_custom_search_content_admin_form());
 }
 
+/**
+ * Results page settings.
+ */
 function custom_search_results_admin() {
   $form['custom_search_target'] = array(
     '#type'     => 'select',

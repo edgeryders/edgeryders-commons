@@ -5,9 +5,9 @@ core = 7.x
 
 hidden = TRUE
 
-; Information added by drupal.org packaging script on 2012-09-21
-version = "7.x-2.8"
+; Information added by Drupal.org packaging script on 2014-02-06
+version = "7.x-2.13"
 core = "7.x"
 project = "acquia_connector"
-datestamp = "1348252266"
+datestamp = "1391708007"
 

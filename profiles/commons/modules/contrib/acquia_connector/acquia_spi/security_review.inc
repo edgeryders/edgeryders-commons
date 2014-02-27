@@ -9,12 +9,12 @@
  * Public function for running Security Review checklist and returning results.
  *
  * @param array $checklist Array of checks to run, indexed by module namespace.
- * @param boolean $log Whether to log check processing using acquia_spi_security_review_log.
+ * @param boolean $log Whether to log check processing using security_review_log.
  * @param boolean $help Whether to load the help file and include in results.
  * @return array Results from running checklist, indexed by module namespace.
  */
 function acquia_spi_security_review_run($checklist = NULL, $log = FALSE, $help = FALSE) {
-  // Use Security Review module first if available.
+  // Use Security Review module if available.
   if (module_exists('security_review') && function_exists('security_review_run')) {
     if (!$checklist) {
       $checklist = module_invoke_all('security_checks');
@@ -50,6 +50,13 @@ function _acquia_spi_security_review_run_check($module, $check_name, $check, $lo
   $last_check = array();
   $check_result = array();
   $return = array('result' => NULL);
+  if (isset($check['file'])) {
+    // Handle Security Review defining checks for other modules.
+    if (isset($check['module'])) {
+      $module = $check['module'];
+    }
+    module_load_include('inc', $module, $check['file']);
+  }
   $function = $check['callback'];
   if (function_exists($function)) {
     $return = call_user_func($function, $last_check);
@@ -131,12 +138,6 @@ function _acquia_spi_security_review_security_checks() {
     'success' => t('Untrusted roles do not have administrative or trusted Drupal permissions.'),
     'failure' => t('Untrusted roles have been granted administrative or trusted Drupal permissions.'),
   );
-  /*$checks['name_passwords'] = array(
-    'title' => t('Username as password'),
-    'callback' => 'acquia_spi_security_review_check_name_passwords',
-    'success' => t('Trusted accounts do not have their password set to their username.'),
-    'failure' => t('Some trusted accounts have set their password the same as their username.'),
-  );*/
   // Check dependent on PHP filter being enabled.
   if (module_exists('php')) {
     $checks['untrusted_php'] = array(
@@ -144,6 +145,32 @@ function _acquia_spi_security_review_security_checks() {
       'callback' => 'acquia_spi_security_review_check_php_filter',
       'success' => t('Untrusted users do not have access to use the PHP input format.'),
       'failure' => t('Untrusted users have access to use the PHP input format.'),
+    );
+  }
+  $checks['executable_php'] = array(
+    'title' => t('Executable PHP'),
+    'callback' => 'acquia_spi_security_review_check_executable_php',
+    'success' => t('PHP files in the Drupal files directory cannot be executed.'),
+    'failure' => t('PHP files in the Drupal files directory can be executed.'),
+  );
+  $checks['base_url_set'] = array(
+    'title' => t('Drupal base URL'),
+    'callback' => 'acquia_spi_security_review_check_base_url',
+    'success' => t('Base URL is set in settings.php.'),
+    'failure' => t('Base URL is not set in settings.php.'),
+  );
+  $checks['temporary_files'] = array(
+    'title' => t('Temporary files'),
+    'callback' => 'acquia_spi_security_review_check_temporary_files',
+    'success' => t('No sensitive temporary files were found.'),
+    'failure' => t('Sensitive temporary files were found on your files system.'),
+  );
+  if (module_exists('views') && function_exists('views_get_all_views')) {
+    $checks['views_access'] = array(
+      'title' => t('Views access'),
+      'callback' => 'acquia_spi_security_review_check_views_access',
+      'success' => t('Views are access controlled.'),
+      'failure' => t('There are Views that do not provide any access checks.'),
     );
   }
 
@@ -156,10 +183,16 @@ function _acquia_spi_security_review_security_checks() {
 function acquia_spi_security_review_check_file_perms() {
   $result = TRUE;
   // Extract ending folder for file directory path.
-  $file_path = rtrim(variable_get('file_public_path', conf_path() . '/files'), '/');
-  $file_path = substr($file_path, strrpos($file_path, '/') + 1);
+  $file_path = './' . rtrim(variable_get('file_public_path', conf_path() . '/files'), '/');
   // Set files to ignore.
-  $ignore = array('..', 'CVS', $file_path);
+  $ignore = array('..', 'CVS', '.git', '.svn', '.bzr', $file_path);
+  // Add private files directory if it's set.
+  $private_files = variable_get('file_private_path', '');
+  if (!empty($private_files)) {
+    $private_files = substr($private_files, strrpos($private_files, '/') + 1);
+    $ignore[] = $private_files;
+  }
+  drupal_alter('security_review_file_ignore', $ignore);
   $files = _acquia_spi_security_review_check_file_perms_scan('.', $ignore);
 
   // Try creating or appending files.
@@ -169,13 +202,13 @@ function acquia_spi_security_review_check_file_perms() {
   $directory = drupal_get_path('module', 'security_review');
   // Write a file with the timestamp
   $file = './' . $directory . '/file_write_test.' . date('Ymdhis');
-  if ($file_create = fopen($file, 'w')) {
+  if ($file_create = @fopen($file, 'w')) {
     $create_status = fwrite($file_create, t("This is a vulnerable directory.\n"));
     fclose($file_create);
   }
   // Try to append to our IGNOREME file.
-  $file = './' . $directory . '/IGNOREME.txt';
-  if ($file_append = fopen($file, 'a')) {
+  $file = './'. $directory . '/IGNOREME.txt';
+  if ($file_append = @fopen($file, 'a')) {
     $append_status = fwrite($file_append, date('Ymdhis') . "\n");
     fclose($file_append);
   }
@@ -193,13 +226,13 @@ function _acquia_spi_security_review_check_file_perms_scan($directory, $ignore) 
       // Don't check hidden files or ones we said to ignore.
       if ($file[0] != "." && !in_array($file, $ignore)) {
         $file = $directory . "/" . $file;
-        if (is_dir($file)) {
+        if (is_dir($file) && !in_array($file, $ignore)) {
           $items = array_merge($items, _acquia_spi_security_review_check_file_perms_scan($file, $ignore));
           if (is_writable($file)) {
             $items[] = preg_replace("/\/\//si", "/", $file);
           }
         }
-        elseif (is_writable($file)) {
+        elseif (is_writable($file) && !in_array($file, $ignore)) {
           $items[] = preg_replace("/\/\//si", "/", $file);
         }
       }
@@ -210,7 +243,8 @@ function _acquia_spi_security_review_check_file_perms_scan($directory, $ignore) 
 }
 
 /**
- * Check for formats that do not have HTML filter that can be used by untrusted users.
+ * Check for formats that either do not have HTML filter that can be used by
+ * untrusted users, or if they do check if unsafe tags are allowed.
  */
 function acquia_spi_security_review_check_input_formats() {
   $result = TRUE;
@@ -293,28 +327,18 @@ function acquia_spi_security_review_check_error_reporting() {
  * There is ample room for the user to get around this check. @TODO get more sophisticated?
  */
 function acquia_spi_security_review_check_private_files() {
-  // Get the default download method.
-  $scheme = variable_get('file_default_scheme', '');
-  // Most insecure configurations will be using the local private wrapper.
-  if ($scheme == 'private') {
-    $file_directory_path = variable_get('file_private_path', '');
-    if (strpos($file_directory_path, '/') === 0) {
-      // Path begins at root.
-      $result = TRUE;
-    }
-    elseif (strpos($file_directory_path, '../') === 0) {
-      // Path begins by moving up the system.
-      $result = FALSE;
-    }
-    else {
-      // Directory is relative (or crafty).
-      $result = FALSE;
-    }
+  $file_directory_path = variable_get('file_private_path', '');
+  if (empty($file_directory_path)) {
+    $result = NULL; // Ignore this check.
+  }
+  elseif (strpos(realpath($file_directory_path), DRUPAL_ROOT) === 0) {
+    // Path begins at root.
+    $result = FALSE;
   }
   else {
-    $result = NULL;
+    $result = TRUE;
   }
-  return array('result' => $result);
+  return array('result' => $result, 'value' => $file_directory_path);
 }
 
 function acquia_spi_security_review_check_query_errors($last_check = NULL) {
@@ -471,7 +495,7 @@ function acquia_spi_security_review_check_upload_extensions($last_check = NULL) 
           foreach ($unsafe_extensions as $unsafe_extension) {
             if (strpos($instance['settings']['file_extensions'], $unsafe_extension) !== FALSE) {
               // Found an unsafe extension.
-              $check_result_value[$instance['field_name']][] = $unsafe_extension;
+              $check_result_value[$instance['field_name']][$instance['bundle']] = $unsafe_extension;
               $check_result = FALSE;
             }
           }
@@ -483,47 +507,135 @@ function acquia_spi_security_review_check_upload_extensions($last_check = NULL) 
   return array('result' => $check_result, 'value' => $check_result_value);
 }
 
-function acquia_spi_security_review_check_name_passwords($last_check = NULL) {
+/**
+ * Check if PHP files written to the files directory can be executed.
+ */
+function acquia_spi_security_review_check_executable_php($last_check = NULL) {
+  global $base_url;
   $result = TRUE;
   $check_result_value = array();
-  $timestamp = NULL;
 
-  // Check whether trusted roles have weak passwords.
-  $trusted_roles = acquia_spi_security_review_trusted_roles();
-  if (!empty($trusted_roles)) {
-    $trusted_roles = array_keys($trusted_roles);
-    $check_result_value = _acquia_spi_security_review_weak_passwords($trusted_roles);
+  $message = 'Security review test ' . date('Ymdhis');
+  $content = "<?php\necho '" . $message . "';";
+  $directory = variable_get('file_public_path', 'sites/default/files');
+  $file = '/security_review_test.php';
+  if ($file_create = @fopen('./' . $directory . $file, 'w')) {
+    $create_status = fwrite($file_create, $content);
+    fclose($file_create);
   }
-  if (!empty($check_result_value)) {
+  $response = drupal_http_request($base_url . '/' . $directory . $file);
+  if ($response->code == 200 && $response->data === $message) {
     $result = FALSE;
+    $check_result_value[] = 'executable_php';
+  }
+  if (file_exists('./' . $directory . $file)) {
+    @unlink('./' . $directory . $file);
+  }
+  // Check for presence of the .htaccess file and if the contents are correct.
+  if (!file_exists($directory . '/.htaccess')) {
+    $result = FALSE;
+    $check_result_value[] = 'missing_htaccess';
+  }
+  elseif (!function_exists('file_htaccess_lines')) {
+    $result = FALSE;
+    $check_result_value[] = 'outdated_core';
+  }
+  else {
+    $contents = file_get_contents($directory . '/.htaccess');
+    // Text from includes/file.inc.
+    $expected = file_htaccess_lines(FALSE);
+    if ($contents !== $expected) {
+      $result = FALSE;
+      $check_result_value[] = 'incorrect_htaccess';
+    }
+    if (is_writable($directory . '/.htaccess')) {
+      // Don't modify $result.
+      $check_result_value[] = 'writable_htaccess';
+    }
   }
 
   return array('result' => $result, 'value' => $check_result_value);
 }
 
-function _acquia_spi_security_review_weak_passwords($trusted_roles) {
-  $weak_users = array();
-
-  // Select users with a trusted role whose password is their username.
-  // @todo need to generate passwords in PHP to get salt.
-  $sql = "SELECT u.uid, u.name, COUNT(rid) AS count FROM {users} u LEFT JOIN
-    {users_roles} ur ON u.uid = ur.uid AND ur.rid in (:rids)
-    WHERE pass = md5(name) GROUP BY uid";
-  $results = db_query($sql, array(':rids' => $trusted_roles)); // @todo pager_query?
-  foreach ($results as $row) {
-    $record[] = $row;
-    if ($row->count > 0) {
-      $weak_users[$row->uid] = $row->name;
+/**
+ * Check if $base_url is set in settings.php.
+ */
+function acquia_spi_security_review_check_base_url($last_check = NULL) {
+  // Support different methods to check for $base_url.
+  $method = variable_get('security_review_base_url_method', 'token');
+  $result = NULL;
+  if ($method === 'token') {
+    if (file_exists(DRUPAL_ROOT . '/' . conf_path() . '/settings.php')) {
+      $content = file_get_contents(DRUPAL_ROOT . '/' . conf_path() . '/settings.php');
+      $tokens = token_get_all($content);
+    }
+    $result = FALSE;
+    foreach ($tokens as $token) {
+      if (is_array($token) && $token[0] === T_VARIABLE && $token[1] == '$base_url') {
+        $result = TRUE;
+        break;
+      }
     }
   }
-
-  // Explicitly check uid 1 in case they have no roles.
-  $weak_uid1 = db_fetch_object(db_query("SELECT u.uid, u.name, 1 AS count FROM {users} u WHERE pass = md5(name) AND uid = 1"));
-  if (!empty($weak_uid1->count)) {
-    $weak_users[$weak_uid1->uid] = $weak_uid1->name; 
+  elseif ($method === 'include') {
+    if (file_exists(DRUPAL_ROOT . '/' . conf_path() . '/settings.php')) {
+      include DRUPAL_ROOT . '/' . conf_path() . '/settings.php';
+    }
+    if (isset($base_url)) {
+      $result = TRUE;
+    }
+    else {
+      $result = FALSE;
+    }
   }
+  return array('result' => $result, 'value' => '');
+}
 
-  return $weak_users;
+/**
+ * Check for sensitive temporary files like settings.php~.
+ */
+function acquia_spi_security_review_check_temporary_files($last_check = NULL) {
+  $result = TRUE;
+  $check_result_value = array();
+  $files = array();
+  $dir = scandir(DRUPAL_ROOT . '/' . conf_path() . '/');
+  foreach ($dir as $file) {
+    // Set full path to only files.
+    if (!is_dir($file)) {
+      $files[] = DRUPAL_ROOT . '/' . conf_path() . '/' . $file;
+    }
+  }
+  drupal_alter('security_review_temporary_files', $files);
+  foreach ($files as $path) {
+    $matches = array();
+    if (file_exists($path) && preg_match('/.*(~|\.sw[op]|\.bak|\.orig|\.save)$/', $path, $matches) !== FALSE && !empty($matches)) {
+      $result = FALSE;
+      $check_result_value[] = $path;
+    }
+  }
+  return array('result' => $result, 'value' => $check_result_value);
+}
+
+function acquia_spi_security_review_check_views_access($last_check = NULL) {
+  $result = TRUE;
+  $check_result_value = array();
+  $timestamp = NULL;
+  // Load and loop through every view, checking the access type in displays.
+  $views = views_get_all_views();
+  foreach ($views as $view) {
+    if ($view->disabled !== TRUE) {
+      // Access is set in display options of a display.
+      foreach ($view->display as $display_name => $display) {
+        if (isset($display->display_options['access']) && $display->display_options['access']['type'] == 'none') {
+          $check_result_value[$view->name][] = $display_name;
+        }
+      }
+    }
+  }
+  if (!empty($check_result_value)) {
+    $result = FALSE;
+  }
+  return array('result' => $result, 'value' => $check_result_value);
 }
 
 /**
@@ -548,23 +660,28 @@ function acquia_spi_security_review_unsafe_tags() {
   return array(
     'applet',
     'area',
+    'audio',
     'base',
     'basefont',
     'body',
     'button',
+    'comment',
     'embed',
+    'eval',
     'form',
     'frame',
     'frameset',
     'head',
     'html',
     'iframe',
+    'image',
     'img',
     'input',
     'isindex',
     'label',
     'link',
     'map',
+    'math',
     'meta',
     'noframes',
     'noscript',
@@ -575,11 +692,13 @@ function acquia_spi_security_review_unsafe_tags() {
     'script',
     'select',
     'style',
+    'svg',
     'table',
     'td',
     'textarea',
     'title',
-    'tr',
+    'video',
+    'vmlframe',
   );
 }
 
@@ -588,7 +707,6 @@ function acquia_spi_security_review_unsafe_tags() {
  */
 function acquia_spi_security_review_unsafe_extensions() {
   return array(
-    'flv',
     'swf',
     'exe',
     'html',

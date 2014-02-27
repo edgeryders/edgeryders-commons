@@ -1,0 +1,13 @@
+name = Apache Solr Users
+description = Index user entity types into a solr core.
+dependencies[] = user
+dependencies[] = apachesolr_search
+package = Search Toolkit
+core = 7.x
+
+
+; Information added by drush on 2014-02-12
+version = ""
+project = "apachesolr_user"
+datestamp = "1392234276"
+

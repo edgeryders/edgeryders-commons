@@ -33,6 +33,7 @@ function acquia_agent_uninstall() {
   variable_del('acquia_dynamic_banner');
   variable_del('acquia_migrate_files');
   variable_del('acquia_banner_service');
+  variable_del('acquia_agent_hide_signup_messages');
 }
 
 /**

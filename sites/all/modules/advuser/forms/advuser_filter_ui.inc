@@ -65,7 +65,7 @@ function advuser_filter_ui($form_state) {
       $oparen = '(';
     }
     $params = array(
-      '%property' => $filter_fields[$field]['title'], 
+      '%property' => $filter_fields[$field]['title'],
       '%value' => _advuser_filter_ui_data_display($field, $data),
     );
     $form['filters']['current'][] = array(

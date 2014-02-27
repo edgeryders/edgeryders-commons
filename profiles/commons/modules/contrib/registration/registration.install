@@ -45,7 +45,7 @@ function registration_schema() {
         'description' => "Anonymous registrant's e-mail address.",
       ),
       'count' => array(
-        'description' => 'How many slots this registration should use towards the total capacity for this event.',
+        'description' => 'How many spaces this registration should use towards the total capacity for this event.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 1,
@@ -482,6 +482,63 @@ function registration_update_7102(&$sandbox) {
   foreach ($types as $type) {
     $schema["cache_entity_$type"] = $cache_schema;
     $schema["cache_entity_$type"]['description'] = "Cache table used to store $type entity records.";
-    db_create_table("cache_entity_$type", $schema["cache_entity_$type"]); 
+    db_create_table("cache_entity_$type", $schema["cache_entity_$type"]);
   }
+}
+
+/**
+ * Change multiple_registrations settings name to multiple_slots.
+ */
+function registration_update_7103(&$sandbox) {
+  $sql = "UPDATE {registration_entity} SET settings = REPLACE(settings, 'multiple_registrations', 'multiple_slots')";
+  db_query($sql);
+}
+
+/**
+ * Updates settings for multiple registration limits and slots/spaces renaming.
+ */
+function registration_update_7104(&$sandbox) {
+  $registration_entities = db_select('registration_entity', 'r')
+    ->fields('r', array('entity_id', 'settings'))
+    ->execute()
+    ->fetchAll();
+
+  foreach ($registration_entities as $ent) {
+    $settings = $ent->settings;
+    $settings = unserialize($settings);
+    if (isset($settings['multiple_slots']) && (bool) $settings['multiple_slots'] === TRUE) {
+      $settings['maximum_spaces'] = 0;
+    }
+    else {
+      $settings['maximum_spaces'] = 1;
+    }
+    unset($settings['multiple_slots']);
+    $settings = serialize($settings);
+    try {
+      db_update('registration_entity')
+        ->fields(array('settings' => $settings))
+        ->condition('entity_id', $ent->entity_id)
+        ->execute();
+    }
+    catch (Exception $e) {
+      throw new DrupalUpdateException($e->getMessage());
+    }
+  }
+
+  $field_instances = registration_get_registration_instances();
+  foreach ($field_instances as $instance) {
+    $settings = &$instance['settings']['default_registration_settings']['settings'];
+    $new_value = $settings['multiple_slots']  ? 0 : 1;
+    $settings['maximum_capacity'] = $new_value;
+    unset($settings['multiple_slots']);
+    try {
+      field_update_instance($instance);
+    }
+    catch(FieldException $e) {
+      throw new DrupalUpdateException($e->getMessage());
+    }
+  }
+
+  $t = get_t();
+  return $t('Registrations settings have been updated.');
 }

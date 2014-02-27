@@ -17,17 +17,25 @@ class OgBehaviorHandler extends EntityReference_BehaviorHandler_Abstract {
    */
   public function load($entity_type, $entities, $field, $instances, $langcode, &$items) {
     // Get the OG memberships from the field.
+    $field_name = $field['field_name'];
+    $target_type = $field['settings']['target_type'];
     foreach ($entities as $entity) {
       $wrapper = entity_metadata_wrapper($entity_type, $entity);
-      if (empty($wrapper->{$field['field_name'] . '__og_membership'})) {
+      if (empty($wrapper->{$field_name})) {
         // If the entity belongs to a bundle that was deleted, return early.
         continue;
       }
       $id = $wrapper->getIdentifier();
       $items[$id] = array();
-      foreach ($wrapper->{$field['field_name'] . '__og_membership'}->value() as $og_membership) {
+      $gids = og_get_entity_groups($entity_type, $entity, array(OG_STATE_ACTIVE), $field_name);
+
+      if (empty($gids[$target_type])) {
+        continue;
+      }
+
+      foreach ($gids[$target_type] as $gid) {
         $items[$id][] = array(
-          'target_id' => $og_membership->gid,
+          'target_id' => $gid,
         );
       }
     }
@@ -226,5 +234,55 @@ class OgBehaviorHandler extends EntityReference_BehaviorHandler_Abstract {
       unset($data['field_data_' . $field['field_name']]);
       unset($data['field_revision_' . $field['field_name']]);
     }
+  }
+
+  /**
+   * Implements EntityReference_BehaviorHandler_Abstract::validate().
+   *
+   * Re-build $errors array to be keyed correctly by "default" and "admin" field
+   * modes.
+   *
+   * @todo: Try to get the correct delta so we can highlight the invalid
+   * reference.
+   *
+   * @see entityreference_field_validate().
+   */
+  public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+    $new_errors = array();
+    $values = array('default' => array(), 'admin' => array());
+    foreach ($items as $item) {
+      $values[$item['field_mode']][] = $item['target_id'];
+    }
+
+    $field_name = $field['field_name'];
+
+    foreach ($values as $field_mode => $ids) {
+      if (!$ids) {
+        continue;
+      }
+
+      if ($field_mode == 'admin' && !user_access('administer group')) {
+        // No need to validate the admin, as the user has no access to it.
+        continue;
+      }
+
+      $instance['field_mode'] = $field_mode;
+      $valid_ids = entityreference_get_selection_handler($field, $instance, $entity_type, $entity)->validateReferencableEntities($ids);
+
+      if ($invalid_entities = array_diff($ids, $valid_ids)) {
+        foreach ($invalid_entities as $id) {
+          $new_errors[$field_mode][] = array(
+            'error' => 'og_invalid_entity',
+            'message' => t('The referenced group (@type: @id) is invalid.', array('@type' => $field['settings']['target_type'], '@id' => $id)),
+          );
+        }
+      }
+    }
+
+    if ($new_errors) {
+      og_field_widget_register_errors($field_name, $new_errors);
+    }
+
+    $errors = array();
   }
 }

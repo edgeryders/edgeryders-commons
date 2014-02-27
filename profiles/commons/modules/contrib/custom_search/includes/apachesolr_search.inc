@@ -18,7 +18,7 @@
 function _custom_search_apachesolr_search($variables) {
   // Set default path in case the core search page path isn't set yet.
   $path = 'search/apachesolr_search';
-  $solr_info = apachesolr_search_page_load('core_search');
+  $solr_info = (array) apachesolr_search_page_load('core_search');
   if (isset($solr_info['search_path'])) {
     // Use the configured Solr search path instead of default path.
     $path = $solr_info['search_path'];

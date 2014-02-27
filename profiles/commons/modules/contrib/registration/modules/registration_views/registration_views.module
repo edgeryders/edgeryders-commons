@@ -65,6 +65,74 @@ function registration_views_entity_info_alter(&$entity_info) {
   $entity_info['registration']['views controller class'] = 'RegistrationViewsController';
 }
 
+/**
+ * Implements hook_action_info().
+ */
+function registration_views_action_info() {
+  return array(
+    'registration_views_set_state_action' => array(
+      'type' => 'registration',
+      'label' => t('Set the Registration State'),
+      'behavior' => array('changes_property'),
+      'configurable' => FALSE,
+      'vbo_configurable' => TRUE,
+      'triggers' => array('any'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_views_bulk_operation_form().
+ *
+ * Provides a configuration form for the VBO dialogue when configuring a view.
+ */
+function registration_views_set_state_action_views_bulk_operations_form($options) {
+  $form = array();
+  $form['default_registration_state'] = array(
+    '#type' => 'select',
+    '#title' => t('Status'),
+    '#options' => registration_get_states_options(),
+    '#default_value' => !empty($options['default_registration_state']) ? $options['default_registration_state'] : '',
+  );
+
+  return $form;
+}
+
+/**
+ * Per-action form for executing a bulk operation.
+ *
+ * Simply adds a form to select what state to set when performing a VBO
+ * set_state_action.
+ */
+function registration_views_set_state_action_form($settings) {
+  $form = array();
+  $form['registration_state'] = array(
+    '#type' => 'select',
+    '#title' => t('Status'),
+    '#options' => registration_get_states_options(),
+    '#default_value' => !empty($settings['settings']['default_registration_state']) ? $settings['settings']['default_registration_state'] : '',
+  );
+
+  return $form;
+}
+
+/**
+ * Submit handler for registration_views_set_state_action_form().
+ */
+function registration_views_set_state_action_submit($form, $form_state) {
+  $return = array();
+  $return['new_state'] = $form_state['values']['registration_state'];
+  return $return;
+}
+
+/**
+ * The actual action to set a Registration's State.
+ */
+function registration_views_set_state_action(&$node, $context) {
+  $context['registration']->state = $context['new_state'];
+  registration_save($context['registration']);
+}
+
 class RegistrationViewsController extends EntityDefaultViewsController {
 
   public function views_data() {
@@ -125,6 +193,15 @@ class RegistrationViewsController extends EntityDefaultViewsController {
  * Provide additional fields for entities with registrations.
  */
 function registration_views_views_data_alter(&$data) {
+  // Add a state form field option for registrations.
+  $data['registration']['state_edit'] = array(
+    'field' => array(
+      'title' => t('State form field'),
+      'help' => t('Edit the registration state'),
+      'handler' => 'RegistrationViewsHandlerStateEdit',
+    ),
+  );
+
   $registration_instances = registration_get_registration_instances();
   $entity_info = entity_get_info();
 
@@ -191,8 +268,8 @@ function registration_views_views_data_alter(&$data) {
     $data[$info['base table']]['capacity_used'] = array(
       'real field' => $info['entity keys']['id'],
       'group' => t('Registration Settings'),
-      'title' => t('Slots Used'),
-      'help' => t('Current number of slots used for this entity.'),
+      'title' => t('Spaces used'),
+      'help' => t('Current number of spaces used for this entity.'),
       'field' => array(
         'handler' => 'registration_handler_field_entity_capacity_used',
       ),
@@ -215,4 +292,75 @@ function registration_views_views_data_alter(&$data) {
       ),
     );
   }
+}
+
+
+/**
+ * A Views' field handler for editing the registration state.
+ */
+class RegistrationViewsHandlerStateEdit extends views_handler_field {
+
+  function construct() {
+    parent::construct();
+    $this->additional_fields['registration_id'] = 'registration_id';
+    $this->additional_fields['state'] = 'state';
+  }
+
+  function query() {
+    $this->ensure_my_table();
+    $this->add_additional_fields();
+  }
+
+  /**
+   * Render the field contents.
+   */
+  function render($values) {
+    // Render a Views form item placeholder.
+    return '<!--form-item-' . $this->options['id'] . '--' . $this->view->row_index . '-->';
+  }
+
+  /**
+   * Add to and alter the form.
+   */
+  function views_form(&$form, &$form_state) {
+    // Create a container for our replacements
+    $form[$this->options['id']] = array(
+      '#type' => 'container',
+      '#tree' => TRUE,
+    );
+    // Iterate over the result and add our replacement fields to the form.
+    foreach ($this->view->result as $row_index => $row) {
+      // Add a text field to the form.  This array convention
+      // corresponds to the placeholder HTML comment syntax.
+      $form[$this->options['id']][$row_index] = array(
+        '#type' => 'select',
+        '#default_value' => $row->{$this->aliases['state']},
+        '#options' => registration_get_states_options(),
+        '#required' => TRUE,
+      );
+    }
+  }
+
+  /**
+   * Form submit method.
+   */
+  function views_form_submit($form, &$form_state) {
+    // Determine which nodes we need to update.
+    $updates = array();
+    foreach ($this->view->result as $row_index => $row) {
+      $value = $form_state['values'][$this->options['id']][$row_index];
+      if ($row->{$this->aliases['state']} != $value) {
+        $updates[$row->{$this->aliases['registration_id']}] = $value;
+      }
+    }
+
+    $registrations = registration_load_multiple(array_keys($updates));
+    foreach ($registrations as $registration_id => $registration) {
+      $registration->state = $updates[$registration_id];
+      registration_save($registration);
+    }
+
+    drupal_set_message(t('Updated @num registration states.', array('@num' => count($updates))));
+  }
+
 }

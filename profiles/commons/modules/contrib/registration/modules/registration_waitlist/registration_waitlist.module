@@ -17,7 +17,7 @@ function registration_waitlist_registration_entity_settings($settings) {
       '#type' => 'checkbox',
       '#title' => t('Enable wait list'),
       '#description' => t('When wait list is enabled, registrations made after capacity has been reached will be set to the wait list state.'),
-      '#default_value' => isset($settings['settings']['registration_waitlist_enable']) ? $settings['settings']['registration_waitlist_enable'] : array()
+      '#default_value' => isset($settings['settings']['registration_waitlist_enable']) ? $settings['settings']['registration_waitlist_enable'] : 0,
     ),
     'registration_waitlist_capacity' => array(
       '#type' => 'textfield',
@@ -70,7 +70,7 @@ function registration_waitlist_registration_status_alter(&$status, &$context) {
     $capacity_error = FALSE;
     if (count($context['errors']) == 1) {
       $error = reset($context['errors']);
-      $capacity_error = ($error == t('insufficient slots remaining')) ? TRUE : FALSE;
+      $capacity_error = ($error == t('insufficient spaces remaining')) ? TRUE : FALSE;
     }
 
     // Capacity error, return true if the wait list is enabled.
@@ -125,7 +125,7 @@ function registration_waitlist_is_active($entity_type, $entity_id, &$errors = ar
     && isset($settings['settings']['registration_waitlist_enable'])
     && $settings['settings']['registration_waitlist_enable']) {
 
-    if (in_array(t('insufficient slots remaining'), $errors)) {
+    if (in_array(t('insufficient spaces remaining'), $errors)) {
       $active = TRUE;
     }
 

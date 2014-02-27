@@ -64,6 +64,35 @@ function hook_message_view_alter(&$build) {
 }
 
 /**
+ * Allow modules to alter access granted to a message entity.
+ * @param $access
+ *  Boolean specifying whether the specifified account has the specified access.
+ * @param context
+ *  Array containing relevant information for determining access to
+ *  the message entity. Keys are op, entity, entity_type, and account.
+ */
+function hook_message_access_alter(&$access, $context) {
+  // We're only interested in the 'view' operation.
+  if ($context['op'] != 'view') {
+    return;
+  }
+
+  $message = $context['entity'];
+  // Verify view access to nodes referenced in the message.
+  if (isset($message->field_target_nodes)) {
+    foreach ($message->field_target_nodes[LANGUAGE_NONE] as $key => $value) {
+      $node = node_load($value['target_id']);
+      if (!node_access('view', $node, $context['account'])) {
+        // If the user cannot view any nodes in the message,
+        // deny access to the entire message;
+        $access = FALSE;
+        return;
+      }
+    }
+  }
+}
+
+/**
  * Define default message type configurations.
  *
  * @return

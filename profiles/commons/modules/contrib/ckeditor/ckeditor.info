@@ -4,9 +4,10 @@ core        = 7.x
 package     = User interface
 configure   = admin/config/content/ckeditor
 
-; Information added by drupal.org packaging script on 2013-04-12
-version = "7.x-1.13"
+
+; Information added by drush on 2014-02-12
+version = "7.x-1.13+11-dev"
 core = "7.x"
 project = "ckeditor"
-datestamp = "1365759619"
+datestamp = "1392234303"
 

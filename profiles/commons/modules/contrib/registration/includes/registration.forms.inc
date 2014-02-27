@@ -22,21 +22,22 @@ function registration_form($form, &$form_state, Registration $registration) {
 
   $who_options = registration_access_people($registration);
 
-  // default value for who is registering
+  // Default value for who is registering.
   $who_default = NULL;
   if (isset($registration->registration_id)) {
     $who_default = $registration->registrant_type($GLOBALS['user']);
   }
   elseif (count($who_options) == 1) {
-    $who_default = reset(array_keys($who_options));
+    $keys = array_keys($who_options);
+    $who_default = reset($keys);
   }
 
-  // show a message if there's only one option as we're going to hide the form
+  // Show a message if there's only one option as we're going to hide the form.
   if (count($who_options) == 1 && !user_is_anonymous()) {
     $form['who_message'] = array(
       '#markup' => '<div class="registration-who-msg">' .
-        t('You are registering: %who', array('%who' => current($who_options))) .
-        '</div>',
+      t('You are registering: %who', array('%who' => current($who_options))) .
+      '</div>',
     );
   }
 
@@ -46,7 +47,7 @@ function registration_form($form, &$form_state, Registration $registration) {
     '#options' => $who_options,
     '#default_value' => $who_default,
     '#required' => TRUE,
-    '#access' => (count($who_options) > 1)
+    '#access' => (count($who_options) > 1),
   );
 
   $form['user'] = array(
@@ -61,8 +62,8 @@ function registration_form($form, &$form_state, Registration $registration) {
     '#states' => array(
       'visible' => array(
         ':input[name="who_is_registering"]' => array('value' => REGISTRATION_REGISTRANT_TYPE_USER),
-      )
-    )
+      ),
+    ),
   );
 
   $form['anon_mail'] = array(
@@ -76,27 +77,42 @@ function registration_form($form, &$form_state, Registration $registration) {
     '#states' => array(
       'visible' => array(
         ':input[name="who_is_registering"]' => array('value' => REGISTRATION_REGISTRANT_TYPE_ANON),
-      )
-    )
+      ),
+    ),
   );
 
   $settings = registration_entity_settings($registration->entity_type, $registration->entity_id);
   $capacity = $settings['capacity'];
-  $remaining = 0;
-  $description = '';
-  if ($capacity) {
-    $remaining = $capacity - registration_event_count($registration->entity_type, $registration->entity_id);
-    $description = t('The number of slots you wish to reserve. @slots_remaining slots remaining.', array('@slots_remaining' => $remaining));
+  $limit = isset($settings['settings']['maximum_spaces']) ? $settings['settings']['maximum_spaces'] : 1;
+  // Just in case it was unset:
+  $settings['settings']['maximum_spaces'] = $limit;
+  $remaining = $capacity - registration_event_count($registration->entity_type, $registration->entity_id);
+  if ($capacity && $limit) {
+    $description = t('The number of spaces you wish to reserve. @spaces_remaining spaces remaining. You may register up to @max spaces.',
+      array(
+        '@spaces_remaining' => $remaining,
+        '@max' => min($limit, $remaining),
+      )
+    );
+  }
+  elseif ($capacity) {
+    $description = t('The number of spaces you wish to reserve. @spaces_remaining spaces remaining.', array('@spaces_remaining' => $remaining));
+  }
+  elseif ($limit) {
+    $description = t('The number of spaces you wish to reserve. You may register up to @max spaces.', array('@max' => $limit));
+  }
+  else {
+    $description = t('The number of spaces you wish to reserve.');
   }
 
   $form['count'] = array(
     '#type' => 'textfield',
-    '#title' => t('Slots'),
+    '#title' => t('Spaces'),
     '#description' => $description,
     '#default_value' => isset($registration->count) ? $registration->count : 1,
     '#size' => drupal_strlen($remaining),
-    '#access' => isset($settings['settings']['multiple_registrations']) ? $settings['settings']['multiple_registrations'] : FALSE,
-    '#element_validate' => array('element_validate_integer_positive')
+    '#access' => (isset($settings['settings']['maximum_spaces']) && $settings['settings']['maximum_spaces'] == 1) ? FALSE : TRUE,
+    '#element_validate' => array('element_validate_integer_positive', '_registration_validate_space_request'),
   );
 
   $default_state = registration_get_default_state();
@@ -108,7 +124,7 @@ function registration_form($form, &$form_state, Registration $registration) {
     '#description' => t('State of this registration'),
     '#default_value' => ($state ? $state->identifier() : $default_state->identifier()),
     '#options' => $states,
-    '#access' => !empty($states) && user_access('edit ' . $registration->type . ' registration state')
+    '#access' => !empty($states) && user_access('edit ' . $registration->type . ' registration state'),
   );
 
   field_attach_form('registration', $registration, $form, $form_state);
@@ -119,17 +135,17 @@ function registration_form($form, &$form_state, Registration $registration) {
     '#value' => t('Save Registration'),
   );
 
-  // add a delete button for existing registration
+  // Add a delete button for existing registration:
   if (isset($registration->registration_id) && entity_access('delete', 'registration', $registration)) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
       '#submit' => array('registration_form_delete_submit'),
-      "#limit_validation_errors" => array()
+      "#limit_validation_errors" => array(),
     );
   }
 
-  if ($host) {
+  if ($host && entity_access('view', $registration->entity_type, $host)) {
     $uri = entity_uri($registration->entity_type, $host);
     $form['actions']['cancel'] = array(
       '#type' => 'link',
@@ -137,6 +153,7 @@ function registration_form($form, &$form_state, Registration $registration) {
       '#href' => $uri['path'],
     );
   }
+  $form['#registration_settings'] = $settings;
 
   return $form;
 }
@@ -154,7 +171,7 @@ function registration_form_validate($form, &$form_state) {
 
   // Test status on new registrations.
   if (isset($registration->is_new) && $registration->is_new) {
-    $registration_status = registration_status($registration->entity_type, $registration->entity_id, FALSE, $count, $registration->registration_id, $errors);
+    $registration_status = registration_status($registration->entity_type, $registration->entity_id, TRUE, $count, $registration->registration_id, $errors);
 
     if (!$registration_status) {
       form_set_error('', t('Sorry, unable to register for %label due to: %errors.',
@@ -163,13 +180,16 @@ function registration_form_validate($form, &$form_state) {
     }
   }
   // Only check capacity for existing registrations that are active.
-  else if (in_array($registration->state, registration_get_active_states())) {
+  elseif (in_array($registration->state, registration_get_active_states())) {
     $has_room = registration_has_room($registration->entity_type, $registration->entity_id, $count, $registration->registration_id);
     if (!$has_room) {
-      form_set_error('', t('Sorry, unable to register for %label due to: insufficient slots remaining.',
+      form_set_error('', t('Sorry, unable to register for %label due to: insufficient spaces remaining.',
         array('%label' => $label)));
     }
   }
+
+  $settings = registration_entity_settings($registration->entity_type, $registration->entity_id);
+  $allow_multiple = !empty($settings['settings']['multiple_registrations']) && $settings['settings']['multiple_registrations'];
 
   // Validate according to who's registering.
   switch ($form_state['values']['who_is_registering']) {
@@ -177,21 +197,21 @@ function registration_form_validate($form, &$form_state) {
       if (!valid_email_address($form_state['values']['anon_mail'])) {
         form_set_error('anon_mail', t('The email address is invalid.'));
       }
-      if (registration_is_registered($registration, $form_state['values']['anon_mail'])) {
+      if (!$allow_multiple && registration_is_registered($registration, $form_state['values']['anon_mail'])) {
         form_set_error('anon_mail', t('%mail is already registered for this event.',
           array('%mail' => $form_state['values']['anon_mail'])));
       }
       break;
     case REGISTRATION_REGISTRANT_TYPE_ME:
       global $user;
-      if (registration_is_registered($registration, NULL, $user->uid)) {
+      if (!$allow_multiple && registration_is_registered($registration, NULL, $user->uid)) {
         form_set_error('user', t('You are already registered for this event.'));
       }
       break;
     case REGISTRATION_REGISTRANT_TYPE_USER:
       $user = user_load_by_name($form_state['values']['user']);
       if ($user) {
-        if (registration_is_registered($registration, NULL, $user->uid)) {
+        if (!$allow_multiple && registration_is_registered($registration, NULL, $user->uid)) {
           form_set_error('user', t('%user is already registered for this event.', array('%user' => $user->name)));
         }
       }
@@ -217,9 +237,8 @@ function registration_form_submit($form, &$form_state) {
   }
   $registration->count = $form_state['values']['count'];
 
-  if (user_access('edit ' . $registration->type . ' registration state')) {
-    $registration->state = (!empty($form_state['values']['state']))
-      ? $form_state['values']['state'] : NULL;
+  if (!empty($form_state['values']['state'])) {
+    $registration->state = $form_state['values']['state'];
   }
 
   switch ($form_state['values']['who_is_registering']) {
@@ -242,7 +261,10 @@ function registration_form_submit($form, &$form_state) {
 
   // Save the registration and redirect.
   if (registration_save($registration)) {
-    drupal_set_message(t('Registration has been saved.'));
+    $reg_config = registration_entity_settings($registration->entity_type, $registration->entity_id);
+    if (!empty($reg_config['settings']['confirmation']) && strlen($reg_config['settings']['confirmation'])) {
+      drupal_set_message(t($reg_config['settings']['confirmation']));
+    }
     $wrapper = entity_metadata_wrapper('registration', $registration);
     $host = $wrapper->entity->value();
 
@@ -365,8 +387,8 @@ function registration_registrations_broadcast_form($form, &$form_state, $entity_
     $form['token_tree'] = array(
       '#theme' => 'token_tree',
       '#token_types' => array(
-        'node',
-        'registration'
+        $entity_type,
+        'registration',
       ),
       '#global_types' => FALSE,
     );
@@ -426,13 +448,17 @@ function registration_registrations_broadcast_form_submit($form, &$form_state) {
  */
 function registration_entity_settings_form($form, &$form_state, $settings, $entity_type = NULL, $entity_id = NULL) {
   if ($entity_id) {
-    // we'll need this info when we submit the form
+    // We'll need this info when we submit the form:
     $form_state['entity'] = array(
       'entity_id' => $entity_id,
       'entity_type' => $entity_type
     );
   }
-
+  // Check to see if date_popup is installed so we can provide a friendlier UI.
+  $date_popup_installed = FALSE;
+  if (module_exists('date_popup')) {
+    $date_popup_installed = TRUE;
+  }
   $form['status'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable'),
@@ -463,11 +489,18 @@ function registration_entity_settings_form($form, &$form_state, $settings, $enti
     '#maxlength' => 25,
     '#description' => t('When to automatically open registrations. Format: %time. The date format is YYYY-MM-DD and %timezone is the time zone offset from UTC. Leave blank to disable.', array(
         '%time' => !empty($settings['open']) ? date_format(date_create($settings['open']), 'Y-m-d H:i:s O') : format_date(time(), 'custom', 'Y-m-d H:i:s O'),
-        '%timezone' => !empty($settings['open']) ? date_format(date_create($settings['open']), 'O') : format_date(time(), 'custom', 'O')
+        '%timezone' => !empty($settings['open']) ? date_format(date_create($settings['open']), 'O') : format_date(time(), 'custom', 'O'),
       )
     ),
     '#default_value' => !empty($settings['open']) ? $settings['open'] : '',
   );
+  if ($date_popup_installed) {
+    $form['scheduling']['open']['#type'] = 'date_popup';
+    $form['scheduling']['open']['#format'] = 'Y-m-d H:i:s O';
+    $form['scheduling']['open']['#description'] = t('When to automatically open registrations. (This uses the !timezone.)', array(
+      '!timezone' => l(t('site default time zone'), 'admin/config/regional/settings')));
+    unset($form['scheduling']['open']['#maxlength']);
+  }
 
   $form['scheduling']['close'] = array(
     '#type' => 'textfield',
@@ -475,19 +508,25 @@ function registration_entity_settings_form($form, &$form_state, $settings, $enti
     '#maxlength' => 25,
     '#description' => t('When to automatically close registrations. Format: %time. The date format is YYYY-MM-DD and %timezone is the time zone offset from UTC. Leave blank to disable.', array(
         '%time' => !empty($settings['close']) ? date_format(date_create($settings['close']), 'Y-m-d H:i:s O') : format_date(time(), 'custom', 'Y-m-d H:i:s O'),
-        '%timezone' => !empty($settings['close']) ? date_format(date_create($settings['close']), 'O') : format_date(time(), 'custom', 'O')
+        '%timezone' => !empty($settings['close']) ? date_format(date_create($settings['close']), 'O') : format_date(time(), 'custom', 'O'),
       )
     ),
     '#default_value' => !empty($settings['close']) ? $settings['close'] : '',
   );
-
+  if ($date_popup_installed) {
+    $form['scheduling']['close']['#type'] = 'date_popup';
+    $form['scheduling']['close']['#format'] = 'Y-m-d H:i:s O';
+    $form['scheduling']['close']['#description'] = t('When to automatically close registrations.. (This uses the !timezone.)', array(
+      '!timezone' => l(t('site default time zone'), 'admin/config/regional/settings')));
+    unset($form['scheduling']['close']['#maxlength']);
+  }
 
   $form['reminder'] = array(
     '#type' => 'fieldset',
     '#title' => t('Reminder'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    '#tree' => TRUE
+    '#tree' => TRUE,
   );
 
   $form['reminder']['send_reminder'] = array(
@@ -505,7 +544,7 @@ function registration_entity_settings_form($form, &$form_state, $settings, $enti
       'visible' => array(
         ':input[name="send_reminder"]' => array('checked' => TRUE),
       ),
-    )
+    ),
   );
 
   $form['reminder']['reminder_settings']['reminder_date'] = array(
@@ -514,11 +553,18 @@ function registration_entity_settings_form($form, &$form_state, $settings, $enti
     '#maxlength' => 25,
     '#description' => t('When to send reminders. Format: %time. The date format is YYYY-MM-DD and %timezone is the time zone offset from UTC.', array(
         '%time' => !empty($settings['open']) ? date_format(date_create($settings['reminder_date']), 'Y-m-d H:i:s O') : format_date(time(), 'custom', 'Y-m-d H:i:s O'),
-        '%timezone' => !empty($settings['open']) ? date_format(date_create($settings['reminder_date']), 'O') : format_date(time(), 'custom', 'O')
+        '%timezone' => !empty($settings['open']) ? date_format(date_create($settings['reminder_date']), 'O') : format_date(time(), 'custom', 'O'),
       )
     ),
     '#default_value' => !empty($settings['reminder_date']) ? $settings['reminder_date'] : '',
   );
+  if ($date_popup_installed) {
+    $form['reminder']['reminder_settings']['reminder_date']['#type'] = 'date_popup';
+    $form['reminder']['reminder_settings']['reminder_date']['#format'] = 'Y-m-d H:i:s O';
+    $form['reminder']['reminder_settings']['reminder_date']['#description'] = t('When to send reminders. (This uses the !timezone.)', array(
+      '!timezone' => l(t('site default time zone'), 'admin/config/regional/settings')));
+    unset($form['reminder']['reminder_settings']['reminder_date']['#maxlength']);
+  }
 
   $form['reminder']['reminder_settings']['reminder_template'] = array(
     '#type' => 'textarea',
@@ -527,13 +573,13 @@ function registration_entity_settings_form($form, &$form_state, $settings, $enti
     '#description' => t('The reminder message sent to registrants. Tokens are supported if the module is enabled, E.g., [node:title].'),
   );
 
-  // add token support
+  // Add token support:
   if (module_exists('token')) {
     $form['reminder']['reminder_settings']['token_tree'] = array(
       '#theme' => 'token_tree',
       '#token_types' => array(
-        'node',
-        'registration'
+        $entity_type,
+        'registration',
       ),
       '#global_types' => FALSE,
     );
@@ -544,13 +590,23 @@ function registration_entity_settings_form($form, &$form_state, $settings, $enti
     '#title' => t('Additional Settings'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    '#tree' => TRUE
+    '#tree' => TRUE,
+  );
+
+  $form['settings']['maximum_spaces'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Spaces allowed'),
+    '#size' => 5,
+    '#maxlength' => 10,
+    '#required' => TRUE,
+    '#description' => t('The maximum number of spaces allowed for each registrations. For no limit, use 0. (Default is 1)'),
+    '#default_value' => isset($settings['settings']['maximum_spaces']) ? $settings['settings']['maximum_spaces'] : 1,
   );
 
   $form['settings']['multiple_registrations'] = array(
     '#type' => 'checkbox',
     '#title' => t('Allow multiple registrations'),
-    '#description' => t('If selected, users can register for more than one slot for this event.'),
+    '#description' => t('If selected, each person can create multiple registrations for this event.'),
     '#default_value' => isset($settings['settings']['multiple_registrations']) ? $settings['settings']['multiple_registrations'] : -1,
   );
 
@@ -562,10 +618,20 @@ function registration_entity_settings_form($form, &$form_state, $settings, $enti
     '#default_value' => isset($settings['settings']['from_address']) ? $settings['settings']['from_address'] : variable_get('site_mail', ini_get('sendmail_from')),
   );
 
-  // allow other modules to add their own custom settings
+  $form['settings']['confirmation'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Confirmation Message'),
+    '#description' => t('The message to display when someone registers. Leave blank for none.'),
+    '#size' => 60,
+    '#maxlength' => 120,
+    '#required' => FALSE,
+    '#default_value' =>  isset($settings['settings']['confirmation']) ? $settings['settings']['confirmation'] : 'Registration has been saved.',
+  );
+
+  // Allow other modules to add their own custom settings:
   $form['settings'] += module_invoke_all('registration_entity_settings', $settings);
 
-  // only show save if we're not on the field instance defaults
+  // Only show save if we're not on the field instance defaults:
   if ($entity_id) {
     $form['save'] = array(
       '#type' => 'submit',
@@ -583,23 +649,29 @@ function registration_entity_settings_form($form, &$form_state, $settings, $enti
  * @param array $form_state
  */
 function registration_entity_settings_form_validate($form, &$form_state) {
-  // ensure capacity is a positive integer
+  // Ensure capacity is a non-negative integer.
   $capacity = $form_state['values']['capacity'];
   if (!is_numeric($capacity) || ((int) $capacity != $capacity) || ($capacity < 0)) {
-    form_set_error('capacity', t('Capacity must be a positive integer.'));
+    form_set_error('capacity', t('"Capacity" must be a positive integer or 0 for unlimited.'));
   }
 
-  // validate from address
+  // Ensure slot limit is a non-negative integer.
+  $slot_limit = $form_state['values']['settings']['maximum_spaces'];
+  if (!is_numeric($slot_limit) || ((int) $slot_limit != $slot_limit) || ($slot_limit < 0)) {
+    form_set_error('maximum_spaces', t('"Spaces allowed" must be a positive integer or 0 for unlimited.'));
+  }
+
+  // Validate from address:
   if (!valid_email_address($form_state['values']['settings']['from_address'])) {
     form_set_error('settings][from_address', t('From email address is invalid.'));
   }
 
-  // Validate open date
+  // Validate open date:
   if (!empty($form_state['values']['scheduling']['open']) && strtotime($form_state['values']['scheduling']['open']) === FALSE) {
     form_set_error('scheduling][open', t('Date is invalid.'));
   }
 
-  // Validate close date
+  // Validate close date:
   if (!empty($form_state['values']['scheduling']['close']) && strtotime($form_state['values']['scheduling']['close']) === FALSE) {
     form_set_error('scheduling][close', t('Date is invalid.'));
   }
@@ -910,4 +982,15 @@ function theme_registration_state_overview_form($variables) {
 
   $output .= drupal_render_children($form);
   return $output;
+}
+
+/**
+ * Validation helper function to confirm the spaces requested are within limits.
+ */
+function _registration_validate_space_request($element, &$form_state, $form) {
+  if (isset($form_state['input']['count']) &&
+      $form['#registration_settings']['settings']['maximum_spaces'] &&
+      $form_state['input']['count'] > $form['#registration_settings']['settings']['maximum_spaces']) {
+    form_error($element, t('You may not register for more than @count spaces.', array('@count' => $form['#registration_settings']['settings']['maximum_spaces'])));
+  };
 }

@@ -60,7 +60,8 @@
       });
 
       // Reselect types and terms in advanced search
-      var edit_keys = $('#edit-keys').val();
+      var edit_keys = encodeURIComponent($('#edit-keys').val());
+
       if(edit_keys) {
         // types
         var pos = edit_keys.indexOf('type:');

@@ -216,6 +216,7 @@ function ckeditor_filter_xss() {
       preg_match_all("|</?([a-z][a-z0-9]*)(?:\b[^>]*)>|i", $text, $matches);
       if ($matches[1]) {
         $tags = array_unique(array_merge($matches[1], array('!--')));
+        $tags = array_map('strtolower', $tags);
         $text = filter_xss($text, $tags);
       }
       continue;

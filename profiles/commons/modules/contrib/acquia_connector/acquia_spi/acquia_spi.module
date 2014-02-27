@@ -5,14 +5,24 @@
  *   Send site profile information (NSPI) and system data to Acquia Network.
  */
 
-define('ACQUIA_SPI_DATA_VERSION', '2.0');
+// Version of SPI data format.
+define('ACQUIA_SPI_DATA_VERSION', 2.1);
+
+/**
+ * Identifiers for the method of sending SPI data.
+ */
+define('ACQUIA_SPI_METHOD_CALLBACK', 'menu');
+define('ACQUIA_SPI_METHOD_CRON', 'cron');
+define('ACQUIA_SPI_METHOD_DRUSH', 'drush');
+define('ACQUIA_SPI_METHOD_CREDS', 'creds');
+define('ACQUIA_SPI_METHOD_INSIGHT', 'insight');
 
 /**
  * Implementation of hook_help()
  */
 function acquia_spi_help($path, $arg) {
   $welcome_nid = variable_get('acquia_welcome', 0);
-  if ($path == 'admin/help#acquia_nspi' && $welcome_nid) {
+  if ($path == 'admin/help#acquia_spi' && $welcome_nid) {
     // Only provide help text if the welcome message is avalailable.
     if ($nid = db_query('SELECT nid FROM {node} where nid = :nid', array(':nid' => $welcome_nid))->fetchField()) {
       $txt = 'The !acquia_welcome provides information about how to '
@@ -30,11 +40,9 @@ function acquia_spi_help($path, $arg) {
 function acquia_spi_cron() {
   // Get the last time we processed data.
   $last = variable_get('acquia_spi_cron_last', 0);
-
   // 30 minute interval for sending site profile.
   $interval = variable_get('acquia_spi_cron_interval', 30);
-
-  // Allow an override. 
+  // Allow an override.
   if (variable_get('acquia_spi_cron_interval_override', FALSE)) {
     $interval = variable_get('acquia_spi_cron_interval_override', 30);
   }
@@ -42,7 +50,7 @@ function acquia_spi_cron() {
   // Determine if the required interval has passed.
   $now = REQUEST_TIME;
   if (variable_get('acquia_spi_use_cron', 1) && $now - $last > ($interval * 60)) {
-    $ret = acquia_spi_send_profile_info();
+    $ret = acquia_spi_send_full_spi(ACQUIA_SPI_METHOD_CRON);
   }
 }
 
@@ -55,6 +63,13 @@ function acquia_spi_menu() {
     'description' => 'Send SPI data to Acquia Network.',
     'page callback' => '_acquia_spi_send',
     'access callback' => '_acquia_spi_send_access',
+  );
+  $items['system/acquia-spi-custom-test-validate'] = array(
+    'title'           => 'Acquia SPI Custom Test Validation',
+    'description'     => 'Perform a validation check on all Acquia SPI custom tests.',
+    'page callback'   => 'acquia_spi_test_status',
+    'page arguments'  => array(TRUE),
+    'access arguments' => array('access site reports'),
   );
 
   return $items;
@@ -76,9 +91,43 @@ function acquia_spi_boot() {
   // Determine if the required interval has passed.
   $now = REQUEST_TIME;
   if ((($now - $last) > ($interval * 60))) {
-    cache_set('acquia_spi_server', $_SERVER);
+    $platform = acquia_spi_get_platform();
+    acquia_spi_data_store_set(array('platform' => $platform));
     variable_set('acquia_spi_boot_last', $now);
   }
+}
+
+/**
+ * Put SPI data in local storage.
+ *
+ * @param array $data Keyed array of data to store.
+ * @param int $expire Expire time or null to use default of 1 day.
+ */
+function acquia_spi_data_store_set($data, $expire = NULL) {
+  if (is_null($expire)) {
+    $expire = REQUEST_TIME + (60*60*24);
+  }
+  foreach ($data as $key => $value) {
+    cache_set('acquia.spi.' . $key, $value, 'cache', $expire);
+  }
+}
+
+/**
+ * Get SPI data out of local storage.
+ *
+ * @param array Array of keys to extract data for.
+ *
+ * @return array Stored data or false if no data is retrievable from storage.
+ */
+function acquia_spi_data_store_get($keys) {
+  $store = array();
+  foreach ($keys as $key) {
+    $cache = cache_get('acquia.spi.' . $key, 'cache');
+    if ($cache && !empty($cache->data)) {
+      $store[$key] = $cache->data;
+    }
+  }
+  return $store;
 }
 
 /**
@@ -88,7 +137,7 @@ function _acquia_spi_send_access() {
   $acquia_key = acquia_agent_settings('acquia_key');
   if (!empty($acquia_key) && isset($_GET['key'])) {
     $key = sha1(drupal_get_private_key());
-    if ($key == $_GET['key']) {
+    if ($key === $_GET['key']) {
       return TRUE;
     }
   }
@@ -99,21 +148,35 @@ function _acquia_spi_send_access() {
  * Callback for sending SPI data.
  */
 function _acquia_spi_send() {
-  $ret = acquia_spi_send_profile_info();
+  $method = ACQUIA_SPI_METHOD_CALLBACK;
+  // Insight's set variable feature will pass method insight.
+  if (isset($_GET['method']) && $_GET['method'] === ACQUIA_SPI_METHOD_INSIGHT) {
+    $method = ACQUIA_SPI_METHOD_INSIGHT;
+  }
+
+  $response = acquia_spi_send_full_spi($method);
 
   if (isset($_GET['destination'])) {
-    if ($ret) {
-      drupal_set_message(t('SPI data sent.'));
+    if (!empty($response)) {
+      $message = array();
+      if (isset($response['spi_data_received']) && $response['spi_data_received'] === TRUE) {
+        $message[] = t('SPI data sent.');
+      }
+      if (!empty($response['nspi_messages'])) {
+        $message[] = t('Acquia Network returned the following messages. Further information may be in the logs.');
+        foreach ($response['nspi_messages'] as $nspi_message) {
+          $message[] = check_plain($nspi_message);
+        }
+      }
+      drupal_set_message(implode('<br/>', $message));
     }
     else {
-      drupal_set_message(t('There was an error sending SPI data. Check the logs for error messages or contact Acquia Support.'), 'error');
+      drupal_set_message(t('Error sending SPI data. Consult the logs for more information.'), 'error');
     }
     drupal_goto();
   }
   // If destination was not sent the call is via cron so close request and exit.
-  module_invoke_all('exit');
-  print '';
-  exit;
+  drupal_exit();
 }
 
 /**
@@ -163,7 +226,7 @@ function acquia_spi_send_module_data($data = array()) {
     if (is_file($file_path) && strpos($file_path, $document_root) === 0 && strpos($file_path, 'settings.php') === FALSE) {
       $file_contents = file_get_contents($file_path);
       header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-      header("Content-Type:text");  
+      header("Content-Type:text");
       header("Cache-Control: no-cache");
       header("Pragma: no-cache");
       return $file_contents;
@@ -182,10 +245,17 @@ function acquia_spi_form_acquia_agent_settings_form_alter(&$form) {
   if (empty($identifier) && empty($key)) {
     return;
   }
+  // Help documentation is local unless the Help module is disabled.
+  if (module_exists('help')) {
+    $help_url = url('admin/help/acquia_agent');
+  }
+  else {
+    $help_url = url('https://docs.acquia.com/network/install');
+  }
 
   $ssl_available = (in_array('ssl', stream_get_transports(), TRUE) && !defined('ACQUIA_DEVELOPMENT_NOSSL'));
-  $form['connection']['#description'] = t('Allow collection and examination of the following items. <a href="!url">Learn more</a>.', array('!url' => url('admin/help/acquia_agent')));
-  
+  $form['connection']['#description'] = t('Allow collection and examination of the following items. <a href="!url">Learn more</a>.', array('!url' => $help_url));
+
   $form['connection']['spi'] = array(
     '#prefix' => '<div class="acquia-spi">',
     '#suffix' => '</div>',
@@ -210,8 +280,14 @@ function acquia_spi_form_acquia_agent_settings_form_alter(&$form) {
     '#type' => 'checkbox',
     '#title' => t('Source code'),
     '#default_value' => (int) variable_get('acquia_spi_module_diff_data', 1) && $ssl_available,
-    '#description' => t('Source code analysis requires a SSL connection and for your site to be publicly accessible. <a href="!url">Learn more.</a>', array('!url' => url('admin/help/acquia_agent'))),
+    '#description' => t('Source code analysis requires a SSL connection and for your site to be publicly accessible. <a href="!url">Learn more</a>.', array('!url' => $help_url)),
     '#disabled' => !$ssl_available,
+  );
+  $form['connection']['alter_variables'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Allow Insight to update list of approved variables.'),
+    '#default_value' => (int) variable_get('acquia_spi_set_variables_override', 0),
+    '#description' => t('Insight can set variables on your site to recommended values at your approval, but only from a specific list of variables. Check this box to allow Insight to update the list of approved variables. <a href="!url">Learn more</a>.', array('!url' => $help_url)),
   );
 
   $use_cron = variable_get('acquia_spi_use_cron', 1);
@@ -248,7 +324,7 @@ function acquia_spi_form_acquia_agent_settings_form_alter(&$form) {
  */
 function acquia_spi_agent_settings_submit($form, &$form_state) {
   // Send information as soon as the key/identifier pair is submitted.
-  acquia_spi_send_profile_info();
+  acquia_spi_send_full_spi(ACQUIA_SPI_METHOD_CREDS);
 }
 
 /*
@@ -260,6 +336,7 @@ function acquia_agent_spi_set_submit($form, &$form_state) {
   variable_set('acquia_spi_send_node_user', $form_state['values']['send_node_user']);
   variable_set('acquia_spi_send_watchdog', $form_state['values']['send_watchdog']);
   variable_set('acquia_spi_use_cron', $form_state['values']['spi_use_cron']);
+  variable_set('acquia_spi_set_variables_override', $form_state['values']['alter_variables']);
 }
 
 /**
@@ -312,7 +389,7 @@ function acquia_spi_update_definition() {
     foreach($new_vars as $new_var_name => $new_var) {
       // Count if received from NSPI optional variable is not present in old local SPI definition
       // or if it already was in old SPI definition, but was not optional
-      if ($new_var['optional'] && !array_key_exists($new_var_name, $old_vars) || 
+      if ($new_var['optional'] && !array_key_exists($new_var_name, $old_vars) ||
           $new_var['optional'] && isset($old_vars[$new_var_name]) && !$old_vars[$new_var_name]['optional']) {
         $new_optional_vars++;
       }
@@ -341,27 +418,82 @@ function acquia_spi_update_definition() {
 }
 
 /**
- * Send site profile information to Acquia Network via XML-RPC.
+ * Gather full SPI data and send to Acquia Network.
+ *
+ * @param string $method Optional identifier for the method initiating request.
+ *   Values could be 'cron' or 'menu callback' or 'drush'.
+ * @return mixed FALSE if data not sent else NSPI result array
  */
-function acquia_spi_send_profile_info() {
-  // Do nothing unless we have credentials.
-  if (acquia_agent_has_credentials()) {
-    // acquia_agent_network_address() sets remote server protocol.
-    $nspi_server = variable_get('acquia_spi_server', 'https://nspi.acquia.com');
-    $spi = acquia_spi_get();
-    // Specify version 3 of the RPC, which ommits request parameters in the HMAC.
-    // @todo move to version 4, JSON over XML-RPC.
-    $spi['rpc_version'] = 3;
-    $result = acquia_agent_call('acquia.nspi.update', $spi, NULL, NULL, $nspi_server);
-    // Check result for command to update SPI definition.
-    $update_command = isset($result['result']['update_spi_definition']) ? $result['result']['update_spi_definition'] : FALSE;
-    if ($update_command == TRUE) {
-      acquia_spi_update_definition();
-    }
-
-    variable_set('acquia_spi_cron_last', REQUEST_TIME);
-    return $result['result'];
+function acquia_spi_send_full_spi($method = '') {
+  $spi = acquia_spi_get();
+  if (!empty($method)) {
+    $spi['send_method'] = $method;
   }
+  $result = acquia_spi_send_data($spi);
+  if ($result === FALSE) {
+    return FALSE;
+  }
+  acquia_spi_handle_server_response($result);
+  variable_set('acquia_spi_cron_last', REQUEST_TIME);
+  return $result;
+}
+
+/**
+ * Act on specific elements of SPI update server response.
+ *
+ * @param array $spi_response Array response from acquia_spi_send_data().
+ */
+function acquia_spi_handle_server_response($spi_response) {
+  // Check result for command to update SPI definition.
+  $update = isset($spi_response['update_spi_definition']) ? $spi_response['update_spi_definition'] : FALSE;
+  if ($update === TRUE) {
+    acquia_spi_update_definition();
+  }
+  // Check for set_variables command.
+  $set_variables = isset($spi_response['set_variables']) ? $spi_response['set_variables'] : FALSE;
+  if ($set_variables !== FALSE) {
+    acquia_spi_set_variables($set_variables);
+  }
+  // Log messages.
+  $messages = isset($spi_response['nspi_messages']) ? $spi_response['nspi_messages'] : FALSE;
+  if ($messages !== FALSE) {
+    watchdog('acquia spi', 'SPI update server response messages: @messages', array('@messages' => implode(', ', $messages)));
+  }
+}
+
+/**
+ * Send data to Acquia Network.
+ *
+ * Note, call acquia_spi_send_full_spi() to support SPI response actions.
+ *
+ * @param array $spi SPI data. Required parameters:
+ *   'site_key' A SHA1 hash of the Drupal private key.
+ *   'spi_data_version'
+ *   @see acquia_spi_get().
+ *
+ *   Note, acquia_agent will add authenticator.
+ * @return mixed FALSE if no credentials or validation error else full
+ *   NSPI response array.
+ */
+function acquia_spi_send_data($spi) {
+  // Do nothing unless we have credentials.
+  if (!acquia_agent_has_credentials()) {
+    watchdog('acquia spi', 'Connect your site to a valid subscription on the Acquia Network to send SPI data', array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+  // acquia_agent_network_address() sets remote server protocol.
+  $nspi_server = variable_get('acquia_spi_server', 'https://nspi.acquia.com');
+  // Specify version 3 of the RPC, which ommits request parameters in the HMAC.
+  $spi['rpc_version'] = 3;
+  $response = acquia_agent_call('acquia.nspi.update', $spi, NULL, NULL, $nspi_server);
+  // Validate the server response.
+  if (!acquia_agent_valid_response($response, acquia_agent_settings('acquia_key'))) {
+    // Acquia Agent will have logged error.
+    return FALSE;
+  }
+  // $response contains request authenticator as well as server authenticator
+  // under 'result' element so return just the server response 'body' element.
+  return $response['result']['body'];
 }
 
 /**
@@ -371,7 +503,6 @@ function acquia_spi_send_profile_info() {
  *   An associative array keyed by types of information.
  */
 function acquia_spi_get() {
-
   // Get file hashes and compute serialized version.
   list($hashes, $fileinfo) = acquia_spi_file_hashes();
   $hashes_string = serialize($hashes);
@@ -379,12 +510,18 @@ function acquia_spi_get() {
   // Get the Drupal version
   $drupal_version = acquia_spi_get_version_info();
 
-  // Default values return
+  $stored = acquia_spi_data_store_get(array('platform'));
+  if (!empty($stored['platform'])) {
+    $platform = $stored['platform'];
+  }
+  else {
+    $platform = acquia_spi_get_platform();
+  }
   $spi = array(
     'spi_data_version' => ACQUIA_SPI_DATA_VERSION,
-    'site_key'        => sha1(drupal_get_private_key()),
+    'site_key'       => sha1(drupal_get_private_key()),
     'modules'        => acquia_spi_get_modules(),
-    'platform'       => acquia_spi_get_platform(),
+    'platform'       => $platform,
     'quantum'        => acquia_spi_get_quantum(),
     'system_status'  => acquia_spi_get_system_status(),
     'failed_logins'  => variable_get('acquia_spi_send_watchdog', 1) ? acquia_spi_get_failed_logins() : array(),
@@ -414,9 +551,27 @@ function acquia_spi_get() {
 
   $additional_data = array();
   $security_review_results = acquia_spi_run_security_review();
+
+  // It's worth sending along node access control information even if there are
+  // no modules implementing it - some alerts are simpler if we know we don't
+  // have to worry about node access.
+
+  // Check for node grants modules.
+  $additional_data['node_grants_modules'] = module_implements("node_grants", TRUE);
+
+  // Check for node access modules.
+  $additional_data['node_access_modules'] = module_implements("node_access", TRUE);
+
   if (!empty($security_review_results)) {
     $additional_data['security_review'] = $security_review_results['security_review'];
   }
+
+  // Collect all user-contributed custom tests that pass validation.
+  $custom_tests_results = acquia_spi_test_collect();
+  if (!empty($custom_tests_results)) {
+    $additional_data['custom_tests'] = $custom_tests_results;
+  }
+
   $spi_data = module_invoke_all('acquia_spi_get');
   if (!empty($spi_data)) {
     foreach ($spi_data as $name => $data) {
@@ -425,6 +580,24 @@ function acquia_spi_get() {
       }
     }
   }
+
+  // Database updates required?
+  // Based on code from system.install
+  include_once DRUPAL_ROOT . '/includes/install.inc';
+  drupal_load_updates();
+
+  $additional_data['pending_updates'] = FALSE;
+  foreach (module_list() as $module) {
+    $updates = drupal_get_schema_versions($module);
+    if ($updates !== FALSE) {
+      $default = drupal_get_installed_schema_version($module);
+      if (max($updates) > $default) {
+        $additional_data['pending_updates'] = TRUE;
+        break;
+      }
+    }
+  }
+
   if (!empty($additional_data)) {
     // JSON encode this additional data.
     $spi['additional_data'] = drupal_json_encode($additional_data);
@@ -434,7 +607,6 @@ function acquia_spi_get() {
     return $spi;
   }
   else {
-
     // Values returned only over SSL
     $spi_ssl = array(
       'system_vars'  => acquia_spi_get_variables_data(),
@@ -463,7 +635,7 @@ function acquia_spi_run_security_review() {
   // Collect the checklist.
   $checklist = acquia_spi_security_review_get_checks();
   // Run only specific checks.
-  $to_check = array('input_formats', 'admin_permissions', 'untrusted_php', 'private_files', 'upload_extensions');
+  $to_check = array('views_access', 'temporary_files', 'base_url_set', 'executable_php', 'input_formats', 'admin_permissions', 'untrusted_php', 'private_files', 'upload_extensions');
   foreach ($checklist as $module => $checks) {
     foreach ($checks as $check_name => $args) {
       if (!in_array($check_name, $to_check)) {
@@ -511,14 +683,202 @@ function _acquia_spi_security_review_compatible() {
 }
 
 /**
- * Attempt to determine the version of Drupal being used. 
+ * Collects all user-contributed test results that pass validation.
+ *
+ * @return array $custom_data
+ *  An associative array containing properly formatted user-contributed tests.
+ *
+ */
+function acquia_spi_test_collect() {
+
+  $custom_data = array();
+
+  // Collect all custom data provided by hook_insight_custom_data().
+  $collections = module_invoke_all('acquia_spi_test');
+
+  foreach ($collections as $test_name => $test_params) {
+    $result = acquia_spi_test_validate(array($test_name => $test_params));
+
+    if ($result['result']) {
+      $custom_data[$test_name] = $test_params;
+    }
+  }
+
+  return $custom_data;
+}
+
+/**
+ * Implements hook_enable().
+ *
+ */
+function acquia_spi_test_enable() {
+
+  $modules = module_implements('acquia_spi_test');
+  foreach ($modules as $module) {
+    if (function_exists($module . '_acquia_spi_test')) {
+      drupal_set_message(t("An invokation of hook_acquia_spi_test() has been detected in @module.", array('@module' => $module)));
+      watchdog('acquia agent', "An invokation of hook_acquia_spi_test() has been detected in @module.", array('@module' => $module));
+    }
+  }
+}
+
+/**
+ * Implements hook_modules_enabled().
+ *
+ */
+function acquia_spi_test_modules_enabled($modules) {
+
+  foreach ($modules as $module) {
+    if (function_exists($module . '_acquia_spi_test')) {
+      drupal_set_message(t("A new invokation of hook_acquia_spi_test() has been detected in @module.", array('@module' => $module)));
+      watchdog('acquia spi test', "A new invokation of hook_acquia_spi_test() has been detected in @module.", array('@module' => $module));
+    }
+  }
+}
+
+
+/**
+ * Determines the status of all user-contributed tests and logs any failures to
+ * a tracking table.
+ *
+ * @param boolean $log
+ *  (Optional) If TRUE, log all failures.
+ *
+ * @return array $custom_data
+ *  An associative array containing any tests which failed validation.
+ *
+ */
+function acquia_spi_test_status($log = FALSE) {
+
+  $custom_data = array();
+
+  // Iterate through modules which contain hook_acquia_spi_test().
+  foreach (module_implements('acquia_spi_test') as $module) {
+    $function = $module . '_acquia_spi_test';
+    if (function_exists($function)) {
+      $result = acquia_spi_test_validate($function());
+
+      if (!$result['result']) {
+        $custom_data[$module] = $result;
+
+        foreach ($result['failure'] as $test_name => $test_failures) {
+          foreach ($test_failures as $test_param => $test_value) {
+            $variables = array(
+              '!module' => $module,
+              '@message'     => $test_value['message'],
+              '!param_name'  => $test_param,
+              '!test'   => $test_name,
+              '!value'       => $test_value['value'],
+            );
+
+            // Only log if we're performing a full validation check.
+            if ($log) {
+              drupal_set_message(t("Custom test validation failed for !test in !module and has been logged: @message for parameter '!param_name'; current value '!value'.", $variables), 'error');
+              watchdog('acquia spi test', "<em>Custom test validation failed</em>: @message for parameter '!param_name'; current value '!value'. (<em>Test '!test_name' in module '!module_name'</em>)", $variables, WATCHDOG_WARNING);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // If a full validation check is being performed, go to the status page to
+  // show the results.
+  if ($log) {
+    drupal_goto('admin/reports/status');
+  }
+
+  return $custom_data;
+}
+
+/**
+ * Validates data from custom test callbacks.
+ *
+ * @param array $collection
+ *  An associative array containing a collection of user-contributed tests.
+ *
+ * @return array
+ *  An associative array containing the validation result of the given tests,
+ *  along with any failed parameters.
+ *
+ */
+function acquia_spi_test_validate($collection) {
+
+  $result = TRUE;
+  $check_result_value = array();
+
+  // Load valid categories and severities.
+  $categories = array('performance', 'security', 'best_practices');
+  $severities = array(0, 1, 2, 4, 8, 16, 32, 64, 128);
+
+  foreach ($collection as $machine_name => $tests) {
+    foreach ($tests as $check_name => $check_value) {
+      $fail_value = '';
+      $message    = '';
+
+      $check_name  = strtolower($check_name);
+      $check_value = (is_string($check_value)) ? strtolower($check_value) : $check_value;
+
+      // Validate the data inputs for each check.
+      switch ($check_name) {
+        case 'category':
+          if (!is_string($check_value) || !in_array($check_value, $categories)) {
+            $type       = gettype($check_value);
+            $fail_value = "$check_value ($type)";
+            $message    = 'Value must be a string and one of ' . implode(', ', $categories);
+          }
+          break;
+
+        case 'solved':
+          if (!is_bool($check_value)) {
+            $type       = gettype($check_value);
+            $fail_value = "$check_value ($type)";
+            $message    = 'Value must be a boolean';
+          }
+          break;
+
+        case 'severity':
+          if (!is_int($check_value) || !in_array($check_value, $severities)) {
+            $type       = gettype($check_value);
+            $fail_value = "$check_value ($type)";
+            $message    = 'Value must be an integer and set to one of ' . implode(', ', $severities);
+          }
+          break;
+
+        default:
+          if (!is_string($check_value) || strlen($check_value) > 1024) {
+            $type       = gettype($check_value);
+            $fail_value = "$check_value ($type)";
+            $message    = 'Value must be a string and no more than 1024 characters';
+          }
+          break;
+      }
+
+      if (!empty($fail_value) && !empty($message)) {
+        $check_result_value['failed'][$machine_name][$check_name]['value']   = $fail_value;
+        $check_result_value['failed'][$machine_name][$check_name]['message'] = $message;
+      }
+    }
+  }
+
+  // If there were any failures, the test has failed. Into exile it must go.
+  if (!empty($check_result_value)) {
+    $result = FALSE;
+  }
+
+  return array('result' => $result, 'failure' => (isset($check_result_value['failed'])) ? $check_result_value['failed'] : array());
+}
+
+/**
+ * Attempt to determine the version of Drupal being used.
  * Note, there is better information on this in the common.inc file.
- * 
+ *
  * @return array
  *    An array containing some detail about the version
  */
 function acquia_spi_get_version_info() {
-  $server = acquia_spi_get_server();
+  $store = acquia_spi_data_store_get(array('platform'));
+  $server = (!empty($store) && isset($store['platform'])) ? $store['platform']['php_quantum']['SERVER'] : $_SERVER;
   $ver = array();
 
   $ver['base_version'] = VERSION;
@@ -572,18 +932,38 @@ function acquia_spi_get_version_info() {
  */
 function acquia_spi_check_login() {
   $login_safe = 0;
-  if (module_exists('securepages')) {
 
-    if (drupal_match_path('user/login', variable_get('securepages_pages', ''))) { 
-      $login_safe = 1; 
+  if (module_exists('securepages')) {
+    if (drupal_match_path('user/login', variable_get('securepages_pages', ''))) {
+      $login_safe = 1;
     }
-    if (drupal_match_path('user/login', variable_get('securepages_ignore', ''))) { 
-      $login_safe = 0; 
+    if (drupal_match_path('user/login', variable_get('securepages_ignore', ''))) {
+      $login_safe = 0;
     }
-    if (!variable_get('securepages_secure', FALSE) || !variable_get('securepages_enable', FALSE)) { 
-      $login_safe = 0; 
+    if (!variable_get('securepages_secure', FALSE) || !variable_get('securepages_enable', FALSE)) {
+      $login_safe = 0;
     }
-    
+  }
+  elseif (module_exists('securelogin')) {
+    // All the required forms should be enabled.
+    $required_forms = array(
+      'securelogin_form_user_login',
+      'securelogin_form_user_login_block',
+      'securelogin_form_user_pass',
+      'securelogin_form_user_profile_form',
+      'securelogin_form_user_register_form',
+    );
+    $forms_safe = TRUE;
+    foreach ($required_forms as $form_variable) {
+      if (!variable_get($form_variable, TRUE)) {
+        $forms_safe = FALSE;
+        break;
+      }
+    }
+    // $conf['https'] should be false for expected behavior
+    if ($forms_safe && !variable_get('https', FALSE))  {
+      $login_safe = 1;
+    }
   }
 
   return $login_safe;
@@ -595,13 +975,13 @@ function acquia_spi_check_login() {
  * @param n/a
  *
  * @return boolean
- *   
+ *
  */
 function acquia_spi_get_settings_permissions() {
   $settings_permissions_read_only = TRUE;
   $writes = array('2', '3', '6', '7'); // http://en.wikipedia.org/wiki/File_system_permissions
   $settings_file = './' . conf_path(FALSE, TRUE) . '/settings.php';
-  $permissions = drupal_substr(sprintf('%o', fileperms($settings_file)), -4);  
+  $permissions = drupal_substr(sprintf('%o', fileperms($settings_file)), -4);
 
   foreach ($writes as $bit) {
     if (strpos($permissions, $bit)) {
@@ -622,7 +1002,8 @@ function acquia_spi_get_settings_permissions() {
  *   True if they are removed, false if they aren't
  */
 function acquia_spi_check_files_present() {
-  $server = acquia_spi_get_server();
+  $store = acquia_spi_data_store_get(array('platform'));
+  $server = (!empty($store) && isset($store['platform'])) ? $store['platform']['php_quantum']['SERVER'] : $_SERVER;
   $files_exist = FALSE;
   $url = url(NULL, array('absolute' => TRUE));
   $files_to_remove = array('CHANGELOG.txt', 'COPYRIGHT.txt', 'INSTALL.mysql.txt', 'INSTALL.pgsql.txt', 'INSTALL.txt', 'LICENSE.txt',
@@ -776,7 +1157,7 @@ function acquai_spi_get_404s() {
 function acquia_spi_get_variables_data() {
   global $conf;
   $data = array();
-  $variables = array('acquia_spi_send_node_user', 'acquia_spi_admin_priv', 'acquia_spi_module_diff_data', 'acquia_spi_send_watchdog', 'acquia_spi_use_cron', 'cache_backends', 'cache_default_class', 'cache_inc', 'cron_safe_threshold', 'googleanalytics_cache', 'error_level', 'preprocess_js', 'page_cache_maximum_age', 'block_cache', 'preprocess_css', 'page_compression', 'cache', 'cache_lifetime', 'cron_last', 'clean_url', 'redirect_global_clean', 'theme_zen_settings', 'site_offline', 'site_name', 'user_register', 'user_signatures', 'user_admin_role', 'user_email_verification', 'user_cancel_method', 'filter_fallback_format', 'dblog_row_limit', 'date_default_timezone', 'file_default_scheme', 'install_profile', 'maintenance_mode', 'update_last_check', 'site_default_country');
+  $variables = array('acquia_spi_send_node_user', 'acquia_spi_admin_priv', 'acquia_spi_module_diff_data', 'acquia_spi_send_watchdog', 'acquia_spi_use_cron', 'cache_backends', 'cache_default_class', 'cache_inc', 'cron_safe_threshold', 'googleanalytics_cache', 'error_level', 'preprocess_js', 'page_cache_maximum_age', 'block_cache', 'preprocess_css', 'page_compression', 'cache', 'cache_lifetime', 'cron_last', 'clean_url', 'redirect_global_clean', 'theme_zen_settings', 'site_offline', 'site_name', 'user_register', 'user_signatures', 'user_admin_role', 'user_email_verification', 'user_cancel_method', 'filter_fallback_format', 'dblog_row_limit', 'date_default_timezone', 'file_default_scheme', 'install_profile', 'maintenance_mode', 'update_last_check', 'site_default_country', 'acquia_spi_saved_variables', 'acquia_spi_set_variables_automatic', 'acquia_spi_ignored_set_variables', 'acquia_spi_set_variables_override');
   $spi_def_vars = variable_get('acquia_spi_def_vars', array());
   $waived_spi_def_vars = variable_get('acquia_spi_def_waived_vars', array());
   // Merge hard coded $variables with vars from SPI definition.
@@ -850,7 +1231,7 @@ function acquia_spi_get_failed_logins() {
       ->orderBy('w.timestamp', 'DESC')
       ->range(0, 10)
       ->execute();
-  
+
     foreach ($result as $record) {
       $variables = unserialize($record->variables);
       $last_logins['failed'][$record->timestamp] = check_plain($variables['%user']);
@@ -861,7 +1242,7 @@ function acquia_spi_get_failed_logins() {
 
 /**
  * Determine if the super user has a weak name
- * 
+ *
  * @return boolean
  */
 function acquia_spi_get_super_name() {
@@ -889,7 +1270,7 @@ function acquia_spi_get_admin_count() {
               WHERE u.uid = ur.uid
                 AND ur.rid = p.rid
                 AND u.status = 1
-                AND (p.permission LIKE '%administer permissions%' OR p.permission LIKE '%administer users%')";
+                AND (p.permission = 'administer permissions' OR p.permission = 'administer users')";
   $result = db_query($sql)->fetchObject();
 
   return (isset($result->count) && is_numeric($result->count)) ? $result->count : NULL;
@@ -902,7 +1283,7 @@ function acquia_spi_get_admin_count() {
  *   An associative array keyed by a platform information type.
  */
 function acquia_spi_get_platform() {
-  $server = acquia_spi_get_server();
+  $server = $_SERVER;
   // Database detection depends on the structure starting with the database
   $db_class = 'DatabaseTasks_' . Database::getConnection()->driver();
   $db_tasks = new $db_class();
@@ -910,7 +1291,7 @@ function acquia_spi_get_platform() {
   // version being after the slash.
   preg_match('!^([^/]+)(/.+)?$!', $server['SERVER_SOFTWARE'], $webserver);
 
-  if (stristr($webserver[1], 'Apache') && function_exists('apache_get_version')) {
+  if (isset($webserver[1]) && stristr($webserver[1], 'Apache') && function_exists('apache_get_version')) {
     $webserver[2] = apache_get_version();
     $apache_modules = apache_get_modules();
   }
@@ -949,8 +1330,6 @@ function acquia_spi_get_platform() {
     // php_uname() only accepts one character, so we need to concatenate ourselves.
     'system_version'    => php_uname('r') . ' ' . php_uname('v') . ' ' . php_uname('m') . ' ' . php_uname('n'),
     'mysql'             => (Database::getConnection()->driver() == 'mysql') ? acquia_spi_get_platform_mysql_data() : array(),
-    'server'            => '',
-    'apache'            => '',
   );
 
   // Never send NULL (or FALSE?) - that causes hmac errors.
@@ -972,7 +1351,6 @@ function acquia_spi_get_platform_mysql_data() {
   // Restore the attribute.
   $connection->setAttribute(PDO::ATTR_CASE, $orig);
 
-  // what happens if we run this on mssql or postgres
   $ret = array();
   if (empty($result)) {
     return $ret;
@@ -1125,7 +1503,6 @@ function acquia_spi_get_system_status() {
  *   information on the modules.
  */
 function acquia_spi_get_modules() {
-  
   // Only do a full rebuild of the module cache every 1 at the most
   $last_build = variable_get('acquia_spi_module_rebuild', 0);
   if ($last_build < REQUEST_TIME - 86400) {
@@ -1139,7 +1516,7 @@ function acquia_spi_get_modules() {
       $modules[$file->filename] = $file;
     }
   }
-  
+
   $result = array();
   $keys_to_send = array('name', 'version', 'package', 'core', 'project');
   foreach ($modules as $filename => $file) {
@@ -1158,7 +1535,7 @@ function acquia_spi_get_modules() {
     // Otherwise it is covered by the hash of the distro's modules
     if ($module_path[0]=='sites') {
       $contrib_path = implode('/', $module_path);
-      
+
       // Get a hash for this module's files. If we nest into another module, we'll return
       // and that other module will be covered by it's entry in the system table.
       //
@@ -1174,7 +1551,6 @@ function acquia_spi_get_modules() {
 
     $result[] = $info;
   }
-  
   return $result;
 }
 
@@ -1214,7 +1590,7 @@ function acquia_spi_uid_0_present() {
  *
  * @param $excuded_dirs
  *   Optional array of directory paths to be excluded.
- * 
+ *
  * @return
  *   An associative array keyed by filename of hashes.
  */
@@ -1338,11 +1714,48 @@ function acquia_spi_hash_path($path = '') {
 }
 
 /**
- * Extract the $_SERVER variable from cache.
- * @return
- *   The global server variable from an earlier pageload.
+ * Set variables from NSPI response.
+ *
+ * @param  array $set_variables Variables to be set.
+ * @return NULL
  */
-function acquia_spi_get_server() {
-  $cache = cache_get('acquia_spi_server');
-  return !empty($cache->data) ? $cache->data : $_SERVER;
+function acquia_spi_set_variables($set_variables) {
+  if (empty($set_variables)) {
+    return;
+  }
+  $saved = array();
+  $ignored = variable_get('acquia_spi_ignored_set_variables', array());
+
+  if (!variable_get('acquia_spi_set_variables_override', 0)) {
+    $ignored[] = 'acquia_spi_set_variables_automatic';
+  }
+  // Some variables can never be set.
+  $ignored = array_merge($ignored, array('drupal_private_key', 'site_mail', 'site_name', 'maintenance_mode', 'user_register'));
+  // Variables that can be automatically set.
+  $whitelist = acquia_spi_approved_set_variables();
+  foreach($set_variables as $key => $value) {
+    // Approved variables get set immediately unless ignored.
+    if (in_array($key, $whitelist) && !in_array($key, $ignored)) {
+      $saved[] = $key;
+      variable_set($key, $value);
+    }
+  }
+  if (!empty($saved)) {
+    variable_set('acquia_spi_saved_variables', array('variables' => $saved, 'time' => time()));
+    watchdog('acquia spi', 'Saved variables from the Acquia Network: @variables', array('@variables' => implode(', ', $saved)), WATCHDOG_INFO);
+  }
+  else {
+    watchdog('acquia spi', 'Did not save any variables from the Acquia Network.', array(), WATCHDOG_INFO);
+  }
+}
+
+/**
+ * Variables that can be automatically set by the NSPI set variables command.
+ *
+ * @return array Array of variable names.
+ */
+function acquia_spi_approved_set_variables() {
+  // acquia_spi_set_variables_automatic is in here so that if
+  // acquia_spi_set_variables_override is TRUE then it can be automatically set.
+  return variable_get('acquia_spi_set_variables_automatic', array('acquia_spi_set_variables_automatic', 'error_level', 'preprocess_js', 'page_cache_maximum_age', 'block_cache', 'preprocess_css', 'page_compression', 'cache', 'cache_lifetime', 'image_allow_insecure_derivatives', 'googleanalytics_cache', 'acquia_spi_send_node_user', 'acquia_spi_admin_priv', 'acquia_spi_module_diff_data', 'acquia_spi_send_watchdog', 'acquia_spi_use_cron'));
 }

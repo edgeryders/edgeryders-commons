@@ -389,9 +389,12 @@ class RegistrationStandardTestCase extends RegistrationTestCase {
     $this->setHostEntitySettings(array(
       'status' => 1,
       'capacity' => 2,
+      'settings' => array(
+        'maximum_spaces' => 1,
+      ),
     ));
 
-    // Submit a Registration form
+    // Submit a Registration form.
     $this->drupalGet($this->host_entity_path . '/register');
     $this->assertResponse(200, t('Register page loaded.'), 'Registration');
     $registration_form = array(
@@ -453,7 +456,7 @@ class RegistrationStandardTestCase extends RegistrationTestCase {
     $this->drupalGet('registration/' . $registration_a_id);
     $this->assertResponse(200, t('User with permission can view registration'), 'Registration');
 
-    $this->assertTrue(registration_has_room($this->host_entity_type, $this->host_entity_id), t('Slots available'), 'Registration');
+    $this->assertTrue(registration_has_room($this->host_entity_type, $this->host_entity_id), t('Space available'), 'Registration');
 
     // Create another registration programmatically
     $registration_b = $this->createRegistration(array(

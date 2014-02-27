@@ -110,6 +110,15 @@ Once this module is enabled, enable blocks for facets first at
 Administer > Site configuration > Apache Solr > Enabled filters
 then position them as you like at Administer > Site building > Blocks.
 
+Access Sub-module
+------------
+The included Apache Solr Access module integrates with the node access
+system using node access grants. It does not (and can not) work
+with modules using hook_node_access() to block viewing of nodes because
+it's impossible to apply those dynamic filters to as-yet-unknown search
+results to return the correct number per page.  This same restriction
+applies to any module that does content searching or listing (e.g. Views).
+
 Settings.php
 ------------
 You can override environment settings using the following syntax in your
@@ -128,7 +137,7 @@ behavior:
    when performing LUKE queries (for performance reasons).
 
  - apachesolr_tags_to_index: the list of HTML tags that the module will index
-   (see apachesolr_add_tags_to_document()).
+   (see apachesolr_index_add_tags_to_document()).
 
  - apachesolr_exclude_nodeapi_types: an array of node types each of which is
    an array of one or more module names, such as 'comment'.  Any type listed

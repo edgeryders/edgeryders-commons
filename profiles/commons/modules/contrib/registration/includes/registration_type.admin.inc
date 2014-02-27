@@ -48,7 +48,7 @@ function registration_type_form($form, &$form_state, $registration_type, $op = '
       '#value' => t('Delete registration type'),
       '#weight' => 45,
       '#limit_validation_errors' => array(),
-      '#submit' => array('registration_type_form_submit_delete')
+      '#submit' => array('registration_type_form_submit_delete'),
     );
   }
 

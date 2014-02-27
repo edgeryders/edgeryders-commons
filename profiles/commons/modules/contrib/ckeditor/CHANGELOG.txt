@@ -1,3 +1,10 @@
+7.x-1.x dev
+
+[#2127467] by wwalc: Support Pantheon Live Environment
+[#1971566] by wwalc: Mediaembed throws JS error with ACF enabled 
+[#1950498] by wwalc: Advanced Content Filter introduced in CKEditor 4.1 is now configurable in CKEditor profile.
+[#1971502] by wwalc: Mediaembed plugin should define allowedContent for ACF
+
 2013-04-12
 New stable release 7.x-1.13
 

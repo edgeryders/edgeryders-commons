@@ -47,10 +47,34 @@ function css_injector_help($path, $arg) {
 function css_injector_init() {
   $css_rules = _css_injector_load_rule();
   foreach ($css_rules as $css_rule) {
-    if (_css_injector_evaluate_rule($css_rule)) {
-      $file_uri = _css_injector_rule_uri($css_rule['crid']);
-      drupal_add_css($file_uri, array('type' => 'file', 'group' => CSS_THEME, 'media' => $css_rule['media'], 'preprocess' => $css_rule['preprocess']));
+    if (!isset($css_rule['enabled']) || $css_rule['enabled']) {
+      if (_css_injector_evaluate_rule($css_rule)) {
+        $file_uri = _css_injector_rule_uri($css_rule['crid']);
+        $theme_rules = unserialize($css_rule['rule_themes']);
+        global $theme;
+        if (!is_array($theme_rules) || empty($theme_rules) || in_array($theme, $theme_rules, true)) {
+          switch ($css_rule['media']) {
+            case 'all':
+            case 'screen':
+            case 'print':
+              drupal_add_css($file_uri, array('type' => 'file','group' => CSS_THEME,'media' => $css_rule['media'],'preprocess' => $css_rule['preprocess']));
+              break;
+
+            case 'IE 7':
+            case 'IE 8':
+            case 'IE 9':
+              drupal_add_css($file_uri, array(
+                'group' => CSS_THEME,
+                'browsers' => array('IE' => $css_rule['media'], '!IE' => FALSE),
+                'preprocess' => $css_rule['preprocess'])
+              );
+              break;
+
+          }
+        }
+      }
     }
+
   }
 }
 
