@@ -15,7 +15,7 @@
 function apachesolr_search_init() {
   // Useless without facetapi
   if (!module_exists('facetapi')) {
-    return;
+    return NULL;
   }
 
   // Using a simple query we will figure out if we have to execute this snippet
@@ -25,7 +25,7 @@ function apachesolr_search_init() {
     WHERE name = 'apachesolr_search_show_facets'";
   $count = db_query($query)->fetchField();
   if ($count == 0) {
-    return;
+    return NULL;
   }
 
   // Load the default search page, we only support facets to link to this
@@ -34,7 +34,7 @@ function apachesolr_search_init() {
   $search_page = apachesolr_search_page_load($search_page_id);
   // Do not continue if our search page is not valid
   if (empty($search_page)) {
-    return;
+    return NULL;
   }
 
   $show_facets = apachesolr_environment_variable_get($search_page['env_id'], 'apachesolr_search_show_facets', 0);
@@ -42,8 +42,18 @@ function apachesolr_search_init() {
 
     // Converts current path to lowercase for case insensitive matching.
     $paths = array();
-    $paths[] = drupal_strtolower(drupal_get_path_alias(current_path()));
-    $paths[] = drupal_strtolower(current_path());
+    $path = drupal_strtolower(drupal_get_path_alias(current_path()));
+    // Use the path as the key to keep entries unique.
+    $paths[$path] = $path;
+    $path = drupal_strtolower(current_path());
+    $paths[$path] = $path;
+
+    // Do not continue if the current path is the default search path.
+    foreach ($paths as $path) {
+      if (drupal_match_path($path, $search_page['search_path'] . '*')) {
+        return;
+      }
+    }
 
     $facet_pages = apachesolr_environment_variable_get($search_page['env_id'], 'apachesolr_search_facet_pages', '');
 
@@ -56,13 +66,19 @@ function apachesolr_search_init() {
           try {
             if (!empty($search_page['search_path'])) {
               $solr = apachesolr_get_solr($search_page['env_id']);
+              $conditions = apachesolr_search_conditions_default($search_page);
+
               // Initializes params for empty query.
               $params = array(
                 'spellcheck' => 'false',
-                'fq' => array(),
+                'fq' => isset($conditions['fq']) ? $conditions['fq'] : array(),
                 'rows' => 1,
               );
-              apachesolr_search_run_empty('apachesolr', $params, $search_page['search_path'], $solr);
+              $context['page_id'] = $search_page_id;
+              $context['search_type'] = 'apachesolr_search_show_facets';
+              apachesolr_search_run_empty('apachesolr', $params, $search_page['search_path'], $solr, $context);
+              // Exit the foreach loop if this has run.
+              break;
             }
           }
           catch (Exception $e) {
@@ -236,6 +252,11 @@ function apachesolr_search_load_all_search_types() {
   }
   else {
     $search_types = array(
+      'custom' => array (
+        'name' => t('Custom Field'),
+        'default menu' => '',
+        'title callback' => 'apachesolr_search_get_value_title',
+       ),
       'tid' => array(
         'name' => apachesolr_field_name_map('tid'),
         'default menu' => 'taxonomy/term/%',
@@ -264,63 +285,64 @@ function apachesolr_search_load_all_search_types() {
 }
 
 /**
- * Used as a callback function to generate a title for the taxonomy term
- * depending on the input in the configuration screen
+ * Title callback function to generate a title for the taxonomy term.
+ *
  * @param integer $search_page_id
  * @param integer $value
+ *
  * @return String
  */
 function apachesolr_search_get_taxonomy_term_title($search_page_id = NULL, $value = NULL) {
-   $page_title = 'Search results for %value';
+   $page_title = 'Search results for term';
    if (isset($value) && isset($search_page_id)) {
      $search_page = apachesolr_search_page_load($search_page_id);
      $page_title = str_replace('%value', '!value', $search_page['page_title']);
      $term = taxonomy_term_load($value);
      if (!$term) {
-       return;
+       return NULL;
      }
-     $title = $term->name;
+     $value = $term->name;
    }
-   return t($page_title, array('!value' => $title));
+   return t($page_title, array('!value' => $value));
 }
 
 /**
- * Used as a callback function to generate a title for a user name depending
- * on the input in the configuration screen
+ * Title callback function to generate a title for a user name.
+ *
  * @param integer $search_page_id
  * @param integer $value
+ *
  * @return String
  */
 function apachesolr_search_get_user_title($search_page_id = NULL, $value = NULL) {
-  $page_title = 'Search results for %value';
-  $title = '';
+  $page_title = 'Search results for user';
   if (isset($value) && isset($search_page_id)) {
     $search_page = apachesolr_search_page_load($search_page_id);
     $page_title = str_replace('%value', '!value', $search_page['page_title']);
     $user = user_load($value);
     if (!$user) {
-       return;
+       return NULL;
      }
-    $title = $user->name;
+    $value = $user->name;
   }
-  return t($page_title, array('!value' => $title));
+  return t($page_title, array('!value' => $value));
 }
 
 /**
- * Used as a callback function to generate a title for a node/page depending
- * on the input in the configuration screen
+ * Title callback function to generate a title for a search page.
+ *
  * @param integer $search_page_id
- * @param integer $value
+ * @param string $value
+ *
  * @return String
  */
 function apachesolr_search_get_value_title($search_page_id = NULL, $value = NULL) {
-  $page_title = 'Search results for %value';
+  $page_title = 'Search results';
   if (isset($value)  && isset($search_page_id)) {
     $search_page = apachesolr_search_page_load($search_page_id);
     $page_title = str_replace('%value', '!value', $search_page['page_title']);
-    $title = $value;
   }
-  return t($page_title, array('!value' => $title));
+  return t($page_title, array('!value' => $value));
 }
 
 /**
@@ -417,7 +439,7 @@ function apachesolr_search_block_info() {
   // Add the sort block.
   $blocks['sort'] = array(
     'info' => t('Apache Solr Core: Sorting'),
-    'cache' => DRUPAL_CACHE_PER_PAGE,
+    'cache' => DRUPAL_NO_CACHE,
   );
   return $blocks;
 }
@@ -437,7 +459,7 @@ function apachesolr_search_block_view($delta = '') {
           $response = apachesolr_static_response_cache($query->getSearcher());
         }
         if (empty($response) || ($response->response->numFound < 2)) {
-          return;
+          return NULL;
         }
 
         $sorts = $query->getAvailableSorts();
@@ -491,7 +513,9 @@ function apachesolr_search_block_view($delta = '') {
       $env_id = (!empty($block['mlt_env_id'])) ? $block['mlt_env_id'] : '';
       try {
         $solr = apachesolr_get_solr($env_id);
-        $docs = apachesolr_search_mlt_suggestions($block, apachesolr_document_id($node->nid), $solr);
+        $context['search_type'] = 'apachesolr_search_mlt';
+        $context['block_id'] = $delta;
+        $docs = apachesolr_search_mlt_suggestions($block, apachesolr_document_id($node->nid), $solr, $context);
         if (!empty($docs)) {
           $suggestions['subject'] = check_plain($block['name']);
           $suggestions['content'] = array(
@@ -612,7 +636,7 @@ function apachesolr_search_mlt_block_load($block_id) {
  *
  * @return An array of response documents, or NULL
  */
-function apachesolr_search_mlt_suggestions($settings, $id, $solr = NULL) {
+function apachesolr_search_mlt_suggestions($settings, $id, $solr = NULL, $context = array()) {
 
   try {
     $fields = array(
@@ -633,7 +657,7 @@ function apachesolr_search_mlt_suggestions($settings, $id, $solr = NULL) {
       'rows' => $settings['num_results'],
     );
     // We can optionally specify a Solr object.
-    $query = apachesolr_drupal_query('apachesolr_mlt', $params, '', '', $solr);
+    $query = apachesolr_drupal_query('apachesolr_mlt', $params, '', '', $solr, $context);
 
     foreach ($fields as $form_key => $name) {
       if (!empty($settings[$form_key])) {
@@ -654,7 +678,7 @@ function apachesolr_search_mlt_suggestions($settings, $id, $solr = NULL) {
     // This hook allows modules to modify the query object.
     drupal_alter('apachesolr_query', $query);
     if ($query->abort_search) {
-      return;
+      return NULL;
     }
 
     $response = $query->search();
@@ -860,7 +884,9 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
       if (!$keys && !isset($conditions['f']) && ($empty_search_behavior == 'browse' || $empty_search_behavior == 'blocks')) {
         // Pass empty search behavior as string on to apachesolr_search_search_page()
         // Hardcoded apachesolr name since we rely on this for the facets
-        apachesolr_search_run_empty('apachesolr', $params, $search_page['search_path'], $solr);
+        $context['page_id'] = $search_page['page_id'];
+        $context['search_type'] = 'apachesolr_search_browse';
+        apachesolr_search_run_empty('apachesolr', $params, $search_page['search_path'], $solr, $context);
         $results['apachesolr_search_browse'] = $empty_search_behavior;
 
         if ($empty_search_behavior == 'browse') {
@@ -870,9 +896,15 @@ function apachesolr_search_search_results($keys = NULL, $conditions = NULL, $sea
       }
       // Full text behavior. Triggers with a text search or a facet
       elseif (($keys || isset($conditions['f'])) || ($empty_search_behavior == 'results')) {
+        // Don't allow local params to pass through to EDismax from the url.
+        // We also remove any remaining leading {! since that causes a parse
+        // error in Solr.
+        $keys = preg_replace('/^(?:{![^}]*}\s*)*(?:{!\s*)*/',' ', $keys);
         $params['q'] = $keys;
         // Hardcoded apachesolr name since we rely on this for the facets
-        $results = apachesolr_search_run('apachesolr', $params, $solrsort, $search_page['search_path'], pager_find_page(), $solr);
+        $context['page_id'] = $search_page['page_id'];
+        $context['search_type'] = 'apachesolr_search_results';
+        $results = apachesolr_search_run('apachesolr', $params, $solrsort, $search_page['search_path'], pager_find_page(), $solr, $context);
       }
     }
     catch (Exception $e) {
@@ -995,8 +1027,8 @@ function theme_apachesolr_search_browse_blocks($vars) {
 /**
  * Execute a search with zero results rows so as to populate facets.
  */
-function apachesolr_search_run_empty($name, array $params = array(), $base_path = '', $solr) {
-  $query = apachesolr_drupal_query($name, $params, '', $base_path, $solr);
+function apachesolr_search_run_empty($name, array $params = array(), $base_path = '', $solr = NULL, $context = array()) {
+  $query = apachesolr_drupal_query($name, $params, '', $base_path, $solr, $context);
   $query->addParam('rows', '0');
   $solr_id = $query->solr('getId');
   list($final_query, $response) = apachesolr_do_query($query);
@@ -1022,11 +1054,11 @@ function apachesolr_search_run_empty($name, array $params = array(), $base_path 
  *
  * @throws Exception
  */
-function apachesolr_search_run($name, array $params = array(), $solrsort = '', $base_path = '', $page = 0, DrupalApacheSolrServiceInterface $solr = NULL) {
+function apachesolr_search_run($name, array $params = array(), $solrsort = '', $base_path = '', $page = 0, DrupalApacheSolrServiceInterface $solr = NULL, $context = array()) {
   // Merge the default params into the params sent in.
   $params += apachesolr_search_basic_params();
   // This is the object that knows about the query coming from the user.
-  $query = apachesolr_drupal_query($name, $params, $solrsort, $base_path, $solr);
+  $query = apachesolr_drupal_query($name, $params, $solrsort, $base_path, $solr, $context);
 
   if ($query->getParam('q')) {
     apachesolr_search_add_spellcheck_params($query);
@@ -1057,7 +1089,7 @@ function apachesolr_search_run($name, array $params = array(), $solrsort = '', $
     $query->addParam('fl', 'teaser');
   }
 
-  list($final_query, $response) = apachesolr_do_query($query, $page);
+  list($final_query, $response) = apachesolr_do_query($query);
   $env_id = $query->solr('getId');
   apachesolr_has_searched($env_id, TRUE);
   $process_response_callback = apachesolr_environment_variable_get($env_id, 'process_response_callback', 'apachesolr_search_process_response');
@@ -1078,6 +1110,7 @@ function apachesolr_search_basic_params(DrupalSolrQueryInterface $query = NULL) 
         'bundle',
         'bundle_name',
         'label',
+        'ss_language',
         'is_comment_count',
         'ds_created',
         'ds_changed',
@@ -1087,7 +1120,16 @@ function apachesolr_search_basic_params(DrupalSolrQueryInterface $query = NULL) 
         'is_uid',
         'tos_name',
       ),
+    'mm' => 1,
     'rows' => 10,
+    'pf' => 'content^2.0',
+    'ps' => 15,
+    'hl' => 'true',
+    'hl.fl' => 'content',
+    'hl.snippets' => 3,
+    'hl.mergeContigious' => 'true',
+    'f.content.hl.alternateField' => 'teaser',
+    'f.content.hl.maxAlternateFieldLength' => 256,
   );
   if ($query) {
     $query->addParams($params);
@@ -1184,7 +1226,7 @@ function apachesolr_search_add_boost_params(DrupalSolrQueryInterface $query) {
   list($changed_steepness, $changed_boost) = explode(':', $changed_settings);
   if ($changed_boost) {
     $ab = 4 / $changed_steepness;
-    $params['bf'][] = "recip(ms(NOW,ds_created),3.16e-11,$ab,$ab)^$changed_boost";
+    $params['bf'][] = "recip(ms(NOW,ds_changed),3.16e-11,$ab,$ab)^$changed_boost";
   }
   // Boost for nodes with sticky bit set.
   if ($sticky_boost) {
@@ -1218,6 +1260,7 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
   pager_default_initialize($total, $query->getParam('rows'));
   if ($total > 0) {
     $fl = $query->getParam('fl');
+    $languages = language_list();
     // 'id' and 'entity_type' are the only required fields in the schema, and
     // 'score' is generated by solr.
     foreach ($response->response->docs as $doc) {
@@ -1232,8 +1275,8 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
       foreach ($hl_fl as $hl_param) {
         if (isset($response->highlighting->{$doc->id}->$hl_param)) {
           // Merge arrays preserving keys.
-          foreach ($response->highlighting->{$doc->id}->$hl_param as $values) {
-            $snippets[$hl_param] = $values;
+          foreach ($response->highlighting->{$doc->id}->$hl_param as $value) {
+            $snippets[$hl_param][] = $value;
           }
         }
       }
@@ -1288,20 +1331,14 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
       }
 
       $fields = (array) $doc;
-
-      // a path is not a requirement of entity (see entity_uri() ), so we check if we
-      // can show it and fallback to the main page of the site if we don't
-      // have it.
-      if (!isset($doc->url)) {
-        $path = '';
+      // Define our url options. They depend on the document language.
+      $url_options = array('absolute' => TRUE);
+      if (isset($doc->ss_language) && isset($languages[$doc->ss_language])) {
+        $url_options['language'] = $languages[$doc->ss_language];
       }
-      else {
-        $path = $doc->url;
-      }
-
       $result = array(
         // link is a required field, so handle it centrally.
-        'link' => $path,
+        'link' => url($doc->path, $url_options),
         // template_preprocess_search_result() runs check_plain() on the title
         // again.  Decode to correct the display.
         'title' => htmlspecialchars_decode($doc->label, ENT_QUOTES),
@@ -1316,9 +1353,9 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
       );
 
       // Call entity-type-specific callbacks for extra handling.
-      $function = apachesolr_entity_get_callback($doc->entity_type, 'result callback', $bundle);
-      if (is_callable($function)) {
-        $function($doc, $result, $extra);
+      $result_callback = apachesolr_entity_get_callback($doc->entity_type, 'result callback', $bundle);
+      if (is_callable($result_callback)) {
+        $result_callback($doc, $result, $extra);
       }
 
       $result['extra'] = $extra;
@@ -1328,8 +1365,8 @@ function apachesolr_search_process_response($response, DrupalSolrQueryInterface 
   }
   // Hook to allow modifications of the retrieved results
   foreach (module_implements('apachesolr_process_results') as $module) {
-    $function = $module . '_apachesolr_process_results';
-    $function($results, $query);
+    $process_results_callback = $module . '_apachesolr_process_results';
+    $process_results_callback($results, $query);
   }
   return $results;
 }
@@ -1348,14 +1385,21 @@ function apachesolr_search_get_search_suggestions($env_id) {
     // Get spellchecker suggestions into an array.
     if (!empty($response->spellcheck->suggestions)) {
       $suggestions = get_object_vars($response->spellcheck->suggestions);
+      // allow the suggestions to be altered before processing
+      drupal_alter('apachesolr_suggestions', $suggestions, $env_id);
+
       if ($suggestions) {
         $replacements = array();
         // Get the original query and retrieve all words with suggestions.
         foreach ($suggestions as $word => $value) {
-          $replacements[$word] = $value->suggestion[0];
+          $suggestion = $value->suggestion;
+          // We need to check if it's an object as setting the spellcheck.extendedResults query parameter to true makes words
+          // objects instead of strings.
+          $replacements[$word] = is_object($suggestion[0]) ? $suggestion[0]->word : $suggestion[0];
         }
         // Replace the keyword with the suggested keyword.
         $suggested_keyword = strtr($keyword, $replacements);
+
         // Show only if suggestion is different than current query.
         if ($keyword != $suggested_keyword) {
           $suggestions_output[] = $suggested_keyword;
@@ -1372,7 +1416,7 @@ function apachesolr_search_get_search_suggestions($env_id) {
 function apachesolr_search_apachesolr_entity_info_alter(&$entity_info) {
   // First set defaults so that we don't need to worry about NULL keys.
   foreach (array_keys($entity_info) as $type) {
-    $entity_info[$type]['result callback'] = '';
+    $entity_info[$type] += array('result callback' => '');
   }
   // Now set those values that we know.  Other modules can do so
   // for their own entities if they want.
@@ -1446,7 +1490,7 @@ function apachesolr_search_preprocess_search_results(&$variables) {
     }
     if (empty($variables['response'])) {
       $variables['description'] = '';
-      return;
+      return NULL;
     }
     $total = $variables['response']->response->numFound;
     $params = $variables['query']->getParams();
@@ -1651,30 +1695,40 @@ function apachesolr_search_theme_registry_alter(&$theme_registry) {
 }
 
 /**
+ * Preprocess function for theme_apachesolr_search_snippets().
+ */
+function apachesolr_search_preprocess_apachesolr_search_snippets(&$vars) {
+  // Flatten the multidimensional array of snippets into a one-dimensional,
+  // ordered array.
+  $vars['flattened_snippets'] = array();
+  $snippets = $vars['snippets'];
+  if (is_array($snippets)) {
+    // Prioritize the 'content' and 'teaser' keys if they are present.
+    foreach (array('content', 'teaser') as $key) {
+      if (isset($snippets[$key])) {
+        $vars['flattened_snippets'] = array_merge($vars['flattened_snippets'], $snippets[$key]);
+        unset($snippets[$key]);
+      }
+    }
+    // Add any remaining snippets from the array. Each snippet can either be a
+    // string or an array itself; see apachesolr_search_process_response().
+    foreach ($snippets as $snippet) {
+      $vars['flattened_snippets'] = array_merge($vars['flattened_snippets'], is_array($snippet) ? $snippet : array($snippet));
+    }
+  }
+
+  // Ensure unique search snippets.
+  $vars['flattened_snippets'] = array_unique($vars['flattened_snippets']);
+}
+
+/**
  * Theme the highlighted snippet text for a search entry.
  *
  * @param array $vars
  *
  */
 function theme_apachesolr_search_snippets($vars) {
-  $result = '';
-  if (is_array($vars['snippets'])) {
-    $snippets = $vars['snippets'];
-    if (isset($snippets['content'])) {
-      $result .= $snippets['content'];
-      unset($snippets['content']);
-    }
-    if (isset($snippets['teaser'])) {
-      $result .= (strlen($result) > 0) ? ' ... ' : '';
-      $result .= $snippets['teaser'];
-      unset($snippets['teaser']);
-    }
-    if (count($snippets)) {
-      $result .= (strlen($result) > 0) ? ' ... ' : '';
-      $result .= implode(' ... ', $snippets);
-    }
-  }
-  return $result . ' ...';
+  return implode(' ... ', $vars['flattened_snippets']) . ' ...';
 }
 
 /**

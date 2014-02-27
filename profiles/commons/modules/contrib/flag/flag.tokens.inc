@@ -61,6 +61,13 @@ function flag_token_info() {
   // Add tokens for the flag count available at the node/comment/user level.
   foreach (flag_get_types() as $flag_type) {
     $flags = flag_get_flags($flag_type);
+    //Issue #1965760: Manually set taxonomy term flag types because its different.
+    switch($flag_type) {
+      case 'taxonomy_term':
+      case 'taxonomy_vocabulary':
+        $flag_type = str_replace('taxonomy_', '', $flag_type);
+        break;
+    }
     foreach ($flags as $flag) {
       $tokens[$flag_type]['flag-' . str_replace('_', '-', $flag->name) . '-count'] = array(
         'name' => t('@flag flag count', array('@flag' => $flag->get_title())),

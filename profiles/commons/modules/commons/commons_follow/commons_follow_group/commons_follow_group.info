@@ -1,0 +1,20 @@
+name = Commons Follow (Groups)
+description = Lets users follow individual organic groups.
+core = 7.x
+package = Commons - Building blocks
+dependencies[] = ctools
+dependencies[] = flag
+dependencies[] = og
+dependencies[] = strongarm
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[flag][] = commons_follow_group
+features[flag][] = email_group
+features[variable][] = message_subscribe_og
+
+; Information added by Drupal.org packaging script on 2014-02-12
+version = "7.x-3.9"
+core = "7.x"
+project = "commons"
+datestamp = "1392234217"
+

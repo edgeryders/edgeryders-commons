@@ -632,7 +632,7 @@ function devel_boot() {
   devel_xhprof_enable();
 
   if (!devel_silent()) {
-    if (variable_get('dev_mem', 0)) {
+    if (variable_get('devel_memory', 0)) {
       global $memory_init;
       $memory_init = memory_get_usage();
     }
@@ -1218,7 +1218,7 @@ function devel_xhprof_link($run_id, $type = 'link') {
 function devel_shutdown_memory() {
   global $memory_init;
 
-  if (variable_get('dev_mem', FALSE)) {
+  if (variable_get('devel_memory', FALSE)) {
     $memory_shutdown = memory_get_usage();
     $args = array(
       '@memory_boot' => round($memory_init / 1024 / 1024, 2),
@@ -1774,7 +1774,7 @@ function dd($data, $label = NULL) {
 /**
  * Logs a variable to a drupal_debug.txt in the site's temp directory.
  *
- * @param string $data
+ * @param mixed $data
  *   The variable to log to the drupal_debug.txt log file.
  * @param string $label
  *   (optional) If set, a label to output before $data in the log file.
@@ -1791,7 +1791,7 @@ function drupal_debug($data, $label = NULL) {
   // The temp directory does vary across multiple simpletest instances.
   $file = 'temporary://drupal_debug.txt';
   if (file_put_contents($file, $out, FILE_APPEND) === FALSE) {
-    drupal_set_message(t('The file could not be written.'), 'error');
+    drupal_set_message(t('Devel was unable to write to %file.', array('%file' => $file)), 'error');
     return FALSE;
   }
 }
@@ -1991,10 +1991,25 @@ function devel_render() {
 
 /**
  * Prints the function call stack.
+ *
+ * @param $return
+ *   Pass TRUE to return the formatted backtrace rather than displaying it in
+ *   the browser via kprint_r().
+ * @param $pop
+ *   How many items to pop from the top of the stack; useful when calling from
+ *   an error handler.
+ * @param $options
+ *   Options to pass on to PHP's debug_backtrace(), depending on your PHP
+ *   version.
+ *
+ * @return string|NULL
+ *   The formatted backtrace, if requested, or NULL.
+ *
+ * @see http://php.net/manual/en/function.debug-backtrace.php
  */
-function ddebug_backtrace($return = FALSE, $pop = 0) {
+function ddebug_backtrace($return = FALSE, $pop = 0, $options = TRUE) {
   if (user_access('access devel information')) {
-    $backtrace = debug_backtrace();
+    $backtrace = debug_backtrace($options);
     while ($pop-- > 0) {
       array_shift($backtrace);
     }
@@ -2092,7 +2107,7 @@ function devel_rebuild_node_comment_statistics() {
   $query->addExpression('NULL', 'last_comment_name');
   $query->isNull('ncs.comment_count');
 
-  db_insert('node_comment_statistics')
+  db_insert('node_comment_statistics', array('return' => Database::RETURN_NULL))
     ->from($query)
     ->execute();
 }

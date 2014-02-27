@@ -1378,6 +1378,23 @@ class EntityCacheUserValidationTestCase extends UserValidationTestCase {
 }
 
 /**
+ * Copy of TranslationTestCase.
+ */
+class EntityCacheTranslationTestCase extends TranslationTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Copy of TranslationTestCase',
+      'description' => 'Copy of TranslationTestCase',
+      'group' => 'Entity cache'
+    );
+  }
+  function setUp() {
+    parent::setup();
+    module_enable(array('entitycache'));
+  }
+}
+
+/**
  * Test comments on nodes.
  */
 class EntityCacheCommentNodeTestCase extends DrupalWebTestCase {

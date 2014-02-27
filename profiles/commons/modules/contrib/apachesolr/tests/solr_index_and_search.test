@@ -24,31 +24,47 @@ abstract class AbstractDrupalSolrOnlineWebTestCase extends DrupalWebTestCase {
   }
 
   function setUpSolr() {
-    $patterns = func_get_args();
-
     // Load the default server.
     $env_id = apachesolr_default_environment();
     $environment = apachesolr_environment_load($env_id);
+    $this->base_solr_url = $environment['url'];
+
     // Because we are in a clean environment, this will always be the default
     // http://localhost:8983/solr
-    $this->core_admin_url = "{$environment['url']}/admin/cores";
+    $this->core_admin_url = "{$this->base_solr_url}/admin/cores";
 
     // The core admin url will give a valid response if the
     // Solr server is running locally.
     if ($this->coreAdminAvailable()) {
+
       // We will use a core named after the simpletest prefix.
       $environment['url'] .= '/' . $this->databasePrefix;
-      $filesdir = variable_get('file_public_path');
 
+      $filesdir = file_directory_temp();
       // Create our Solr core directory.
-      mkdir("$filesdir/solr", 0777, TRUE);
-      mkdir("$filesdir/solr/conf");
-
+      drupal_mkdir("{$filesdir}/solr", 0777, TRUE);
       // Our temporary core is located here.
-      $instancedir = realpath("$filesdir/solr");
+      $instancedir = realpath($filesdir . "/solr");
+
+      // use the Solr version confs where appropriate.
+      $version = $this->getSolrVersion();
+      if (isset($version) && $version == 3) {
+        $conf_path = dirname(__FILE__) . '/../solr-conf/solr-3.x/*';
+      }
+      elseif (isset($version) && $version == 4) {
+        $conf_path = dirname(__FILE__) . '/../solr-conf/solr-4.x/*';
+      }
+      else {
+        $conf_path = dirname(__FILE__) . '/../solr-conf/solr-1.4/*';
+      }
+
+      $patterns = array(
+        $conf_path,
+        dirname(__FILE__) . '/conf/*',
+      );
 
       // Copy all files in solr-conf dir to our temporary solr core.
-      // @todo - use the Solr 3.x conf where appropriate.
+      drupal_mkdir("{$instancedir}/conf", 0777, TRUE);
       foreach ($patterns as $pattern) {
         foreach (glob($pattern) as $conf_file) {
           copy($conf_file, "$instancedir/conf/" . basename($conf_file));
@@ -60,6 +76,10 @@ abstract class AbstractDrupalSolrOnlineWebTestCase extends DrupalWebTestCase {
       // Change the autoCommit time down to 1 second.
       // @todo - use solrcore.properties file for 3.x.
       file_put_contents("$instancedir/conf/solrconfig.xml", preg_replace('@<maxTime>[0-9]+</maxTime>@', '<maxTime>1000</maxTime>', $contents));
+
+      // hard chmod -R because it seems drupal dirs are too restricted in a
+      // testing environment
+      system("chmod -R 777 {$instancedir}");
 
       $query['name'] = $this->databasePrefix;
       $query['instanceDir'] = $instancedir;
@@ -88,16 +108,32 @@ abstract class AbstractDrupalSolrOnlineWebTestCase extends DrupalWebTestCase {
     return ($result->code == 200 && empty($result->error));
   }
 
+  protected function getSolrVersion() {
+    $status = $this->coreAdmin('STATUS');
+    foreach($status['status'] as $core_id => $core) {
+      $solr = new DrupalApacheSolrService($this->base_solr_url . '/' . $core_id);
+      $version = $solr->getSolrVersion();
+      if (!empty($version)) {
+        return $version;
+      }
+      else {
+        return "1";
+      }
+    }
+  }
+
   /**
    * Helper function to invoke core admin actions.
    */
   protected function coreAdmin($action, $query = array()) {
     $query['action'] = $action;
     $query['wt'] = 'json';
-    $query['indent'] = '1';
-    $this->drupalGet($this->core_admin_url, array('query' => $query));
-    if ($this->assertResponse(200)) {
-      return json_decode($this->drupalGetContent(), TRUE);
+    $url = url($this->core_admin_url, array('query' => $query));
+    $options['timeout'] = 2;
+    $result = drupal_http_request($url, $options);
+
+    if ($result->code == 200) {
+      return json_decode($result->data, TRUE);
     }
     else {
       return FALSE;
@@ -115,8 +151,17 @@ abstract class AbstractDrupalSolrOnlineWebTestCase extends DrupalWebTestCase {
   function tearDown() {
     // Workaround for drupal.org test bot
     if ($this->solr_available) {
-      // Unload the Solr core.
-      $this->coreAdmin('UNLOAD', array('core' => $this->databasePrefix));
+      // Unload the Solr core & delete all files
+      $query = array(
+        'core' => $this->databasePrefix,
+        'deleteIndex' => 'true',
+        'deleteDataDir' => 'true',
+        'deleteInstanceDir' => 'true'
+      );
+      // This is currently broken due to
+      // https://issues.apache.org/jira/browse/SOLR-3586
+      $this->coreAdmin('UNLOAD', $query);
+
     }
     parent::tearDown();
   }
@@ -129,11 +174,7 @@ class DrupalSolrOnlineWebTestCase extends AbstractDrupalSolrOnlineWebTestCase {
    */
   function setUp() {
     parent::setUp();
-    parent::setUpSolr(
-      // The Solr 1.4 conf will work in both 1.4 and 3.5.
-      dirname(__FILE__) . '/../solr-conf/solr-1.4/*',
-      dirname(__FILE__) . '/conf/*'
-    );
+    parent::setUpSolr();
   }
 }
 
@@ -153,11 +194,11 @@ class DrupalSolrMatchTestCase extends DrupalSolrOnlineWebTestCase {
   function testMatching() {
     if ($this->solr_available) { // workaround for drupal.org test bot
       $this->assertTrue($this->solr->ping(), "The Server could be Pinged");
-      $response = $this->solr->search("*:*", array('qt' => 'standard'));
+      $response = $this->solr->search("*:*", array());
       $response = $response->response;
       $this->assertEqual($response->numFound, 0, "There should not be any documents in the index");
       $this->populateIndex(7);
-      $response = $this->solr->search("*:*", array('qt' => 'standard'));
+      $response = $this->solr->search("*:*", array());
       $response = $response->response;
       $this->assertEqual($response->numFound, 7, "There should be 7 documents in the index");
       $this->_testQueries();
@@ -265,7 +306,7 @@ class DrupalSolrMatchTestCase extends DrupalSolrOnlineWebTestCase {
       '"am minim veniam" -"dolore cillum"' => array(5, 6, 7),
     );
     foreach ($queries as $query => $results) {
-      $response = $this->solr->search($query, array('qt' => 'standard'));
+      $response = $this->solr->search($query, array());
       $this->_testQueryMatching($query, $response->response->docs, $results);
       //@TODO: We might get to this later
       #$this->_testQueryScores($query, $response->responses->docs, $results);

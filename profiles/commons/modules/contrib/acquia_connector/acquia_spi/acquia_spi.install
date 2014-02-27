@@ -24,6 +24,10 @@ function acquia_spi_uninstall() {
   variable_del('acquia_spi_server');
   variable_del('acquia_spi_ssl_override');
   variable_del('acquia_spi_module_rebuild');
+  variable_del('acquia_spi_set_variables_automatic');
+  variable_del('acquia_spi_ignored_set_variables');
+  variable_del('acquia_spi_saved_variables');
+  variable_del('acquia_spi_set_variables_override');
 }
 
 /**
@@ -75,6 +79,43 @@ function acquia_spi_requirements($phase) {
           'description' => t($description, array('!interval' => $interval, '!config-page' => $config_url, '!spi-send' => url('system/acquia-spi-send', array('query' => array('destination' => 'admin/reports/status', 'key' => $key))))),
         );
       }
+
+      // Acquia SPI custom tests status.
+      $variables = array(
+        '@help'     => url('admin/help/acquia_agent'),
+        '@validate' => url('system/acquia-spi-custom-test-validate')
+      );
+
+      $modules = module_implements('acquia_spi_test');
+      if (empty($modules)) {
+        $description = 'No custom tests were detected in any module.<br/>';
+        $value       = 'Not implemented (<a href="@help">more information</a>)';
+        $severity    = REQUIREMENT_OK;
+      }
+      else {
+        $result = acquia_spi_test_status();
+
+        if (!empty($result)) {
+          $modules = implode(', ', array_keys($result));
+          $description = 'Custom tests within the following module(s) have failed validation and will not be sent: %modules. <br/>Please check the error logs for more information regarding how to pass validation or <a href="@validate">perform another validation check</a>. (A validation check can also be performed via the Drush command, "spi-test-validate.")';
+          $value       = 'Failed (<a href="@help">more information</a>)';
+          $severity    = REQUIREMENT_ERROR;
+        }
+        else {
+          $modules     = implode(', ', $modules);
+          $description = 'Custom test data is structured properly and is sending from: %modules';
+          $value       = 'Passed';
+          $severity    = REQUIREMENT_OK;
+        }
+
+        $variables['%modules'] = $modules;
+      }
+      $requirements['acquia_spi_test'] = array(
+        'title'       => t('Acquia Network SPI Custom Tests'),
+        'description' => t($description, $variables),
+        'value'       => t($value, $variables),
+        'severity'    => $severity,
+      );
       break;
   }
 

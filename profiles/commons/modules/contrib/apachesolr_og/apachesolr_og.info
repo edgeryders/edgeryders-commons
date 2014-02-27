@@ -7,9 +7,9 @@ dependencies[] = apachesolr
 dependencies[] = og
 
 
-; Information added by drush on 2013-04-04
+; Information added by drush on 2014-02-12
 version = "7.x-1.0+2-dev"
 core = "7.x"
 project = "apachesolr_og"
-datestamp = "1365087645"
+datestamp = "1392234279"
 

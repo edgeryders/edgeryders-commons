@@ -1,0 +1,17 @@
+name = Picture
+description = Picture element
+core = 7.x
+dependencies[] = ctools
+dependencies[] = image
+dependencies[] = breakpoints
+configure = admin/config/media/picture
+package = Picture
+stylesheets[all][] = picture_wysiwyg.css
+
+
+; Information added by drush on 2014-02-12
+version = "7.x-1.2+6-dev"
+core = "7.x"
+project = "picture"
+datestamp = "1392234254"
+

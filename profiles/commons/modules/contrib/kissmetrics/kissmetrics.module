@@ -1,0 +1,391 @@
+<?php
+
+/**
+ * @file
+ * Provides integration with the KISSmetrics person-based analytics service.
+ */
+
+/**
+ * Remove tracking from all administrative pages, see http://drupal.org/node/34970.
+ */
+define('KISSMETRICS_PAGES', "admin\nadmin/*\nbatch\nnode/add*\nnode/*/*\nuser/*/*");
+
+/**
+ * Load KISSmetrics on every page except the listed pages.
+ */
+define('KISSMETRICS_VISIBILITY_NOTLISTED', 0);
+
+/**
+ * Load KISSmetrics on only the listed pages.
+ */
+define('KISSMETRICS_VISIBILITY_LISTED', 1);
+
+/**
+ * Implements hook_permission().
+ */
+function kissmetrics_permission() {
+  return array(
+    'administer kissmetrics' =>  array(
+      'title' => t('Administer KISSmetrics'),
+      'description' => t('Allows a user to configure KISSmetrics.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function kissmetrics_menu() {
+  $items['admin/config/services/kissmetrics'] = array(
+    'title' => 'KISSmetrics',
+    'description' => 'Configure an API key, logging behavior and page restrictions.',
+    'access arguments' => array('administer kissmetrics'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('kissmetrics_configuration_form'),
+    'file' => 'kissmetrics.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_help().
+ */
+function kissmetrics_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#kissmetrics':
+      $output = '';
+      $output .= '<p>' . t('<a href="@kissmetrics">KISSmetrics</a> is a person-based analytics service which helps to identify, understand, and improve the metrics that drive online business. KISSmetrics makes it simple to get the information needed to make better product and marketing decisions.') . '</p>';
+      $output .= '<p>' . t('For more information on getting started with KISSmetrics, view the official <a href="@overview">overview</a> documentation page.', array('@overview' => 'http://support.kissmetrics.com/getting-started/overview.html')) . '</p>';
+      $output .= '<h2>' . t('Configuration') . '</h2>';
+      $output .= '<p>' . t('To configure KISSmetrics, visit the KISSmetrics <a href="@administration">administration page</a>. At minimum, you must configure an API key in order for data to be sent to the KISSmetrics service.', array('@administration' => url('admin/config/services/kissmetrics'))) . '</p>';
+      $output .= '<h2>' . t('Usage') . '</h2>';
+      $output .= '<p>' . t('KISSmetrics automatically tracks basic data such as page views, form fields and search engine hits. To track custom events, such as when a user edits an existing page or posts a new comment, see the Rules <a href="@rules">administration page</a>.', array('@kissmetrics' => 'http://www.kissmetrics.com', '@rules' => url('admin/config/workflow/rules'))) . '</p>';
+      $output .= '<p>' . t('KISSmetrics provides a Rules action for logging a KISSmetrics event or setting a property on the identified user. These actions can be triggered by any of the conditions supported by Rules. For more information on Rules view the <a href="@documentation">Rules documentation</a>.', array('@documentation' => 'http://drupal.org/documentation/modules/rules')) . '</p>';
+      return $output;
+    case 'admin/config/services/kissmetrics':
+      return '<p>' . t('<a href="@kissmetrics">KISSmetrics</a> is a person-based analytics service. KISSmetrics automatically tracks basic data such as page views, form fields and search engine hits. To track custom events, such as when a user edits an existing page or posts a new comment, see the Rules <a href="@rules">administration page</a>.', array('@kissmetrics' => 'http://www.kissmetrics.com', '@rules' => url('admin/config/workflow/rules'))) . '</p>';
+  }
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function kissmetrics_libraries_info() {
+  $libraries['kissmetrics'] = array(
+    'name' => 'KISSmetrics',
+    'vendor url' => 'http://www.kissmetrics.com',
+    'download url' => 'https://github.com/kissmetrics/KISSmetrics',
+    'version' => '0',
+    'files' => array(
+      'php' => array(
+        'km.php',
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_registry_files_alter().
+ */
+function kissmetrics_registry_files_alter(&$files, $modules) {
+  if (($library = libraries_detect('kissmetrics')) && !empty($library['installed'])) {
+    $files[$library['library path'] . '/km.php'] =  array(
+      'module' => 'kissmetrics',
+      'weight' => 0,
+    );
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function kissmetrics_cron() {
+  kissmetrics_send_logged_queries();
+}
+
+/**
+ * Implements hook_user_login().
+ */
+function kissmetrics_user_login(&$edit, $account) {
+  // Identify users the first time they log in.
+  if (empty($account->access)) {
+    kissmetrics_record_event('User logged in for the first time.');
+  }
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function kissmetrics_page_build(&$page) {
+  $pages = variable_get('kissmetrics_visibility_pages', KISSMETRICS_PAGES);
+  $visibility_mode = variable_get('kissmetrics_visibility_mode', KISSMETRICS_VISIBILITY_NOTLISTED);
+  $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
+
+  if ($visibility_mode == 0 && drupal_match_path($path, $pages)) {
+    return;
+  }
+
+  if ($visibility_mode == 1 && !drupal_match_path($path, $pages)) {
+    return;
+  }
+
+  if ($api_key = variable_get('kissmetrics_api_key')) {
+    // Include the KISSmetrics JavaScript library.
+    $script  = "var _kmq = _kmq || [];";
+    $script .= "var _kmk = _kmk || '" . $api_key . "';";
+    $script .= "function _kms(u){" ;
+    $script .= "setTimeout(function(){";
+    $script .= "var d = document, f = d.getElementsByTagName('script')[0],";
+    $script .= "s = d.createElement('script');";
+    $script .= "s.type = 'text/javascript'; s.async = true; s.src = u;";
+    $script .= "f.parentNode.insertBefore(s, f);";
+    $script .= "}, 1); }";
+    $script .= "_kms('//i.kissmetrics.com/i.js');";
+    $script .= "_kms('//doug1izaerwt3.cloudfront.net/' + _kmk + '.1.js');";
+
+    $page['page_top']['#attached']['js'] = array(
+      $script => array(
+        'type' => 'inline',
+        'scope' => 'header'
+      ),
+    );
+  }
+}
+
+/**
+ * Record a KISSmetrics event.
+ *
+ * @param string $name
+ *   The name of the event to record. If a name is not specified, any specified
+ *   properties will be set on the identified user.
+ * @param string|array $properties
+ *   A string or associative array containing properties of the event.
+ *   String values must be listed one per line in key|value format.
+ */
+function kissmetrics_record_event($name = '', $properties = array()) {
+  // Only proceed if either a name or properties were specified.
+  if (empty($name) && empty($properties)) {
+    return;
+  }
+
+  if ($api_key = variable_get('kissmetrics_api_key')) {
+    $use_cron = variable_get('kissmetrics_use_cron', TRUE);
+    $log_dir = kissmetrics_get_directory();
+
+    if (class_exists('KM')) {
+      KM::init($api_key, array('use_cron' => $use_cron, 'log_dir' => $log_dir));
+
+      // Identify the current user.
+      $id = kissmetrics_user_id();
+
+      KM::identify($id);
+
+      // Gather all of the user's aliases.
+      foreach (kissmetrics_user_aliases() as $alias) {
+        if ($alias != $id) {
+          KM::alias($alias, $id);
+        }
+      }
+
+      // Convert a string of event properties into an array.
+      if (is_string($properties)) {
+        $props = _kissmetrics_generate_prop_array($properties);
+      }
+      else {
+        $props = $properties;
+      }
+
+      // Record an event if a name was specified, otherwise set properties on the
+      // identified user.
+      if (!empty($name)) {
+        KM::record($name, $props);
+      }
+      else {
+        KM::set($props);
+      }
+    }
+    else {
+      watchdog('kissmetrics', 'The KISSmetrics class is not available. Make sure that the KISSmetrics PHP library is installed properly and then ensure that the KM class is registered by clearing the site cache.', array(), WATCHDOG_ERROR);
+    }
+  }
+}
+
+/**
+ * Helper function to generate an array of properties from a string where each
+ * property is listed on a separate line and property keys and values are
+ * separated by a vertical bar.
+ *
+ * @param string $properties
+ *   A string of properties where each property is listed on a separate line and
+ *   property keys and values are separated by a vertical bar.
+ *
+ * @return array
+ *   An array of properties.
+ */
+function _kissmetrics_generate_prop_array($properties) {
+  $properties = trim($properties);
+  $props = array();
+  $lines = explode("\n", $properties);
+
+  foreach ($lines as $line) {
+    list($key, $value) = explode('|', $line);
+
+    if ($key) {
+      $props[$key] = $value;
+    }
+  }
+
+  return $props;
+}
+
+/**
+ * Determines an appropriate ID for the current user.
+ *
+ * @return int|string
+ *   An ID representing the user.
+ */
+function kissmetrics_user_id() {
+  global $user;
+
+  if (user_is_logged_in()) {
+    $id = $user->uid;
+  }
+  elseif (!empty($_COOKIE['km_ai'])) {
+    $id = $_COOKIE['km_ai'];
+  }
+  else {
+    $id = array(rand(), time());
+    $id = implode('|', $id);
+    $id = base64_encode($id);
+    $id = sha1($id);
+  }
+
+  return $id;
+}
+
+/**
+ * Determines any appropriate aliases for the current user.
+ *
+ * @return array
+ *   An array of aliases.
+ */
+function kissmetrics_user_aliases() {
+  global $user;
+
+  $aliases = array();
+
+  if (user_is_logged_in()) {
+    $aliases[] = $user->mail;
+    $aliases[] = $user->name;
+
+    if (!empty($_COOKIE['km_ai'])) {
+      $aliases[] = $_COOKIE['km_ai'];
+    }
+  }
+
+  return $aliases;
+}
+
+/**
+ * Send logged queries to KISSmetrics.
+ */
+function kissmetrics_send_logged_queries() {
+  if ($api_key = variable_get('kissmetrics_api_key')) {
+    if ($use_cron = variable_get('kissmetrics_use_cron', TRUE) && $log_dir = kissmetrics_get_directory()) {
+      if (class_exists('KM')) {
+        KM::init($api_key, array('use_cron' => $use_cron, 'log_dir' => $log_dir));
+        KM::send_logged_queries();
+      }
+      else {
+        watchdog('kissmetrics', 'The KISSmetrics class is not available. Make sure that the KISSmetrics PHP library is installed properly and then ensure that the KM class is registered by clearing the site cache.', array(), WATCHDOG_ERROR);
+      }
+    }
+  }
+}
+
+/**
+ * Constructs a URI to the request log directory.
+ *
+ * @param string $directory
+ *   Optional string specifying the filepath or URI of a directory to get.
+ *
+ * @return string
+ *   A URI to the directory inside of Drupal's default files location.
+ */
+function kissmetrics_get_directory($directory = NULL) {
+  $path = &drupal_static(__FUNCTION__);
+
+  if (!isset($path)) {
+    $path = variable_get('kissmetrics_log_dir', 'kissmetrics');
+  }
+
+  if (!empty($directory)) {
+    return file_build_uri($directory);
+  }
+  else {
+    return file_build_uri($path);
+  }
+}
+
+/**
+ * Check that the request log directory exists and is writable.
+ *
+ * @param string $directory
+ *   Optional string specifying the filepath or URI of a directory to check.
+ *
+ * @return boolean
+ *   TRUE if the directory exists (or was created) and is writable. FALSE
+ *   otherwise.
+ */
+function kissmetrics_check_directory($directory = NULL) {
+  $directory = kissmetrics_get_directory($directory);
+  $result = file_prepare_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+  if (!$result) {
+    watchdog('file system', 'The directory %directory does not exist or is not writable.', array('%directory' => $directory), WATCHDOG_ERROR);
+  }
+  return $result;
+}
+
+/**
+ * Recursively delete all files and folders in the request log directory.
+ */
+function kissmetrics_clear_directory() {
+  $directory = kissmetrics_get_directory();
+  return file_unmanaged_delete_recursive($directory);
+}
+
+/**
+ * Move a directory to a new location.
+ *
+ * @param string $old_dir
+ *   A string specifying the filepath or URI of the original directory.
+ * @param string $new_dir
+ *   A string specifying the filepath or URI of the new directory.
+ * @param int $replace
+ *   Replace behavior when the destination file already exists.
+ *
+ * @return boolean
+ *   TRUE if the directory was moved successfully. FALSE otherwise.
+ */
+function kissmetrics_directory_move($old_dir, $new_dir, $replace = FILE_EXISTS_REPLACE) {
+  $success = file_prepare_directory($new_dir, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+
+  $old_path = drupal_realpath($old_dir);
+  $new_path = drupal_realpath($new_dir);
+  if (!is_dir($old_path) || !is_dir($new_path) || !$success) {
+    return FALSE;
+  }
+
+  $files = file_scan_directory($old_dir, '/.*/');
+  foreach ($files as $file) {
+    $file->uri_new = $new_dir . '/' . basename($file->filename);
+    $success &= (bool) file_unmanaged_move($file->uri, $file->uri_new, $replace);
+  }
+
+  // Remove the old directory.
+  $success &= drupal_rmdir($old_dir);
+  return $success;
+}

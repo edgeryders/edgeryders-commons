@@ -1,0 +1,18 @@
+name = Breakpoints test theme
+description = Test theme for breakpoints.
+core = 7.x
+base theme = bartik
+hidden = TRUE
+
+breakpoints[mobile] = (min-width: 0px)
+breakpoints[narrow] = (min-width: 560px)
+breakpoints[wide] = (min-width: 851px)
+breakpoints[tv] = only screen and (min-width: 3456px)
+
+
+; Information added by drush on 2014-02-12
+version = "7.x-1.1+1-dev"
+core = "7.x"
+project = "breakpoints"
+datestamp = "1392234289"
+

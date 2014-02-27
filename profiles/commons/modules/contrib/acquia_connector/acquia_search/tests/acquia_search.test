@@ -73,6 +73,64 @@ class AcquiaSearchUnitTestCase extends DrupalUnitTestCase {
     preg_match('/acquia_solr_nonce=([a-zA-Z0-9]{32});/', $authenticator, $matches);
     $this->assertEqual($nonce, $matches[1], t('HMAC API function generates the expected nonce.'), 'Acquia Search');
   }
+
+  /**
+   * Tests validating a response via the API functions.
+   */
+  public function testValidResponse() {
+    // Generate the expected hash.
+    $nonce = $this->randomName(32);
+    $string = $this->randomName(32);
+    $hmac = hash_hmac('sha1', $nonce . $string, $this->derivedKey);
+
+    // Pass the expected hmac digest, API function should return TRUE.
+    $valid = acquia_search_valid_response($hmac, $nonce, $string, $this->derivedKey);
+    $this->assertTrue($valid, t('Response flagged as valid when the expected hash is passed.'), 'Acquia Search');
+
+    // Invalidate the hmac digest, API function should return FALSE.
+    $bad_hmac = $hmac . 'invalidateHash';
+    $invalid_hmac = acquia_search_valid_response($bad_hmac, $nonce, $string, $this->derivedKey);
+    $this->assertFalse($invalid_hmac, t('Response flagged as invalid when a malformed hash is passed.'), 'Acquia Search');
+
+    // Invalidate the nonce, API function should return FALSE.
+    $bad_nonce = $nonce . 'invalidateString';
+    $invalid_nonce = acquia_search_valid_response($hmac, $bad_nonce, $bad_nonce, $this->derivedKey);
+    $this->assertFalse($invalid_nonce, t('Response flagged as invalid when a malformed nonce is passed.'), 'Acquia Search');
+
+    // Invalidate the string, API function should return FALSE.
+    $bad_string = $string . 'invalidateString';
+    $invalid_string = acquia_search_valid_response($hmac, $nonce, $bad_string, $this->derivedKey);
+    $this->assertFalse($invalid_string, t('Response flagged as invalid when a malformed string is passed.'), 'Acquia Search');
+
+    // Invalidate the derived key, API function should return FALSE.
+    $bad_key = $this->derivedKey . 'invalidateKey';
+    $invalid_key = acquia_search_valid_response($hmac, $nonce, $string, $bad_key);
+    $this->assertFalse($invalid_key, t('Response flagged as invalid when a malformed derived key is passed.'), 'Acquia Search');
+  }
+
+  /**
+   * Tests extracting the hmac digest from the response header.
+   */
+  public function testExtractHMACHeader() {
+    // Generate the expected hash.
+    $nonce = $this->randomName(32);
+    $string = $this->randomName(32);
+    $hmac = hash_hmac('sha1', $nonce . $string, $this->derivedKey);
+
+    // Pass header with an expected pragma.
+    $header = array('pragma' => 'hmac_digest=' . $hmac . ';');
+    $extracted = acquia_search_extract_hmac($header);
+    $this->assertEqual($hmac, $extracted, t('The HMAC digest was extracted from the response header.'), 'Acquia Search');
+
+    // Pass header with a bad pragma.
+    $bad_header1 = array('pragma' => $this->randomName());
+    $bad_extracted1 = acquia_search_extract_hmac($bad_header1);
+    $this->assertEqual('', $bad_extracted1, t('Empty string returned by HMAC extraction function when an invalid pragma is passed.'), 'Acquia Search');
+
+    // Pass in junk as the header.
+    $bad_extracted2 = acquia_search_extract_hmac($this->randomName());
+    $this->assertEqual('', $bad_extracted2, t('Empty string returned by HMAC extraction function when an invalid header is passed.'), 'Acquia Search');
+  }
 }
 
 /**
@@ -158,11 +216,13 @@ class AcquiaSearchWebTestCase extends DrupalWebTestCase {
   }
 
   /**
-   * Enables the environment of Acquia Search.
+   * Enables the environment of Acquia Search and clears the static caches so
+   * that the change is reflected in the API functions.
    */
-  public function enableEnvironment() {
+  public function enableAcquiaSearchEnvironment() {
     // API function that creates the environemnt if it doesn't exist yet.
     acquia_search_enable_acquia_solr_environment();
+    $this->clearStaticCache();
   }
 
   /**
@@ -175,10 +235,8 @@ class AcquiaSearchWebTestCase extends DrupalWebTestCase {
    * - The environment's URL is built as expected.
    */
   public function testEnvironment() {
-    // Enable the Acquia Search environment
-    $this->enableEnvironment();
-    // Clear the static caches
-    $this->clearStaticCache();
+    $this->enableAcquiaSearchEnvironment();
+
     // Load the newly enabled environment
     $environment = apachesolr_environment_load(ACQUIA_SEARCH_ENVIRONMENT_ID);
     // Load the default environment variable
@@ -206,10 +264,7 @@ class AcquiaSearchWebTestCase extends DrupalWebTestCase {
    * - Admin user receives 403 when attempting to delete the environment.
    */
   public function testEnvironmentUI() {
-    // Enable the Acquia Search environment
-    $this->enableEnvironment();
-    // Clear the static caches
-    $this->clearStaticCache();
+    $this->enableAcquiaSearchEnvironment();
 
     $admin_user = $this->createAdminUser();
     $this->drupalLogin($admin_user);
@@ -237,10 +292,7 @@ class AcquiaSearchWebTestCase extends DrupalWebTestCase {
    * - Executing a search via the core search block redirects to search/site.
    */
   public function testDefaultSearch() {
-    // Enable the Acquia Search environment
-    $this->enableEnvironment();
-    // Clear the static caches
-    $this->clearStaticCache();
+    $this->enableAcquiaSearchEnvironment();
 
     // Test that the default search variable is set to the expected value.
     $default_search = variable_get('search_default_module', 'node');

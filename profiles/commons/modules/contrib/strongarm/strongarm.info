@@ -7,9 +7,10 @@ files[] = strongarm.admin.inc
 files[] = strongarm.install
 files[] = strongarm.module
 
-; Information added by drupal.org packaging script on 2013-10-01
+
+; Information added by drush on 2014-02-12
 version = "7.x-2.0+2-dev"
 core = "7.x"
 project = "strongarm"
-datestamp = "1380638117"
+datestamp = "1392234249"
 

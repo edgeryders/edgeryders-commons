@@ -581,6 +581,13 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
 
   $lang_options = ckeditor_load_lang_options();
 
+  // Attach the administration CSS.
+  $form['#attached'] = array(
+    'css' => array(
+      drupal_get_path('module', 'ckeditor') . '/css/ckeditor.admin.css',
+    ),
+  );
+
   $form['basic'] = array(
     '#type' => 'fieldset',
     '#title' => t('Basic setup'),
@@ -775,14 +782,8 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
   drupal_add_js($module_drupal_url_path . '/includes/ckeditor.admin.js', 'file');
 
   if ($toolbar_wizard == 't') {
-    if (module_exists('jquery_ui')) {
-      jquery_ui_add(array('jquery.ui.widget.min.js', 'jquery.ui.sortable.min.js'));
-    }
-    else {
-      drupal_add_js($module_drupal_url_path . '/includes/jqueryUI/jquery-ui.min.js', 'file');
-      drupal_add_js($module_drupal_url_path . '/includes/jqueryUI/jquery.ui.widget.min.js', 'file');
-      drupal_add_js($module_drupal_url_path . '/includes/jqueryUI/jquery.ui.sortable.min.js', 'file');
-    }
+    drupal_add_library('system', 'ui.widget');
+    drupal_add_library('system', 'ui.sortable');
     drupal_add_js($module_drupal_url_path . '/includes/jqueryUI/sort.js', 'file');
   }
 
@@ -927,6 +928,52 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
       '!bidirtl' => 'BidiRtl'
         )
     )
+  );
+
+  $form['acf'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced content filter'),
+    '#description' => t('Configure input data filtering in CKEditor. See !link for more information about ACF.', array(
+        '!link' => l(t('this blog post'), 'http://ckeditor.com/blog/Upgrading-to-CKEditor-4.1')
+      )),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE
+  );
+
+  $form['acf']['allowed_content'] = array(
+    '#type' => 'radios',
+    '#title' => t('Advanced content filter'),
+    '#description' => t('<strong>Example:</strong> if only Bold and Link buttons are enabled, only !strong and !a tags will be allowed. Any !b tags will automatically be converted into !strong. The !img tag will not be allowed, unless the Image button is added to the toolbar.', array(
+    '!strong' => '<code>&lt;strong&gt;</code>',
+    '!a' => '<code>&lt;a&gt;</code>',
+    '!img' => '<code>&lt;img&gt;</code>',
+    '!b' => '<code>&lt;b&gt;</code>'
+  )).'<br /><br />'.
+    t('<strong>Warning:</strong> CKEditor will not use the set of tags associated with text format. Only the buttons enabled in the toolbar and optional plugins will determine which tags/attributes/styles are handled by CKEditor. Enabling ACF in CKEditor does not affect server-side filtering done by Drupal in any way.'),
+
+    '#default_value' => !empty($profile->settings['allowed_content']) ? $profile->settings['allowed_content'] : 't',
+    '#options' => array(
+      't' => t('Enabled'),
+      'f' => t('Disabled'),
+    ),
+  );
+  $form['acf']['allowed_content']['t']['#description'] = t('CKEditor will only allow tags/attributes/styles provided by CKEditor features. Disallowed content will be removed directly by CKEditor. When configured properly, it helps to ensure a true WYSIWYG experience.');
+  $form['acf']['allowed_content']['f']['#description'] = t('CKEditor will not filter any tags and as a result, the user will be able to insert any content into the editor. The content will only be filtered by server-side filters associated with input formats.');
+
+  $form['acf']['extraAllowedContent'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Extra allowed content'),
+    '#default_value' => !empty($profile->settings['extraAllowedContent']) ? $profile->settings['extraAllowedContent'] : "",
+    '#cols' => 60,
+    '#rows' => 5,
+    '#description' => t(
+      'Set additional allowed content rules for CKEditor. Separate rules with a semicolon. See !docs for more information.', array(
+        '!docs' => l(t('CKEditor documentation'), 'http://docs.ckeditor.com/#!/api/CKEDITOR.config-cfg-allowedContent')
+       )).'<p>'.
+       t('<strong>Example:</strong> !rules', array(
+         '!rules' => "<code>object[width,height];param[name,value];embed[*];</code>"
+       )).'</p>',
+    '#wysiwyg' => FALSE,
   );
 
   $form['output'] = array(
@@ -1566,6 +1613,9 @@ function ckeditor_admin_values_to_settings($values) {
   }
   unset($values['name'], $values['input_formats'], $values['_profile'], $values['op'], $values['submit'], $values['form_build_id'], $values['form_token'], $values['form_id'], $values['loadPlugins']);
 
+  // Replace CRLF with LF in toolbar settings
+  $values['toolbar'] = str_replace("\r\n", "\n", $values['toolbar']);
+
   module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
   $plugin_list = ckeditor_load_plugins();
   $values['loadPlugins'] = array();
@@ -1700,7 +1750,7 @@ function ckeditor_toolbar_buttons_all() {
     '__group' => array('name' => FALSE, 'icon' => $path . '/images/buttons/group.png', 'title' => 'Group', 'row' => 4)
   );
 
-  $plugins = ckeditor_load_plugins(TRUE);
+  $plugins = ckeditor_load_plugins();
   foreach ($plugins as $plugin_name => $plugin) {
     if (!isset($plugin['buttons']) || $plugin['buttons'] == FALSE)
       continue;

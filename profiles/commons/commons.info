@@ -1,10 +1,10 @@
 name = Commons
-project = commons
-distribution_name = "Drupal Commons"
 description = Ready-to-use solution for building communities.
 core = 7.x
+distribution_name = "Drupal Commons"
+exclusive = TRUE
 
-; Core modules.
+; Install required core modules.
 dependencies[] = block
 dependencies[] = comment
 dependencies[] = dblog
@@ -17,39 +17,59 @@ dependencies[] = menu
 dependencies[] = number
 dependencies[] = options
 dependencies[] = path
+dependencies[] = rdf
 dependencies[] = search
 dependencies[] = shortcut
 dependencies[] = taxonomy
-dependencies[] = toolbar
 
-; Contributed modules.
+; Install required contributed modules.
+; For Commons 3.6, media is included, but left disabled by default.
+; Uncomment if you wish to enable on install. Alternatively, enabling the
+; commons_media module post install will enable all of the media modules.
+dependencies[] = addressfield
+dependencies[] = addressfield_tokens
+dependencies[] = breakpoints
+dependencies[] = ckeditor
 dependencies[] = ctools
 dependencies[] = custom_search
 dependencies[] = diff
+dependencies[] = elements
 dependencies[] = email_registration
 dependencies[] = entity
 dependencies[] = entityreference
 dependencies[] = entitycache
 dependencies[] = edit_profile
 dependencies[] = features
+;dependencies[] = file_entity
 dependencies[] = flag
 dependencies[] = http_client
+dependencies[] = libraries
+;dependencies[] = media
+;dependencies[] = media_internet
+;dependencies[] = media_wysiwyg
 dependencies[] = menu_attributes
 dependencies[] = message
 dependencies[] = message_notify
 dependencies[] = message_subscribe
 dependencies[] = metatag
 dependencies[] = module_filter
+dependencies[] = navbar
+;dependencies[] = oembed
 dependencies[] = og
+dependencies[] = panelizer
 dependencies[] = panels
+dependencies[] = panels_ipe
+dependencies[] = paranoia
 dependencies[] = pathauto
+dependencies[] = privatemsg
+dependencies[] = privatemsg_realname
 dependencies[] = quicktabs
 dependencies[] = r4032login
-dependencies[] = libraries
 dependencies[] = radioactivity
 dependencies[] = realname
 dependencies[] = redirect
 dependencies[] = rules
+dependencies[] = schemaorg
 dependencies[] = sharethis
 dependencies[] = strongarm
 dependencies[] = token
@@ -57,10 +77,12 @@ dependencies[] = views
 dependencies[] = views_bulk_operations
 dependencies[] = views_ui
 dependencies[] = votingapi
-dependencies[] = advancedqueue
-dependencies[] = ckeditor
+
+; Install commons specific modules
+dependencies[] = commons_activity_page
 dependencies[] = commons_activity_streams
 dependencies[] = commons_bw
+dependencies[] = commons_content_moderation
 dependencies[] = commons_events
 dependencies[] = commons_events_pages
 dependencies[] = commons_featured
@@ -68,38 +90,40 @@ dependencies[] = commons_follow
 dependencies[] = commons_follow_group
 dependencies[] = commons_follow_node
 dependencies[] = commons_follow_term
-dependencies[] = commons_follow_user
 dependencies[] = commons_follow_ui
-dependencies[] = commons_like
-dependencies[] = commons_search
-dependencies[] = commons_search_core
+dependencies[] = commons_follow_user
 dependencies[] = commons_groups
-dependencies[] = commons_groups_pages
 dependencies[] = commons_groups_directory
+dependencies[] = commons_groups_pages
+dependencies[] = commons_like
+dependencies[] = commons_location
+;dependencies[] = commons_media
+dependencies[] = commons_misc
 dependencies[] = commons_notify
-dependencies[] = commons_posts
 dependencies[] = commons_pages
-dependencies[] = commons_q_a
-dependencies[] = commons_q_a_pages
-dependencies[] = commons_wikis
 dependencies[] = commons_polls
-dependencies[] = commons_content_moderation
+dependencies[] = commons_posts
 dependencies[] = commons_profile_base
 dependencies[] = commons_profile_social
-dependencies[] = commons_utility_links
-dependencies[] = commons_user_profile_pages
+dependencies[] = commons_q_a
+dependencies[] = commons_q_a_pages
+dependencies[] = commons_search
+dependencies[] = commons_search_core
 dependencies[] = commons_site_homepage
-dependencies[] = commons_activity_page
-dependencies[] = commons_wikis_pages
-dependencies[] = commons_misc
-dependencies[] = commons_location
-dependencies[] = commons_wysiwyg
 dependencies[] = commons_social_sharing
+dependencies[] = commons_trusted_contacts
+dependencies[] = commons_user_profile_pages
+dependencies[] = commons_utility_links
+dependencies[] = commons_wikis
+dependencies[] = commons_wikis_pages
+dependencies[] = commons_wysiwyg
 
+; System Requirements.
+php_memory_limit = 128M
 
-; Information added by drush on 2013-04-04
-version = "7.x-3.2+0-dev"
+; Information added by Drupal.org packaging script on 2014-02-12
+version = "7.x-3.9"
 core = "7.x"
 project = "commons"
-datestamp = "1365087508"
+datestamp = "1392234217"
 

@@ -341,6 +341,20 @@ function poll_entitycache_node_load($nodes) {
 }
 
 /**
+ * Implements hook_entitycache_node_load().
+ *
+ * This forces translation information to be added on each request, to avoid
+ * expensive cache clears.
+ */
+function translation_entitycache_node_load($nodes) {
+  $result = db_query("SELECT * FROM {node} n WHERE n.nid IN (:nids)", array(':nids' => array_keys($nodes)), array('fetch' => PDO::FETCH_ASSOC));
+  foreach ($result as $record) {
+    $nodes[$record['nid']]->tnid = $record['tnid'];
+    $nodes[$record['nid']]->translate = $record['translate'];
+  }
+}
+
+/**
  * Implements hook_comment_publish().
  *
  * @todo: core should not call this hook outside of a comment_save().

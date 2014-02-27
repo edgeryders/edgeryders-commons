@@ -1,0 +1,142 @@
+<?php
+
+/**
+ * Implements hook_hook_info().
+ */
+function media_internet_hook_info() {
+  $hooks = array(
+    'media_internet_providers',
+  );
+
+  return array_fill_keys($hooks, array('group' => 'media'));
+}
+
+/**
+ * Implements hook_menu().
+ */
+function media_internet_menu() {
+  $items['file/add/web'] = array(
+    'title' => 'Web',
+    'description' => 'Add internet files to your media library.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('media_internet_add'),
+    'access callback' => 'media_internet_access',
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'media_internet.pages.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Access callback for the media_internet media browser plugin.
+ */
+function media_internet_access($account = NULL) {
+  return user_access('administer files', $account) || user_access('add media from remote sources', $account);
+}
+
+/**
+ * Implement hook_permission().
+ */
+function media_internet_permission() {
+  return array(
+    'add media from remote sources' => array(
+      'title' => t('Add media from remote services'),
+      'description' => t('Add media from remote sources such as other websites, YouTube, etc'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function media_internet_theme() {
+  return array(
+    // media_internet.pages.inc.
+    'media_internet_embed_help' => array(
+      'variables' => array('description' => NULL, 'supported_providers' => NULL),
+    ),
+  );
+}
+
+/**
+ * Gets the list of providers.
+ *
+ * A "Provider" is a bit of meta-data like a title and a logo and a class which
+ * can handle saving remote files.  Each provider is able to parse an embed code or URL
+ * and store it as a file object in file_managed.
+ */
+function media_internet_get_providers() {
+  $providers = &drupal_static(__FUNCTION__);
+
+  if (!isset($providers)) {
+    $cid = 'media:internet:providers';
+    if ($cache = cache_get($cid)) {
+      $providers = $cache->data;
+    }
+    else {
+      $providers = array();
+      foreach (module_implements('media_internet_providers') as $module) {
+        foreach (module_invoke($module, 'media_internet_providers') as $key => $provider) {
+          // Store the module here too for convinience.
+          $providers[$key] = $provider;
+          $providers[$key]['module'] = $module;
+          if (!isset($providers[$key]['weight'])) {
+            $providers[$key]['weight'] = 0;
+          }
+        }
+      }
+      uasort($providers, 'drupal_sort_weight');
+      cache_set($cid, $providers);
+    }
+  }
+
+  return $providers;
+}
+
+/**
+ * Finds the appropriate provider for a given URL or embed_string
+ *
+ * Each provider has a claim() method which it uses to tell media_internet
+ * that it should handle this input.  We cycle through all providers to find
+ * the right one.
+ *
+ * @todo: Make this into a normal hook or something because we have to instantiate
+ * each class to test and that's not right.
+ */
+function media_internet_get_provider($embed_string) {
+  foreach (media_internet_get_providers() as $class_name => $nothing) {
+    $p = new $class_name($embed_string);
+    if ($p->claim($embed_string)) {
+      return $p;
+    }
+  }
+  throw new MediaInternetNoHandlerException(t('Unable to handle the provided embed string or URL.'));
+}
+
+/**
+ * Returns HTML for help text based on supported internet media providers.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - description: The normal description for this field, specified by the
+ *     user.
+ *   - supported_providers: A string of supported providers.
+ *
+ * @ingroup themeable
+ */
+function theme_media_internet_embed_help($variables) {
+  $description = $variables['description'];
+  $supported_providers = $variables['supported_providers'];
+
+  $descriptions = array();
+
+  if (strlen($description)) {
+    $descriptions[] = $description;
+  }
+  if (!empty($supported_providers)) {
+    $descriptions[] = t('Supported internet media providers: !providers.', array('!providers' => '<strong>' . $supported_providers . '</strong>'));
+  }
+
+  return implode('<br />', $descriptions);
+}

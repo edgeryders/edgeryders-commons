@@ -168,7 +168,7 @@ function oauthconnector_connector() {
 
   $providers = oauthconnector_provider_load_all();
   foreach ($providers as $provider) {
-    if ($provider->csid) {
+    if (!empty($provider->csid)) {
       $items['oauthconnector_' . $provider->name] = array(
         'title' => $provider->title,
         'oauthconnector provider' => $provider,
@@ -313,7 +313,7 @@ function oauthconnector_oauth_common_authorized($consumer, $access_token, $reque
           $connect = FALSE;
           if (empty($_SESSION['oauthconnector_login'])) {
             if ($user->uid && !empty($action['add connection callback']) && is_callable($action['add connection callback'])) {
-              $connect = $action['add connection callback']('oauthconnector_' . $provider->name, $external_uid, $user->uid);
+              $connect = $action['add connection callback']('oauthconnector_' . $provider->name, $external_uid, $user->uid, $consumer, $access_token, $request_token);
             }
           }
           elseif (!$user->uid) {
@@ -612,13 +612,14 @@ function _oauthconnector_button($form, &$form_state, $login = TRUE) {
     $auth_url = $client->getAuthorizationUrl($provider->consumer_advanced['authorization endpoint'], array(
       'callback' => $callback_url,
     ));
-  } else {
+  }
+  else {
     $callback_url = url('oauth/authorized2/' . $consumer->csid, array('absolute' => TRUE));
     $request_token = new DrupalOAuthToken(md5(mt_rand()), md5(mt_rand()), $consumer, array(
       'type'    => OAUTH_COMMON_TOKEN_TYPE_REQUEST,
       //'version' => $client->version,
     ));
-    $client = new DrupalOAuthClient($consumer, $request_token, $sig_method);
+    $client = new DrupalOAuth2Client($consumer, $request_token, $sig_method);
     $auth_url = $client->getAuthorizationUrl($provider->consumer_advanced['authorization endpoint'], array(
       'params'=>array(
         'redirect_uri' => $callback_url,

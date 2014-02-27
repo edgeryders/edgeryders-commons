@@ -12,6 +12,7 @@
  *
  * To return:
  * the complete search path
+ *
  */
 
 function _custom_search_lucenapi_search($variables) {
@@ -19,15 +20,11 @@ function _custom_search_lucenapi_search($variables) {
   $keys = array();
 
   if (count($variables['types']) && !in_array('all', $variables['types'])) {
-    foreach ($variables['types'] as $t) {
-      $keys["type[$t]"] = $t;
-    }
+    foreach ($variables['types'] as $t) $keys["type[$t]"] = $t;
   }
 
   if (module_exists('taxonomy') && count($variables['terms'])) {
-    foreach ($variables['terms'] as $t) {
-      $keys["category[$t]"] = $t;
-    }
+    foreach ($variables['terms'] as $t) $keys["category[$t]"] = $t;
   }
 
   return array('path' => $type, 'query' => $keys);

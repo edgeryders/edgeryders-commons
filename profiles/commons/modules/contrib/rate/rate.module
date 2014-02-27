@@ -15,6 +15,7 @@ define('RATE_CLOSED', 4);
 define('RATE_DISPLAY_DISABLE', 0);
 define('RATE_DISPLAY_ABOVE_CONTENT', 1);
 define('RATE_DISPLAY_BELOW_CONTENT', 2);
+define('RATE_DISPLAY_IN_LINKS', 3);
 
 // Define modes for which rating to display
 define('RATE_AVERAGE', 1);
@@ -148,7 +149,7 @@ function rate_menu() {
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  
+
   $menu[RATE_PATH_ADMIN_PAGE_SETTINGS] = array(
     'title' => 'Settings',
     'page callback' => 'drupal_get_form',
@@ -223,7 +224,7 @@ function rate_generate_widget($widget_id, $content_type, $content_id, $mode = RA
   // Determine if the user may vote.
   $entities = entity_load($content_type, array($content_id));
   $node = $entities[$content_id];
-  
+
   $permission_status = _rate_check_permissions($widget, $node);
 
   // This option should be available, check for legacy.
@@ -444,9 +445,9 @@ function _rate_check_permissions($widget, $node = NULL) {
 
 /**
  * Get entity id for source translation.
- * 
+ *
  * This function is safe for use with unsupported entity types.
- * 
+ *
  * @param string $entity_type
  * @param int $entity_id
  * @return int
@@ -487,7 +488,7 @@ function rate_get_results($content_type, $content_id, $widget_id) {
     'tag' => $widget->tag,
     'value_type' => $widget->value_type,
   );
-  
+
   // Check if we should use the source translation.
   if ($widget->use_source_translation) {
     $criteria['entity_id'] = _rate_get_source_translation($criteria['entity_type'], $criteria['entity_id']);
@@ -582,7 +583,7 @@ function rate_save_vote($widget, $content_type, $content_id, $value, $ahah = FAL
     return;
   }
   $saved = TRUE;
-  
+
   module_load_include('inc', 'rate', 'rate.bots');
   if (rate_bots_is_blocked()) {
     if (variable_get(RATE_VAR_BOT_RETROACTIVE, TRUE)) {
@@ -595,7 +596,7 @@ function rate_save_vote($widget, $content_type, $content_id, $value, $ahah = FAL
     }
     return;
   }
-  
+
   // Check if we should use the source translation.
   if ($widget->use_source_translation) {
     $content_id = _rate_get_source_translation($content_type, $content_id);
@@ -604,9 +605,9 @@ function rate_save_vote($widget, $content_type, $content_id, $value, $ahah = FAL
   // Determine if the user may vote.
   $entities = entity_load($content_type, array($content_id));
   $node = $entities[$content_id];
-  
+
   $permission_status = _rate_check_permissions($widget, $node);
-  
+
   // This option should be available, check for legacy.
   isset($widget->noperm_behaviour) or $widget->noperm_behaviour = RATE_NOPERM_REDIRECT_WITH_MESSAGE;
 
@@ -653,7 +654,7 @@ function rate_save_vote($widget, $content_type, $content_id, $value, $ahah = FAL
     'value' => $value,
     'tag' => $widget->tag,
   );
-  
+
   $criteria = NULL;
 
   // Call hook_rate_vote_alter().
@@ -666,7 +667,7 @@ function rate_save_vote($widget, $content_type, $content_id, $value, $ahah = FAL
     'widget' => $widget,
   );
   drupal_alter('rate_vote', $votes, $context);
-  
+
   if ($save) {
     votingapi_set_votes($votes, $criteria);
   }
@@ -717,7 +718,7 @@ function rate_rate_vote_alter($votes, &$context) {
   if (!empty($votes['entity_id'])) {
     $votes = array($votes);
   }
-  
+
   // Handle clearing out old votes if they exists.
   if (empty($criteria)) {
     // If the calling function didn't explicitly set criteria for vote deletion,
@@ -760,7 +761,7 @@ function rate_rate_vote_alter($votes, &$context) {
  * Implements hook_node_view().
  */
 function rate_node_view($node, $view_mode, $langcode = '') {
-  if ($view_mode != 'rss') {  
+  if ($view_mode != 'rss') {
     // Adding the form to the node view
     $widgets = rate_get_active_widgets('node', $node->type, $view_mode);
     foreach ($widgets as $widget_id => $widget) {
@@ -772,15 +773,31 @@ function rate_node_view($node, $view_mode, $langcode = '') {
         '#markup' => rate_generate_widget($widget_id, 'node', $node->nid, $display_mode),
         '#title' => check_plain($widget->title),
         '#type' => 'item',
+        '#attached' => array(
+          'css' => array(
+            drupal_get_path('module', 'rate') . '/rate.css',
+          ),
+        ),
       );
       if ($widget->node_display == RATE_DISPLAY_DISABLE) {
         $node->$widget_name = $widget_code;
       }
+      elseif ($widget->node_display == RATE_DISPLAY_IN_LINKS) {
+        if (!isset($node->content['links']['rate'])) {
+          $node->content['links']['rate']  = array('#links' => array());
+        }
+        $node->content['links']['rate']['#links'][$widget_name] = array(
+          'title' => drupal_render($widget_code),
+          'html' => TRUE,
+        );
+      }
       else {
         $node->content[$widget_name] = $widget_code;
       }
-    
-  }}
+      $node->content['links']['rate']['#theme'] = 'links';
+      $node->content['links']['rate']['#attributes'] = array('class' => array('links', 'inline'));
+    }
+  }
 }
 
 /**
@@ -813,6 +830,11 @@ function rate_comment_view_alter(&$comment) {
     $widget_code = array(
       '#weight' => $widget->comment_display == RATE_DISPLAY_ABOVE_CONTENT ? -50 : 50,
       '#markup' => rate_generate_widget($widget_id, 'comment', $comment['#comment']->cid, $widget->comment_display_mode),
+      '#attached' => array(
+        'css' => array(
+          drupal_get_path('module', 'rate') . '/rate.css',
+        ),
+      ),
     );
     if ($widget->comment_display == RATE_DISPLAY_DISABLE) {
       $comment['#' . $widget_name] = $widget_code;
@@ -857,7 +879,7 @@ function rate_vote_ahah() {
       rate_save_vote($widget, $content_type, $content_id, $value, TRUE);
     }
   }
-  
+
   print rate_generate_widget($widget_id, $content_type, $content_id, $widget_mode, TRUE, TRUE);
 
   module_invoke_all('exit') & exit;
@@ -962,13 +984,6 @@ function rate_rate_templates() {
   $templates['yesno']->template_title = t('Yes / no');
 
   return $templates;
-}
-
-/**
- * Implements hook_init().
- */
-function rate_init() {
-  drupal_add_css(drupal_get_path('module', 'rate') . '/rate.css');
 }
 
 /**
@@ -1180,7 +1195,7 @@ function rate_theme() {
  */
 function rate_preprocess_rate_widget(&$variables) {
   extract($variables);
-  
+
   $buttons = array();
   foreach ($links as $link) {
     $classes = 'rate-btn';
@@ -1250,7 +1265,7 @@ function rate_preprocess_rate_template_fivestar(&$variables) {
     $stars[] = theme('rate_button', array('text' => $links[$i]['text'], 'href' => $links[$i]['href'], 'class' => $class));
   }
   $variables['stars'] = $stars;
-  
+
   $info = array();
   if ($mode == RATE_CLOSED) {
     $info[] = t('Voting is closed.');
@@ -1460,7 +1475,7 @@ function rate_get_token($value = '') {
 
 /**
  * Page callback to generate a user login page with message.
- * 
+ *
  * @return string
  */
 function rate_login_page() {
@@ -1476,7 +1491,7 @@ function rate_login_page() {
  * Implements hook_votingapi_metadata_alter().
  *
  * Make tags and option value type visible to VotingAPI.
- * 
+ *
  * @see votingapi_metadata()
  */
 function rate_votingapi_metadata_alter(&$data) {

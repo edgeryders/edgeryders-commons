@@ -12,7 +12,7 @@ function flag_features_export($data, &$export, $module_name = '') {
   $pipe = array();
 
   // Add flag module as a dependency.
-  $export['dependencies']['flag'] = 'flag';
+  $export['dependencies']['features'] = 'flag';
 
   // Ensure the modules that provide the flag are included as dependencies.
   $modules = flag_features_providing_module();
@@ -89,13 +89,11 @@ function flag_features_providing_module() {
     }
   }
 
-  // Any entity type without a flag providing module will be provided by the
-  // flag module.
+  // Any entity type without a providing module will be provided for by the flag module
   foreach (entity_get_info() as $entity_type => $entity) {
-    if (!isset($modules[$entity_type]) && empty($entity['configuration']) && $entity_type !== 'taxonomy_vocabulary') {
+    if (!isset($modules[$entity_type]) && empty($entity['configuration'])) {
       $modules[$entity_type] = 'flag';
     }
   }
-
   return $modules;
 }

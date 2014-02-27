@@ -11,9 +11,10 @@ define('ACQUIA_SEARCH_ENVIRONMENT_ID', 'acquia_search_server_1');
  * Predefined Acquia Search network environment
  */
 function acquia_search_get_environment($conf = array()) {
-  if (!empty($conf['acquia_subscription_id'])) {
+  if (!empty($conf['acquia_subscription_id']) && !empty($conf['acquia_subscription_key'])) {
     $identifier = $conf['acquia_subscription_id'];
-    $subscription = acquia_agent_get_subscription($params = array(), $identifier);
+    $key = $conf['acquia_subscription_key'];
+    $subscription = acquia_agent_get_subscription($params = array(), $identifier, $key);
   }
   else {
     $identifier = acquia_agent_settings('acquia_identifier');
@@ -114,6 +115,9 @@ function acquia_search_enable_acquia_solr_environment() {
   }
   $environment['env_id'] = ACQUIA_SEARCH_ENVIRONMENT_ID;
   $environment['name'] = t('Acquia Search');
+
+  // allow other modules to override this
+  drupal_alter('acquia_search_enable', $environment);
   apachesolr_environment_save($environment);
 }
 
@@ -474,8 +478,9 @@ function acquia_search_extract_hmac($headers) {
  * Possibly alters the query type ('defType') param to edismax.
  */
 function acquia_search_apachesolr_query_alter($query) {
+  $environment = apachesolr_environment_load($query->solr('getId'));
   // @todo - does it make sense to check $caller too?
-  if (!acquia_search_environment_connected($query->solr('getId')) || $query->getParam('qt') || $query->getParam('defType')) {
+  if (!acquia_search_environment_connected($environment) || $query->getParam('qt') || $query->getParam('defType')) {
     // This is a 'mlt' query or something else custom.
     return;
   }

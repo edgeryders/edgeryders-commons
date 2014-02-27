@@ -14,8 +14,7 @@ Drupal.behaviors.customSearchSort = {
     }
 
     var table = $('table#elements');
-    // Get the blocks tableDrag object.
-    var tableDrag = Drupal.tableDrag.elements;
+    var tableDrag = Drupal.tableDrag.elements; // Get the blocks tableDrag object.
 
     // Add a handler for when a row is swapped, update empty regions.
     tableDrag.row.prototype.onSwap = function (swappedRow) {

@@ -1,0 +1,92 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the KISSmetrics module.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function kissmetrics_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    // Check if the KISSmetrics PHP library is installed.
+    if (($library = libraries_detect('kissmetrics')) && !empty($library['installed'])) {
+      $requirements['kissmetrics_library'] = array(
+        'title' => $t('KISSmetrics PHP library'),
+        'value' => $t('Installed'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+    else {
+      $requirements['kissmetrics_library'] = array(
+        'title' => $t('KISSmetrics PHP library'),
+        'value' => $t('Not installed'),
+        'description' => $library['error message'],
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    // Check if a KISSmetrics API key has been set.
+    if (variable_get('kissmetrics_api_key')) {
+      $requirements['kissmetrics_api_key'] = array(
+        'title' => $t('KISSmetrics API key'),
+        'value' => $t('Set'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+    else {
+      $requirements['kissmetrics_api_key'] = array(
+        'title' => $t('KISSmetrics API key'),
+        'value' => $t('Not set'),
+        'description' => $t('A KISSmetrics API key has not been set. You must <a href="@url">add an API key</a> before data can be sent to KISSmetrics.', array('@url' => url('admin/config/services/kissmetrics', array('query' => drupal_get_destination())))),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    // Check that the request log cache directory is writable.
+    if (kissmetrics_check_directory()) {
+      $requirements['kissmetrics_cache_directory'] = array(
+        'title' => $t('KISSmetrics cache directory'),
+        'value' => $t('Writable'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+    else {
+      $requirements['kissmetrics_cache_directory'] = array(
+        'title' => $t('KISSmetrics cache directory'),
+        'value' => $t('Not found or not writable'),
+        'description' => $t('The directory %directory was not found or is not writable by the server. See <a href="@docpage">@docpage</a> for more information.', array('%directory' => kissmetrics_get_directory(), '@docpage' => 'http://drupal.org/node/34025')),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_enable().
+ */
+function kissmetrics_enable() {
+  // Ensure the request log cache directory is available and ready.
+  kissmetrics_check_directory();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function kissmetrics_uninstall() {
+  drupal_load('module', 'kissmetrics');
+
+  // Remove the request log cache directory.
+  kissmetrics_clear_directory();
+
+  // Remove configuration variables.
+  variable_del('kissmetrics_api_key');
+  variable_del('kissmetrics_use_cron');
+  variable_del('kissmetrics_log_dir');
+  variable_del('kissmetrics_visibility_mode');
+  variable_del('kissmetrics_visibility_pages');
+}

@@ -120,11 +120,7 @@ function message_admin_text_copy($form, $form_state) {
     return $form;
   }
 
-  $languages = language_list();
-  $language_options = array(LANGUAGE_NONE => t('"Language none"'));
-  foreach ($languages as $langcode => $language) {
-    $language_options[$langcode] = $language->name;
-  }
+  $language_options = array(LANGUAGE_NONE => t('Language neutral')) + locale_language_list('name', TRUE);
 
   $form['origin'] = array(
     '#type' => 'select',
@@ -268,16 +264,10 @@ function message_type_form($form, &$form_state, $message_type, $op = 'edit') {
 
   $field_language = NULL;
   if (module_exists('locale')) {
-    $options = array();
-    foreach (language_list() as $key => $value) {
-      if (!empty($value->enabled)) {
-        $options[$key] = $value->name;
-      }
-    }
     $field_language = !empty($form_state['values']['language']) ? $form_state['values']['language'] : language_default()->language;
     $form['language'] += array(
       '#type' => 'select',
-      '#options' => $options,
+      '#options' => array(LANGUAGE_NONE => t('Language neutral')) + locale_language_list('name'),
       '#required' => TRUE,
       '#default_value' => $field_language,
       '#ajax' => array(

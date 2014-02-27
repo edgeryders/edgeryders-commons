@@ -241,7 +241,7 @@ class DummySolr implements DrupalApacheSolrServiceInterface {
     return $this->last_search;
   }
 
- /**
+  /**
    * Call the /admin/ping servlet, to test the connection to the server.
    *
    * @param $timeout
@@ -374,12 +374,13 @@ class DummySolr implements DrupalApacheSolrServiceInterface {
    * @param boolean $waitFlush Defaults to true
    * @param boolean $waitSearcher Defaults to true
    * @param float $timeout Maximum expected duration (in seconds) of the commit operation on the server (otherwise, will throw a communication exception). Defaults to 1 hour
+   * @param boolean $softCommit optimize by using a softCommit
    *
    * @return response object
    *
    * @throws Exception If an error occurs during the service call
    */
-  function commit($optimize = true, $waitFlush = true, $waitSearcher = true, $timeout = 3600) {
+  function commit($optimize = TRUE, $waitFlush = TRUE, $waitSearcher = TRUE, $timeout = 3600, $softCommit = FALSE) {
   }
 
   /**
@@ -392,8 +393,8 @@ class DummySolr implements DrupalApacheSolrServiceInterface {
    *
    * @throws Exception If an error occurs during the service call
    */
-   function deleteById($id, $timeout = 3600) {
-   }
+  function deleteById($id, $timeout = 3600) {
+  }
 
   /**
    * Create and post a delete document based on multiple document IDs.
@@ -427,12 +428,47 @@ class DummySolr implements DrupalApacheSolrServiceInterface {
    * @param boolean $waitFlush
    * @param boolean $waitSearcher
    * @param float $timeout Maximum expected duration of the commit operation on the server (otherwise, will throw a communication exception)
+   * @param boolean $softCommit optimize by using a softCommit
    *
    * @return response object
    *
    * @throws Exception If an error occurs during the service call
    */
-  function optimize($waitFlush = true, $waitSearcher = true, $timeout = 3600) {
+  function optimize($waitFlush = TRUE, $waitSearcher = TRUE, $timeout = 3600, $softCommit = FALSE) {
+  }
+
+  /**
+   * Get the current solr version. This could be 1, 3 or 4
+   *
+   * @return int
+   *   1, 3 or 4. Does not give a more details version, for that you need
+   *   to get the system info.
+   */
+  function getSolrVersion() {
+  }
+
+  /**
+   * Get query name.
+   */
+  function getName() {
+  }
+
+  /**
+   * Get query searcher name (for facetapi, views, pages, etc).
+   */
+  function getSearcher() {
+  }
+
+  /**
+   * Get context values.
+   */
+  function getContext() {
+  }
+
+  /**
+   * Set context value.
+   */
+  function addContext(array $context) { 
   }
 }
 

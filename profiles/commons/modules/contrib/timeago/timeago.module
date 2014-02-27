@@ -184,6 +184,15 @@ function timeago_date_formats() {
 }
 
 /**
+ * Implements hook_date_format_types().
+ */
+function timeago_date_format_types() {
+   return array(
+    'time_ago_dynamic' => t('Time ago (dynamically updating)'), 
+  );
+}
+
+/**
  * Implements hook_init().
  */
 function timeago_init() {

@@ -1,0 +1,20 @@
+name = Commons WYSIWYG
+description = Provides a rich text editor for content creation.
+core = 7.x
+package = Commons - Building blocks
+dependencies[] = ckeditor
+dependencies[] = features
+dependencies[] = filter
+dependencies[] = strongarm
+features[ckeditor_profile][] = Advanced
+features[features_api][] = api:2
+features[filter][] = filtered_html
+features[filter][] = full_html
+features[user_permission][] = use text format filtered_html
+
+; Information added by Drupal.org packaging script on 2014-02-12
+version = "7.x-3.9"
+core = "7.x"
+project = "commons"
+datestamp = "1392234217"
+

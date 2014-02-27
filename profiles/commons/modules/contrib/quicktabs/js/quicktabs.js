@@ -57,11 +57,12 @@ Drupal.quicktabs.tab = function (el) {
   this.tabIndex = el.myTabIndex;
   var qtKey = 'qt_' + el.qt_name;
   var i = 0;
-  for (var i = 0; i < Drupal.settings.quicktabs[qtKey].tabs.length; i++) {
+  for (var key in Drupal.settings.quicktabs[qtKey].tabs) {
     if (i == this.tabIndex) {
-      this.tabObj = Drupal.settings.quicktabs[qtKey].tabs[i];
-      this.tabKey = i;
+      this.tabObj = Drupal.settings.quicktabs[qtKey].tabs[key];
+      this.tabKey = key;
     }
+    i++;
   }
   this.tabpage_id = 'quicktabs-tabpage-' + el.qt_name + '-' + this.tabKey;
   this.container = $('#quicktabs-container-' + el.qt_name);

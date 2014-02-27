@@ -12,6 +12,7 @@
  *
  * To return:
  * the complete search path
+ *
  */
 
 function _custom_search_apachesolr_search($variables) {
@@ -32,7 +33,7 @@ function _custom_search_apachesolr_search($variables) {
   }
 
   if (module_exists('taxonomy') && count($variables['terms'])) {
-    // Get all fields info to get correct filter names.
+    // get all fields info to get correct filter names
     $fields = field_info_fields();
     $taxonomy_fields = array();
     foreach ($fields as $name => $settings) {
@@ -41,7 +42,7 @@ function _custom_search_apachesolr_search($variables) {
         $taxonomy_fields[$voc->vid] = $name;
       }
     }
-    // Build keys for taxonomy.
+    // build keys for taxonomy
     foreach ($variables['terms'] as $t) {
       $vocid = taxonomy_term_load($t)->vid;
       $keys['f[' . count($keys) . ']'] = 'im_' . $taxonomy_fields[$vocid] . ':' . $t;

@@ -1,0 +1,192 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *   Indexer for the user entities for the Apachesolr module.
+ */
+
+function apachesolr_user_apachesolr_entity_info_alter(&$entity_info) {
+  $entity_info['user']['indexable'] = TRUE;
+  $entity_info['user']['status callback'][] = 'apachesolr_user_status_callback';
+  $entity_info['user']['document callback'][] = 'apachesolr_index_user_solr_document';
+  $entity_info['user']['reindex callback'] = 'apachesolr_user_solr_reindex';
+  $entity_info['user']['index_table'] = 'apachesolr_index_entities_user';
+  //$entity_info['node']['cron_check'] = 'apachesolr_index_user_check_table';
+  $entity_info['user']['result callback'] = 'apachesolr_user_result';
+}
+
+/**
+ * Status callback for ApacheSolr, for users.
+ */
+function apachesolr_user_status_callback($entity_id, $entity_type) {
+  $user = user_load($entity_id, TRUE);
+  return ($user->status == 1);
+}
+
+/**
+ * Builds the user-specific information for a Solr document.
+ *
+ * @param ApacheSolrDocument $document
+ *   The Solr document we are building up.
+ * @param stdClass $entity
+ *   The entity we are indexing.
+ * @param string $entity_type
+ *   The type of entity we're dealing with.
+ */
+function apachesolr_index_user_solr_document(ApacheSolrDocument $document, $account, $entity_type) {
+
+  $document->uid = $account->uid;
+
+  // Title is a required field.
+  $document->label = apachesolr_clean_text(format_username($account));
+
+  $document->mail = $account->mail;
+  $document->signature = $account->signature;
+
+  // Note the conspicuous lack of password hash. :-)
+
+  // Build the user body.
+  $build = user_view($account, 'search_index');
+  // Why do we need this?
+  unset($build['#theme']);
+  $text = drupal_render($build);
+
+  $document->content = apachesolr_clean_text($text);
+
+  $document->bs_status = $account->status;
+  $document->created = apachesolr_date_iso($account->created);
+  $document->access = apachesolr_date_iso($account->access);
+
+  $document->im_rids = array_keys($account->roles);
+  //  Generic usecase for future reference. Callbacks can
+  //  allow you to send back multiple documents
+  $documents = array();
+  $documents[] = $document;
+  return $documents;
+}
+
+/**
+ * Reindexing callback for ApacheSolr, for users.
+ */
+function apachesolr_user_solr_reindex() {
+  $indexer_table = apachesolr_get_indexer_table('user');
+  $transaction = db_transaction();
+  $env_id = apachesolr_default_environment();
+  try {
+    db_delete($indexer_table)
+      ->condition('entity_type', 'user')
+      ->execute();
+
+    // We know there's only one bundle type, so if that doesn't get indexed just
+    // skip this entirely.
+    if (apachesolr_get_index_bundles($env_id, 'user')) {
+      $select = db_select('users', 'u');
+      $select->addExpression("'user'", 'entity_type');
+      $select->addExpression("'user'", 'bundle');
+      $select->addField('u', 'uid', 'entity_id');
+      $select->addField('u', 'status', 'status');
+      $select->addExpression(REQUEST_TIME, 'changed');
+
+      $insert = db_insert($indexer_table)
+        ->fields(array('entity_id', 'status', 'entity_type', 'bundle', 'changed'))
+        ->from($select)
+        ->execute();
+    }
+  }
+  catch (Exception $e) {
+    $transaction->rollback();
+    drupal_set_message($e->getMessage(), 'error');
+    watchdog_exception('Apache Solr', $e);
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+/**
+ * Implements hook_search_execute().
+ * @param $keys
+ *   The keys that are available after the path that is defined in
+ *   hook_search_info
+ * @param $conditions
+ *   Conditions that are coming from apachesolr_search_conditions
+ */
+function apachesolr_user_search_execute($keys = NULL, $conditions = NULL) {
+  $search_page = apachesolr_search_page_load('core_search');
+  $results = apachesolr_search_search_results($keys, $conditions, $search_page);
+  return $results;
+}
+
+/**
+ * Callback function for user search results.
+ *
+ * @param stdClass $doc
+ *   The result document from Apache Solr.
+ * @param array $result
+ *   The result array for this record to which to add.
+ */
+function apachesolr_user_result($doc, &$result, &$extra) {
+  //not good performance, but the results look good.
+  if ($user = user_load($doc->entity_id)) {
+    $user_profile = user_view($user, 'search_result');
+    $result['snippet'] = drupal_render($user_profile);
+  }
+}
+
+/**
+ * Implements hook_apachesolr_index_document_build_entity()
+ */
+function apachesolr_user_apachesolr_index_document_build_user(ApacheSolrDocument $document, $user, $env_id) {
+  $document->setMultiValue('access__user', 1);
+}
+
+/**
+ * Implements hook_apachesolr_query_alter().
+ */
+function apachesolr_user_apachesolr_query_alter(DrupalSolrQueryInterface $query) {
+  if ($query->getName() == 'apachesolr') {
+  }
+  elseif ($query->getName() == 'apachesolr_mlt') {
+    // Exclude files from MLT results.
+    $query->addFilter('entity_type', 'user', TRUE);
+  }
+
+  if (module_exists('apachesolr_access') && user_access('access user profiles')) {
+    $qs = $query->getFilterSubQueries();
+    $q = array_shift($qs);
+    $q->addFilter('access__user', TRUE);
+    $subquery = apachesolr_drupal_subquery();
+    $subquery->addFilter('access__user', TRUE);
+    $query->addFilterSubQuery($q, 'OR');
+  }
+}
+
+function apachesolr_user_facetapi_searcher_info_alter(array &$searcher_info) {
+  foreach ($searcher_info as $index => $info) {
+    $searcher_info[$index]['types'][] = 'user';
+  }
+}
+
+/**
+ * Implements hook_facetapi_facet_info().
+ */
+function apachesolr_user_facetapi_facet_info($searcher_info) {
+  $facets = array();
+  if (isset($searcher_info['types']['user'])) {
+    $facets['rid'] = array(
+      'label' => t('Role'),
+      'description' => t('Filter by user role.'),
+      'field' => 'im_rids',
+      'map callback' => 'user_roles',
+      'values callback' => 'facetapi_callback_user_values',
+      'facet mincount allowed' => TRUE,
+      'dependency plugins' => array('bundle', 'role'),
+    );
+
+    // Add facets for all fields attached to the user entity. 
+    $facets = array_merge($facets, apachesolr_entity_field_facets('user'));
+  }
+  return $facets;
+}
+

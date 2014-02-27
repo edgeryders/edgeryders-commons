@@ -1,0 +1,70 @@
+language: php
+
+php:
+  - 5.5
+  - 5.4
+  - 5.3
+
+
+notifications:
+  email:
+    - commons-bulk@acquia.com
+
+branches:
+  only:
+    - 7.x-3.x
+
+# This will create the database
+mysql:
+  database: commons
+  username: root
+  encoding: utf8
+
+# To be able to run a webbrowser
+# If we need anything more powerful
+# than e.g. phantomjs
+before_install:
+  - "pwd"
+  - "sudo apt-get update"
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - "wget http://selenium.googlecode.com/files/selenium-server-standalone-2.35.0.jar -O $TRAVIS_BUILD_DIR/selenium-server-standalone.jar"
+  - "java -jar $TRAVIS_BUILD_DIR/selenium-server-standalone.jar > /dev/null &"
+  - ruby -rsocket -e "up = false; 60.times {|i| sleep 1; exit(0) if up; up = TCPSocket.new('127.0.0.1', 4444).close.nil? rescue false}; exit(1)"
+  # Make sure Selenium is up
+  - curl http://localhost:4444/wd/hub
+  # For uploading error screenshots
+  - "wget http://imgur.com/tools/imgurbash.sh -O $TRAVIS_BUILD_DIR/imgurbash.sh && chmod +x $TRAVIS_BUILD_DIR/imgurbash.sh"
+
+before_script:
+  # Grab drush
+  - pear channel-discover pear.drush.org
+  - pear install drush/drush
+  - phpenv rehash
+  # LAMP package installation (mysql is already started)
+  - sudo apt-get install -y --force-yes apache2 libapache2-mod-php5 php5-mysql php5-curl
+  # Apache webserver configuration
+  - sudo sed -i -e "s,/var/www,$(pwd)/packaged,g" /etc/apache2/sites-available/default
+  - sudo a2enmod rewrite
+  - sudo a2enmod actions
+  - sudo service apache2 restart
+  # Install the composer packages for behat / ...
+  - composer --working-dir=tests/ install
+script:
+  # Build distro from makefile
+  - drush make build-commons.make --no-cache -y packaged
+  # Site installation. We're doing the cd-dance because drush -r throws an exception for me currently.
+  - cd packaged
+  - drush -v site-install --db-url=mysql://root@localhost/commons --site-name=QASite --account-name=admin --account-pass=commons --account-mail=admin@example.com --site-mail=site@example.com -v -y commons commons_anonymous_welcome_text_form.commons_anonymous_welcome_title="Oh hai" commons_anonymous_welcome_text_form.commons_anonymous_welcome_body="No shirts, no shoes, no service." commons_create_first_group.commons_first_group_title="Internet People" commons_create_first_group.commons_first_group_body="This is the first group on the page."
+  - cd ..
+  # Make sure the installed site responds
+  - curl localhost
+  # And let's see how fast it responds on the 2nd request
+  - time curl http://localhost/ -s -o /dev/null
+  # Start running the tests
+  - cd tests
+  - bin/behat
+
+after_failure:
+  - ls -lash $TRAVIS_BUILD_DIR/fail*.png
+  - $TRAVIS_BUILD_DIR/imgurbash.sh $TRAVIS_BUILD_DIR/fail*.png

@@ -286,7 +286,7 @@ abstract class Mollom {
    * @see Mollom::handleRequest()
    * @see Mollom::request()
    */
-  protected function query($method, $path, array $data = array(), array $expected = array()) {
+  public function query($method, $path, array $data = array(), array $expected = array()) {
     // Reset list response properties.
     $this->listCount = NULL;
     $this->listOffset = 0;
@@ -295,21 +295,22 @@ abstract class Mollom {
     // Send the request to the server.
     $server = 'http://' . $this->server;
     $max_attempts = $this->requestMaxAttempts;
-    while ($max_attempts--) {
+    while ($max_attempts-- > 0) {
       try {
         $result = $this->handleRequest($method, $server, $path, $data, $expected);
       }
       catch (MollomBadRequestException $e) {
-        // This is an irrecoverable error, so don't try further.
+        // Irrecoverable error, so don't try further.
         break;
       }
       catch (MollomAuthenticationException $e) {
-        // This is an irrecoverable error, so don't try further.
+        // Irrecoverable error, so don't try further.
         break;
       }
       catch (MollomException $e) {
-        // If the resource does not exist, there is no point in trying further.
-        if ($e->getCode() === 404) {
+        // If the requested resource does not exist, or the request was
+        // malformed, there is no point in trying further.
+        if ($e->getCode() >= 400 && $e->getCode() < 500) {
           break;
         }
       }
@@ -352,19 +353,14 @@ abstract class Mollom {
     if ($this->lastResponseCode === self::RESPONSE_ERROR) {
       return $this->lastResponseCode;
     }
-    // Return a request error, which always requires to take client-side
-    // measures to resolve the problem.
-    if ($this->lastResponseCode === self::REQUEST_ERROR) {
-      return $this->lastResponseCode;
-    }
     // Return an authentication error, which may require special client-side
     // processing.
     if ($this->lastResponseCode === self::AUTH_ERROR) {
       return $this->lastResponseCode;
     }
-    // Return a not found error, which always needs to be handled by the calling
-    // code.
-    if ($this->lastResponseCode === 404) {
+    // Return a request error, which always requires client-side measures to
+    // resolve the problem.
+    if ($this->lastResponseCode >= self::REQUEST_ERROR && $this->lastResponseCode < 500) {
       return $this->lastResponseCode;
     }
 
@@ -410,6 +406,7 @@ abstract class Mollom {
    * @see json_decode()
    */
   protected function handleRequest($method, $server, $path, $data, $expected = array()) {
+    $time_start = microtime(TRUE);
     if (!empty($this->publicKey) && !empty($this->privateKey)) {
       // @todo Move into class property.
       $headers['Accept'] = 'application/xml, application/json;q=0.8, */*;q=0.5';
@@ -435,6 +432,7 @@ abstract class Mollom {
       $response->isError = TRUE;
       $response->body = NULL;
     }
+    $time_stop = microtime(TRUE);
 
     // Parse the response body string into an array.
     $response->data = array();
@@ -488,6 +486,7 @@ abstract class Mollom {
       'response_code' => $response->code,
       'response_message' => $response->message,
       'response' => !empty($response->data) ? $response->data : $response->body,
+      'response_time' => $time_stop - $time_start,
     );
     if ($response->isError) {
       if ($response->code <= 0) {
@@ -848,6 +847,57 @@ abstract class Mollom {
   }
 
   /**
+   * Retrieves GET/HEAD or POST/PUT parameters of an inbound HTTP request.
+   *
+   * @return array
+   *   An array containing either GET/HEAD query string parameters or POST/PUT
+   *   post body parameters. Parameter parsing accounts for multiple request
+   *   parameters in non-PHP format; e.g., 'foo=one&foo=bar'.
+   */
+  public static function getServerParameters() {
+    if ($_SERVER['REQUEST_METHOD'] == 'GET' || $_SERVER['REQUEST_METHOD'] == 'HEAD') {
+      $data = self::httpParseQuery($_SERVER['QUERY_STRING']);
+    }
+    elseif ($_SERVER['REQUEST_METHOD'] == 'POST' || $_SERVER['REQUEST_METHOD'] == 'PUT') {
+      $data = self::httpParseQuery(file_get_contents('php://input'));
+    }
+    return $data;
+  }
+
+  /**
+   * Retrieves the OAuth Authorization header of an inbound HTTP request.
+   *
+   * @return array
+   *   An array containing all key/value pairs extracted out of the
+   *   'Authorization' HTTP header, if any.
+   */
+  public static function getServerAuthentication() {
+    $header = array();
+    // PHP as Apache module provides a SAPI function.
+    // PHP 5.4+ enables getallheaders() also for FastCGI.
+    if (function_exists('getallheaders')) {
+      $headers = getallheaders();
+      if (isset($headers['Authorization'])) {
+        $input = $headers['Authorization'];
+      }
+    }
+    // PHP as CGI with server/.htaccess configuration (e.g., via mod_rewrite)
+    // may transfer/forward HTTP request data into server variables.
+    elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+      $input = $_SERVER['HTTP_AUTHORIZATION'];
+    }
+    // PHP as CGI may provide HTTP request data as environment variables.
+    elseif (isset($_ENV['HTTP_AUTHORIZATION'])) {
+      $input = $_ENV['HTTP_AUTHORIZATION'];
+    }
+    if (isset($input)) {
+      preg_match_all('@([^, =]+)="([^"]*)"@', $input, $header);
+      $header = array_combine($header[1], $header[2]);
+    }
+    return $header;
+  }
+
+  /**
    * Retrieves a list of sites accessible to this client.
    *
    * Used by Mollom resellers only.
@@ -889,6 +939,7 @@ abstract class Mollom {
     if (!isset($publicKey)) {
       $publicKey = $this->publicKey;
     }
+    $publicKey = rawurlencode($publicKey);
     $result = $this->query('GET', 'site/' . $publicKey, array(), array('site', 'publicKey'));
     return isset($result['site']) ? $result['site'] : $result;
   }
@@ -936,7 +987,8 @@ abstract class Mollom {
     if (!isset($publicKey)) {
       $publicKey = $this->publicKey;
     }
-    $result = $this->query('POST', 'site/' . $this->publicKey, $data, array('site', 'publicKey'));
+    $publicKey = rawurlencode($publicKey);
+    $result = $this->query('POST', 'site/' . $publicKey, $data, array('site', 'publicKey'));
     return isset($result['site']) ? $result['site'] : $result;
   }
 
@@ -971,6 +1023,7 @@ abstract class Mollom {
    *   TRUE on success, FALSE otherwise.
    */
   public function deleteSite($publicKey) {
+    $publicKey = rawurlencode($publicKey);
     $result = $this->query('POST', 'site/' . $publicKey . '/delete');
     return $this->lastResponseCode === TRUE;
   }
@@ -1049,7 +1102,12 @@ abstract class Mollom {
   public function checkContent(array $data = array()) {
     $path = 'content';
     if (!empty($data['id'])) {
-      $path .= '/' . $data['id'];
+      // The ID originates from raw form input. Ensure we hit the right endpoint
+      // in case a bogus bot fills in even hidden input fields with random
+      // strings, by performing a basic syntax validation.
+      if (preg_match('@^[a-z0-9-]+$@i', $data['id'])) {
+        $path .= '/' . rawurlencode($data['id']);
+      }
       unset($data['id']);
     }
     $result = $this->query('POST', $path, $data, array('content', 'id'));
@@ -1126,7 +1184,13 @@ abstract class Mollom {
     if (empty($data['id'])) {
       return FALSE;
     }
-    $path = 'captcha/' . $data['id'];
+    // The ID originates from raw form input. Ensure we hit the right endpoint
+    // in case a bogus bot fills in even hidden input fields with random
+    // strings, by performing a basic syntax validation.
+    if (!preg_match('@^[a-z0-9-]+$@i', $data['id'])) {
+      return FALSE;
+    }
+    $path = 'captcha/' . rawurlencode($data['id']);
     unset($data['id']);
     $result = $this->query('POST', $path, $data, array('captcha', 'id'));
 
@@ -1179,6 +1243,7 @@ abstract class Mollom {
     if (!isset($publicKey)) {
       $publicKey = $this->publicKey;
     }
+    $publicKey = rawurlencode($publicKey);
     $result = $this->query('GET', 'blacklist/' . $publicKey, array(), array('list'));
     return isset($result['list']) ? $result['list'] : $result;
   }
@@ -1216,7 +1281,7 @@ abstract class Mollom {
     if (!isset($publicKey)) {
       $publicKey = $this->publicKey;
     }
-    $path = 'blacklist/' . $publicKey . '/' . rawurlencode($entryId);
+    $path = 'blacklist/' . rawurlencode($publicKey) . '/' . rawurlencode($entryId);
     $result = $this->query('GET', $path, array(), array('entry', 'id'));
     return isset($result['entry']) ? $result['entry'] : $result;
   }
@@ -1241,7 +1306,7 @@ abstract class Mollom {
     if (!isset($publicKey)) {
       $publicKey = $this->publicKey;
     }
-    $path = 'blacklist/' . $publicKey;
+    $path = 'blacklist/' . rawurlencode($publicKey);
     if (!empty($data['id'])) {
       $path .= '/' . rawurlencode($data['id']);
       unset($data['id']);
@@ -1266,7 +1331,7 @@ abstract class Mollom {
     if (!isset($publicKey)) {
       $publicKey = $this->publicKey;
     }
-    $path = 'blacklist/' . $publicKey . '/' . rawurlencode($entryId) . '/delete';
+    $path = 'blacklist/' . rawurlencode($publicKey) . '/' . rawurlencode($entryId) . '/delete';
     $result = $this->query('POST', $path);
     return $this->lastResponseCode === TRUE;
   }

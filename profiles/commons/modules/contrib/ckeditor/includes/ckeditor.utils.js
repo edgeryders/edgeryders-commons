@@ -342,6 +342,11 @@ window.CKEDITOR_BASEPATH = Drupal.settings.ckeditor.editor_path;
       });
     }
   };
+
+  // Support CTools detach event.
+  $(document).bind('CToolsDetachBehaviors', function(event, context) {
+    Drupal.behaviors.ckeditor.detach(context, {}, 'unload');
+  });
 })(jQuery);
 
 /**
@@ -359,3 +364,4 @@ var ckeditor_imceSendTo = function (file, win){
   CKEDITOR.tools.callFunction(cfunc[1], file.url);
   win.close();
 }
+
