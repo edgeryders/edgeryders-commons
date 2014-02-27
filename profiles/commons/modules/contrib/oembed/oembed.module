@@ -392,7 +392,6 @@ function oembed_pre_render_image_helper(&$element, $prefix = '') {
   $element['#path'] = $embed[$prefix .'url'];
   $element['#alt'] = oembed_alt_attr($embed);
   $element['#title'] = $embed['title'];
-  $element['#attributes'] = $element['#attributes'];
   $element['#height'] = isset($embed[$prefix .'height']) ? $embed[$prefix .'height'] : NULL;
   $element['#width'] = isset($embed[$prefix .'width']) ? $embed[$prefix .'width'] : NULL;
 
