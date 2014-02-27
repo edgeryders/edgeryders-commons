@@ -405,7 +405,7 @@ function panels_update_7302() {
   // Patch fixing the inability to apply database update 7303 in certain circumstances.
   // Source: https://drupal.org/comment/8478925#comment-8478925
   // Locally applied only. --matthias, 2014-02-27
-  panels_update_7303()
+  panels_update_7303();
 
   // Load the schema.
   $schema = panels_schema_5();
