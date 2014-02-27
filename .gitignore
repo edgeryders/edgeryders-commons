@@ -1,6 +1,5 @@
 # Ignore configuration files that may contain sensitive information.
 sites/*/settings*.php
-.htpasswd
 
 # Ignore paths that contain user-generated content.
 sites/*/files
@@ -20,3 +19,4 @@ robots.txt-development
 
 # Ignore the downloads directory, to not expose the password in the htaccess file in it.
 downloads-6vFr43Kj87Dsat
+
