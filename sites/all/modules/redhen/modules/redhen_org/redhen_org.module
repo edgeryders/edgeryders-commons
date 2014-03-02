@@ -17,6 +17,7 @@ function redhen_org_entity_info() {
       'label' => t('Organization'),
       'plural label' => t('Organizations'),
       'controller class' => 'RedhenOrgEntityController',
+      'rules controller class' => 'EntityDefaultRulesController',
       'metadata controller class' => 'RedhenOrgMetadataController',
       'entity class' => 'RedhenOrg',
       'base table' => 'redhen_org',
@@ -295,7 +296,7 @@ function redhen_org_load_multiple($org_ids = array(), $conditions = array(), $re
     return array();
   }
 
-  return entity_load('redhen_org', $org_ids, $conditions, $reset);
+  return entity_load_multiple_by_name('redhen_org', $org_ids, $conditions, $reset);
 }
 
 /**
@@ -311,6 +312,33 @@ function redhen_org_delete_multiple($org_ids) {
   $ret = entity_get_controller('redhen_org')->delete($org_ids);
 
   return $ret;
+}
+
+/**
+ * Create a new org object.
+ *
+ * @param array $values
+ *   Associative array of values. At least include array('type' => $type)
+ *
+ * @return RedhenOrg
+ *   New org entity.
+ */
+function redhen_org_create(array $values = array()) {
+  return entity_get_controller('redhen_org')->create($values);
+}
+
+/**
+ * Saves a org.
+ *
+ * @param RedhenOrg $org
+ *   The full org object to save.
+ *
+ * @return RedhenOrg
+ *   The saved org object.
+ */
+function redhen_org_save(RedhenOrg $org) {
+  $org->save();
+  return $org;
 }
 
 /**
@@ -521,7 +549,7 @@ function theme_redhen_org_add_list($variables) {
     $output .= '</dl>';
   }
   else {
-    $output = '<p>' . t('You have not created any organization types yet. Go to the <a href="@link">organization type creation page</a> to add a new content type.',
+    $output = '<p>' . t('You have not created any organization types yet. Go to the <a href="@link">organization type creation page</a> to add a new RedHen organization type.',
       array('@link' => url('admin/structure/redhen/org_types'))) . '</p>';
   }
   return $output;

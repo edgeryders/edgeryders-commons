@@ -19,8 +19,7 @@ function redhen_org_add($type) {
  */
 function redhen_org_org_form($form, &$form_state, $org) {
   // Add the default field elements.
-  $form['name'] = array('#type' => 'container');
-  $form['name']['label'] = array(
+  $form['label'] = array(
     '#type' => 'textfield',
     '#title' => t('Name'),
     '#default_value' => $org->label,
@@ -63,7 +62,7 @@ function redhen_org_org_form_validate($form, &$form_state) {
 function redhen_org_org_form_submit($form, &$form_state) {
   $org = &$form_state['redhen_org'];
 
-  // Set the org's author uid
+  // Set the org's author uid.
   global $user;
   $org->author_uid = $user->uid;
 
@@ -77,7 +76,7 @@ function redhen_org_org_form_submit($form, &$form_state) {
   $org->save();
 
   drupal_set_message(t('Organization %label saved.', array('%label' => $org->label)));
-  $form_state['redirect'] = 'redhen/org/' . $org->org_id;
+  $form_state['redirect'] = 'redhen/org/' . $org->internalIdentifier();
 }
 
 /**
@@ -161,11 +160,6 @@ function redhen_org_org_archive_form_submit($form, &$form_state) {
 /**
  * Form callback: confirmation form for changing the primary contact.
  *
- * @param $org
- *   The organization object to be deleted.
- * @param $contact
- *   The contact being made the primary contact.
- *
  * @see confirm_form()
  */
 function redhen_org_set_primary_form($form, &$form_state, $org, $contact) {
@@ -213,16 +207,15 @@ function redhen_org_set_primary_form_submit($form, &$form_state) {
   if ($org->setPrimaryContact($contact)) {
     drupal_set_message(t('%contact_name has been set as the primary contact for %org_name.', array(
       '%contact_name' => $contact_name,
-      '%org_name' => $org_name
+      '%org_name' => $org_name,
     )));
   }
   else {
     drupal_set_message(t('Unable to set %contact_name as the primary contact for %org_name.', array(
       '%contact_name' => $contact_name,
-      '%org_name' => $org_name
+      '%org_name' => $org_name,
     )));
   }
 
   drupal_goto(drupal_get_destination());
-
 }
