@@ -1,0 +1,13 @@
+name = Comment alter
+description = "Provides UI to alter nodes' parameters from comment forms."
+core = 7.x
+dependencies[] = comment
+dependencies[] = diff (3.x)
+files[] = comment_alter.test
+
+; Information added by Drupal.org packaging script on 2014-02-26
+version = "7.x-1.0-rc4+19-dev"
+core = "7.x"
+project = "comment_alter"
+datestamp = "1393424605"
+
