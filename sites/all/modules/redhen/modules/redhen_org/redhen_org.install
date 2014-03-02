@@ -78,9 +78,7 @@ function redhen_org_schema() {
       'redhen_org_revision' => array('revision_id'),
       'redhen_org_author' => array('author_uid'),
       'redhen_org_primary_contact_id' => array('primary_contact_id'),
-    ),
-    'unique keys' => array(
-      'org_id' => array('org_id'),
+      'redhen_org_label' => array('label'),
     ),
     'foreign keys' => array(
       'redhen_org_revision' => array(
@@ -163,6 +161,7 @@ function redhen_org_schema() {
       'revision_redhen_org' => array('org_id'),
       'redhen_org_revision_author' => array('author_uid'),
       'redhen_org_revision_primary_contact_id' => array('primary_contact_id'),
+      'redhen_org_revision_label' => array('label'),
     ),
     'foreign keys' => array(
       'revision_redhen_org' => array(
@@ -227,8 +226,6 @@ function redhen_org_schema() {
       'status' => array(
         'type' => 'int',
         'not null' => TRUE,
-        // Set the default to ENTITY_CUSTOM without using the constant as it is
-        // not safe to use it at this point.
         'default' => 0x01,
         'size' => 'tiny',
         'description' => 'The exportable status of the entity.',
@@ -401,4 +398,115 @@ function redhen_org_update_7004() {
   db_add_index('redhen_org_revision', 'revision_redhen_org', array('org_id'));
   db_add_index('redhen_org_revision', 'redhen_org_revision_author', array('author_uid'));
   db_add_index('redhen_org_revision', 'redhen_org_revision_primary_contact_id', array('primary_contact_id'));
+}
+
+/**
+ * Add machine name field and index to {redhen_org}.
+ */
+function redhen_org_update_7005(&$sandbox) {
+  // First time here.
+  if (!isset($sandbox['progress'])) {
+    // Add new fields and index.
+    $fields = array(
+      'name' => array(
+        'description' => 'The machine-readable name of this org.',
+        'type' => 'varchar',
+        'length' => 32,
+        'default' => '',
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0x01,
+        'size' => 'tiny',
+        'description' => 'The exportable status of the entity.',
+      ),
+      'module' => array(
+        'description' => 'The name of the providing module if the entity has been defined in code.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    );
+
+    // Add new fields. Note, the check to see if this field exists has been
+    // added b/c of https://drupal.org/node/2041379. There was a database update
+    // issue that was causing this DB update to fail after creating these
+    // additional columns, but before marking the update as complete. This check
+    // should allow the 7005 to run successful after already failing.
+    if (!db_field_exists('redhen_org', 'name')) {
+      foreach ($fields as $name => $field) {
+        db_add_field('redhen_org', $name, $field);
+      }
+      // Add unique index for name.
+      db_add_index('redhen_org', 'name', array('name'));
+    }
+
+    // Initialize sandbox variables for batch processing.
+    $sandbox['progress'] = 0;
+    $sandbox['current_org_id'] = 0;
+    $sandbox['max'] = db_query('SELECT COUNT(DISTINCT org_id) FROM {redhen_org}')->fetchField();
+  }
+
+  // Grab the next 50 orgs to process.
+  $orgs = db_select('redhen_org', 'org')
+    ->fields('org', array('org_id', 'label', 'name'))
+    ->condition('org_id', $sandbox['current_org_id'], '>')
+    ->range(0, 50)
+    ->orderBy('org_id', 'ASC')
+    ->execute();
+
+  // Update any RedHen orgs created without machine-readable names.
+  foreach ($orgs as $org) {
+    if (empty($org->name)) {
+      $machine_name = redhen_org_machine_name($org->label);
+      db_update('redhen_org')->fields(array('name' => $machine_name))->condition('org_id', $org->org_id)->execute();
+    }
+
+    $sandbox['progress']++;
+    $sandbox['current_org_id'] = $org->org_id;
+  }
+
+  $sandbox['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
+
+  return t('RedHen organizations have been updated with a default machine name.');
+}
+
+
+/**
+ * Fix any redhen_org objects stranded by a bug in 1.4's update 7005.
+ */
+function redhen_org_update_7006() {
+  $orgs = db_select('redhen_org', 'org')
+    ->fields('org', array('name', 'org_id', 'label'))
+    ->condition('name', '', '=')
+    ->orderBy('org_id', 'ASC')
+    ->execute();
+  $count = 0;
+  foreach ($orgs as $org) {
+    $count++;
+    $machine_name = redhen_org_machine_name($org->label);
+    db_update('redhen_org')->fields(array('name' => $machine_name))->condition('org_id', $org->org_id)->execute();
+  }
+  if ($count) {
+    return t('@count additional RedHen organization(s) updated with machine name(s).', array('@count' => $count));
+  }
+}
+
+/**
+ * Remove the redhen_org machine name and related export columns.
+ */
+function redhen_org_update_7007() {
+  db_drop_field('redhen_org', 'name');
+  db_drop_field('redhen_org', 'status');
+  db_drop_field('redhen_org', 'module');
+  db_drop_field('redhen_org_revision', 'name');
+
+  // Since we're removing the machine name, add an index on the label so we can
+  // use it for querying orgs by label.
+  db_add_index('redhen_org', 'redhen_org_label', array('label'));
+  db_add_index('redhen_org_revision', 'redhen_org_revision_label', array('label'));
+
+  entity_info_cache_clear();
 }

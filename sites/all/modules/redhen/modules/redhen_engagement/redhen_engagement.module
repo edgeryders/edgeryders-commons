@@ -16,6 +16,7 @@ function redhen_engagement_entity_info() {
     'plural label' => t('Engagements'),
     'controller class' => 'EntityAPIController',
     'metadata controller class' => 'RedhenEngagementMetadataController',
+    'views controller class' => 'RedhenEngagementViewsController',
     'entity class' => 'RedhenEngagement',
     'base table' => 'redhen_engagement',
     'fieldable' => FALSE,
@@ -47,6 +48,7 @@ function redhen_engagement_entity_info() {
     'plural label' => t('Engagement Scores'),
     'controller class' => 'EntityAPIControllerExportable',
     'entity class' => 'RedhenEngagementScore',
+    'views controller class' => 'RedhenEngagementScoreViewsController',
     'base table' => 'redhen_engagement_score',
     'fieldable' => FALSE,
     'entity keys' => array(
@@ -228,13 +230,12 @@ function redhen_engagement_get_scores($name = NULL) {
 function redhen_engagement_create($engagement_score_name, $contact_id,
                                   $description, $entity_type = NULL,
                                   $entity_id = NULL, $author_uid = NULL) {
-  $engagement_score = redhen_engagement_get_scores($engagement_score_name);
   if (!$author_uid) {
     global $user;
     $author_uid = $user->uid;
   }
   return new RedhenEngagement(array(
-    'engagement_score' => $engagement_score->identifier(),
+    'engagement_score' => $engagement_score_name,
     'contact_id' => $contact_id,
     'description' => $description,
     'entity_type' => $entity_type,

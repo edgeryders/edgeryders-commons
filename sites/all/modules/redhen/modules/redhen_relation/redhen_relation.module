@@ -76,9 +76,15 @@ function redhen_relation_menu_alter(&$items) {
  * Custom title callback for relation pages.
  */
 function redhen_relation_page_title($relation) {
+  $endpoints = field_get_items('relation', $relation, 'endpoints');
+
+  $redhen_entities = array('redhen_contact', 'redhen_org');
+  if (!in_array($endpoints[0]['entity_type'], $redhen_entities) || !in_array($endpoints[1]['entity_type'], $redhen_entities)) {
+    return relation_ui_page_title($relation);
+  }
+
   $relation_type = relation_type_load($relation->relation_type);
 
-  $endpoints = field_get_items('relation', $relation, 'endpoints');
   foreach ($endpoints as $endpoint) {
     if ($endpoint['r_index'] == 0) {
       $label1 = entity_load_single($endpoint['entity_type'], $endpoint['entity_id'])->label();
@@ -175,6 +181,16 @@ function redhen_relation_connections_page($entity) {
     foreach ($related as $relation_id => $related_entities) {
       $relation = relation_load($relation_id);
       $relation_uri = entity_uri('relation', $relation);
+
+      $reversed = FALSE;
+      $endpoints = field_get_items('relation', $relation, 'endpoints');
+      foreach ($endpoints as $endpoint) {
+        if ($endpoint['entity_type'] == $entity->entityType() && $endpoint['r_index']) {
+          $reversed = TRUE;
+          break;
+        }
+      }
+
       foreach ($related_entities as $related_entity) {
         $object_label = entity_label($related_entity->entityType(), $related_entity);
         $object_uri = entity_uri($related_entity->entityType(), $related_entity);
@@ -192,7 +208,7 @@ function redhen_relation_connections_page($entity) {
           'connection' => array(
             'data' => array(
               '#type' => 'link',
-              '#title' => relation_get_type_label($relation),
+              '#title' => relation_get_type_label($relation, $reversed),
               '#href' => $relation_uri['path'],
             ),
           ),
@@ -303,6 +319,8 @@ function redhen_relation_connections_page($entity) {
  * @param object $entity
  * @param string $relation_type
  *   Filter on a given relation type if provided.
+ * @param bool $active
+ *   Optionally limit relations to those that are active.
  *
  * @return array
  *   Keyed by the relation id which contains an array of entities.
@@ -311,8 +329,8 @@ function redhen_relation_connections_page($entity) {
  *     3 => array($entity3, $entity4)
  *   )
  */
-function redhen_relation_relations($entity, $relation_type = NULL) {
-  $related_entities = &drupal_static(__FUNCTION__ . $entity->entityType() . $entity->internalIdentifier() . $relation_type, array());
+function redhen_relation_relations($entity, $relation_type = NULL, $active = FALSE) {
+  $related_entities = &drupal_static(__FUNCTION__ . $entity->entityType() . $entity->internalIdentifier() . $relation_type . $active, array());
 
   if ($related_entities) {
     return $related_entities;
@@ -321,6 +339,11 @@ function redhen_relation_relations($entity, $relation_type = NULL) {
   $query = relation_query($entity->entityType(), $entity->internalIdentifier());
   if ($relation_type) {
     $query->propertyCondition('relation_type', $relation_type);
+  }
+
+  // Optionally limit to only active relations.
+  if ($active) {
+    $query->fieldCondition(REDHEN_RELATION_STATUS_FIELD, 'value', TRUE);
   }
 
   // this hideous hack is to avoid triggering the node access system which we
@@ -429,8 +452,8 @@ function redhen_relation_autocomplete($relation_type = '', $entity_type_to_relat
   $available_entities = redhen_relation_get_available_entities($entity, $entity_type_to_relate, $relation_type, $search, 10);
 
   foreach ($available_entities as $available_entity) {
-    $entity_id = entity_id($available_entity->entityType(), $available_entity);
-    $entity_label = entity_label($available_entity->entityType(), $available_entity);
+    $entity_id = $available_entity->internalIdentifier();
+    $entity_label = $available_entity->label();
     $options[check_plain($entity_label) . ' (' . $entity_id . ')'] = check_plain($entity_label);
   }
   print drupal_json_encode($options);
