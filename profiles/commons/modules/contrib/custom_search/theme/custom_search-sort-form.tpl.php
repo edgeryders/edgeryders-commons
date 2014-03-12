@@ -9,15 +9,17 @@
     'block' => array('title' => t('Block'), 'count' => 0),
     'popup' => array('title' => t('Popup'), 'count' => 0),
   );
-  foreach (element_children($form) as $element) $element_regions[$form[$element]['region']['#value']]['count']++;
+  foreach (element_children($form) as $element) :
+    $element_regions[$form[$element]['region']['#value']]['count']++;
+  endforeach;
 
   // Add table javascript.
   drupal_add_js('misc/tableheader.js');
   drupal_add_js(drupal_get_path('module', 'custom_search') . '/js/custom_search_sort.js');
-  foreach ($element_regions as $region => $title) {
+  foreach ($element_regions as $region => $title) :
     drupal_add_tabledrag('elements', 'match', 'sibling', 'region-select', 'region-select-' . $region, NULL, FALSE);
     drupal_add_tabledrag('elements', 'order', 'sibling', 'sort-select', 'sort-select-' . $region);
-  }
+  endforeach;
 ?>
 <table id="elements" class="sticky-enabled">
   <thead>
@@ -33,7 +35,7 @@
       <tr class="region-title region-title-<?php print $region?>">
         <td colspan="3"><?php print $region_data['title']; ?></td>
       </tr>
-      <tr class="region-message region-<?php print $region?>-message <?php print((!$region_data['count']) ? 'region-empty' : 'region-populated'); ?>">
+      <tr class="region-message region-<?php print $region?>-message <?php print ((!$region_data['count']) ? 'region-empty' : 'region-populated'); ?>">
         <td colspan="3"><em><?php print t('No elements in this region'); ?></em></td>
       </tr>
       <?php foreach (element_children($form) as $element):

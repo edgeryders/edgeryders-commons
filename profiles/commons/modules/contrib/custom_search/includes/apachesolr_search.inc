@@ -12,18 +12,12 @@
  *
  * To return:
  * the complete search path
- *
  */
 
 function _custom_search_apachesolr_search($variables) {
-  // Set default path in case the core search page path isn't set yet.
-  $path = 'search/apachesolr_search';
-  $solr_info = (array) apachesolr_search_page_load('core_search');
-  if (isset($solr_info['search_path'])) {
-    // Use the configured Solr search path instead of default path.
-    $path = $solr_info['search_path'];
-  }
-  $type = $path . '/' . $variables['keywords'];
+  // Use the search info for the apachesolr module to get the search path.
+  $solr_info = apachesolr_search_search_info();
+  $type = 'search/' . $solr_info['path'] . '/' . $variables['keywords'];
   $keys = array();
 
   if (count($variables['types']) && !in_array('all', $variables['types'])) {
@@ -33,7 +27,7 @@ function _custom_search_apachesolr_search($variables) {
   }
 
   if (module_exists('taxonomy') && count($variables['terms'])) {
-    // get all fields info to get correct filter names
+    // Get all fields info to get correct filter names.
     $fields = field_info_fields();
     $taxonomy_fields = array();
     foreach ($fields as $name => $settings) {
@@ -42,7 +36,7 @@ function _custom_search_apachesolr_search($variables) {
         $taxonomy_fields[$voc->vid] = $name;
       }
     }
-    // build keys for taxonomy
+    // Build keys for taxonomy.
     foreach ($variables['terms'] as $t) {
       $vocid = taxonomy_term_load($t)->vid;
       $keys['f[' . count($keys) . ']'] = 'im_' . $taxonomy_fields[$vocid] . ':' . $t;

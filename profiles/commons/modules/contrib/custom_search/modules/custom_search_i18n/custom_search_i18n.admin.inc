@@ -12,7 +12,7 @@ function custom_search_i18n_help($path, $arg) {
   switch ($path) {
     case 'admin/config/search/custom_search/taxonomy':
       $output = t('Select the vocabularies to present as search options in the search block. If none is selected, no selector will be displayed.');
-    break;
+      break;
   }
   return $output;
 }
@@ -25,10 +25,8 @@ function custom_search_i18n_admin() {
 /**
  * Content admin form.
  */
-function _custom_search_i18n_admin_form($delta = '') {
-  if ($delta != '') $delta = 'blocks_' . $delta . '_';
-
-  $form['custom_search_i18n_' . $delta . 'search_language'] = array(
+function _custom_search_i18n_admin_form() {
+  $form['custom_search_i18n_search_language'] = array(
     '#type'           => 'select',
     '#title'          => t('Search content from'),
     '#options'        => array(
@@ -37,7 +35,7 @@ function _custom_search_i18n_admin_form($delta = '') {
       'current_neutral' => t('current language and language neutral'),
     ),
     '#description'    => t('Choose which language will be used to search content.'),
-    '#default_value'  => variable_get('custom_search_i18n_' . $delta . 'search_language', 'all'),
+    '#default_value'  => variable_get('custom_search_i18n_search_language', 'all'),
   );
 
   return $form;

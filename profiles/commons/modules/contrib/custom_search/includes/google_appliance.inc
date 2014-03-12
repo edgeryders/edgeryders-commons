@@ -12,10 +12,9 @@
  *
  * To return:
  * the complete search path
- *
  */
 
 function _custom_search_google_appliance_search($variables) {
-  $type = variable_get('google_appliance_default_search_path', 'google-appliance');
+  $type = variable_get('google_appliance_default_search_path', 'gsearch');
   return array('path' => $type . '/' . $variables['keys'], 'query' => array());
 }
