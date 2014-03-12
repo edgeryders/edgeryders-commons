@@ -20,3 +20,6 @@ robots.txt-development
 # Ignore the downloads directory, to not expose the password in the htaccess file in it.
 downloads-6vFr43Kj87Dsat
 
+# Ignore the stats directory, where some server admin panels (like ISPConfig) store web access statistics.
+stats
+
