@@ -221,12 +221,12 @@ Drupal.behaviors.persona = {
     $(document).keydown(function(event) {
       if (event.ctrlKey == true) {
         switch (event.keyCode) {
-          // Ctrl + Backspace.
-          case 8:
+          // Ctrl + 0.
+          case 48:
             signOut();
             break;
-          // Ctrl + Enter.
-          case 13:
+          // Ctrl + 1.
+          case 49:
             signIn();
             break;
         }
