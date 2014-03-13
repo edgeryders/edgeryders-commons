@@ -527,7 +527,8 @@ function theme_persona_button(array $variables) {
       $text = t("Sign in");
       break;
     case 'sign-in':
-      $text = user_is_logged_in() ? t("Switch account") : t("Sign in");
+      // Sign in button text changed to be in analogy to OpenID text. (matthias@edgerydes.eu, 2014-03-13)
+      $text = user_is_logged_in() ? t("Switch account") : t("Log in using Persona");
       break;
     case 'change-email':
       $text = t("Change email");
@@ -611,7 +612,9 @@ function persona_form_user_login_alter(array &$form, array &$form_state, $form_i
   // Add Persona sign in button to standard sign in page.
   $form['persona'] = array(
     '#theme' => 'persona_button',
-    '#weight' => -1,
+    // Weight increased to get the Persona button below the normal login form, next to OpenID. (matthias@edgeryders.eu, 2014-03-13)
+    //'#weight' => -1,
+    '#weight' => 2,
   );
   // Remove standard sign in form if Persona has taken over.
   if (variable_get('persona_takeover')) {
