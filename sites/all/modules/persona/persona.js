@@ -67,10 +67,10 @@ Drupal.behaviors.persona = {
           type: 'GET',
           async: async,
           contentType: 'application/json',
-          url: relativeUrl('user/persona/get-token'),
+          url: relativeUrl('user/persona/token'),
           dataType: 'json',
           success: function (data, textStatus, jqXHR) {
-            settings.persona.token = data;
+            settings.persona.token = data.token;
           }
         });
       }
@@ -81,13 +81,7 @@ Drupal.behaviors.persona = {
      */
     function signIn() {
       setInstanceId();
-      navigator.id.request({
-        siteName: settings.persona.siteName,
-        siteLogo: settings.persona.siteLogo,
-        backgroundColor: settings.persona.backgroundColor,
-        termsOfService: settings.persona.termsOfService,
-        privacyPolicy: settings.persona.privacyPolicy
-      });
+      navigator.id.request(settings.persona.request);
       // Get the token asynchronously if necessary.
       getToken(true);
     }
@@ -153,8 +147,8 @@ Drupal.behaviors.persona = {
             dataType: 'json',
             success: function (data, textStatus, jqXHR) {
               // Redirect if path provided, otherwise just reload the page.
-              if (data) {
-                window.location = relativeUrl(data, settings.persona.currentPath);
+              if (jqXHR.status == 201 && data.redirect) {
+                window.location = relativeUrl(data.redirect, settings.persona.currentPath);
               }
               else {
                 reload();

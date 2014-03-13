@@ -80,13 +80,15 @@ function persona_init() {
     // Tell Persona who is signed in.
     'uid' => $user->uid,
     'email' => (isset($_SESSION['persona_sign_in'])) ? $user->mail : NULL,
-    // Add site name to display on Mozilla Persona dialog.
-    'siteName' => variable_get('site_name'),
     // Add some settings that core doesn't provide.
     // @see http://drupal.org/node/1691394
     'cleanUrls' => variable_get('clean_url'),
     'currentPath' => (current_path() == variable_get('site_frontpage', 'node')) ? '' : current_path(),
     'fadeOut' => variable_get('persona_fade_out'),
+    // Add site name to display on Mozilla Persona dialog.
+    'request' => array(
+      'siteName' => variable_get('site_name'),
+    )
   );
   // Don't add the XSRF token if the user is not signed in as the page may be
   // cached. This also avoids creating a session.
@@ -98,19 +100,19 @@ function persona_init() {
   // full URL.
   if ($is_https) {
     if ($persona_logo = variable_get('persona_logo')) {
-      $settings['siteLogo'] = $persona_logo;
+      $settings['request']['siteLogo'] = $persona_logo;
     }
     elseif ($site_logo_url = theme_get_setting('logo')) {
-      $settings['siteLogo'] = substr($site_logo_url, strlen($base_secure_url));
+      $settings['request']['siteLogo'] = substr($site_logo_url, strlen($base_secure_url));
     }
   }
   // Add the background color.
   if ($background_color = variable_get('persona_background_color')) {
-    $settings['backgroundColor'] = $background_color;
+    $settings['request']['backgroundColor'] = $background_color;
   }
   // Add the legal documents if they are both provided.
   if (($terms_link = variable_get('persona_terms_link')) && ($privacy_link = variable_get('persona_privacy_link'))) {
-    $settings += array(
+    $settings['request'] += array(
       'termsOfService' => url($terms_link),
       'privacyPolicy' => url($privacy_link),
     );
@@ -132,27 +134,27 @@ function persona_init() {
  * Implements hook_menu().
  */
 function persona_menu() {
-  $items['user/persona/get-token'] = array(
+  $items['user/persona/token'] = array(
     'type' => MENU_CALLBACK,
-    'page callback' => 'persona_xsrf_token',
+    'page callback' => 'persona_xsrf_token_callback',
     'delivery callback' => 'drupal_json_output',
     'access callback' => TRUE,
   );
   $items['user/persona/sign-in'] = array(
     'type' => MENU_CALLBACK,
-    'page callback' => 'persona_sign_in',
+    'page callback' => 'persona_sign_in_callback',
     'delivery callback' => 'drupal_json_output',
     'access callback' => TRUE,
   );
   $items['user/persona/change-email'] = array(
     'type' => MENU_CALLBACK,
-    'page callback' => 'persona_change_email',
+    'page callback' => 'persona_change_email_callback',
     'delivery callback' => 'drupal_json_output',
     'access callback' => TRUE,
   );
   $items['user/persona/sign-out'] = array(
     'type' => MENU_CALLBACK,
-    'page callback' => 'persona_sign_out',
+    'page callback' => 'persona_sign_out_callback',
     'delivery callback' => 'drupal_json_output',
     'access callback' => TRUE,
   );
@@ -249,6 +251,13 @@ function _persona_audience() {
 }
 
 /**
+ * Callback function to get XSRF token.
+ */
+function persona_xsrf_token_callback() {
+  return array('token' => persona_xsrf_token());
+}
+
+/**
  * Verifies a Persona assertion and determines the email address.
  *
  * @param string $assertion
@@ -320,8 +329,17 @@ function _persona_sign_in($account) {
  *
  * @param $account
  *   Account to sign into.
+ *
+ * @param $email
+ *   The email address supplied by Persona.
  */
-function _persona_existing_account_sign_in($account) {
+function _persona_existing_account_sign_in($account, $email) {
+  // If the account email has different casing to the supplied email, update
+  // the account to match the supplied email. This ensures Drupal and Persona
+  // are in agreement.
+  if ($account->mail != $email) {
+    user_save($account, array('mail' => $email));
+  }
   if ($account->status) {
     watchdog('persona', "Sign into existing account by %email successful.", array('%email' => $account->mail));
     _persona_sign_in($account);
@@ -338,7 +356,7 @@ function _persona_existing_account_sign_in($account) {
 /**
  * Callback function to sign in with Persona.
  */
-function persona_sign_in() {
+function persona_sign_in_callback() {
   global $user;
   $request = _persona_request_variables();
   try {
@@ -358,7 +376,7 @@ function persona_sign_in() {
   }
   // Does an account with this email already exist.
   elseif ($account = user_load_by_mail($email)) {
-    _persona_existing_account_sign_in($account);
+    _persona_existing_account_sign_in($account, $email);
   }
   // Are users allows to create new accounts?
   elseif ($user_register = variable_get('user_register', USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL)) {
@@ -381,7 +399,10 @@ function persona_sign_in() {
       drupal_add_http_header('Status', '201 Created');
       // Redirect to account edit page if new accounts are set to do so.
       if (variable_get('persona_new_account_edit')) {
-        return 'user/' . $account->uid . '/edit';
+        return array('redirect' => 'user/' . $account->uid . '/edit');
+      }
+      else {
+        return array();
       }
     }
     else {
@@ -402,7 +423,7 @@ function persona_sign_in() {
 /**
  * Callback function to change email address with Persona.
  */
-function persona_change_email() {
+function persona_change_email_callback() {
   global $user;
   $request = _persona_request_variables();
   try {
@@ -416,9 +437,9 @@ function persona_change_email() {
   }
   $transaction = db_transaction();
   // Check if the user is using this email address in another account.
-  if ($user->mail != $email && ($account = user_load_by_mail($email))) {
+  if (($account = user_load_by_mail($email)) && $account->uid != $user->uid) {
     // Sign into existing account as it is all we can do...
-    if (_persona_existing_account_sign_in($account)) {
+    if (_persona_existing_account_sign_in($account, $email)) {
       drupal_set_message(t("You are already using %email for another account, which you have now been signed into.",
         array('%email' => $user->mail)), 'error');
     }
@@ -451,7 +472,7 @@ function persona_change_email() {
  *
  * @see user_logout()
  */
-function persona_sign_out() {
+function persona_sign_out_callback() {
   global $user;
   $request = _persona_request_variables();
   try {
@@ -576,6 +597,7 @@ function persona_form_user_profile_form_alter(array &$form, array &$form_state, 
     $form['account']['mail']['#type'] = 'value';
     $form['account']['mail']['#value'] = $form['account']['mail']['#default_value'];
   }
+  // Remove ability to change password if Persona has taken over.
   if (variable_get('persona_takeover')) {
     $form['account']['pass']['#type'] = 'value';
     $form['account']['current_pass']['#type'] = 'value';
@@ -591,7 +613,7 @@ function persona_form_user_login_alter(array &$form, array &$form_state, $form_i
     '#theme' => 'persona_button',
     '#weight' => -1,
   );
-  // Remove standard sign in form if Persona is taking over completely.
+  // Remove standard sign in form if Persona has taken over.
   if (variable_get('persona_takeover')) {
     unset($form['name']);
     unset($form['pass']);
@@ -618,6 +640,30 @@ function persona_user_view($account) {
   if ($account->uid == $user->uid) {
     $account->content['account']['email']['#suffix'] = theme('persona_button', array('type' => 'change-email'));
   }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function persona_form_user_register_form_alter(array &$form, array &$form_state, $form_id) {
+  // Remove username field if using email addresses for usernames.
+  if (variable_get('persona_email_usernames')) {
+    $form['account']['name']['#type'] = 'value';
+    $form['account']['name']['#required'] = FALSE;
+    array_unshift($form['#validate'], 'persona_user_register_form_email_usernames');
+  }
+  // Remove password field if Persona has taken over.
+  if (variable_get('persona_takeover')) {
+    $form['account']['pass']['#type'] = 'value';
+    $form['account']['pass']['#required'] = FALSE;
+  }
+}
+
+/**
+ * Populates the username field with the email.
+ */
+function persona_user_register_form_email_usernames(array $form, array &$form_state) {
+  $form_state['values']['name'] = $form_state['values']['mail'];
 }
 
 /**
