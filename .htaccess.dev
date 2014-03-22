@@ -2,7 +2,7 @@
 # Access protection; see .htpasswd for the credentials.
 #
 
-AuthUserFile /var/www/vhosts/edgeryders.eu/httpdocs_staging/.htpasswd
+AuthUserFile /var/www/dev.edgeryders.eu/web/.htpasswd
 AuthType Basic
 AuthName "edgeryders.eu staging site"
 require valid-user
