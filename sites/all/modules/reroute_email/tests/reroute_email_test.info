@@ -1,0 +1,12 @@
+name = "Reroute Email Test"
+description = "Helper module for the reroute email tests."
+core = 7.x
+package = Testing
+hidden = TRUE
+
+; Information added by drupal.org packaging script on 2013-10-24
+version = "7.x-1.1+28-dev"
+core = "7.x"
+project = "reroute_email"
+datestamp = "1382643190"
+

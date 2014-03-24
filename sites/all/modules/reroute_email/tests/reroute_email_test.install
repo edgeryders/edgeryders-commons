@@ -1,0 +1,18 @@
+<?php
+
+/**
+ * @file
+ * Reroute Email Test module installation functions.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function reroute_email_test_install() {
+  // Ensure Reroute Email Test runs after Reroute Email.
+  db_update('system')
+    ->fields(array('weight' => 100))
+    ->condition('type', 'module', '=')
+    ->condition('name', 'reroute_email_test', '=')
+    ->execute();
+}
