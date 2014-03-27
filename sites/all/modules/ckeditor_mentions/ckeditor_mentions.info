@@ -1,0 +1,15 @@
+name = CKEditor Mentions
+description = CKEditor plugin for user mentioning and inserting.
+package = User interface
+core = 7.x
+
+dependencies[] = realname
+dependencies[] = views
+
+
+; Information added by drupal.org packaging script on 2013-08-18
+version = "7.x-1.2"
+core = "7.x"
+project = "ckeditor_mentions"
+datestamp = "1376829400"
+

@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * @file
+ * Defining ajax callbacks, registering CKEditor plugin and including default views.
+ */
+
+/**
+ * Implements hook_preprocess_html()
+ */
+function ckeditor_mentions_preprocess_html() {
+  // We need to include our misc/ajax.js, else we can't be sure if it's included when we need it.
+  drupal_add_library('system', 'drupal.ajax');
+}
+
+/**
+ * Implements hook_menu().
+ */
+function ckeditor_mentions_menu() {
+  $items['ckeditor/mentions'] = array(
+    'title' => 'ajax callback ckeditor mentions',
+    'page callback' => 'ckeditor_mentions_getpeople',
+    'access arguments' => array('access user profiles'),
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+    'file' => 'includes/ckeditor_mentions.ajax.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_ckeditor_plugin().
+ */
+function ckeditor_mentions_ckeditor_plugin() {
+  return array('ckeditor_mentions' => array(
+    'name' => 'mentions',
+    'desc' => t('Plugin for user mentioning and inserting'),
+    'path' => drupal_get_path('module', 'ckeditor_mentions') . '/plugins/mentions/',
+  ));
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function ckeditor_mentions_views_api() {
+  return array(
+    'api' => '3.0',
+    'path' => drupal_get_path('module', 'ckeditor_mentions') . '/includes',
+  );
+}
