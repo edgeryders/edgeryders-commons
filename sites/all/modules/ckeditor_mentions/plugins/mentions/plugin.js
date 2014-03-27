@@ -180,7 +180,7 @@ CKEDITOR_mentions.prototype.timeout_callback = function (args) {
     $('.mention-suggestions').remove();
 
     if (rsp) {
-      $('<div class="mention-suggestions">' + rsp.html + '</div>').insertAfter(par);
+      $('<div class="mention-suggestions">Click a username to mention a fellow Edgeryder:' + rsp.html + '</div>').insertAfter(par);
     }
 
     $('.mention-users').click(function(e) {
