@@ -1,0 +1,138 @@
+<?php
+
+/**
+ * @file
+ * Hooks for anonymous publishing claim module.
+ */
+
+
+/**
+ * Implements hook_help().
+ */
+function anonymous_publishing_claim_help($path, $arg) {
+
+  switch ($path) {
+    case 'admin/help#anonymous_publishing_claim':
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('This submodule lets of <strong>Anonymous publishing</strong> enables &#8220;lazy&#8221; registration where the user creates the content first and can then &#8220;claim&#8221; the content after registering on the site.') . '</p>';
+      $output .= '<p>' . t('There will be a tab named &#8220;Claim anonymous posts&#8221; on the profile page of users with &#8220;unclaimed&#8221; content they created on the site before they registered.') . '</p>';
+      $output .= '<p>' . t('There is no configuration page for this submodule.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function anonymous_publishing_claim_menu() {
+  $items['user/%user/cap'] = array(
+    'title' => 'Claim anonymous posts',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('anonymous_publishing_claim_form', 1),
+    'access callback' => 'anonymous_publishing_claim_user_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+  return $items;
+}
+
+/**
+ * Access callback.
+ * Checks for access to anonymous posts settings tab.
+ *
+ * User can only access their own cap setting.
+ */
+function anonymous_publishing_claim_user_access($account = NULL) {
+  global $user;
+
+  if (isset($account->data['anonymous_publishing_claim'])) {
+    $oldposts = $account->data['anonymous_publishing_claim'];
+  }
+  else {
+    $oldposts = FALSE;
+  }
+  $uid = $user->uid;
+  //drupal_set_message("APCUA: [$account->uid | $uid | $oldposts]");
+  return $account->uid && ($user->uid == $account->uid) && $oldposts;
+}
+
+
+/**
+ * Define a form.
+ */
+function anonymous_publishing_claim_form() {
+  $form['anonymous_publishing_claim_options'] = array(
+    '#type' => 'radios',
+    '#title' => t('What do you want to do with the content you\'ve previously published anonymously?'),
+    '#default_value' => 'leave',
+    '#options' => array(
+      'leave' => t('Leave it as it is.'),
+      'claim' => t('Claim it.'),
+    ),
+    '#description' => t('If you tick &#8220;Claim it&#8221; and press the  &#8220;Submit&#8221;-button, you will become the owner and author of the content you\'ve posted prevuously that is associated with your e-mail address.'),
+  );
+
+  $form[' submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit')
+  );
+  return $form;
+}
+
+/**
+ * Validate the form.
+ */
+function anonymous_publishing_claim_form_validate( $form, &$form_state) {
+}
+
+/**
+ * Handle post-validation form submission.
+ */
+function anonymous_publishing_claim_form_submit($form, &$form_state) {
+  global $user;
+
+  $claim = $form_state['values']['anonymous_publishing_claim_options'];
+  if ('leave' == $claim) {
+    drupal_goto('<front>');
+  }
+  $sql = "SELECT a.nid, a.cid, n.title FROM  {anonymous_publishing} a JOIN {node} n ON a.nid = n.nid WHERE email = :mail ORDER BY n.created ASC";
+  $rows = db_query($sql, array(':mail' => $user->mail))->fetchAll(PDO::FETCH_ASSOC);
+  foreach ($rows as $row) {
+    if ($row['cid']) {
+      $comment = comment_load($row['cid']);
+      $comment->uid = $user->uid;
+      $comment->name = $user->name;
+      $comment->mail = $user->mail;
+      comment_save($comment);
+    }
+    else {
+      $context = array('owner_uid' => $user->uid);
+      $node = node_load($row['nid']);
+      node_assign_owner_action($node, $context);
+      node_save($node);
+    }
+    db_delete('anonymous_publishing')
+      ->condition('nid', $row['nid'], '=')
+      ->condition('cid', $row['cid'], '=')
+      ->execute();
+  }
+  $edit['data']['anonymous_publishing_claim'] = 0;
+  $result = user_save($user, $edit);
+  drupal_goto('<front>');
+}
+
+/**
+ * Implementation of hook_user_presave().
+ *
+ * Count the number of unclaimed anonymous posts the newly registered user owns
+ * and associate it with the profile.
+ */
+function anonymous_publishing_claim_user_presave(&$edit, $account, $category) {
+  if (!$account->uid) {
+    $mail = $account->mail;
+    $sql = "SELECT nid, email FROM  {anonymous_publishing} WHERE email = :mail";
+    $nodes = db_query($sql, array(':mail' => $mail))->rowCount();
+    $edit['data']['anonymous_publishing_claim'] = $nodes;
+  }
+}
