@@ -1,6 +1,22 @@
 
 Entity Translation 7.x-1.x, xxxx-xx-xx
 --------------------------------------
+#2151503 by SebCorbin: Check for translation access for Add links.
+#2130091 by peximo: Media edit dialog integration bug.
+#2065221 by catch, plach: Fixed Static cache for handlers should key by $vid.
+#1516202 by fabsor, spotzero: Added a CTools access plugin for checking if a
+  translation is available.
+#2027513 by GaëlG, jcisio: Added support for nested values for 'edit form' in
+  hook_entity_info().
+#2073231 by plach: Rename entity_translation_form_language() to
+  entity_translation_get_existing_language().
+#2072865 by douggreen: Fixed Only replace 'delete' button with
+  'delete translation', don't add one that doesn't exist.
+#1865244 by plach | bojanz, agoradesign, ciss, interdruper, joel_osc: Added
+  support for multiple translation handlers on the same form.
+#2055491 by plach: Fixed Synced image fields cannot be emptied.
+#1866076 by grndlvl: Added support for non-entity load tokens when declaring
+  translations.
 
 
 Entity Translation 7.x-1.0-beta3, 2013-07-23
@@ -33,7 +49,7 @@ Entity Translation 7.x-1.0-beta3, 2013-07-23
 #1947764 by plach: Improve bundle translatability checks.
 #1370900 by mojzis, plach | mgladding: Fixed Fatal Error: Cannot access empty
   property in translation.handler.inc.
-Issue #1924088 by plach | drzraf: Fixed Wrong form 'language' value in case of
+#1924088 by plach | drzraf: Fixed Wrong form 'language' value in case of
   content-translation enabled bundles.
 #1933742 by das-peter: Fixed Delete translation doesn't flush the entity cache.
 #1903024 by fabsor | dimitrileonidas: Fixed SQL error in Views when adding an

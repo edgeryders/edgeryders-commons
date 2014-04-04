@@ -254,3 +254,10 @@ function entity_translation_update_7003() {
 function entity_translation_update_7004() {
   entity_info_cache_clear();
 }
+
+/**
+ * Rebuild the class registry to pick up the translation handler factory class.
+ */
+function entity_translation_update_7005() {
+  registry_rebuild();
+}
