@@ -221,7 +221,7 @@ Drupal.behaviors.persona = {
     $(document).keydown(function(event) {
       if (event.ctrlKey == true && event.altKey == true) {
         switch (event.keyCode) {
-          // Ctrl + Alt + 0 
+          // Ctrl + Alt + 0
           case 48:
             signOut();
             break;
