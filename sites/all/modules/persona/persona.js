@@ -219,14 +219,14 @@ Drupal.behaviors.persona = {
     });
     // Attach keyboard shortcuts.
     $(document).keydown(function(event) {
-      if (event.ctrlKey == true) {
+      if (event.ctrlKey == true && event.altKey == true) {
         switch (event.keyCode) {
-          // Ctrl + Backspace.
-          case 8:
+          // Ctrl + Alt + 0
+          case 48:
             signOut();
             break;
-          // Ctrl + Enter.
-          case 13:
+          // Ctrl + Alt + 1
+          case 49:
             signIn();
             break;
         }
