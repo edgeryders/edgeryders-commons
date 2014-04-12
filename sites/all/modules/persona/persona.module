@@ -277,7 +277,7 @@ function persona_verify($assertion) {
     'ssl' => array(
       'verify_peer' => TRUE,
       'cafile' => drupal_get_path('module', 'persona') . '/cacert.pem',
-      'CN_match' => 'www.persona.org',
+      'CN_match' => 'persona.org',
     ),
   );
   $result = (array) drupal_http_request('https://verifier.login.persona.org/verify', array(
@@ -527,8 +527,7 @@ function theme_persona_button(array $variables) {
       $text = t("Sign in");
       break;
     case 'sign-in':
-      // Sign in button text changed to be in analogy to OpenID text. (matthias@edgerydes.eu, 2014-03-13)
-      $text = user_is_logged_in() ? t("Switch account") : t("Log in using Persona");
+      $text = user_is_logged_in() ? t("Switch account") : t("Sign in");
       break;
     case 'change-email':
       $text = t("Change email");
@@ -612,9 +611,7 @@ function persona_form_user_login_alter(array &$form, array &$form_state, $form_i
   // Add Persona sign in button to standard sign in page.
   $form['persona'] = array(
     '#theme' => 'persona_button',
-    // Weight increased to get the Persona button below the normal login form, next to OpenID. (matthias@edgeryders.eu, 2014-03-13)
-    //'#weight' => -1,
-    '#weight' => 2,
+    '#weight' => -1,
   );
   // Remove standard sign in form if Persona has taken over.
   if (variable_get('persona_takeover')) {
