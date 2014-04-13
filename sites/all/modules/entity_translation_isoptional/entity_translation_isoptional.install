@@ -1,0 +1,18 @@
+<?php
+
+/**
+ * @file
+ * Installation functions for entity_translation_isoptional module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function entity_translation_isoptional_install() {
+  // entity_translation_isoptional_form_alter() needs to run after entity_translation_form_alter().
+  db_update('system')
+    ->fields(array('weight' => 12))
+    ->condition('name', 'entity_translation_isoptional')
+    ->execute();
+}
+

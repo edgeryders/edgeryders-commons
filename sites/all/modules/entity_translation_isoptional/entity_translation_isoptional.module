@@ -1,0 +1,36 @@
+<?php
+
+/**
+ * @file entity_translation_isoptional.module
+ */
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * This adds a field descriiption to the language selector widget. The widget is originally created by the 
+ * entity_translation module in function entityFormLanguageWidget(). Because it is created in code, a 
+ * description can only be added in code and not via the field UI.
+ */
+function entity_translation_isoptional_form_node_form_alter(&$form, &$form_state) {
+  // If the form represents a translation, the widget is titled "Original language" and not editable.
+  // We check for that, because in this case a field description makes no sense.
+  $is_translation = !empty($form_state['entity_translation']['is_translation']);
+
+  // 'language' is the form element for all new nodes and for new and existing original language nodes, 
+  // according to EntityTranslationHandlerInterface::getLanguageKey() in module entity_translation.
+  // Since we wonly deal with original language nodes here (excluding translations), we can safely assume that.
+  if (!$is_translation && isset($form['language'])) {
+    $form['language']['#description'] = 'To allow translation for your content, specify its current language.<br/>If you do not need it translated, leave at "not relevant".';
+    if (isset($form['language']['#options'][LANGUAGE_NONE])) {
+      $form['language']['#options'][LANGUAGE_NONE] = 'not relevant';
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function entity_translation_isoptional_form_comment_form_alter(&$form, &$form_state, $form_id) {
+  entity_translation_isoptional_form_node_form_alter($form, $form_state);
+}
+

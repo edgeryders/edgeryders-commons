@@ -1,0 +1,5 @@
+name = Entity Translation Is Optional
+description = Makes entity_translation usable for simple translation management by instructing users to specify a language only when wanting their content to be translated.
+dependencies[] = entity_translation
+core = 7.x
+files[] = 
