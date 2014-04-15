@@ -20,7 +20,7 @@ function entity_translation_isoptional_form_node_form_alter(&$form, &$form_state
   // according to EntityTranslationHandlerInterface::getLanguageKey() in module entity_translation.
   // Since we wonly deal with original language nodes here (excluding translations), we can safely assume that.
   if (!$is_translation && isset($form['language'])) {
-    $form['language']['#description'] = 'To allow translation for your content, specify its current language.<br/>If you do not need it translated, leave at "not relevant".';
+    $form['language']['#description'] = 'To enable translation for your content, specify its current language here. It will add the "Translate" tab after saving.<br/>If you do not need translations, leave the language at "not relevant".';
     if (isset($form['language']['#options'][LANGUAGE_NONE])) {
       $form['language']['#options'][LANGUAGE_NONE] = 'not relevant';
     }
