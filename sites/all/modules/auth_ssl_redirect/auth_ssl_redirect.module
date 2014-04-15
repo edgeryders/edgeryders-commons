@@ -1,0 +1,93 @@
+<?php
+
+/**
+ * Implementation of hook_boot().
+ */
+function auth_ssl_redirect_boot() {
+  global $base_root, $base_url, $user;
+
+  if (!isset($_SERVER['HTTPS']) && !$user->uid && isset($_COOKIE['AUTHSSL'])) {
+    drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+    // Redirect to HTTPS version of this page.
+    // Thanks to securepages module for the start of this.
+    $path = request_path();
+    $query = NULL;
+    if (count($_GET) > 1) {
+      // Remove q since it's in $path.
+      unset($_GET['q']);
+      $query = $_GET;
+    }
+    // Check for port.
+    $port = parse_url($base_url, PHP_URL_PORT);
+    if (!empty($port)) {
+      $base = 'https://' . parse_url($base_url, PHP_URL_HOST) . ':' . $port . base_path();
+    }
+    else {
+      $base = 'https://' . parse_url($base_url, PHP_URL_HOST) . base_path();
+    }
+    // Allow other modules to restrict which paths get redirected.
+    $allowed = module_invoke_all('auth_ssl_redirect_allowed', $path, $query);
+    if (empty($allowed) || !in_array(FALSE, $allowed)) {
+      // Issue redirect.
+      drupal_goto($base . $path, array('query' => $query));
+    }
+  }
+}
+
+/**
+ * Implements hook_user_login().
+ */
+function auth_ssl_redirect_user_login(&$edit, $user) {
+  // Set the AUTHSSL cookie.
+  $cookie_params = session_get_cookie_params();
+  $domain = _auth_ssl_redirect_cookie_domain();
+  $lifetime = 0;
+  if ($cookie_params['lifetime'] > 0) {
+    $lifetime = REQUEST_TIME + $cookie_params['lifetime'];
+  }
+  setcookie('AUTHSSL', 1, $lifetime, '/', $domain, FALSE);
+}
+
+/**
+ * Implements hook_user_logout().
+ */
+function auth_ssl_redirect_user_logout($account) {
+  $domain = _auth_ssl_redirect_cookie_domain();
+  // Delete the AUTHSSL cookie.
+  setcookie('AUTHSSL', 'deleted', REQUEST_TIME - 3600, '/', $domain, FALSE);
+  unset($_COOKIE['AUTHSSL']);
+}
+
+/**
+ * Helper function returns cookie domain.
+ */
+function _auth_ssl_redirect_cookie_domain() {
+  global $cookie_domain;
+  $domain = '';
+  $cookie_params = session_get_cookie_params();
+  $authssl_domain = variable_get('authssl_cookie_domain', FALSE);
+  if ($authssl_domain) {
+    $domain = $authssl_domain;
+  }
+  elseif (!empty($cookie_params['domain'])) {
+    $domain = $cookie_params['domain'];
+  }
+  elseif (!empty($cookie_domain)) {
+    $domain = $cookie_domain;
+  }
+  elseif (!empty($_SERVER['HTTP_HOST'])) {
+    $cookie_domain = $_SERVER['HTTP_HOST'];
+    // Strip leading periods, www., and port numbers from cookie domain.
+    $cookie_domain = ltrim($cookie_domain, '.');
+    if (strpos($cookie_domain, 'www.') === 0) {
+      $cookie_domain = substr($cookie_domain, 4);
+    }
+    $cookie_domain = explode(':', $cookie_domain);
+    $domain = $cookie_domain[0];
+  }
+  // Force cookie to have leading period to support subdomains.
+  if (!empty($domain)) {
+    $domain = '.' . ltrim($domain, '.');
+  }
+  return $domain;
+}
