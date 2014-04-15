@@ -1,0 +1,14 @@
+name = Secure Login
+description = "Enables secure login."
+core = 7.x
+files[] = securelogin.admin.inc
+files[] = securelogin.install
+files[] = securelogin.module
+configure = admin/config/people/securelogin
+
+; Information added by drupal.org packaging script on 2013-02-12
+version = "7.x-1.4"
+core = "7.x"
+project = "securelogin"
+datestamp = "1360634214"
+
