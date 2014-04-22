@@ -10,9 +10,9 @@ files[] = includes/views/handlers/mentions_views_handler_field_link.inc
 files[] = includes/views/handlers/mentions_views_handler_field_title.inc
 files[] = tests/mentions.test
 
-; Information added by drupal.org packaging script on 2013-10-01
+; Information added by Drupal.org packaging script on 2014-03-19
 version = "7.x-1.x-dev"
 core = "7.x"
 project = "mentions"
-datestamp = "1380586716"
+datestamp = "1395199456"
 

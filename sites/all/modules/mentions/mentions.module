@@ -221,6 +221,10 @@ function mentions_tokens($type, $tokens, array $data = array(), array $options =
       $date = !empty($mention->changed) ? $mention->changed : $mention->created;
       $replacements += token_generate('date', $changed_tokens, array('date' => $date), $options);
     }
+
+    if ($entity_tokens = token_find_with_prefix($tokens, 'entity')) {
+      $replacements += token_generate($mention->entity_type, $entity_tokens, array($mention->entity_type => $mention->entity), $options);
+    }
   }
 
 
