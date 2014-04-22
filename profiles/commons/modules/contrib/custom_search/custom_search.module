@@ -118,19 +118,6 @@ function custom_search_form_alter(&$form, &$form_state, $form_id) {
           $form['advanced']['keywords']['negative']['#type'] = 'hidden';
         }
 
-        // Taxonomy.
-        if (module_exists('taxonomy')) {
-          $vocabularies = taxonomy_get_vocabularies();
-          foreach ($vocabularies as $voc) {
-            if (!variable_get('custom_search_advanced_voc' . $voc->vid . '_display', TRUE)) {
-              unset($form['advanced']['category']['#options'][$voc->name]);
-            }
-          }
-          if (isset($form['advanced']['category']) && !count($form['advanced']['category']['#options'])) {
-            unset($form['advanced']['category']['#type']);
-          }
-        }
-
         // Content types.
         $names = array_keys(node_type_get_names());
         foreach ($names as $name) {
@@ -140,6 +127,23 @@ function custom_search_form_alter(&$form, &$form_state, $form_id) {
         }
         if (!count($form['advanced']['type']['#options'])) {
           unset($form['advanced']['type']['#type']);
+        }
+
+        // Languages.
+        foreach (language_list('language') as $key => $entity) {
+          if ($entity->enabled) {
+            $language_options[$key] = $entity->name;
+          }
+        }
+        if (count($language_options) > 1) {
+          foreach ($language_options as $key => $name) {
+            if (!variable_get('custom_search_advanced_language_' . $key . '_display', TRUE)) {
+              unset($form['advanced']['language']['#options'][$key]);
+            } 
+          }
+        }
+        if (!count($form['advanced']['language']['#options'])) {
+          unset($form['advanced']['language']['#type']);
         }
 
         if (!variable_get('custom_search_results_search', TRUE)) {
@@ -379,6 +383,7 @@ function custom_search_submit($form, &$form_state) {
   variable_set('custom_search_delta', $delta);
   $type = 'node';
   $keys = $form_state['values'][$form_state['values']['form_id']];
+  $keys = str_replace('/', '%2f', $keys);
   $original_keywords = $keys;
 
   $types = (isset($form_state['values']['custom_search_types'])) ? $form_state['values']['custom_search_types'] : array();

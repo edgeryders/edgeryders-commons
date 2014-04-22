@@ -19,72 +19,9 @@ function custom_search_install() {
  * Implements hook_uninstall().
  */
 function custom_search_uninstall() {
-  variable_del('custom_search_label_visibility');
-  variable_del('custom_search_label');
-  variable_del('custom_search_text');
-  variable_del('custom_search_element');
-  variable_del('custom_search_hint_text');
-  variable_del('custom_search_size');
-  variable_del('custom_search_max_length');
-  variable_del('custom_search_submit_text');
-  variable_del('custom_search_image_path');
-  variable_del('custom_search_criteria_or_display');
-  variable_del('custom_search_criteria_or_label');
-  variable_del('custom_search_criteria_phrase_display');
-  variable_del('custom_search_criteria_phrase_label');
-  variable_del('custom_search_criteria_negative_display');
-  variable_del('custom_search_criteria_negative_label');
-  variable_del('custom_search_paths');
-  variable_del('custom_search_paths_selector');
-  variable_del('custom_search_paths_selector_label');
-  variable_del('custom_search_paths_selector_label_visibility');
-  variable_del('custom_search_search_box_weight');
-  variable_del('custom_search_content_types_weight');
-  variable_del('custom_search_criteria_or_weight');
-  variable_del('custom_search_criteria_phrase_weight');
-  variable_del('custom_search_criteria_negative_weight');
-  variable_del('custom_search_custom_paths_weight');
-  variable_del('custom_search_submit_button_weight');
-  variable_del('custom_search_search_box_region');
-  variable_del('custom_search_content_types_region');
-  variable_del('custom_search_criteria_or_region');
-  variable_del('custom_search_criteria_phrase_region');
-  variable_del('custom_search_criteria_negative_region');
-  variable_del('custom_search_custom_paths_region');
-  variable_del('custom_search_submit_button_region');
-  variable_del('custom_search_target');
-  variable_del('custom_search_node_types');
-  variable_del('custom_search_node_types_excluded');
-  variable_del('custom_search_other');
-  variable_del('custom_search_type_selector');
-  variable_del('custom_search_type_selector_label');
-  variable_del('custom_search_type_selector_label_visibility');
-  variable_del('custom_search_type_selector_all');
-  variable_del('custom_search_any_restricts');
-  variable_del('custom_search_any_force');
-  variable_del('custom_search_results_search');
-  variable_del('custom_search_results_advanced_search');
-  variable_del('custom_search_results_advanced_search_collapsible');
-  variable_del('custom_search_results_advanced_search_collapsed');
-  variable_del('custom_search_advanced_or_display');
-  variable_del('custom_search_advanced_phrase_display');
-  variable_del('custom_search_advanced_negative_display');
-  $options = node_type_get_names();
-  foreach ($options as $type => $name) {
-    variable_del('custom_search_advanced_type_' . $type . '_display');
-  }
-  variable_del('custom_search_results_info_type');
-  variable_del('custom_search_results_info_user');
-  variable_del('custom_search_results_info_date');
-  if (module_exists('comment')) {
-    variable_del('custom_search_results_info_comment');
-  }
-  if (module_exists('upload')) {
-    variable_del('custom_search_results_info_upload');
-  }
-  variable_del('custom_search_filter');
-  variable_del('custom_search_filter_label');
-  variable_del('custom_search_search_api_page');
+  db_delete('variable')
+    ->condition('name', 'custom_search_%', 'LIKE')
+    ->execute();
 }
 
 /**

@@ -19,5 +19,7 @@ function custom_search_i18n_install() {
  * Implements hook_uninstall().
  */
 function custom_search_i18n_uninstall() {
-  variable_del('custom_search_i18n_search_language');
+	db_delete('variable')
+    ->condition('name', 'custom_search_i18n_%', 'LIKE')
+    ->execute();
 }

@@ -135,7 +135,6 @@ function custom_search_blocks_form($form, &$form_state, $delta) {
   );
 
   $form['delta'] = array('#type' => 'hidden', '#value' => $delta);
-  $form['#action'] = url('search/node');
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Search'));
   $form['#submit'] = array('custom_search_submit');
