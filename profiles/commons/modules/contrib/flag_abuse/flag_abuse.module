@@ -76,3 +76,30 @@ function flag_abuse_is_abuse_flag($flag_name) {
 function flag_abuse_get_abuse_flags() {
   return variable_get('flag_abuse_flags', array('abuse_node', 'abuse_comment', 'abuse_user'));
 }
+
+/**
+ * Make sure we're using the correct api.
+ * @return string
+ *   Either content_type or entity_type depending on flag api
+ */
+function flag_abuse_get_api_type() {
+  if(FLAG_API_VERSION == 2) {
+    $type = 'content_type';
+  }elseif(FLAG_API_VERSION == 3) {
+    $type = 'entity_type';
+  }
+  return $type;
+}
+
+function flag_abuse_flag_access($flag, $entity_id, $action, $account) {
+  $type = flag_abuse_get_api_type();
+  $content_flags = flag_get_counts($flag->$type,$entity_id);
+  if (flag_abuse_is_abuse_flag($flag->name)) {
+    // Check to see if there is a whitelist flag
+    if (isset($content_flags['abuse_whitelist_'.$flag->$type]) && 
+      $content_flags['abuse_whitelist_'.$flag->$type] == 1) {
+      flag_reset_flag($flag, $entity_id);
+      return FALSE;
+    }
+  }
+}
