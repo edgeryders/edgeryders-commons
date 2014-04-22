@@ -7382,3 +7382,17 @@ body.front.logged-in .view-commons-homepage-content .article.node.node-page .lin
   background-image: -o-linear-gradient(top, #0b769c 0%, #0c80ab 100%);
   background-image: linear-gradient(top, #0b769c 0%, #0c80ab 100%);
 }
+
+.rteleft {
+  text-align: left;
+}
+.rteright {
+  text-align: right;
+}
+.rtecenter {
+  text-align: center;
+}
+.rtejustify {
+  text-align: justify;
+}
+
