@@ -323,7 +323,7 @@ function css_browser_selector($ua = NULL) {
  * @param $theme_name
  */
 function get_color_scheme_name($theme_name) {
-  $scheme_name = drupal_static(__FUNCTION__, array());
+  $scheme_name = &drupal_static(__FUNCTION__, array());
   if (empty($scheme_name)) {
     if (module_exists('color')) {
 

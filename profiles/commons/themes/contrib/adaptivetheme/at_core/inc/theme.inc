@@ -42,9 +42,6 @@ function adaptivetheme_theme($existing, $type, $theme, $path) {
  * @see adaptivetheme_process_menubar()
  */
 function adaptivetheme_menubar($vars) {
-
-  //dsm($vars);
-
   $output = '';
   $output .= '<div id="' . $vars['menubar_id'] . '" class="' . $vars['classes'] . '"' . $vars['attributes'] . '>';
   $output .= '<nav ' . $vars['content_attributes'] . '>';
@@ -69,10 +66,10 @@ function _theme_menu_variables($menu, $type) {
 /**
  * Returns HTML for a breadcrumb trail.
  *
- * Adaptivetheme impliments breadcrumb trails as an ordered list, wrapping each
- * crumb in li elements and the seperators in span elements to make life easier
- * for themers. Additionally .crumb, .crumb-first and .crumb-last classes are
- * printed on the li elements.
+ * Adaptivetheme renders breadcrumbs as an ordered list (<ol>...</ol>), wrapping
+ * crumbs in li elements and the seperators in span elements. Additionally .crumb,
+ * .crumb-first and .crumb-last classes are printed on the li elements. We also
+ * remove some silly breadcrumbs from various pages.
  *
  * @param $vars
  *   An associative array containing:
@@ -90,7 +87,7 @@ function adaptivetheme_breadcrumb($vars) {
     }
 
     // Remove the rather pointless breadcrumbs for reset password and user
-    // register pages, they link to the page you are on.
+    // register pages, they link to the page you are on, doh!
     if (arg(0) === 'user' && (arg(1) === 'password' || arg(1) === 'register')) {
       array_pop($breadcrumb);
     }
@@ -112,12 +109,12 @@ function adaptivetheme_breadcrumb($vars) {
 
       $output = '';
       if (at_get_setting('breadcrumb_label', $theme_name) == 1) {
-        $output = '<div id="breadcrumb" class="clearfix"><nav class="breadcrumb-wrapper with-breadcrumb-label clearfix" role="navigation">';
-        $output .= '<h2 class="breadcrumb-label">' . t('You are here') . '</h2>';
+        $output = '<div id="breadcrumb" class="clearfix"><nav class="breadcrumb-wrapper with-breadcrumb-label clearfix" role="navigation" aria-labelledby="breadcrumb-label">';
+        $output .= '<h2 id="breadcrumb-label" class="breadcrumb-label">' . t('You are here') . '</h2>';
       }
       else {
-        $output = '<div id="breadcrumb" class="clearfix"><nav class="breadcrumb-wrapper clearfix" role="navigation">';
-        $output .= '<h2 class="element-invisible">' . t('You are here') . '</h2>';
+        $output = '<div id="breadcrumb" class="clearfix"><nav class="breadcrumb-wrapper clearfix" role="navigation" aria-labelledby="breadcrumb-label">';
+        $output .= '<h2 id="breadcrumb-label" class="element-invisible">' . t('You are here') . '</h2>';
       }
       $output .= '<ol id="crumbs" class="clearfix">';
       foreach ($breadcrumb as $key => $crumb) {
@@ -156,36 +153,36 @@ function adaptivetheme_breadcrumb($vars) {
  *     of that type.
  */
 function adaptivetheme_status_messages($vars) {
-  $display = $vars['display'];
+  $display = drupal_get_messages($vars['display']);
   $output = '';
 
-  $status_heading = array(
-    'status' => t('Status message'),
-    'error' => t('Error message'),
-    'warning' => t('Warning message'),
-  );
-
-  $output .= "<div id=\"messages\">";
-
-  foreach (drupal_get_messages($display) as $type => $messages) {
-    $output .= "<div class=\"messages $type\">";
-    if (!empty($status_heading[$type])) {
-      $output .= '<h2 class="element-invisible">' . $status_heading[$type] . "</h2>";
-    }
-    if (count($messages) > 1) {
-      $output .= " <ul>";
-      foreach ($messages as $message) {
-        $output .= '  <li>' . $message . "</li>";
+  if (count($display) > 0) {
+    $status_heading = array(
+      'status' => t('Status message'),
+      'error' => t('Error message'),
+      'warning' => t('Warning message'),
+    );
+    foreach ($display as $type => $messages) {
+      $output .= "<div class=\"messages $type\">";
+      if (!empty($status_heading[$type])) {
+        $output .= '<h2 class="element-invisible">' . $status_heading[$type] . "</h2>";
       }
-      $output .= " </ul>";
+      if (count($messages) > 1) {
+        $output .= " <ul>";
+        foreach ($messages as $message) {
+          $output .= '  <li class="message-item">' . $message . "</li>";
+        }
+        $output .= " </ul>";
+      }
+      else {
+        $output .= $messages[0];
+      }
+      $output .= "</div>";
     }
-    else {
-      $output .= $messages[0];
+    if ($output != ''){
+      $output = "<div id=\"messages\">" . $output . "</div>";
     }
-    $output .= "</div>";
   }
-
-  $output .= "</div>";
 
   return $output;
 }
@@ -334,7 +331,7 @@ if (!function_exists('dhtml_menu_init')) {
       $element['#localized_options']['html'] = TRUE;
     }
 
-    if (at_get_setting('unset_menu_titles', $theme_name) == 1 && !empty($element['#localized_options']['attributes']['title'])) {
+    if (at_get_setting('unset_menu_titles', $theme_name) == 1 /* && !empty($element['#localized_options']['attributes']['title']) */) {
       unset($element['#localized_options']['attributes']['title']);
     }
 
@@ -405,6 +402,9 @@ function adaptivetheme_links($vars) {
       $output .= '<' . $heading['level'];
       if (!empty($heading['class'])) {
         $output .= drupal_attributes(array('class' => $heading['class']));
+      }
+      if (!empty($heading['id'])) {
+        $output .= drupal_attributes(array('id' => $heading['id']));
       }
       $output .= '>' . check_plain($heading['text']) . '</' . $heading['level'] . '>';
     }
@@ -646,3 +646,16 @@ function adaptivetheme_field__image($vars) {
 
   return $output;
 }
+
+
+/**
+ * Table no_striping boilerplate.
+ */
+/*
+function adaptivetheme_preprocess_table(&$variables) {
+  $rows = $variables['rows'];
+  foreach ($rows as $number => $row) {
+    $variables['rows'][$number]['no_striping'] = TRUE;
+  }
+}
+*/

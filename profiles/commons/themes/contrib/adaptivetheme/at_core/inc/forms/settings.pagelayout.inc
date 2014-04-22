@@ -42,7 +42,7 @@ function at_core_page_layout_form(&$form, $theme_name) {
   $unit_options = array('%' => '%', 'px' => 'px', 'em' => 'em');
 
   // Set a message for when responsive layout is turned off
-  $disable_message = t('<p>The responsive layout is disabled, only the Standard layout is now used.</p><p>To re-enable uncheck the "Disable responsive layout and styles" checkbox under the "Settings" tab.</p>');
+  $disable_message = t('<p>The responsive layout is disabled, only the Standard layout is now used.</p><p>To re-enable uncheck the "Disable responsive layout and styles" checkbox under the "Global Settings" tab.</p>');
 
   /*****************************************************************************
    *

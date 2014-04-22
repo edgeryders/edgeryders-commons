@@ -114,6 +114,7 @@ function at_core_submit_info($values, $theme_name, $path) {
       'at-layout__active_tab',
       'at-settings__active_tab',
       'at__active_tab',
+      'header_upload' // noggin setting
     );
     foreach ($theme_settings as $setting_name => $setting_value) {
       if ($setting_name == 'global_gutter_width') {

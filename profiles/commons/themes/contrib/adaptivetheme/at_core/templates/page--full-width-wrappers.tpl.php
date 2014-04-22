@@ -27,7 +27,7 @@
  * - $secondary_local_tasks: Split local tasks - secondary.
  * - $tag: Prints the wrapper element for the main content.
  * - $is_mobile: Mixed, requires the Mobile Detect or Browscap module to return
- *   TRUE for mobile.  Note that tablets are also considered mobile devices.  
+ *   TRUE for mobile.  Note that tablets are also considered mobile devices.
  *   Returns NULL if the feature could not be detected.
  * - $is_tablet: Mixed, requires the Mobile Detect to return TRUE for tablets.
  *   Returns NULL if the feature could not be detected.
@@ -127,8 +127,8 @@
               <?php endif; ?>
 
               <?php if ($site_name || $site_slogan): ?>
-                <!-- start: Site name and Slogan hgroup -->
-                <hgroup<?php print $hgroup_attributes; ?>>
+                <!-- start: Site name and Slogan -->
+                <div<?php print $hgroup_attributes; ?>>
 
                   <?php if ($site_name): ?>
                     <h1<?php print $site_name_attributes; ?>><?php print $site_name; ?></h1>
@@ -138,7 +138,7 @@
                     <h2<?php print $site_slogan_attributes; ?>><?php print $site_slogan; ?></h2>
                   <?php endif; ?>
 
-                </hgroup><!-- /end #name-and-slogan -->
+                </div><!-- /end #name-and-slogan -->
               <?php endif; ?>
 
 
@@ -254,11 +254,12 @@
       </div>
     <?php endif; ?>
 
-    <?php if ($page['footer']): ?>
+    <?php if ($page['footer'] || $attribution): ?>
       <div id="footer-wrapper">
         <div class="container clearfix">
           <footer<?php print $footer_attributes; ?>>
             <?php print render($page['footer']); ?>
+            <?php print $attribution; ?>
           </footer>
         </div>
       </div>

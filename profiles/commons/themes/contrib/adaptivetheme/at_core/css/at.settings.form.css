@@ -687,3 +687,6 @@ div[class*=form-item-move-region-options] label:first-child {
 .admin-theme-seven fieldset[id*="message-wrapper"] .fieldset-wrapper .description {
   padding-top: 7px;
 }
+#edit-ati .form-item-icon-rel label {
+  display: inline;
+}

@@ -18,7 +18,7 @@
  * @param $theme_name, usually the active theme.
  */
 function at_get_plugins($theme_name) {
-  $plugins = drupal_static(__FUNCTION__, array());
+  $plugins = &drupal_static(__FUNCTION__, array());
   if (empty($plugins)) {
     if ($plugins_cache = cache_get('at_get_plugins_plugins')) {
       $plugins = $plugins_cache->data;
@@ -37,7 +37,7 @@ function at_get_plugins($theme_name) {
             }
           }
         }
-        array_unique($plugins_list);
+
         $plugins = $plugins_list;
       }
     }
@@ -129,7 +129,6 @@ function at_load_plugins($theme_name, $plugin_type) {
   }
 
   foreach ($plugin_files as $file_data) {
-
     include_once(DRUPAL_ROOT . '/' . $file_data->uri);
 
     // panels
@@ -188,9 +187,9 @@ function responsive_page_layouts_data_structure($theme_name = NULL) {
     $theme_name = $theme_key;
   }
 
-  $page_data_structure = drupal_static(__FUNCTION__, array());
+  $page_data_structure = &drupal_static(__FUNCTION__, array());
   if (empty($page_data_structure)) {
-    if ($cache = cache_get('at_page_layouts_data_structure')) {
+    if ($cache = cache_get('at_page_layouts_data_structure') && !empty($cache->data)) {
       $page_data_structure = $cache->data;
     }
     else {
@@ -216,7 +215,7 @@ function responsive_page_layouts_data_structure($theme_name = NULL) {
 function responsive_panels_data_structure() {
   global $theme_key;
   $theme_name = $theme_key;
-  $panels_data_structure = drupal_static(__FUNCTION__, array());
+  $panels_data_structure = &drupal_static(__FUNCTION__, array());
   if (empty($panels_data_structure)) {
     if ($cache = cache_get('at_panels_data_structure')) {
       $panels_data_structure = $cache->data;
@@ -249,7 +248,7 @@ function responsive_panels_data_structure() {
  * @param $theme_name
  */
 function responsive_page_layouts_device_group_options($theme_name) {
-  $device_group_options = drupal_static(__FUNCTION__, array());
+  $device_group_options = &drupal_static(__FUNCTION__, array());
   if (empty($device_group_options)) {
     $layout_methods = responsive_page_layouts_data_structure();
     foreach ($layout_methods as $method => $values) {
@@ -333,7 +332,8 @@ function responsive_plugins_admin_css($theme_name, $plugin_type) {
 /**
  * Base config for page layout builder.
  * This is used in at_core.submit.responsive.inc to help retrieve the form
- * values for each device groups layout.
+ * values for each device groups layout. Not really part of the plugin
+ * system and can't recall why I put it here :/
  */
 function page_layout() {
   $variables_array = array(
@@ -349,10 +349,11 @@ function page_layout() {
 }
 
 /**
- * Return an array of standard gpanel regions
+ * Return an array of standard gpanel regions. Not really part of the plugin
+ * system and can't recall why I put it here :/
  */
 function gpanel_regions() {
-  $gpanel_regions_array = drupal_static(__FUNCTION__, array());
+  $gpanel_regions_array = &drupal_static(__FUNCTION__, array());
   if (empty($gpanel_regions_array)) {
     $gpanel_regions_array = array(
       'one' => array(

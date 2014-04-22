@@ -113,10 +113,10 @@
   ; Remove the semicolon to umcomment and clear the sites cache.
 
   ; Page layout plugins
-  ; plugins[page_layout][layouts] = layouts/page
+  :plugins[page_layout][layouts] = layouts/page
 
   ; Panels layout plugins
-  ; plugins[panels][layouts] = layouts/panels
+  :plugins[panels][layouts] = layouts/panels
 
 
 ;----------// Site Features
@@ -175,7 +175,7 @@
   settings[tablet_portrait_page_width]     = 100
   settings[tablet_portrait_sidebar_first]  = 50
   settings[tablet_portrait_sidebar_second] = 50
-  settings[tablet_portrait_media_query]    = 'only screen and (min-width:481px) and (max-width:768px)'
+  settings[tablet_portrait_media_query]    = 'only screen and (min-width:581px) and (max-width:768px)'
 
 
   ; Layout settings - Smalltouch landscape
@@ -185,7 +185,7 @@
   settings[smalltouch_landscape_page_width]     = 100
   settings[smalltouch_landscape_sidebar_first]  = 50
   settings[smalltouch_landscape_sidebar_second] = 50
-  settings[smalltouch_landscape_media_query]    = 'only screen and (min-width:321px) and (max-width:480px)'
+  settings[smalltouch_landscape_media_query]    = 'only screen and (min-width:321px) and (max-width:580px)'
 
 
   ; Layout settings - Smalltouch portrait
@@ -401,6 +401,10 @@
   settings[login_block_remove_openid] = 0
 
 
+  ; User block
+  settings[user_block_user_name] = 1
+
+
   ; Design
   settings[global_gutter_width]           = ''
   settings[page_full_width_wrappers]      = 0
@@ -433,30 +437,43 @@
   settings[rel_author] = 0
 
 
+  ; Mobile metu toggle
+  settings[menu_toggle_tablet_portrait]  = 1
+  settings[menu_toggle_tablet_landscape] = 0
+  settings[menu_toggle_main_menu]        = 1
+  settings[menu_toggle_secondary_menu]   = 1
+  settings[menu_toggle_leaderboard]      = 0
+  settings[menu_toggle_header]           = 0
+  settings[menu_toggle_menu_bar]         = 1
+  settings[menu_toggle_main_menu_title] = Main menu
+  settings[menu_toggle_secondary_menu_title] = User menu
+
+
   ; Mobile metatags
-  settings[mobile_friendly_metatags] = 1
-  settings[adaptivetheme_meta_viewport] = 'width=device-width, initial-scale=1.0, user-scalable=yes'
+  settings[mobile_friendly_metatags]            = 1
+  settings[adaptivetheme_meta_viewport]         = 'width=device-width, initial-scale=1.0, user-scalable=yes'
   settings[adaptivetheme_meta_mobileoptimized]  = 'width'
   settings[adaptivetheme_meta_handheldfriendly] = 'true'
   settings[adaptivetheme_meta_apple_mobile_web_app_capable] = 'yes'
   settings[adaptivetheme_meta_ie_document_mode] = ''
-  settings[adaptivetheme_meta_clear_type] = 0
+  settings[adaptivetheme_meta_clear_type]       = 0
 
 
   ; Touch icons
   settings[apple_touch_icon_enable] = 0
-  settings[apple_touch_icon_path_l] = 'images/touch-icon-l.png'
-  settings[apple_touch_icon_path_m] = 'images/touch-icon-m.png'
-  settings[apple_touch_icon_path_h] = 'images/touch-icon-h.png'
+  settings[icon_path_default]                   = 'images/default-60x60.png'
+  settings[apple_touch_icon_path_ipad]          = 'images/ipad-standard-76x76.png'
+  settings[apple_touch_icon_path_iphone_retina] = 'images/iphone-retina-120x120.png'
+  settings[apple_touch_icon_path_ipad_retina]   = 'images/ipad-retina-152x152.png'
+  settings[icon_rel] = 0
 
 
   ; Custom CSS
   settings[custom_css] = ''
 
-
-; Information added by drush on 2014-02-12
-version = "7.x-3.1+68-dev"
+; Information added by Drupal.org packaging script on 2014-03-23
+version = "7.x-3.2"
 core = "7.x"
 project = "adaptivetheme"
-datestamp = "1392234248"
+datestamp = "1395575059"
 

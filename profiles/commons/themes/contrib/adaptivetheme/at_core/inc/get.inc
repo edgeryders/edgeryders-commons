@@ -63,7 +63,7 @@ function at_get_setting($setting_name, $theme = NULL) {
  * @param $theme_name
  */
 function at_get_info($theme_name) {
-  $info = drupal_static(__FUNCTION__, array());
+  $info = &drupal_static(__FUNCTION__, array());
   if (empty($info)) {
     $lt = list_themes();
     foreach ($lt as $key => $value) {
@@ -86,7 +86,7 @@ function at_get_info($theme_name) {
  * @param $theme_name, usually the active theme.
  */
 function at_get_info_trail($theme_name) {
-  $info_trail = drupal_static(__FUNCTION__, array());
+  $info_trail = &drupal_static(__FUNCTION__, array());
   if (empty($info_trail)) {
     $lt = list_themes();
 
@@ -206,7 +206,7 @@ function at_get_css_files($theme_name) {
 
 /**
  * Return a device context.
- * Wrapper for mobile_detect_get_object and
+ * Wrapper for mobile_detect_get_object() and
  * browscap_get_browser().
  */
 function at_get_browser() {

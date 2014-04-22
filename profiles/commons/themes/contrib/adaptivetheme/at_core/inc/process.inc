@@ -59,7 +59,7 @@ function adaptivetheme_process_page(&$vars) {
 
   // Theme the menu bars
   if (!empty($vars['primary_navigation'])) {
-    $vars['primary_navigation'] = theme('menubar', array('menu' => $vars['primary_navigation'], 'type' => 'primary'));
+    $vars['primary_navigation'] = theme('menubar', array('menu' => $vars['primary_navigation'],'type' => 'primary'));
   }
   if (!empty($vars['secondary_navigation'])) {
     $vars['secondary_navigation'] = theme('menubar', array('menu' => $vars['secondary_navigation'], 'type' => 'secondary'));
@@ -75,7 +75,7 @@ function adaptivetheme_process_page(&$vars) {
       // so other suggestions can easily override it.
       if (at_get_setting('page_content_type_suggestions', $theme_name) === 1) {
         if (isset($vars['node'])) {
-          $suggestion = 'page__' . str_replace('_', '--', $vars['node']->type);
+          $suggestion = 'page__' . $vars['node']->type;
           array_unshift($vars['theme_hook_suggestions'], $suggestion);
         }
       }
@@ -101,7 +101,6 @@ function adaptivetheme_process_page(&$vars) {
       $vars['theme_hook_suggestions'] = array_merge($vars['theme_hook_suggestions'], $suggestions);
     }
   }
-
 }
 
 /**
@@ -175,8 +174,6 @@ function adaptivetheme_process_block(&$vars) {
     $vars['inner_prefix'] = '';
     $vars['inner_suffix'] = '';
   }
-
-  //dsm($vars);
 
   // Provide additional suggestions so the block__menu suggestion can be overridden easily
   $vars['theme_hook_suggestions'][] = 'block__' . $vars['block']->region . '__' . $vars['block']->module;

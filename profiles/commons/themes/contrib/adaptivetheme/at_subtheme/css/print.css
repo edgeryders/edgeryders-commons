@@ -66,8 +66,9 @@ table * {
 }
 
 /*
- * Hide various bits of the page
+ * Hide various bits of the page, .noprint reusable class for hiding stuff.
  */
+.noprint,
 .sidebar,
 #breadcrumb,
 .nav,
@@ -151,7 +152,7 @@ h6 a,
   color: #333333;
 }
 
-hgroup a:link, hgroup a:visited {
+.h-group a:link, .h-group a:visited {
   text-decoration: none;
 }
 

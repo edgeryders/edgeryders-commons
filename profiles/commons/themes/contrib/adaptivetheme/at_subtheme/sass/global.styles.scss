@@ -317,7 +317,7 @@ var {
 
 
 /*
- * Wrapper for the site name and slogan (hgroup)
+ * Wrapper for the site name and slogan
  */
 #name-and-slogan {}
 
@@ -430,6 +430,27 @@ ul.links {
 }
 
 
+/*
+ * Attribution message and link
+ */
+.attribution {
+  display: block;
+  opacity: 0.65;
+  padding: 1em 0;
+  text-align: center;
+
+  a {
+    text-decoration: none;
+    color: inherit;
+
+    &:hover,
+    &:focus {
+      text-decoration: underline;
+    }
+  }
+}
+
+
 /* =============================================================================
  *   Regions
  * ========================================================================== */
@@ -535,14 +556,6 @@ a {
 /* =============================================================================
  *   Primary, Secondary and Menu Bar region menus
  * ========================================================================== */
-
-/*
- * Use one of the following id's for granular control:
- *  - #menu-bar (menu bar region)
- *  - #primary-menu (main menu)
- *  - #secondary-menu (secondary/user menu)
- * You can target all of these with .nav or div[id$="menu-bar"]
- */
 
 .nav {
   clear: both;

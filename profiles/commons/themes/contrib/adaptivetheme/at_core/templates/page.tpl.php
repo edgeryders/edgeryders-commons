@@ -111,7 +111,7 @@
 
           <?php if ($site_name || $site_slogan): ?>
             <!-- !Site name and Slogan -->
-            <hgroup<?php print $hgroup_attributes; ?>>
+            <div<?php print $hgroup_attributes; ?>>
 
               <?php if ($site_name): ?>
                 <h1<?php print $site_name_attributes; ?>><?php print $site_name; ?></h1>
@@ -121,7 +121,7 @@
                 <h2<?php print $site_slogan_attributes; ?>><?php print $site_slogan; ?></h2>
               <?php endif; ?>
 
-            </hgroup>
+            </div>
           <?php endif; ?>
 
         </div>
@@ -148,7 +148,7 @@
     <?php print render($page['secondary_content']); ?>
 
     <div id="columns" class="columns clearfix">
-      <div id="content-column" class="content-column" role="main">
+      <main id="content-column" class="content-column" role="main">
         <div class="content-inner">
 
           <!-- !Highlighted region -->
@@ -207,7 +207,7 @@
           <?php print render($page['content_aside']); ?>
 
         </div><!-- /end .content-inner -->
-      </div><!-- /end #content-column -->
+      </main><!-- /end #content-column -->
 
       <!-- !Sidebar Regions -->
       <?php $sidebar_first = render($page['sidebar_first']); print $sidebar_first; ?>
@@ -219,9 +219,10 @@
     <?php print render($page['tertiary_content']); ?>
 
     <!-- !Footer -->
-    <?php if ($page['footer']): ?>
+    <?php if ($page['footer'] || $attribution): ?>
       <footer<?php print $footer_attributes; ?>>
         <?php print render($page['footer']); ?>
+        <?php print $attribution; ?>
       </footer>
     <?php endif; ?>
 

@@ -8,7 +8,7 @@
  *
  * Adaptivetheme variables:
  * - $is_mobile: Mixed, requires the Mobile Detect or Browscap module to return
- *   TRUE for mobile.  Note that tablets are also considered mobile devices.  
+ *   TRUE for mobile.  Note that tablets are also considered mobile devices.
  *   Returns NULL if the feature could not be detected.
  * - $is_tablet: Mixed, requires the Mobile Detect to return TRUE for tablets.
  *   Returns NULL if the feature could not be detected.
@@ -37,9 +37,9 @@
 
   <dl class="feed-details">
     <dt class="feed-url"><?php print t('URL:'); ?></dt>
-      <dd class="clearfix"><?php print $source_url; ?></dd>
+    <dd class="clearfix"><?php print $source_url; ?></dd>
     <dt class="feed-updated"><?php print t('Updated:'); ?></dt>
-      <dd class="clearfix"><?php print $last_checked; ?></dd>
+    <dd class="clearfix"><?php print $last_checked; ?></dd>
   </dl>
 
 </aside>

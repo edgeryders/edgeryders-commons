@@ -22,7 +22,7 @@ function at_core_menu_toggle_form(&$form) {
   $form['at']['menu-toggle']['breakpoints']['menu_toggle_tablet_portrait'] = array(
     '#type' => 'checkbox',
     '#title' => t('Apply to Tablet Portrait'),
-    '#default_value' => at_get_setting('menu_toggle_tablet_portrait') ? at_get_setting('menu_toggle_tablet_portrait') : 0,
+    '#default_value' => at_get_setting('menu_toggle_tablet_portrait'),
     '#states' => array(
       'disabled' => array('input[name=menu_toggle_tablet_landscape]' => array('checked' => TRUE)),
     ),
@@ -30,7 +30,7 @@ function at_core_menu_toggle_form(&$form) {
   $form['at']['menu-toggle']['breakpoints']['menu_toggle_tablet_landscape'] = array(
     '#type' => 'checkbox',
     '#title' => t('Apply to all Tablet breakpoints'),
-    '#default_value' => at_get_setting('menu_toggle_tablet_landscape') ? at_get_setting('menu_toggle_tablet_landscape') : 0,
+    '#default_value' => at_get_setting('menu_toggle_tablet_landscape'),
   );
 
 
@@ -51,13 +51,13 @@ function at_core_menu_toggle_form(&$form) {
   $form['at']['menu-toggle']['menus-regions']['core']['menu_toggle_main_menu'] = array(
     '#type' => 'checkbox',
     '#title' => t('Main Menu'),
-    '#default_value' => at_get_setting('menu_toggle_main_menu') ? at_get_setting('menu_toggle_main_menu') : 1,
+    '#default_value' => at_get_setting('menu_toggle_main_menu'),
   );
   // Core secondary menu
   $form['at']['menu-toggle']['menus-regions']['core']['menu_toggle_secondary_menu'] = array(
     '#type' => 'checkbox',
     '#title' => t('Secondary menu'),
-    '#default_value' => at_get_setting('menu_toggle_secondary_menu') ? at_get_setting('menu_toggle_secondary_menu') : 1,
+    '#default_value' => at_get_setting('menu_toggle_secondary_menu'),
   );
 
   // Regions
@@ -83,7 +83,7 @@ function at_core_menu_toggle_form(&$form) {
   $form['at']['menu-toggle']['menus-regions']['regions']['menu_toggle_menu_bar'] = array(
     '#type' => 'checkbox',
     '#title' => t('Menu Bar'),
-    '#default_value' => at_get_setting('menu_toggle_menu_bar') ? at_get_setting('menu_toggle_menu_bar') : 1,
+    '#default_value' => at_get_setting('menu_toggle_menu_bar'),
   );
 
   // Customize toggle link text
@@ -96,35 +96,12 @@ function at_core_menu_toggle_form(&$form) {
   $form['at']['menu-toggle']['titles']['menu_toggle_main_menu_title'] = array(
     '#type' => 'textfield',
     '#title' => t('Main menu title'),
-    '#default_value' => at_get_setting('menu_toggle_main_menu_title') ? at_get_setting('menu_toggle_main_menu_title') : t('Main menu'),
+    '#default_value' => at_get_setting('menu_toggle_main_menu_title'),
   );
   // Secondary menu title
   $form['at']['menu-toggle']['titles']['menu_toggle_secondary_menu_title'] = array(
     '#type' => 'textfield',
     '#title' => t('Secondary menu title'),
-    '#default_value' => at_get_setting('menu_toggle_secondary_menu_title') ? at_get_setting('menu_toggle_secondary_menu_title') : t('User menu'),
+    '#default_value' => at_get_setting('menu_toggle_secondary_menu_title'),
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

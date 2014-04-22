@@ -86,4 +86,15 @@ function at_core_settings_submit($form, &$form_state) {
       at_core_submit_color($values, $theme_name, $path);
     }
   }
+
+  // Change query-strings on css/js files to enforce reload for all users.
+  _drupal_flush_css_js();
+
+  // Clear the aggregated file caches to update changes
+  if (variable_get('preprocess_css', '') == 1) {
+    drupal_clear_css_cache();
+  }
+  if (variable_get('preprocess_js', '') == 1) {
+    drupal_clear_js_cache();
+  }
 }

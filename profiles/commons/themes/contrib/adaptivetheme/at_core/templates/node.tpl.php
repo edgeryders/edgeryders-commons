@@ -102,7 +102,7 @@
  *
  * Use the hide() function to hide fields and other content, you can render it
  * later using the render() function. Install the Devel module and use
- * <?php print dsm($content); ?> to find variable names to hide() or render().
+ * <?php dsm($content); ?> to find variable names to hide() or render().
  */
 hide($content['comments']);
 hide($content['links']);

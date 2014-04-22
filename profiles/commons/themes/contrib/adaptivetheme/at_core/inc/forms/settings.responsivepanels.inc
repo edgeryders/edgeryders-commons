@@ -97,7 +97,7 @@ function at_core_responsive_panels_form(&$form, $theme_name, $info_array) {
   );
 
   // Disabled message
-  $panels_disable_message = t('<p>The responsive layout is disabled, only the default layout for each Gpanel and Panel layout will be used.</p><p>To re-enable uncheck the "Disable responsive layout and styles" checkbox under the "Settings" tab.</p>');
+  $panels_disable_message = t('<p>The responsive layout is disabled, only the default layout for each Gpanel and Panel layout will be used.</p><p>To re-enable uncheck the "Disable responsive layout and styles" checkbox under the "Global Settings" tab.</p>');
 
   if(at_get_setting('disable_responsive_styles') === 1) {
     $form['at-settings']['panels']['disabled'] = array(

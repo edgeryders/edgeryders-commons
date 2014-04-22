@@ -100,59 +100,81 @@ function adaptivetheme_html_head_alter(&$head_elements) {
   // Apple touch icons - low, medium and high (see the Apple docs on touch icons)
   if (at_get_setting('enable_apple_touch_icons') === 1) {
     $path_to_theme = drupal_get_path('theme', $theme_name);
-    // low
-    $apple_touch_icon_path_l = check_plain(at_get_setting('apple_touch_icon_path_l', $theme_name));
-    if (!empty($apple_touch_icon_path_l)) {
-      $l = $path_to_theme . '/' . $apple_touch_icon_path_l;
-      $touch_icon_l = file_create_url($l);
+
+    $rel = 'apple-touch-icon';
+    if (at_get_setting('enable_apple_touch_icon_precomposed') === 1) {
+      $rel = 'apple-touch-icon-precomposed';
+    }
+
+    // Apple default icon and Nokia shortcut icon.
+    $icon_path_default = check_plain(at_get_setting('icon_path_default', $theme_name));
+    if (!empty($icon_path_default)) {
+      $default_icon_path = $path_to_theme . '/' . $icon_path_default;
+      $default_icon_url = file_create_url($default_icon_path);
       $head_elements['adaptivetheme_touch_icon_nokia'] = array(
         '#type' => 'html_tag',
         '#tag' => 'link',
         '#weight' => -97,
         '#attributes' => array(
-          'href' => $touch_icon_l,
+          'href' => $default_icon_url,
           'rel' => "shortcut icon",
         ),
       );
-      $head_elements['adaptivetheme_touch_icon_low'] = array(
+      $head_elements['adaptivetheme_touch_icon_default'] = array(
         '#type' => 'html_tag',
         '#tag' => 'link',
         '#weight' => -98,
         '#attributes' => array(
-          'href' => $touch_icon_l,
-          'rel' => "apple-touch-icon-precomposed",
+          'href' => $default_icon_url,
+          'rel' => $rel,
         ),
       );
     }
-    // medium
-    $apple_touch_icon_path_m = check_plain(at_get_setting('apple_touch_icon_path_m', $theme_name));
-    if (!empty($apple_touch_icon_path_m)) {
-      $m = $path_to_theme . '/' . $apple_touch_icon_path_m;
-      $touch_icon_m = file_create_url($m);
-      $head_elements['adaptivetheme_touch_icon_medium'] = array(
+    // iPad (standard display).
+    $apple_touch_icon_path_ipad = check_plain(at_get_setting('apple_touch_icon_path_ipad', $theme_name));
+    if (!empty($apple_touch_icon_path_ipad)) {
+      $ipad_icon_path = $path_to_theme . '/' . $apple_touch_icon_path_ipad;
+      $ipad_icon_url = file_create_url($ipad_icon_path);
+      $head_elements['adaptivetheme_touch_icon_ipad'] = array(
         '#type' => 'html_tag',
         '#tag' => 'link',
         '#weight' => -99,
         '#attributes' => array(
-          'href' => $touch_icon_m,
-          'rel' => "apple-touch-icon-precomposed",
-          'sizes' => "72x72",
+          'href' => $ipad_icon_url,
+          'rel' => $rel,
+          'sizes' => "76x76",
         ),
       );
     }
-    // high
-    $apple_touch_icon_path_h = check_plain(at_get_setting('apple_touch_icon_path_h', $theme_name));
-    if (!empty($apple_touch_icon_path_h)) {
-      $h = $path_to_theme . '/' . $apple_touch_icon_path_h;
-      $touch_icon_h = file_create_url($h);
-      $head_elements['adaptivetheme_touch_icon_high'] = array(
+    // iPhone retina.
+    $apple_touch_icon_path_iphone_retina = check_plain(at_get_setting('apple_touch_icon_path_iphone_retina', $theme_name));
+    if (!empty($apple_touch_icon_path_iphone_retina)) {
+      $iphone_retina_icon_path = $path_to_theme . '/' . $apple_touch_icon_path_iphone_retina;
+      $iphone_retina_icon_url = file_create_url($iphone_retina_icon_path);
+      $head_elements['adaptivetheme_touch_icon_iphone_retina'] = array(
         '#type' => 'html_tag',
         '#tag' => 'link',
         '#weight' => -100,
         '#attributes' => array(
-          'href' => $touch_icon_h,
-          'rel' => "apple-touch-icon-precomposed",
-          'sizes' => "114x114",
+          'href' => $iphone_retina_icon_url,
+          'rel' => $rel,
+          'sizes' => "120x120",
+        ),
+      );
+    }
+    // iPad retina.
+    $apple_touch_icon_path_ipad_retina = check_plain(at_get_setting('apple_touch_icon_path_ipad_retina', $theme_name));
+    if (!empty($apple_touch_icon_path_ipad_retina)) {
+      $ipad_retina_icon_path = $path_to_theme . '/' . $apple_touch_icon_path_ipad_retina;
+      $ipad_retina_icon_url = file_create_url($ipad_retina_icon_path);
+      $head_elements['adaptivetheme_touch_icon_ipad_retina'] = array(
+        '#type' => 'html_tag',
+        '#tag' => 'link',
+        '#weight' => -100,
+        '#attributes' => array(
+          'href' => $ipad_retina_icon_url,
+          'rel' => $rel,
+          'sizes' => "152x152",
         ),
       );
     }
@@ -172,7 +194,8 @@ function adaptivetheme_js_alter(&$javascript) {
     $javascript['misc/vertical-tabs.js'] = drupal_js_defaults($file);
   }
 
-  // Combine JS files into one per type
+  // Combine JS files into one per type, this is a bit mad and
+  // we probably shouldn't encourage such things :)
   if (at_get_setting('combine_js_files', $theme_key) === 1) {
     uasort($javascript, 'drupal_sort_css_js');
     $weight = 0;
@@ -372,6 +395,8 @@ function adaptivetheme_page_alter(&$page) {
       }
     }
   }
+
+  //kpr($page);
 }
 
 // Abstrat move regions processing
@@ -438,7 +463,9 @@ function adaptivetheme_form_search_form_alter(&$form, $form_state) {
   // The problem with Drupals standard Advanced search form is that each
   // criterion group is wrapped in a DIV, whereas it should be a fieldset with
   // a legend, this is better semantics and improves accessibility by
-  // logically grouping field items.
+  // logically grouping field items. We make this optional via a theme setting,
+  // beacuse some people bitched that it broke some modules that require
+  // crappy markup.
   if (at_get_setting('adv_search_extra_fieldsets') === 1) {
     if (isset($form['module']) && $form['module']['#value'] == 'node' && user_access('use advanced search')) {
       // Keyword boxes:
@@ -585,7 +612,9 @@ function adaptivetheme_wysiwyg_editor_settings_alter(&$settings, &$context) {
 }
 
 /**
- * Output for the debug panels test.
+ * Output for the debug panels test. This is pretty sucky because its
+ * hard coded and therefor does not include any custom Panels layout
+ * plugins you might include in a subtheme, bad eh?
  */
 function at_debug_panels() {
   $output = <<<EOF

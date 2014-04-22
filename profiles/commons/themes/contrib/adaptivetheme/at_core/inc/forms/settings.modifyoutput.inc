@@ -136,6 +136,20 @@ function at_core_modify_output_form(&$form) {
     );
   }
 
+  // User block
+  $form['at']['modify-output']['user_block'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('User block'),
+    '#description' => t('<h3>User block</h3>'),
+  );
+  // Use extra fieldsets in advanced serach form
+  $form['at']['modify-output']['user_block']['user_block_user_name'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use the "user name" as the User menu block title.'),
+    '#default_value' => at_get_setting('user_block_user_name'),
+    '#description' => t('This will override the block title setting (in block configuration) and use the users "user name" as the block title for the "User menu" block.'),
+  );
+
   // Hide or Remove
   $form['at']['modify-output']['hide-remove'] = array(
     '#type' => 'fieldset',
@@ -267,5 +281,18 @@ function at_core_modify_output_form(&$form) {
     '#title' => t('Item-lists classes'),
     '#description' => t('first, last and odd/even (zebra classes)'),
     '#default_value' => at_get_setting('extra_item_list_classes'),
+  );
+
+  // Attribution
+  $form['at']['modify-output']['attribution'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Attribution'),
+    '#description' => t('<h3>Attribution</h3>'),
+  );
+  $form['at']['modify-output']['attribution']['attribution_toggle'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show attribution message'),
+    '#description' => t('Displays a message and link for Adaptivethemes.com'),
+    '#default_value' => at_get_setting('attribution_toggle'),
   );
 }

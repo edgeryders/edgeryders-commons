@@ -5,6 +5,7 @@
  * Generate settings for the Custom CSS form.
  */
 function at_core_custom_css_form(&$form) {
+
   $form['at']['custom-styles'] = array(
     '#type' => 'fieldset',
     '#title' => t('Custom CSS'),
@@ -15,6 +16,6 @@ function at_core_custom_css_form(&$form) {
     '#title' => t('Custom CSS'),
     '#rows' => 15,
     '#default_value' => at_get_setting('custom_css') ? filter_xss_admin(at_get_setting('custom_css')) : '/* Add any valid CSS declarations */',
-    '#description' => t("The styles you enter here will be saved to the public file system in <code>themename.custom.css</code> and are not affected by upgrades. Consider using a sub-theme if you need to make major changes. Note that due to security reason you cannot use the greater than symbol (>) as a child combinator selector."),
+    '#description' => t("<p>Styles entered here are saved to <code>themename.custom.css</code>, at the path configured under \"File Management\" settings.</p><p>Direct, manual changes to <code>themename.custom.css</code> will always be overwritten by submitting this form. Consider using a sub-theme for major changes or a CSS file declared in the info file.</p><p>Note that for security reasons you cannot use the greater than symbol (>) as a child combinator selector.</p>"),
   );
 }
