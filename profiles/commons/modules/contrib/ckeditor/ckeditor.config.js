@@ -70,28 +70,27 @@ Drupal.settings.cke_toolbar_DrupalBasic = [ [ 'Format', 'Bold', 'Italic', '-', '
 Drupal.settings.cke_toolbar_DrupalAdvanced = [
   ['Source'],
   ['Cut','Copy','Paste','PasteText','PasteFromWord','-','SpellChecker', 'Scayt'],
-  ['Undo','Redo','Find','Replace','-','SelectAll','RemoveFormat'],
+  ['Undo','Redo','Find','Replace','-','SelectAll'],
   ['Image','Flash','Table','HorizontalRule','Smiley','SpecialChar'],
   ['Maximize', 'ShowBlocks'],
   '/',
   ['Format'],
-  ['Bold','Italic','Underline','Strike','-','Subscript','Superscript'],
+  ['Bold','Italic','Underline','Strike','-','Subscript','Superscript','-','RemoveFormat'],
   ['NumberedList','BulletedList','-','Outdent','Indent','Blockquote'],
-  ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock','-','BidiRtl','BidiLtr'],
-  ['Link','Unlink','Anchor','Linkit','LinkToNode','LinkToMenu'],
-  ['DrupalBreak', 'DrupalPageBreak']
+  ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock','-','BidiLtr','BidiRtl'],
+  ['Link','Unlink','Anchor','Linkit','LinkToNode','LinkToMenu']
 ];
 
-// Toolbar definiton for all buttons
+// Toolbar definition for all buttons
 Drupal.settings.cke_toolbar_DrupalFull = [
   ['Source'],
   ['Cut','Copy','Paste','PasteText','PasteFromWord','-','SpellChecker', 'Scayt'],
-  ['Undo','Redo','Find','Replace','-','SelectAll','RemoveFormat'],
+  ['Undo','Redo','Find','Replace','-','SelectAll'],
   ['Image','Flash','Table','HorizontalRule','Smiley','SpecialChar','Iframe'],
   '/',
-  ['Bold','Italic','Underline','Strike','-','Subscript','Superscript'],
+  ['Bold','Italic','Underline','Strike','-','Subscript','Superscript','-','RemoveFormat'],
   ['NumberedList','BulletedList','-','Outdent','Indent','Blockquote','CreateDiv'],
-  ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock','-','BidiRtl','BidiLtr'],
+  ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock','-','BidiLtr','BidiRtl','-','Language'],
   ['Link','Unlink','Anchor','Linkit','LinkToNode', 'LinkToMenu'],
   '/',
   ['Format','Font','FontSize'],

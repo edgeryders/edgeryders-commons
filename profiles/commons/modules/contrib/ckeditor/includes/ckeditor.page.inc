@@ -35,6 +35,23 @@
  */
 function ckeditor_help_delegate($path, $arg) {
   global $base_url;
+  $is_url = false;
+  $ckeditor_url = ckeditor_path('local');
+  if ($ckeditor_url == '<URL>') {
+    $ckeditor_url = ckeditor_path('url');
+    $is_url = true;
+  }
+
+  $do_not_touch_configjs = '';
+  if (!$is_url) {
+    $do_not_touch_configjs = '<p>' .
+          t('It is recommended to not edit the !ckeditor_config_file (!ckeditor_config_path) configuration file that is distributed with CKEditor, because you may overwrite it accidentally when you update the editor.', array(
+            '!ckeditor_config_path' => '<code>' . $ckeditor_url . '/config.js</code>',
+            '!ckeditor_config_file' => '<code>config.js</code>',
+              )
+          ) .
+          '</p>';
+  }
   switch ($path) {
     case 'admin/config/content/help#description':
       $output = t('Enables the use of CKEditor (a rich text WYSIWYG editor) instead of plain text fields.');
@@ -46,13 +63,7 @@ function ckeditor_help_delegate($path, $arg) {
             '!ckeditor_module_config' => '<code>' . ckeditor_module_path('local') . '/ckeditor.config.js</code>',
               )
           ) .
-          '</p><p>' .
-          t('It is recommended to not edit the !ckeditor_config_file (!ckeditor_config_path) configuration file that is distributed with CKEditor, because you may overwrite it accidentally when you update the editor.', array(
-            '!ckeditor_config_path' => '<code>' . ckeditor_path('local') . '/config.js</code>',
-            '!ckeditor_config_file' => '<code>config.js</code>',
-              )
-          ) .
-          '</p>';
+          '</p>'.$do_not_touch_configjs;
       break;
 
     case 'admin/config/content/ckeditor/editg':
@@ -70,7 +81,7 @@ function ckeditor_help_delegate($path, $arg) {
           '</p><p>' .
           t('Useful links: !ckeditorlink | !devguidelink | !userguidelink.', array(
             '!ckeditorlink' => l(t('CKEditor website'), 'http://ckeditor.com'),
-            '!devguidelink' => l(t('Developer\'s Guide'), 'http://docs.cksource.com/CKEditor_3.x/Developers_Guide'),
+            '!devguidelink' => l(t('CKEditor for Drupal 7 Documentation'), 'http://docs.cksource.com/CKEditor_for_Drupal/Open_Source/Drupal_7'),
             '!userguidelink' => l(t('User\'s Guide'), 'http://docs.cksource.com/CKEditor_3.x/Users_Guide')
               )
           ) .
@@ -90,7 +101,7 @@ function ckeditor_help_delegate($path, $arg) {
           '<p>' .
           t('Useful links: !ckeditorlink | !devguidelink | !userguidelink.', array(
             '!ckeditorlink' => l(t('CKEditor website'), 'http://ckeditor.com'),
-            '!devguidelink' => l(t('Developer\'s Guide'), 'http://docs.cksource.com/CKEditor_3.x/Developers_Guide'),
+            '!devguidelink' => l(t('CKEditor for Drupal 7 Documentation'), 'http://docs.cksource.com/CKEditor_for_Drupal/Open_Source/Drupal_7'),
             '!userguidelink' => l(t('User\'s Guide'), 'http://docs.cksource.com/CKEditor_3.x/Users_Guide')
               )
           ) .
