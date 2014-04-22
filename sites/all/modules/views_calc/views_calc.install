@@ -90,4 +90,3 @@ function views_calc_update_6000() {
   db_add_field('views_calc_fields', 'base', array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => 'node'));
   return t("Added base to views_calc_fields table.");
 }
-

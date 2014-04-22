@@ -86,6 +86,9 @@ function theme_views_calc_ui_table($variables) {
  * Display a view as a table style.
  */
 function template_preprocess_views_calc_table(&$vars) {
+  // Some plugins assume a row_index is set.
+  if (!isset($vars['view']->row_index)) $vars['view']->row_index = '';
+
   $view = $vars['view'];
   if (!empty($view->views_calc_calculation)) {
     $vars['rows'] = array();
@@ -218,10 +221,10 @@ function template_preprocess_views_calc_table(&$vars) {
   $vars['totals'] = array();
   $vars['sub_totals'] = array();
   if ($view->query->pager->get_total_items() > $view->get_items_per_page()
-      && $view->sub_totals) {
+      && isset($view->sub_totals)) {
     views_calc_table_total($vars, 'sub_totals', $view->sub_totals);
   }
-  if ($view->totals) {
+  if (isset($view->totals)) {
     views_calc_table_total($vars, 'totals', $view->totals);
   }
 
@@ -256,7 +259,10 @@ function views_calc_table_total(&$vars, $key, $totals) {
     else {
       $query_alias = $field->field_alias;
     }
-    $baserow->{$query_alias} = $totals->{$query_alias};
+    $query_alias = views_calc_adj_full_alias($query_alias, $field);
+    if (!empty($totals->{$query_alias})) {
+      $baserow->{$query_alias} = $totals->{$query_alias};
+    }
   }
   // Build aggregation rows, one per function.
   foreach ($view->views_calc_fields as $calc => $calc_fields) {
@@ -271,8 +277,14 @@ function views_calc_table_total(&$vars, $key, $totals) {
         $query_alias = $field->field_alias;
       }
       $ext_alias = strtolower($calc) . '__' . $query_alias;
-      if (in_array($field->field, $calc_fields)) {
-        $row->{$query_alias} = $totals->{$ext_alias};
+
+      // Limit the length of the alias up to 60 characters, because
+      // stored in $total alias has been truncated in views add_field() function.
+      $ext_alias = views_calc_shorten($ext_alias);
+      if (in_array($field->options['id'], $calc_fields)) {
+        if (!empty($totals->{$ext_alias})) {
+          $row->{$query_alias} = $totals->{$ext_alias};
+        }
       }
     }
     // Build row output data.
@@ -286,7 +298,7 @@ function views_calc_table_total(&$vars, $key, $totals) {
       }
       if ($field == $column && empty($fields[$field]->options['exclude'])) {
         // Process only calculated, non-excluded fields.
-        if (in_array($field, $calc_fields) && isset($row->$field_alias)) {
+        if (in_array($field, $calc_fields)) {
 
           if ($calc == 'COUNT') {
 
@@ -307,7 +319,7 @@ function views_calc_table_total(&$vars, $key, $totals) {
             // and in ->options for other fields that are based on the numeric field handler.
             if (isset($fields[$field]->field_info)) {
               $separator = !empty($fields[$field]->options['settings']['thousands_separator']) ? $fields[$field]->options['settings']['thousands_separator'] : $options['separator'];
-              $$decimal = !empty($fields[$field]->options['settings']['decimal_separator']) ? $fields[$field]->options['settings']['decimal_separator'] : $options['decimal'];
+              $decimal = !empty($fields[$field]->options['settings']['decimal_separator']) ? $fields[$field]->options['settings']['decimal_separator'] : $options['decimal'];
               $precision = !empty($fields[$field]->options['settings']['scale']) ? $fields[$field]->options['settings']['scale'] : $options['precision'];
             }
             else {
@@ -315,7 +327,13 @@ function views_calc_table_total(&$vars, $key, $totals) {
               $decimal = !empty($fields[$field]->options['decimal']) ? $fields[$field]->options['decimal'] : $options['decimal'];
               $precision = !empty($fields[$field]->options['precision']) ? $fields[$field]->options['precision'] : $options['precision'];
             }
-            $vars[$key][$calc][$column] = number_format($row->$field_alias, $precision, $decimal, $separator);
+            // Make sure this is a number before formatting it.
+            if (isset($row->$field_alias) && is_numeric($row->$field_alias)) {
+              $vars[$key][$calc][$column] = number_format($row->$field_alias, $precision, $decimal, $separator);
+            }
+            else {
+              $vars[$key][$calc][$column] = number_format(0, $precision, $decimal, $separator);
+            }
           }
         }
         else {

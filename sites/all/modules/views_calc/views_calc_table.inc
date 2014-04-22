@@ -45,7 +45,6 @@ class views_calc_table extends views_plugin_style_table {
 
     $handlers = $this->display->handler->get_handlers('field');
     $columns = $this->sanitize_columns($this->options['columns']);
-
     foreach ($columns as $field => $column) {
       $safe = str_replace(array('][', '_', ' '), '-', $field);
       $id = 'edit-style-options-columns-' . $safe;
@@ -120,7 +119,7 @@ class views_calc_table extends views_plugin_style_table {
     if (!empty($this->view->views_calc_calculation)) {
       return;
     }
-    
+
     $this->view->totals = array();
     $this->view->sub_totals = array();
     $this->view->views_calc_fields = $calc_fields;
@@ -147,8 +146,10 @@ class views_calc_table extends views_plugin_style_table {
   function execute_summary_view($ids = array()) {
     // Clone view for local subquery.
     $summary_view = $this->view->clone_view();
+    $summary_view->set_display($this->view->current_display);
     // copy the query object by value not by reference!
     $summary_view->query = clone $this->view->query;
+    $summary_view->set_display($this->view->current_display);
 
     // Make sure the view is completely valid.
     $errors = $summary_view->validate();
@@ -170,12 +171,12 @@ class views_calc_table extends views_plugin_style_table {
     $summary_view->views_calc_fields = $this->view->views_calc_fields;
     $summary_view->build_info = $this->view->build_info;
     $summary_view->field = $this->view->field;
-    
+
     // Call the method which adds aggregation fields before rendering
     // In an earlier version this was done in the overridden method query() of this class
     // which is not called for some reason here.
     $this->add_aggregation_fields($summary_view);
-    
+
     // We don't need any offset in the calculation queries because
     // the statement does only return the records with the passed ids
     $summary_view->query->offset = 0;
@@ -183,12 +184,13 @@ class views_calc_table extends views_plugin_style_table {
     // Execute and render the view in preview mode. Note that we only store
     // the result if the executed view query returns any result.
     $summary_view->pre_execute($this->view->args);
+
     // All results of the calculation queries are used, so we don't page them.
     // Else we will loose the global pager from the page view.
     $summary_view->set_items_per_page(0);
     $summary_view->execute();
     $summary_view->post_execute();
-    
+
     if (!empty($summary_view->result)) {
       if ($is_subtotal) {
         $this->view->sub_totals = array_shift($summary_view->result);
@@ -213,6 +215,9 @@ class views_calc_table extends views_plugin_style_table {
     $view->query->orderby = array();
     $view->query->groupby = array();
 
+    // See if this view has any calculations.
+    $has_calcs = TRUE;
+
     $calc_fields = $view->views_calc_fields;
     foreach ($calc_fields as $calc => $fields) {
       foreach ($view->field as $field) {
@@ -233,13 +238,13 @@ class views_calc_table extends views_plugin_style_table {
         if ($query_alias == 'unknown') {
           continue;
         }
-        $view->query->add_table($field->table, NULL, NULL, $field->table);
+        $view->query->add_table($field->table, $field->relationship, NULL, $field->table);
         // aggregation functions
-        $ext_alias = $calc . '__' . $query_alias;
-        
-        if (in_array($field->field, $fields)) {
+        $ext_alias = views_calc_shorten($calc . '__' . $query_alias);
+        if (in_array($field->options['id'], $fields)) {
           // Calculated fields.
           $view->query->add_field(NULL, $calc . '(' . $query_field . ')', $ext_alias);
+          $has_calcs = TRUE;
         }
       }
     }
@@ -249,6 +254,13 @@ class views_calc_table extends views_plugin_style_table {
       //$view->query->add_where(NULL, $view->base_table . "." . $view->base_field . " IN (%s)", implode(',', $view->views_calc_ids));
       $view->query->add_where(NULL, $view->base_table . "." . $view->base_field, $view->views_calc_ids);
     }
+
+    // TODO We may need to ask which field to group by.
+    // Some databases are going to complain if we don't have a groupby field with using aggregation.
+    if ($has_calcs) {
+      $this->view->query->add_groupby($this->view->base_table . '.' . $this->view->base_field);
+    }
+
   }
 
   /**
@@ -265,7 +277,7 @@ class views_calc_table extends views_plugin_style_table {
     $calc_fields = array();
     foreach ($columns as $field => $column) {
       if ($field == $column && empty($fields[$field]->options['exclude'])) {
-        if ($options['info'][$field]['has_calc']) {       
+        if ($options['info'][$field]['has_calc']) {
           foreach ($calcs as $calc) {
             if (isset($this->options['info'][$field]['calc'][$calc])) {
               $calc_fields[$calc][] = $field;

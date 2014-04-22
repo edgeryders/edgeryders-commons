@@ -56,11 +56,13 @@ class views_calc_field_handler extends views_handler_field {
     $results = _views_calc_fields();
     foreach ($results as $calc_field) {
       if ($this->definition['cid'] == $calc_field->cid) {
-        foreach (explode(',', $calc_field->tablelist) as $table) {
-          $this->view->query->add_table($table);
+        // Ensure that the expected tables and fields have been joined in.
+        foreach (explode(',', $calc_field->fieldlist) as $field) {
+          $parts = explode('.', $field);
+          //$this->view->query->add_field($parts[0], $parts[1]);
+          $this->view->query->add_table($parts[0]);
         }
         $this->view->query->add_field(NULL, "({$calc_field->calc})", "cid" . $calc_field->cid);
-        return;
       }
     }
   }
