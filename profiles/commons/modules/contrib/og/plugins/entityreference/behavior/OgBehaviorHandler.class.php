@@ -250,8 +250,17 @@ class OgBehaviorHandler extends EntityReference_BehaviorHandler_Abstract {
   public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
     $new_errors = array();
     $values = array('default' => array(), 'admin' => array());
-    foreach ($items as $item) {
-      $values[$item['field_mode']][] = $item['target_id'];
+    // If the widget type name starts with 'og_' we suppose it is separated
+    // into an admin and default part.
+    if (strpos($instance['widget']['type'], 'og_') === 0) {
+      foreach ($items as $item) {
+        $values[$item['field_mode']][] = $item['target_id'];
+      }
+    }
+    else {
+      foreach ($items as $item) {
+        $values['default'][] = $item['target_id'];
+      }
     }
 
     $field_name = $field['field_name'];
@@ -283,6 +292,7 @@ class OgBehaviorHandler extends EntityReference_BehaviorHandler_Abstract {
       og_field_widget_register_errors($field_name, $new_errors);
     }
 
-    $errors = array();
+    // Errors for this field now handled, removing from the referenced array.
+    unset($errors[$field_name]);
   }
 }
