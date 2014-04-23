@@ -95,3 +95,4 @@ function hook_ckeditor_settings_alter(&$settings) {
   // Change the ckeditor config path.
   $settings['customConfig'] = drupal_get_path('module', 'ckeditor') . '/ckeditor.config.js';
 }
+
