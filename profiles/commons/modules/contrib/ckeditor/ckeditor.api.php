@@ -71,6 +71,13 @@ function hook_ckeditor_security_filter() {
 }
 
 /**
+ * Hook to alter CKEditor security filters.
+ */
+function hook_ckeditor_security_filter_alter(&$security_filters) {
+  // Modify a $security_filter.
+}
+
+/**
  * Hook to extend/change the ckeditor settings.
  *
  * This hook is invoked from ckeditor_profile_settings_compile(). The settings
@@ -92,9 +99,7 @@ function hook_ckeditor_settings_alter(&$settings, $conf) {
  *
  * @param $settings
  *   An associative array of settings.
- * @param $profile
- *   CKEditor profile information.
  */
-function hook_ckeditor_default_settings_alter(&$settings, $profile) {
+function hook_ckeditor_default_settings_alter(&$settings) {
   $settings['show_toggle'] = 'f';
 }

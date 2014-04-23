@@ -264,11 +264,12 @@ function ckeditor_admin_global_profile_form($form, $form_state, $mode = 'add') {
     '#size' => 40,
     '#maxlength' => 128,
     '#description' => t(
-        'The path to CKEditor (the WYSIWYG rich text editor downloaded from !ckeditorcom). Provide a path relative to the document root, unless CKEditor is located on an external URL. In such case enter the full URL to a folder with CKEditor.', array(
-      '!ckeditorcom' => l(t('ckeditor.com'), 'http://ckeditor.com/download')
+        'The path to CKEditor (the WYSIWYG rich text editor downloaded from !ckeditorcom). Provide a path relative to the document root, unless CKEditor is located on an external URL. In such case enter the full URL to a folder with CKEditor.<br />The simplest way to have the editor running is to use CDN, to use it set: !cdn', array(
+      '!ckeditorcom' => l(t('ckeditor.com'), 'http://ckeditor.com/download'),
+      '!cdn' => '<strong>//cdn.ckeditor.com/4.4.0/full-all</strong>'
         )
     ) .
-    '<br /> ' .
+    '<br /><br /> ' .
     t('Available placeholders:!b &ndash; path of the Drupal installation (!base) !m &ndash; path where the CKEditor module is stored (!module).!l &ndash; path to the libraries directory (!library).', array(
       '!b' => '<br /><code>%b</code>',
       '!m' => '<br /><code>%m</code>',
@@ -1492,6 +1493,13 @@ function ckeditor_admin_profile_form_validate($form, &$form_state) {
   $toolbar = $edit['toolbar'];
   $toolbar = str_replace("'", '"', $toolbar);
   $toolbar = preg_replace('/(\w*)\s*\:/', '"${1}":', $toolbar);
+
+  if (strpos($toolbar, 'CodeSnippet') !== false && empty($edit['loadPlugins']['codesnippet'])) {
+    form_set_error('loadPlugins][codesnippet', t('The Code Snippet plugin must be enabled if the CodeSnippet button is enabled in the toolbar.'));
+  }
+  if (strpos($toolbar, 'Mathjax') !== false && empty($edit['loadPlugins']['mathjax'])) {
+    form_set_error('loadPlugins][mathjax', t('The Mathjax plugin must be enabled if the Mathjax button is enabled in the toolbar.'));
+  }
   if (!json_decode($toolbar)) {
     form_set_error('toolbar', t('Enter a valid toolbar configuration.'));
   }

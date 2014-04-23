@@ -416,23 +416,59 @@ function ckeditor_load_plugins($render = FALSE) {
     if (preg_match("/\/(standard|full)-all/", $_editor_url)) {
       $arr['tableresize'] = array(
         'name' => 'tableresize',
-        'desc' => t('Table Resize plugin'),
+        'desc' => t('Table Resize plugin. See !link for more details.', array(
+          '!link' => l(t('addon page'), 'http://ckeditor.com/addon/tableresize')
+        )),
         'path' => $_editor_url . '/plugins/tableresize/',
         'buttons' => FALSE,
         'default' => 't'
       );
       $arr['autogrow'] = array(
         'name' => 'autogrow',
-        'desc' => t('Auto Grow plugin'),
+        'desc' => t('Auto Grow plugin. See !link for more details.', array(
+            '!link' => l(t('addon page'), 'http://ckeditor.com/addon/autogrow')
+          )),
         'path' => $_editor_url . '/plugins/autogrow/',
         'buttons' => FALSE,
         'default' => 'f'
       );
       $arr['stylesheetparser'] = array(
         'name' => 'stylesheetparser',
-        'desc' => t('Stylesheet Parser plugin'),
+        'desc' => t('Stylesheet Parser plugin. See !link for more details.', array(
+          '!link' => l(t('addon page'), 'http://ckeditor.com/addon/stylesheetparser')
+        )),
         'path' => $_editor_url . '/plugins/stylesheetparser/',
         'buttons' => FALSE,
+        'default' => 'f'
+      );
+      $arr['codesnippet'] = array(
+        'name' => 'codesnippet',
+        'desc' => t('Plugin for inserting Code Snippets. See !link for more details. See !help for additional instructions.', array(
+            '!link' => l(t('addon page'), 'http://ckeditor.com/addon/codesnippet'),
+            '!help' => l(t('help'), 'admin/help/ckeditor', array('fragment' => 'codesnippet'))
+          )),
+        'path' => $_editor_url . '/plugins/codesnippet/',
+        'buttons' => array(
+          'CodeSnippet' => array(
+            'icon' => 'icons/codesnippet.png',
+            'label' => 'Insert Code Snippet',
+          )
+        ),
+        'default' => 'f'
+      );
+      $arr['mathjax'] = array(
+        'name' => 'mathjax',
+        'desc' => t('Plugin for inserting Mathematical Formula (MathJax). See !link for more details. See !help for additional instructions.', array(
+          '!link' => l(t('addon page'), 'http://ckeditor.com/addon/mathjax'),
+          '!help' => l(t('help'), 'admin/help/ckeditor', array('fragment' => 'mathjax'))
+        )),
+        'path' => $_editor_url . '/plugins/mathjax/',
+        'buttons' => array(
+          'Mathjax' => array(
+            'icon' => 'icons/mathjax.png',
+            'label' => 'Insert Mathematical Formulas',
+          )
+        ),
         'default' => 'f'
       );
     }
@@ -1312,8 +1348,7 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
   }
 
   // Allow modules to modify the settings.
-  //drupal_alter('ckeditor_settings', $settings, $conf);
-  drupal_alter('ckeditor_settings', $settings, $profile, $conf);
+  drupal_alter('ckeditor_settings', $settings, $conf);
 
   return $settings;
 }
@@ -1612,6 +1647,7 @@ function ckeditor_security_filters() {
       $security_filters['filters'][$module_filter_name] = TRUE;
     }
   }
+  drupal_alter('ckeditor_security_filter', $security_filters);
 
   return $security_filters;
 }
