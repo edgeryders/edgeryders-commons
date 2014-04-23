@@ -1,0 +1,24 @@
+<?php
+// $Id: elfinder.module 102 2011-02-20 20:11:52Z ph0enix $
+
+/**
+ * BUEditor support for elFinder
+ * Copyright (c) 2011, Alexey Sukhotin
+ */
+
+function elfinder_bueditor_elfinder_js_settings($settings) {
+
+  $newsettings['editorCallback'] = 'elfinder_bue_callback';
+  
+  $newsettings['browserscripts'][] = drupal_get_path('module', 'elfinder') . '/editors/bueditor/bueditor.callback.js';
+
+  return array('bue' => $newsettings, 'bueditor' => $newsettings);
+}
+
+/* D7 Support */
+function elfinder_bueditor_init() {
+  $settings = array();
+  $settings['BUE']['imceURL'] = url('elfinder', array('query' => array('app' => 'bueditor' ))); 
+  drupal_add_js($settings, 'setting');
+}
+

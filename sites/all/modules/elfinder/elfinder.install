@@ -1,0 +1,126 @@
+<?php
+/**
+ * @file
+ * Installation file for elfinder.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function elfinder_requirements($phase) {
+  require_once drupal_get_path('module', 'elfinder') . "/elfinder.module";
+
+  $requirements = array();
+	
+	$ver_major = 0;
+	$ver_minor = 0;
+	$min_major = 2;
+	$min_minor = 0;
+	
+	$min_ver = "$min_major.$min_minor";
+
+  $libpath = elfinder_lib_path();
+	
+	
+	$install_t = t('Please download it from <a href="@url">@url</a> and install to @libpath.', array('@url' => 'http://sourceforge.net/projects/elfinder/files/', '@libpath' => $libpath));
+
+  if ($phase == 'runtime' || $phase == 'install' || $phase == 'update') {
+    $description = t('elFinder library was not found.') . ' ' . $install_t;
+
+    $severity = '';
+    $value = t('Not found');
+		
+    if ( (is_readable($libpath . '/connectors/php/elFinder.class.php') || is_readable($libpath . '/php/elFinder.class.php') ) && is_readable($libpath . '/js/elfinder.min.js') ) {
+
+			$editor_file_content = file_get_contents($libpath . '/js/elfinder.min.js');
+
+      $value = t('Exists');
+
+      if (preg_match("/(?:this|elFinder\.prototype)\.version\s*=\s*[\"\']([^\"\']+)[\"\']/", $editor_file_content, $matches)) {
+				$ver = $matches[1];
+        $value = t('@ver', array('@ver' => $ver));
+      }
+
+      $description = '';
+			
+			if (preg_match("/^(\d+)\.(\d+)/", $ver, $matches)) {
+				$ver_major = $matches[1];
+				$ver_minor = $matches[2];
+			}	
+				
+			$ver = "$ver_major.$ver_minor";
+			
+			if ($ver_major < $min_major) {
+				$description = t('Not supported elFinder library. Please upgrade to @minver.', array('@ver' => $ver, '@minver' => $min_ver)) . ' ' . $install_t;
+				$severity = REQUIREMENT_ERROR;
+			} else {
+				$severity = REQUIREMENT_OK;
+			}
+      
+    }
+		else {
+      $severity = REQUIREMENT_ERROR;
+    }
+
+    $requirements['elfinder'] = array(
+        'title' => 'elFinder',
+        'description' => $description,
+        'value' => $value,
+        'severity' => $severity
+    );
+  }
+
+  return $requirements;
+}
+
+function elfinder_uninstall() {
+ db_query("DELETE FROM {variable} WHERE name LIKE 'elfinder_%%'");
+ cache_clear_all('variables', 'cache');
+}
+
+function elfinder_schema() {
+  $schema = array();
+
+  $schema['elfinder_file_extinfo'] = array(
+    'description' => 'Stores additional filesystem attributes',
+    'fields' => array(
+      'extid'        => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
+      'fid'        => array('type' => 'int', 'unsigned' => TRUE, 'not null' => FALSE),
+      'description'       => array('type' => 'varchar', 'length' => 255, 'not null' => FALSE, 'default' => ''),
+    ),
+    'primary key' => array('extid'),
+  );
+  
+  $schema['elfinder_profile'] = array(
+    'description' => 'Stores configuration profiles',
+    'fields' => array(
+      'pid'        => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
+      'name'        => array('type' => 'varchar', 'length' => 255, 'not null' => FALSE, 'default' => ''),
+      'description'       => array('type' => 'varchar', 'length' => 255, 'not null' => FALSE, 'default' => ''),
+      'settings'    => array('type' => 'text', 'not null' => FALSE),
+    ),
+    'primary key' => array('pid'),
+  );
+  
+  return $schema;
+     
+}
+
+function elfinder_update_7101() {
+ // drupal_install_schema('elfinder');
+}
+
+function elfinder_update_7102() {
+  $ret = array();
+
+  if (db_table_exists('elfinder_profile') == FALSE) {
+      drupal_install_schema('elfinder');
+  }
+  
+  if (!db_field_exists('elfinder_profile', 'settings')) {
+      db_add_field($ret, 'elfinder_profile', 'settings', array('type' => 'text', 'not null' => FALSE));
+  }
+  
+  return $ret;
+}
+

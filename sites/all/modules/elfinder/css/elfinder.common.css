@@ -1,0 +1,19 @@
+
+.el-finder-nav ul li {
+	background:none;
+	padding:0;
+	margin:0;
+}
+.elfinder-cwd, .elfinder-navbar {
+ font-size:13px!important;
+}
+
+.elfinder-cwd-view-icons .elfinder-cwd-file {
+    height: 150px;
+    width: 100px;
+}
+
+.elfinder-cwd-view-icons .elfinder-cwd-filename {
+  white-space: normal;
+  overflow:visible;
+}

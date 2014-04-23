@@ -1,0 +1,217 @@
+<?php
+
+// Main hooks to tell FielField Sources about our source
+function elfinder_ffsel_filefield_sources_info() {
+  $params = array();
+  return elfinder_ffsel_hooks('info', $params);
+}
+
+function elfinder_ffsel_hooks($method, &$params) {
+  $return = array();
+
+  $source = 'elfinder';
+
+  $function = 'filefield_source_' . $source . '_' . $method;
+
+  if (function_exists($function)) {
+    $result = call_user_func_array($function, $params);
+    if (isset($result) && is_array($result)) {
+      $return = array_merge_recursive($return, $result);
+    }
+    elseif (isset($result)) {
+      $return[] = $result;
+    }
+  }
+  return $return;
+}
+
+// Source specific functions
+
+/**
+ * Implementation of hook_filefield_source_info().
+ */
+function filefield_source_elfinder_info() {
+  $source = array();
+
+  if (!module_exists('elfinder')) {
+    return $source;
+  }
+
+  $source['elfinder'] = array(
+    'name' => t('elFinder'),
+    'label' => t('elFinder File browser'),
+    'description' => t('Uses elFinder file manager for file selection'),
+    'process' => 'filefield_source_elfinder_process',
+    'value' => 'filefield_source_elfinder_value',
+    'weight' => -1,
+  );
+  return $source;
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function filefield_source_elfinder_menu() {
+  $items = array();
+  $items['filefield/elfinder/%/%'] = array(
+      'page callback' => 'filefield_source_elfinder_page',
+      'page arguments' => array(2, 3),
+      'access callback' => 'filefield_edit_access',
+      'access arguments' => array(2, 3),
+      'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function elfinder_ffsel_theme() {
+  return array(
+      'filefield_source_elfinder_element' => array(
+          'render element' => 'element',
+      ),
+  );
+}
+
+/**
+ * Implementation of hook_filefield_source_settings().
+ */
+function filefield_source_elfinder_settings($op, $field) {
+  $return = array();
+
+  // Add settings to the FileField widget form.
+
+  return $return;
+}
+
+/**
+ * A #process callback to extend the filefield_widget element type.
+ */
+function filefield_source_elfinder_process($element, &$form_state, $form) {
+  $instance = field_widget_instance($element, $form_state);
+
+  $element['filefield_elfinder'] = array(
+      '#weight' => 100.5,
+      '#theme' => 'filefield_source_elfinder_element',
+      '#filefield_source' => TRUE, // Required for proper theming.
+      '#description' => filefield_sources_element_validation_help($element['#upload_validators']),
+  );
+
+  $filepath_id = $element['#id'] . '-elfinder-path';
+  $display_id = $element['#id'] . '-elfinder-display';
+  $select_id = $element['#id'] . '-elfinder-select';
+  $element['filefield_elfinder']['file_path'] = array(
+      '#type' => 'hidden',
+      '#value' => '',
+      '#attributes' => array(
+          'id' => $filepath_id,
+          'onchange' => "if (!jQuery('#$select_id').attr('disabled')) { jQuery('#$select_id').mousedown().disable(); jQuery('#$display_id').html(this.value); }",
+      ),
+  );
+
+  $elfinder_function = 'window.open(\'' . url('elfinder', array('query' => array('app' => 'ffs', 'field_name' => $element['#field_name'], 'filepath_id' => $filepath_id, 'select_id' => $select_id))) . '\', \'\', \'width=760,height=560,resizable=1\'); return false;';
+  $element['filefield_elfinder']['display_path'] = array(
+      '#type' => 'markup',
+      '#markup' => '<span id="' . $display_id . '" class="filefield-sources-elfinder-display">' . t('No file selected') . '</span> (<a class="filefield-sources-elfinder-browse" href="#" onclick="' . $elfinder_function . '">' . t('browse') . '</a>)',
+  );
+
+  $element['filefield_elfinder']['select'] = array(
+      '#name' => implode('_', $element['#array_parents']) . '_elfinder_select',
+      '#type' => 'submit',
+      '#value' => t('Select'),
+      '#validate' => array(),
+      '#submit' => array('filefield_sources_field_submit'),
+      '#limit_validation_errors' => array($element['#parents']),
+      '#name' => $element['#name'] . '[filefield_elfinder][button]',
+      '#id' => $select_id,
+      '#attributes' => array('style' => 'display: none;'),
+      '#ajax' => array(
+          'path' => 'file/ajax/' . implode('/', $element['#array_parents']) . '/' . $form['form_build_id']['#value'],
+          'wrapper' => $element['#id'] . '-ajax-wrapper',
+          'method' => 'replace',
+          'effect' => 'fade',
+      ),
+  );
+
+  return $element;
+}
+
+/**
+ * A #filefield_value_callback function.
+ */
+function filefield_source_elfinder_value($element, &$item) {
+  if (isset($item['filefield_elfinder']['file_path']) && $item['filefield_elfinder']['file_path'] != '') {
+    $field = field_info_field($element['#field_name']);
+
+    $scheme = $field['settings']['uri_scheme'];
+    $wrapper = file_stream_wrapper_get_instance_by_scheme($scheme);
+    $file_directory_prefix = $wrapper->getDirectoryPath();
+    $uri = preg_replace('/^' . preg_quote('/' . $file_directory_prefix . '/', '/') . '/', $scheme . '://', $item['filefield_elfinder']['file_path']);
+
+    // Resolve the file path to an FID.
+    $fid = db_select('file_managed', 'f')
+            ->condition('uri', rawurldecode($uri))
+            ->fields('f', array('fid'))
+            ->execute()
+            ->fetchField();
+    if ($fid) {
+      $file = file_load($fid);
+      if (filefield_sources_element_validate($element, $file)) {
+        $item = array_merge($item, (array) $file);
+      }
+    }
+    else {
+
+      if ($file = filefield_sources_save_file(elfinder_document_root() . $item['filefield_elfinder']['file_path'], $element['#upload_validators'], $element['#upload_location'])) {
+        $item = array_merge($item, (array) $file);
+        drupal_set_message(t('File created'));
+      }
+      else {
+        form_error($element, t('The selected file could not be used because the file does not exist in the database.'));
+      }
+    }
+    // No matter what happens, clear the value from the file path field.
+    $item['filefield_elfinder']['file_path'] = '';
+  }
+}
+
+/**
+ * Theme the output of the autocomplete field.
+ */
+function theme_filefield_source_elfinder_element($variables) {
+  $element = $variables['element'];
+
+  $output = drupal_render_children($element);
+
+  return '<div class="filefield-source filefield-source-elfinder clear-block">' . $output . '</div>';
+}
+
+/**
+ * Implementation of hook_elfinder_js_settings
+ */
+function elfinder_ffsel_elfinder_js_settings($settings) {
+  /* for filefield_sources support */
+
+  $newsettings = array();
+
+  $newsettings['connectorUrl'] = url('elfinder/connector/relative');
+
+  if (isset($_GET['field_name'])) {
+    if (preg_match("/^[a-zA-z0-9_-]+$/", $_GET['field_name'])) {
+      $newsettings['field_name'] = $_GET['field_name'];
+    }
+  }
+
+  if (isset($_GET['filepath_id'])) {
+    if (preg_match("/^[a-zA-z0-9_-]+$/", $_GET['filepath_id'])) {
+      $newsettings['filepath_id'] = $_GET['filepath_id'];
+    }
+  }
+
+  $newsettings['commandsOptions']['getfile']['onlyURL'] = TRUE;
+  $newsettings['browserscripts'][] = drupal_get_path('module', 'elfinder_ffsel') . '/ffs.callback.js';
+  $newsettings['editorCallback'] = 'elfinder_ffs_callback';
+
+  return array('ffs' => $newsettings);
+}

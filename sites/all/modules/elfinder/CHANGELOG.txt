@@ -1,0 +1,11 @@
+2.x-dev
+-------
+  - Now requires elFinder 2.0
+  - Added multiple root directories support
+  - Added Drupal file_managed table synchronization
+  - Added per-role configurable profiles support
+  - Added UTF-8 downloaded filenames support
+  - Added CKEditor and FCKeditor Upload tab support
+  - New library search algoritm with install profiles and multiple sites support
+  - Search support
+

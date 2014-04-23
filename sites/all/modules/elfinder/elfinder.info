@@ -1,0 +1,13 @@
+; $Id: elfinder.info 106 2011-02-26 08:19:56Z ph0enix $
+name = elFinder
+description = AJAX file manager with Wysiwyg API capable editors support.
+package = User interface
+configure = "admin/config/media/elfinder"
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2013-12-22
+version = "7.x-2.x-dev"
+core = "7.x"
+project = "elfinder"
+datestamp = "1387749813"
+
