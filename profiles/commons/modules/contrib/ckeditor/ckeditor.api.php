@@ -92,7 +92,9 @@ function hook_ckeditor_settings_alter(&$settings, $conf) {
  *
  * @param $settings
  *   An associative array of settings.
+ * @param $profile
+ *   CKEditor profile information.
  */
-function hook_ckeditor_default_settings_alter(&$settings) {
+function hook_ckeditor_default_settings_alter(&$settings, $profile) {
   $settings['show_toggle'] = 'f';
 }

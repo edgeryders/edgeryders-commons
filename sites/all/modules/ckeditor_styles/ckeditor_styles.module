@@ -128,3 +128,26 @@ function ckeditor_styles_permission() {
     ),
   );
 }
+/*
+* Implements hook_ckeditor_settings_alter()
+ */
+function ckeditor_styles_ckeditor_settings_alter(&$settings, $profile) {
+  $format = strtolower($profile->name);
+  $styles = ckeditor_styles_rules_load_all();
+  $styleset = array();
+  foreach ($styles as $style) {
+    // Only add styles for all or the given wysiwyg profile (=format).
+    if ($style->styleset == '-all-' || $style->styleset == $format) {
+      $styleset[] = array(
+        'name' => t(check_plain($style->name), array(), array('context' => 'ckeditor_styles')),
+        'element' => check_plain($style->element),
+        'attributes' => $style->attributes,
+      );
+    }
+  }
+  // Finally add the settings to JS, so ckeditor_styles.js can use it.
+  drupal_add_js(array('ckeditor_styles' => array($format => $styleset)), 'setting');
+  $path = drupal_get_path('module', 'ckeditor_styles') . '/js';
+  $url = url("$path/ckeditor_styles.js");
+  $settings['stylesCombo_stylesSet'] = "$format:$url";
+}

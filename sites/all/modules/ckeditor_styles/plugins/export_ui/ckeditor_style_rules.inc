@@ -80,13 +80,23 @@ function _ckeditor_styleset_options() {
     '-all-' => t('- All wysiwyg ckeditor profiles-'),
   );
 
-  $profiles = wysiwyg_profile_load_all();
-  $formats = filter_formats();
-  // Select only those profiles, that are using ckeditor and a valid format is
-  // associated
-  foreach ($profiles as $profile) {
-    if ($profile->editor == 'ckeditor' && isset($formats[$profile->format])) {
-      $options[$profile->format] = $formats[$profile->format]->name;
+  if(function_exists('ckeditor_profile_load')){
+    $profiles = ckeditor_profile_load();
+    foreach ($profiles as $profile) {
+      //dont apply for CKEditor Global Profile
+      if($profile->name != 'CKEditor Global Profile'){
+        $options[strtolower($profile->name)] = $profile->name;
+      }
+    }
+  }else{
+    $profiles = wysiwyg_profile_load_all();
+    $formats = filter_formats();
+    // Select only those profiles, that are using ckeditor and a valid format is
+    // associated
+    foreach ($profiles as $profile) {
+      if ($profile->editor == 'ckeditor' && isset($formats[$profile->format])) {
+        $options[$profile->format] = $formats[$profile->format]->name;
+      }
     }
   }
   return $options;
