@@ -37,7 +37,7 @@ find . -type d | xargs -I "{}" chmod u+x,g+x {};
 # Exceptions from file ownership rights.
 chown -R root:root stats;
 
-# Exceptions from file permissions: make relevant config files readable by Apache / PHP-CLI.
+# Exceptions from file permissions: make relevant config files readable by Apache.
 chmod a+r .htaccess* .htpasswd robots.txt* sites/edgeryders.eu/files/.htaccess sites/edgeryders.eu/private/.htaccess;
 
 # Exceptions from file permissions: files that need to be read or executed via SSH.
@@ -46,8 +46,8 @@ chmod u+x scripts.local.x43762539hf2d/fix-permissions.sh;
 
 # Exceptions from file permissions: files that need to be served by Apache directly (media, aggregated and non-aggregated CSS and JS).
 chmod a+r+X sites/ sites/edgeryders.eu/;
-find sites/edgeryders.eu/files/ -type d | xargs -I "{}" chmod u+w,a+x {};
+find sites/edgeryders.eu/files/ -type d | xargs -I "{}" chmod u+w,a+r+x {};
 find sites/edgeryders.eu/private/ -type d | xargs -I "{}" chmod u+w {};
-chmod -R u+w,a+r sites/edgeryders.eu/files/;
+chmod -R u+w,a+r sites/edgeryders.eu/files/*; # Care: * needed to avoid making .htaccess writable.
 find . -name "*.css" -or -name "*.js" -or -name "*.jpg" -or -name "*.png" -or -name "*.svg" | xargs -I "{}" chmod a+r {};
 
