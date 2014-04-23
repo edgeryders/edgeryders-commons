@@ -1,0 +1,130 @@
+<?php
+
+/**
+ * @file
+ * Basic module file for CKEditor styles to implement basic hooks and make
+ * available some basic functions.
+ */
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function ckeditor_styles_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'export_ui') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_wysiwyg_editor_settings_alter().
+ */
+function ckeditor_styles_wysiwyg_editor_settings_alter(&$settings, $context) {
+  static $styles_added = array();
+
+  // We only add the settings to ckeditor wysiwyg profiles.
+  if ($context['profile']->editor == 'ckeditor') {
+
+    $format = $context['profile']->format;
+
+    // Only add the styles once in a process, so settings are not multiplied
+    // when calling this hook multiple times in one page process for multiple
+    // instances of the same format.
+    if (!isset($styles_added[$format])) {
+      $styles = ckeditor_styles_rules_load_all();
+      $styleset = array();
+      foreach ($styles as $style) {
+        // Only add styles for all or the given wysiwyg profile (=format).
+        if ($style->styleset == '-all-' || $style->styleset == $format) {
+
+          // @TODO: t() is not a clean way, but it works for the moment.
+          // @TODO: maybe add some more validation or cleanup
+          // (eventually use own class for that).
+          $styleset[] = array(
+            'name' => t(check_plain($style->name), array(), array('context' => 'ckeditor_styles')),
+            'element' => check_plain($style->element),
+            'attributes' => $style->attributes,
+          );
+        }
+      }
+      // Finally add the settings to JS, so ckeditor_styles.js can use it.
+      drupal_add_js(array('ckeditor_styles' => array($format => $styleset)), 'setting');
+      $styles_added[$format] = $styleset;
+    }
+
+    // Set some necessary editor settings for the given format's instance.
+    $base_path = base_path();
+    $path = drupal_get_path('module', 'ckeditor_styles') . '/js';
+
+    $settings['stylesSet'] = "$format:$base_path$path/ckeditor_styles.js";
+
+    // Some additional settings for ckeditor.
+    if (variable_get("ckeditor_styles:stylesheetparser:$format", FALSE)) {
+      if (!isset($settings['extraPlugins'])) {
+        $settings['extraPlugins'] = 'stylesheetparser';
+      }
+      else {
+        $settings['extraPlugins'] .= ',stylesheetparser';
+      }
+    }
+  }
+}
+
+/**
+ * Load all configurations via ctools.
+ */
+function ckeditor_styles_rules_load_all() {
+  ctools_include('export');
+  $result = ctools_export_crud_load_all('ckeditor_style_rules');
+  return $result;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Adds an additional settings page for global ckeditor styles configuration.
+ */
+function ckeditor_styles_form_wysiwyg_profile_form_alter(&$form, &$form_state, $form_id) {
+
+  $editor = $form['editor']['#value'];
+  if ($editor == 'ckeditor') {
+    $format = $form['format']['#value'];
+
+    $form['ckeditor_styles'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('CKEditor style settings'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#tree' => TRUE,
+      'stylesheetparser' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable stylesheet parser'),
+        '#default_value' => variable_get('ckeditor_styles:stylesheetparser:' . $format, FALSE),
+        '#description' => t('Enable this setting, to parse the given stylesheets for relevant style rules.'),
+      ),
+    );
+    $form['#submit'][] = 'ckeditor_styles_form_wysiwyg_profile_submit';
+  }
+}
+
+/**
+ * Submit function to store the additional ckeditor_styles setting(s).
+ */
+function ckeditor_styles_form_wysiwyg_profile_submit($form, &$form_state) {
+  // Save each value of ckeditor_styles settings.
+  $format = $form_state['values']['format'];
+  foreach ($form_state['values']['ckeditor_styles'] as $var => $val) {
+    variable_set("ckeditor_styles:$var:$format", $val);
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function ckeditor_styles_permission() {
+  return array(
+    'administer ckeditor styles' => array(
+      'title' => t('Administer ckeditor styles'),
+      'description' => t('Create, edit and delete ckeditor style configurations.'),
+    ),
+  );
+}

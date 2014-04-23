@@ -1,0 +1,86 @@
+<?php
+
+/**
+ * @file
+ * Install schema and co for ckeditor_styles.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function ckeditor_styles_schema() {
+  $schema['ckeditor_style_rules'] = array(
+    'description' => 'Storage of ckeditor styles.',
+    'export' => array(
+      'key' => 'machine_name',
+      'key name' => 'Machine name',
+      'admin_title' => 'name',
+      'admin_description' => 'description',
+      'primary key' => 'rid',
+      'identifier' => 'ckeditor_style_rule',
+      'default hook' => 'ckeditor_style_rule_default',
+      'api' => array(
+        'owner' => 'ckeditor_styles',
+        'api' => 'ckeditor_style_rules',
+        'minimum_version' => 1,
+        'current_version' => 1,
+      ),
+    ),
+    'fields' => array(
+      'rid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'description' => 'The primary identifier for a ckeditor style rule.',
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Name of the style rule.',
+        'translatable' => TRUE,
+      ),
+      'machine_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The style rule machine name.',
+      ),
+      'styleset' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '-all-',
+        'description' => 'The styleset for the given style rule.',
+      ),
+      'description' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'description' => 'Description of the style rule.',
+        'translatable' => TRUE,
+      ),
+      'element' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Target element for the style.',
+      ),
+      'attributes' => array(
+        'type' => 'blob',
+        'size' => 'big',
+        'not null' => TRUE,
+        'serialize' => TRUE,
+        'description' => 'Attribute configuration for the style.',
+      ),
+    ),
+    'primary key' => array('rid'),
+    'unique keys' => array(
+      'instance' => array('name'),
+    ),
+  );
+  return $schema;
+}

@@ -1,0 +1,13 @@
+name = CKeditor Styles
+description = Allows for adding custom CKeditor style rules to the styles dropdown.
+core = 7.x
+configure = admin/config/content/ckeditor_styles
+dependencies[] = wysiwyg
+dependencies[] = ctools
+
+; Information added by drupal.org packaging script on 2013-09-30
+version = "7.x-1.0-alpha1+7-dev"
+core = "7.x"
+project = "ckeditor_styles"
+datestamp = "1380558869"
+
