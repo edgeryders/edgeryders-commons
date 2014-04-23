@@ -330,7 +330,7 @@ if (typeof window.CKEDITOR_BASEPATH === 'undefined') {
     attach:
     function (context) {
       // If CKEDITOR is undefined and script is loaded from CDN, wait up to 15 seconds until it loads [#2244817]
-      if ((typeof(CKEDITOR) == 'undefined') && Drupal.settings.ckeditor.editor_path.match(/^(http(s)?:)\/\//i)) {
+      if ((typeof(CKEDITOR) == 'undefined') && Drupal.settings.ckeditor.editor_path.match(/^(http(s)?:)?\/\//i)) {
         if (typeof(Drupal.settings.ckeditor.loadAttempts) == 'undefined') {
           Drupal.settings.ckeditor.loadAttempts = 50;
         }

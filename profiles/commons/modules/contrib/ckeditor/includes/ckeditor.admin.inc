@@ -564,7 +564,7 @@ function ckeditor_admin_global_profile_form_submit($form, &$form_state) {
 /**
  * Form builder for a profile
  */
-function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
+function ckeditor_admin_profile_form($form, $form_state, $task, $profile = NULL) {
   global $theme;
 
   if ($profile != NULL) {
@@ -589,6 +589,13 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
 
   $lang_options = ckeditor_load_lang_options();
 
+  // Attach the administration CSS.
+  $form['#attached'] = array(
+    'css' => array(
+      drupal_get_path('module', 'ckeditor') . '/css/ckeditor.admin.css',
+    ),
+  );
+
   $form['basic'] = array(
     '#type' => 'fieldset',
     '#title' => t('Basic setup'),
@@ -596,7 +603,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     '#collapsed' => TRUE
   );
 
-  switch (arg(4)) {
+  switch ($task) {
     case 'clone':
       //load all profiles to check their names
       $profiles = ckeditor_profile_load();
@@ -641,7 +648,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
 
   $orig_formats = filter_formats();
 
-  if (arg(4) == 'edit' && !empty($profile->name)) {
+  if ($task == 'edit' && !empty($profile->name)) {
     $used_formats = db_select('ckeditor_input_format', 'f')->fields('f', array("format"))->distinct()->condition("f.name", array($profile->name), 'NOT IN')->execute()->fetchAllAssoc('format');
   }
   else {
@@ -652,7 +659,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
   $formats = array();
   $input_format_config_links = array();
   foreach ($orig_formats AS $format) {
-    if ((arg(4) == 'edit' && !empty($profile->input_formats) && array_key_exists($format->format, $profile->input_formats)) || !array_key_exists($format->format, $used_formats)) {
+    if (($task == 'edit' && !empty($profile->input_formats) && array_key_exists($format->format, $profile->input_formats)) || !array_key_exists($format->format, $used_formats)) {
       $formats[$format->format] = $format->name;
       $input_format_config_links[$format->format] = array("name" => $format->name, "config_url" => url("admin/config/content/formats/" . $format->format));
     }
@@ -1070,6 +1077,9 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     '#collapsed' => TRUE
   );
 
+  $current_theme = variable_get('theme_default', $theme);
+  $theme_path = drupal_get_path('theme', $current_theme);
+
   $form['css']['css_mode'] = array(
     '#type' => 'select',
     '#title' => t('Editor CSS'),
@@ -1107,7 +1117,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
       '!h' => '<br /><code>%h</code>',
       '!t' => '<br /><code>%t</code>',
       '!host' => '<code>' . base_path() . '</code>',
-      '!theme' => '<code>' . base_path() . path_to_theme() . '/</code>'
+      '!theme' => '<code>' . base_path() . $theme_path . '/</code>'
         )
     )
   );
@@ -1125,7 +1135,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
         'Define the location of the !ckeditor_styles_js_file file. It is used by the <strong>Style</strong> drop-down list available in the default toolbar. Copy the !ckeditor_styles_js_path file into your theme directory (!theme) and adjust it to your needs.', array(
       '!ckeditor_styles_js_file' => '<code>ckeditor.styles.js</code>',
       '!ckeditor_styles_js_path' => '<code>' . drupal_get_path('module', 'ckeditor') . '/ckeditor.styles.js</code>',
-      '!theme' => '<code>' . path_to_theme() . '/ckeditor.styles.js' . '</code>'
+      '!theme' => '<code>' . $theme_path . '/ckeditor.styles.js' . '</code>'
         )
     )
   );
@@ -1149,7 +1159,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
       '!t' => '<br /><code>%t</code>',
       '!m' => '<br /><code>%m</code>',
       '!host' => '<code>' . base_path() . '</code>',
-      '!theme' => '<code>' . base_path() . path_to_theme() . '/</code>',
+      '!theme' => '<code>' . base_path() . $theme_path . '/</code>',
       '!module' => '<code>' . drupal_get_path('module', 'ckeditor') . '</code>'
         )
     )
@@ -1523,8 +1533,8 @@ function ckeditor_admin_profile_form_submit($form, &$form_state) {
 /**
  * Form builder for a clone profile
  */
-function ckeditor_admin_profile_clone_form($form, $form_state, $oldprofile) {
-  return ckeditor_admin_profile_form($form, $form_state, $oldprofile);
+function ckeditor_admin_profile_clone_form($form, $form_state, $task, $oldprofile) {
+  return ckeditor_admin_profile_form($form, $form_state, $task, $oldprofile);
 }
 
 /**

@@ -1,5 +1,11 @@
 7.x-1.x dev
 
+[#1370894] by uberhacker, mgifford, Devin Carlson: Conditionally load ckeditor.css only when necessary.
+[#1960808] by valkum, wwalc: Avoid using arg() in code.
+[#1914496] by Danylo Dragan: Drush integration code doesn't respect --skip option.
+[#2085245] by jlyon: Fix theme path displayed on Edit CKEditor Profile page.
+[#2123669] by wwalc: Better support for loading custom CKEditor skins.
+[#1914904] by rooby: Media plugin not working in IE 9 and below.
 [#2244835] by loopduplicate: CKEditor is not visible in Panels IPE in IE11.
 [#2244817] by wwalc: CKEditor from CDN does not load in Panels IPE when a form is loaded in a popup for the first time.
 [#2244387] by wwalc: 3rd party plugins with large icons break the toolbar configurator.

@@ -177,7 +177,6 @@ function ckeditor_load_skin_options() {
       closedir($dh);
     }
   }
-
   //oops, we have no information about skins, let's use only default
   if (empty($arr)) {
     $arr = array(
@@ -203,8 +202,9 @@ function ckeditor_default_skin() {
   if (array_key_exists('kama', $skin_options)) {
     return 'kama';
   }
+  reset($skin_options);
   //if any default theme not exists select first from the list
-  return key(reset($skin_options));
+  return key($skin_options);
 }
 
 /**
@@ -1245,8 +1245,8 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
           $css_files[] = $host . $themepath . 'style.css' . $query_string;
         }
       }
-      if (file_exists($module_drupal_local_path . '/ckeditor.css')) {
-        $css_files[] = $module_drupal_path . '/ckeditor.css' . $query_string;
+      if (file_exists($module_drupal_local_path . '/css/ckeditor.css')) {
+        $css_files[] = $module_drupal_path . '/css/ckeditor.css' . $query_string;
       }
       if (file_exists($themepath . 'ckeditor.css')) {
         $css_files[] = $host . $themepath . 'ckeditor.css' . $query_string;
@@ -1254,11 +1254,11 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
       break;
 
     case 'self':
-      if (file_exists($module_drupal_local_path . '/ckeditor.css')) {
-        $css_files[] = $module_drupal_path . '/ckeditor.css' . $query_string;
+      if (file_exists($module_drupal_local_path . '/css/ckeditor.css')) {
+        $css_files[] = $module_drupal_path . '/css/ckeditor.css' . $query_string;
         if (defined('LANGUAGE_RTL') && $language->direction == LANGUAGE_RTL) {
-          if (file_exists($module_drupal_local_path . '/ckeditor-rtl.css')) {
-            $css_files[] = $module_drupal_path . '/ckeditor-rtl.css' . $query_string;
+          if (file_exists($module_drupal_local_path . '/css/ckeditor-rtl.css')) {
+            $css_files[] = $module_drupal_path . '/css/ckeditor-rtl.css' . $query_string;
           }
         }
       }
@@ -1269,11 +1269,11 @@ function ckeditor_profile_settings_compile($global_profile, $profile) {
       break;
 
     case 'none':
-      if (file_exists($module_drupal_local_path . '/ckeditor.css')) {
-        $css_files[] = $module_drupal_path . '/ckeditor.css' . $query_string;
+      if (file_exists($module_drupal_local_path . '/css/ckeditor.css')) {
+        $css_files[] = $module_drupal_path . '/css/ckeditor.css' . $query_string;
         if (defined('LANGUAGE_RTL') && $language->direction == LANGUAGE_RTL) {
-          if (file_exists($module_drupal_local_path . '/ckeditor-rtl.css')) {
-            $css_files[] = $module_drupal_path . '/ckeditor-rtl.css' . $query_string;
+          if (file_exists($module_drupal_local_path . '/css/ckeditor-rtl.css')) {
+            $css_files[] = $module_drupal_path . '/css/ckeditor-rtl.css' . $query_string;
           }
         }
       }
@@ -1401,6 +1401,9 @@ function ckeditor_load_by_field($field, $format, $show_toggle = TRUE, $add_field
   else {
     return $field;
   }
+
+  // Attach the editor css.
+  $field['#attached']['css'][] = drupal_get_path('module', 'ckeditor') . '/css/ckeditor.editor.css';
 
   if ($settings) {
     $textarea_id = $field['#id'];
