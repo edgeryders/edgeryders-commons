@@ -10,7 +10,7 @@
 @include styleguide-reset;
 
 body {
-  background: $color-background image-url("spark_bg_tile.png");
+  background: #f5f5f5;
 }
 
 p,
@@ -497,6 +497,11 @@ div.description {
 
 /* TABLES */
 
+thead {
+  background: #eee;
+  border-top: 1px solid #ddd;
+}
+
 tr {
   &.odd,
   &.even {
@@ -582,6 +587,7 @@ table {
 }
 
 div.vertical-tabs {
+  background: #fff;
   fieldset {
     @include box-shadow(none);
   }
@@ -603,6 +609,10 @@ div.vertical-tabs {
   div.form-item {
     display: block;
   }
+}
+
+.vertical-tabs fieldset.vertical-tabs-pane {
+  padding: 2em;
 }
 
 .vertical-tabs-list {
@@ -2262,7 +2272,7 @@ fieldset.features-export-component {
 
    ========================================================================== */
 
-@include breakpoint(max-width $large-screen) {
+@include breakpoint(max-width $breakpoint-large) {
   /* dashboard */
   div#dashboard_sidebar {
     clear: both;
@@ -2288,10 +2298,17 @@ fieldset.features-export-component {
   }
 }
 
-@include breakpoint(max-width $small-screen) {
+@include breakpoint(max-width $breakpoint-small) {
   #page {
     margin: 0;
     padding: 1em;
+  }
+
+  #branding {
+    padding: {
+      right: 1em;
+      left: 1em;
+    }
   }
 
   #overlay  {

@@ -38,7 +38,7 @@ div.messages {
   padding: 0 20px;
   float: left;
 }
-#page > header > hgroup {
+#page > header > .h-group {
   line-height: 1.2;
   margin: 0 20px;
 }

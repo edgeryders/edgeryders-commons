@@ -83,8 +83,10 @@ function sky_preprocess_block(&$vars) {
  */
 function sky_preprocess_node(&$vars) {
   // Add class if user picture exists
-  if ($vars['user_picture']) {
-    $vars['header_attributes_array']['class'][] = 'with-picture';
+  if(!empty($vars['submitted']) && $vars['display_submitted']) {
+    if ($vars['user_picture']) {
+      $vars['header_attributes_array']['class'][] = 'with-picture';
+    }
   }
 }
 
@@ -108,14 +110,3 @@ function sky_process_region(&$vars) {
     $vars['inner_prefix'] = '<h2 class="menu-toggle"><a href="#">' . t('Menu') . '</a></h2>';
   }
 }
-
-
-
-
-
-
-
-
-
-
-

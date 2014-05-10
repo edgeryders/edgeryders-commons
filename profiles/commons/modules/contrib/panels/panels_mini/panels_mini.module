@@ -196,8 +196,8 @@ function panels_mini_get_pane_links_alter(&$links, $pane, $content_type) {
  */
 function panels_mini_contextual_links_view_alter(&$element, $items) {
 
-  // Add contextual links to all mini panel blocks.
-  if (isset($element['#element']['#block']) && strpos((string) $element['#element']['#block']->bid, 'panels_mini') === 0) {
+  // Add contextual links to all mini panel blocks with bid property.
+  if (isset($element['#element']['#block']) && isset($element['#element']['#block']->bid) && strpos((string) $element['#element']['#block']->bid, 'panels_mini') === 0) {
 
     $admin_pages = array(
       t('Configure mini panel settings') => 'basic',

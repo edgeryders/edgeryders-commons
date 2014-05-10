@@ -232,6 +232,8 @@ function lingotek_form_bulk_sync($form, $form_state) {
       'lingotek_translate_config_menus' => t('menus'),
       'lingotek_translate_config_views' => t('views'),
       'lingotek_translate_config_taxonomies' => t('taxonomy vocabularies & terms'),
+      'lingotek_translate_config_fields' => t('field labels'),
+      'lingotek_translate_config_misc' => t('other miscellaneous strings'),
     );
     $config_types_included = array();
     $config_types_excluded = array();
@@ -477,12 +479,11 @@ function lingotek_form_bulk_sync_submit($form, $form_state) {
 
   $document_ids = array_unique($document_ids);
 
-  //dpm($download_locales); dpm($download_targets); dpm($upload_nids); dpm($vals);
   lingotek_sync_batch_create($upload_config, $download_targets, $download_targets_incomplete, NULL, $extra_operations);
 }
 
 /**
-* Updates the 'target_sync_progress_[lang-code]' field for every target in the lingotek table
+* Updates the 'target_sync_status_[lang-code]' field for every target in the lingotek table
 * with the overall progress returned by TMS
 *
 * @param int array $document_ids
@@ -518,6 +519,7 @@ function lingotek_get_and_update_target_progress($entity_type, $document_ids) {
           case 'NOT_FOUND':
           default:
             lingotek_keystore($entity_type, $entity_id, 'node_sync_status', LingotekSync::STATUS_FAILED);
+            lingotek_keystore($entity_type, $entity_id, 'last_sync_error', substr($error, 0, 255));
             LingotekLog::error('Received unexpected error status (@status) from Lingotek for @entity_type #@id: <pre>@error</pre>', array('@status' => $error->status, '@entity_type' => $entity_type, '@id' => $entity_id, '@error' => $error));
         }
       }
@@ -532,12 +534,7 @@ function lingotek_get_and_update_target_progress($entity_type, $document_ids) {
         $delete_nids_maybe[] = $entity_id;
         $target_number = isset($targets_count[$entity_id]->targets) ? $targets_count[$entity_id]->targets : 0;
       }
-      $total_percentage = 0;
       foreach ($completion as $language => $percent) {
-        $entity_values[] = array($entity_type, $entity_id, 'target_sync_progress_' . $language, $percent);
-        $entity_values[] = array($entity_type, $entity_id, 'target_sync_last_progress_updated_' . $language, time());
-        $total_percentage += $percent;
-
         $status = LingotekSync::getTargetStatus($doc_id, $language);
         if (isset($progress_report->workflowCompletedByDocumentIdAndTargetLocale->$doc_id->$language)) {
           if ($progress_report->workflowCompletedByDocumentIdAndTargetLocale->$doc_id->$language) { // If the workflow is complete
@@ -554,14 +551,6 @@ function lingotek_get_and_update_target_progress($entity_type, $document_ids) {
           $entity_values[] = array($entity_type, $entity_id, 'target_sync_status_' . $language, $to_status);
         }
       }
-      if ($target_number != 0) {
-        $entity_values[] = array(
-          'entity_type' => $entity_type,
-          'entity_id' => $entity_id,
-          'entity_key' => 'translation_progress',
-          'value' => $total_percentage / $target_number,
-        );
-      }
       // update source status when necessary
       $entity_source_status = lingotek_keystore($entity_type, $entity_id, 'node_sync_status');
       if ($entity_source_status == LingotekSync::STATUS_FAILED || $entity_source_status == LingotekSync::STATUS_PENDING) {
@@ -569,19 +558,13 @@ function lingotek_get_and_update_target_progress($entity_type, $document_ids) {
       }
     }
 
-    if ($delete_nids_maybe) {
-      lingotek_keystore_delete_multiple($entity_type, $delete_nids_maybe, 'target_sync_progress_%', 'LIKE');
-      lingotek_keystore_delete_multiple($entity_type, $delete_nids_maybe, 'target_sync_last_progress_updated_%', 'LIKE');
-      lingotek_keystore_delete_multiple($entity_type, $delete_nids_maybe, 'translation_progress');
-    }
-
     // merge status info for entities
     foreach ($entity_values as $record) {
       $entity_id = (isset($record['entity_id']) ? $record['entity_id'] : $record[1]);
       $entity_key = (isset($record['entity_key']) ? $record['entity_key'] : $record[2]);
       $value = (isset($record['value']) ? $record['value'] : $record[3]);
-      $query = db_merge('lingotek_entity_metadata')
-        ->key(array('entity_id' => $entity_id, 'entity_type' => $entity_type, 'entity_key' => $entity_key))
+      $query = db_merge('{lingotek_entity_metadata}')
+          ->key(array('entity_id' => $entity_id, 'entity_type' => $entity_type, 'entity_key' => $entity_key))
         ->fields(array(
             'entity_type' => $entity_type,
             'entity_id' => $entity_id,
@@ -599,14 +582,14 @@ function lingotek_get_and_update_target_progress($entity_type, $document_ids) {
         $error_message .= "<li>" . $error . "</li>";
       }
     }
-    $error_message .= "</ul><i>For additional information, check your recent log messages</i>";
-    drupal_set_message(t('@error_message', array('@error_message' => $error_message)), 'error');
+    $error_message .= "</ul><i>" . t('For additional information, check your <a href="@link">recent log messages</a>', array('@link' => url('admin/reports/dblog'))) . "</i>";
+    drupal_set_message($error_message, 'error');
   }
 }
 
 
 /**
-* Updates the 'target_sync_progress_[lang-code]' field for every target in the 
+* Updates the 'target_sync_status_[lang-code]' field for every target in the
 * lingotek_config_metadata table with the overall progress returned by TMS
 *
 * @param int array $document_ids
@@ -651,14 +634,8 @@ function lingotek_update_config_progress($document_ids) {
         LingotekLog::error("Lingotek doc ID '@doc_id' not found", array('@doc_id' => $doc_id));
         continue;
       }
-      $trans_obj->deleteMetadataValue('target_sync_progress_%');
-      $trans_obj->deleteMetadataValue('target_sync_last_progress_updated_%');
-      $trans_obj->deleteMetadataValue('translation_progress');
    
       foreach ($completion as $language => $percent) {
-        $cfg_values[] = array($trans_obj->cid, 'target_sync_progress_' . $language, $percent);
-        $cfg_values[] = array($trans_obj->cid, 'target_sync_last_progress_updated_' . $language, time());
-
         $status = LingotekSync::getTargetStatus($doc_id, $language);
         if (isset($progress_report->workflowCompletedByDocumentIdAndTargetLocale->$doc_id->$language)) {
           if ($progress_report->workflowCompletedByDocumentIdAndTargetLocale->$doc_id->$language) { // If the workflow is complete
@@ -679,8 +656,8 @@ function lingotek_update_config_progress($document_ids) {
 
     // insert status info for config
     foreach ($cfg_values as $record) {
-      $query = db_merge('lingotek_config_metadata')
-        ->key(array('id' => $record[0], 'config_key' => $record[1]))
+      $query = db_merge('{lingotek_config_metadata}')
+          ->key(array('id' => $record[0], 'config_key' => $record[1]))
         ->fields(array(
             'id' => $record[0],
             'config_key' => $record[1],
@@ -697,8 +674,8 @@ function lingotek_update_config_progress($document_ids) {
         $error_message .= "<li>" . $error . "</li>";
       }
     }
-    $error_message .= "</ul><i>For additional information, check your recent log messages</i>";
-    drupal_set_message(t('@error_message', array('@error_message' => $error_message)), 'error');
+    $error_message .= "</ul><i>" . t('For additional information, check your <a href="@link">recent log messages</a>', array('@link' => url('admin/reports/dblog'))) . "</i>";
+    drupal_set_message($error_message, 'error');
   }
 
 }

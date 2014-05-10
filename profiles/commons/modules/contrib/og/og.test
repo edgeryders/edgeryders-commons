@@ -2445,3 +2445,94 @@ class OgAudienceFieldAccessOverrideTestCase extends DrupalWebTestCase {
   }
 
 }
+
+/**
+ * Auto assign roles.
+ */
+class OgAutoAssignRoleTestCase extends DrupalWebTestCase {
+
+  public $roles;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'OG auto assign role',
+      'description' => 'Auto assign role on the creation of a new group.',
+      'group' => 'Organic groups',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp('og');
+    // Create a group content type.
+    $this->drupalCreateContentType(array('name' => 'Group', 'type' => 'group'));
+    og_create_field(OG_GROUP_FIELD, 'node', 'group');
+    og_create_field(OG_DEFAULT_ACCESS_FIELD, 'node', 'group');
+
+    // Define the administer role to be assigned automatically.
+    $role = user_role_load_by_name('administrator');
+    variable_set('og_group_manager_default_rids_node_group', array($role->rid));
+
+    $this->defaultRoles = db_select('og_role', 'ogr')
+      ->fields('ogr')
+      ->execute()
+      ->fetchAllAssoc('rid');
+  }
+
+  /**
+   * Create a new group and verify that OG roles have been created and
+   * attached to the group owner.
+   * This test overrides role permissions to use its own for the group.
+   */
+  public function testAutoAssignRolesDefaultAccessGroup() {
+    $entity_type = 'node';
+    $entity_bundle = 'group';
+    $group_owner_id = 1;
+
+    // Create the group.
+    $node = $this->drupalCreateNode(array(
+      'title' => $this->randomString(),
+      'type' => $entity_bundle,
+      'uid' => $group_owner_id,));
+    $wrapper = entity_metadata_Wrapper($entity_type, $node);
+    $wrapper->{OG_GROUP_FIELD}->set(1);
+    $wrapper->{OG_DEFAULT_ACCESS_FIELD}->set(1);
+    $wrapper->save();
+
+    // Verify that the group received new roles.
+    $roles = og_roles($entity_type, $entity_bundle, $wrapper->getIdentifier());
+    $og_roles = og_get_user_roles($entity_type, $wrapper->getIdentifier(), $group_owner_id);
+    $array_compare = array_diff($roles, $og_roles);
+    $this->assertTrue(!array_search('administrator member', $array_compare), '(Group Roles/Permissions) Administrator role has been automatically assigned to the group owner.');
+    $this->assertTrue(!array_search('member', $array_compare), '(Group Roles/Permissions) The basic OG member role has been assigned to the group owner.');
+  }
+
+  /**
+   * Create a new group and verify that OG roles have been created and
+   * attached to the group owner.
+   * This test uses the default role permissions.
+   */
+  public function testAutoAssignRolesNotDefaultAccessGroup() {
+    $entity_type = 'node';
+    $entity_bundle = 'group';
+    $group_owner_id = 1;
+
+    // Create the group.
+    $node = entity_create($entity_type, array(
+      'title' => $this->randomString(),
+      'type' => $entity_bundle,
+      'language' => LANGUAGE_NONE,
+      'uid' => 1,
+    ));
+    $wrapper = entity_metadata_Wrapper($entity_type, $node);
+    $wrapper->{OG_GROUP_FIELD}->set(1);
+    $wrapper->{OG_DEFAULT_ACCESS_FIELD}->set(0);
+    $wrapper->save();
+
+    // Verify that the group received new roles.
+    $roles = og_roles($entity_type, $entity_bundle, $wrapper->getIdentifier());
+    $og_roles = og_get_user_roles($entity_type, $wrapper->getIdentifier(), $group_owner_id);
+    $array_compare = array_diff($roles, $og_roles);
+    $this->assertTrue(!array_search('administrator member', $array_compare), '(Default Roles/Permissions)Administrator role has been automatically assigned to the group owner.');
+    $this->assertTrue(!array_search('member', $array_compare), '(Default Roles/Permissions) The basic OG member role has been assigned to the group owner.');
+  }
+}

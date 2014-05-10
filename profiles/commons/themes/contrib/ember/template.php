@@ -13,6 +13,11 @@ function ember_html_head_alter(&$head_elements) {
   );
 }
 
+/*add a ember class to the header to give targetability for css enhancements */
+function ember_preprocess_html(&$variables) {
+ $variables['classes_array'][] = 'ember';
+}
+
 /**
  * Override or insert variables into the page template.
  */

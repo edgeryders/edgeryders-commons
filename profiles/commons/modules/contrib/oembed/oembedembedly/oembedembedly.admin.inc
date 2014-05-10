@@ -13,6 +13,8 @@ function oembedembedly_admin() {
     '#description' => t('Embedly directly integrates with <a href="@providers">@count content providers</a>. You can control which Embedly providers are supported on your site by enabling or disabling them individually.', array('@count' => count($providers), '@providers' => 'http://embed.ly/providers')),
   );
 
+  $image = array('width' => 16, 'height' => 16);
+
   foreach ($providers as $provider) {
     $variables = array(
       'path' => $provider->favicon,

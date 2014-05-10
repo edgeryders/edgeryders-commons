@@ -114,8 +114,7 @@ function media_menu() {
     'title' => 'Media browser',
     'description' => 'Media Browser for picking media and uploading new media',
     'page callback' => 'media_browser',
-    'access callback' => 'file_entity_access',
-    'access arguments' => array('create'),
+    'access arguments' => array('access media browser'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/media.browser.inc',
     'theme callback' => 'media_dialog_get_theme_name',
@@ -178,6 +177,9 @@ function media_permission() {
       'title' => t('Administer media browser'),
       'description' => t('Access media browser settings.'),
     ),
+    'access media browser' => array(
+      'title' => t('Use the media browser'),
+    ),
   );
 }
 
@@ -186,29 +188,9 @@ function media_permission() {
  */
 function media_theme() {
   return array(
-    // A preview of the uploaded file.
-    'media_thumbnail' => array(
-      'render element' => 'element',
-      'file' => 'includes/media.theme.inc',
-    ),
-
-    // Dialog page.
-    'media_dialog_page' => array(
-      'render element' => 'page',
-      'template' => 'templates/media-dialog-page',
-      'file' => 'includes/media.theme.inc',
-    ),
-
-    // Media form API element type.
+    // media.module.
     'media_element' => array(
       'render element' => 'element',
-      'file' => 'includes/media.theme.inc',
-    ),
-
-    // Display a file as a large icon.
-    'media_formatter_large_icon' => array(
-      'variables' => array('file' => NULL, 'attributes' => array(), 'style_name' => 'media_thumbnail'),
-      'file' => 'includes/media.theme.inc',
     ),
 
     // media.field.inc.
@@ -218,8 +200,23 @@ function media_theme() {
     'media_widget_multiple' => array(
       'render element' => 'element',
     ),
-    'media_formatter_table' => array(
-      'variables' => array('items' => NULL),
+    'media_upload_help' => array(
+      'variables' => array('description' => NULL),
+    ),
+
+    // media.theme.inc.
+    'media_thumbnail' => array(
+      'render element' => 'element',
+      'file' => 'includes/media.theme.inc',
+    ),
+    'media_formatter_large_icon' => array(
+      'variables' => array('file' => NULL, 'attributes' => array(), 'style_name' => 'media_thumbnail'),
+      'file' => 'includes/media.theme.inc',
+    ),
+    'media_dialog_page' => array(
+      'render element' => 'page',
+      'template' => 'templates/media-dialog-page',
+      'file' => 'includes/media.theme.inc',
     ),
   );
 }
@@ -244,7 +241,7 @@ function media_ajax_upload() {
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
-  list($form, $form_state) = ajax_get_form();
+  list($form, $form_state, $form_id, $form_build_id, $commands) = ajax_get_form();
 
   if (!$form) {
     // Invalid form_build_id.
@@ -282,7 +279,6 @@ function media_ajax_upload() {
   $js = drupal_add_js();
   $settings = call_user_func_array('array_merge_recursive', $js['settings']['data']);
 
-  $commands = array();
   $commands[] = ajax_command_replace(NULL, $output, $settings);
   return array('#type' => 'ajax', '#commands' => $commands);
 }
@@ -589,7 +585,6 @@ function media_recursive_check_plain(&$value, $key) {
  * Implements hook_element_info().
  */
 function media_element_info() {
-  $types = array();
   $types['media'] = array(
     '#input' => TRUE,
     '#process' => array('media_element_process'),
@@ -598,6 +593,7 @@ function media_element_info() {
     '#pre_render' => array('media_element_pre_render'),
     '#theme' => 'media_element',
     '#theme_wrappers' => array('form_element'),
+    '#size' => 22,
     '#extended' => FALSE,
     '#media_options' => array(
       'global' => array(
@@ -629,7 +625,6 @@ function media_element_info() {
  * Process callback for the media form element.
  */
 function media_element_process($element, &$form_state, $form) {
-
   $fid = isset($element['#value']['fid']) ? $element['#value']['fid'] : 0;
 
   // Set some default element properties.
@@ -652,7 +647,7 @@ function media_element_process($element, &$form_state, $form) {
     '#limit_validation_errors' => array($element['#parents']),
     '#ajax' => $ajax_settings,
     '#attributes' => array('class' => array('attach')),
-    '#weight' => -5,
+    '#weight' => -1,
   );
 
   $element['preview'] = array(
@@ -665,17 +660,30 @@ function media_element_process($element, &$form_state, $form) {
 
   // Substitute the JS preview for a true file thumbnail once the file is
   // attached.
-  if ($element['#file']) {
+  if ($fid && $element['#file']) {
     $element['preview']['content'] = media_get_thumbnail_preview($element['#file']);
   }
+
+  // The file ID field itself.
+  $element['upload'] = array(
+    '#name' => 'media[' . implode('_', $element['#parents']) . ']',
+    '#type' => 'textfield',
+    '#title' => t('Enter the ID of an existing file'),
+    '#title_display' => 'invisible',
+    '#field_prefix' => t('File ID'),
+    '#size' => $element['#size'],
+    '#theme_wrappers' => array(),
+    '#attributes' => array('class' => array('upload')),
+    '#weight' => -9,
+  );
 
   $element['browse_button'] = array(
     '#type' => 'link',
     '#href' => '',
     '#title' => t('Browse'),
-    '#attributes' => array('class' => array('button', 'browse')),
+    '#attributes' => array('class' => array('button', 'browse', 'element-hidden')),
     '#options' => array('fragment' => FALSE, 'external' => TRUE),
-    '#weight' => -9,
+    '#weight' => -8,
   );
 
   // Force the progress indicator for the remove button to be either 'none' or
@@ -692,7 +700,7 @@ function media_element_process($element, &$form_state, $form) {
     '#limit_validation_errors' => array($element['#parents']),
     '#ajax' => $ajax_settings,
     '#attributes' => array('class' => array('remove')),
-    '#weight' => -3,
+    '#weight' => 0,
     '#access' => $element['#file'] ? file_entity_access('delete', $element['#file']) : TRUE, // only do perm check for existing files
   );
 
@@ -742,22 +750,28 @@ function media_file_value(&$element, $input = FALSE, $form_state = NULL) {
     $fid = $form_state_fid;
   }
 
-  // Process any input and save new uploads.
+  // Process any input and attach files.
   if ($input !== FALSE) {
     $return = $input;
 
-    // Check for #filefield_value_callback values.
-    // Because FAPI does not allow multiple #value_callback values like it
-    // does for #element_validate and #process, this fills the missing
-    // functionality to allow File fields to be extended through FAPI.
-    if (isset($element['#file_value_callbacks'])) {
-      foreach ($element['#file_value_callbacks'] as $callback) {
-        $callback($element, $input, $form_state);
-      }
-    }
-    // Load file if the FID has changed to confirm it exists.
-    if (isset($input['fid']) && $file = file_load($input['fid'])) {
+    // Attachments take priority over all other values.
+    if ($file = media_attach_file($element)) {
       $fid = $file->fid;
+    }
+    else {
+      // Check for #filefield_value_callback values.
+      // Because FAPI does not allow multiple #value_callback values like it
+      // does for #element_validate and #process, this fills the missing
+      // functionality to allow File fields to be extended through FAPI.
+      if (isset($element['#file_value_callbacks'])) {
+        foreach ($element['#file_value_callbacks'] as $callback) {
+          $callback($element, $input, $form_state);
+        }
+      }
+      // Load file if the FID has changed to confirm it exists.
+      if (isset($input['fid']) && $file = file_load($input['fid'])) {
+        $fid = $file->fid;
+      }
     }
   }
 
@@ -848,6 +862,60 @@ function media_file_submit($form, &$form_state) {
 }
 
 /**
+ * Attaches any files that have been referenced by a media element.
+ *
+ * @param $element
+ *   The FAPI element whose files are being attached.
+ *
+ * @return
+ *   The file object representing the file that was attached, or FALSE if no
+ *   file was attached.
+ */
+function media_attach_file($element) {
+  $upload_name = implode('_', $element['#parents']);
+  if (empty($_POST['media'][$upload_name])) {
+    return FALSE;
+  }
+
+  if (!$file = file_load($_POST['media'][$upload_name])) {
+    watchdog('file', 'The file upload failed. %upload', array('%upload' => $upload_name));
+    form_set_error($upload_name, t('The file in the !name field was unable to be uploaded.', array('!name' => $element['#title'])));
+    return FALSE;
+  }
+
+  return $file;
+}
+
+/**
+ * Returns HTML for a managed file element.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - element: A render element representing the file.
+ *
+ * @ingroup themeable
+ */
+function theme_media_element($variables) {
+  $element = $variables['element'];
+
+  $attributes = array();
+  if (isset($element['#id'])) {
+    $attributes['id'] = $element['#id'];
+  }
+  if (!empty($element['#attributes']['class'])) {
+    $attributes['class'] = (array) $element['#attributes']['class'];
+  }
+  $attributes['class'][] = 'form-media';
+
+  // This wrapper is required to apply JS behaviors and CSS styling.
+  $output = '';
+  $output .= '<div' . drupal_attributes($attributes) . '>';
+  $output .= drupal_render_children($element);
+  $output .= '</div>';
+  return $output;
+}
+
+/**
  * #pre_render callback to hide display of the browse/attach or remove controls.
  *
  * Browse/attach controls are hidden when a file is already attached.
@@ -870,6 +938,7 @@ function media_element_pre_render($element) {
   // If we already have a file, we don't want to show the browse and attach
   // controls.
   if (!empty($element['#value']['fid'])) {
+    $element['upload']['#access'] = FALSE;
     $element['browse_button']['#access'] = FALSE;
     $element['attach_button']['#access'] = FALSE;
   }
@@ -972,52 +1041,55 @@ function media_file_displays_alter(&$displays, $file, $view_mode) {
 }
 
 /**
- * Implements hook_file_default_displays_alter().
+ * For sanity in grammar.
+ *
+ * @see media_set_browser_params()
  */
-function media_file_default_displays_alter(&$file_displays) {
-  // Image previews should be displayed using the media image style.
-  if (isset($file_displays['image__preview__file_field_image'])) {
-    $file_displays['image__preview__file_field_image']->settings['image_style'] = 'media_thumbnail';
+function media_get_browser_params() {
+  return media_set_browser_params();
+}
+
+/**
+ * Provides a singleton of the params passed to the media browser.
+ *
+ * This is useful in situations like form alters because callers can pass
+ * id="wysiywg_form" or whatever they want, and a form alter could pick this up.
+ * We may want to change the hook_media_browser_plugin_view() implementations to
+ * use this function instead of being passed params for consistency.
+ *
+ * It also offers a chance for some meddler to meddle with them.
+ *
+ * @see media_browser()
+ */
+function media_set_browser_params() {
+  $params = &drupal_static(__FUNCTION__, array());
+
+  if (empty($params)) {
+    // Build out browser settings. Permissions- and security-related behaviors
+    // should not rely on these parameters, since they come from the HTTP query.
+    // @TODO make sure we treat parameters as user input.
+    $params = drupal_get_query_parameters() + array(
+        'types' => array(),
+        'multiselect' => FALSE,
+      );
+
+    // Transform text 'true' and 'false' to actual booleans.
+    foreach ($params as $k => $v) {
+      if ($v === 'true') {
+        $params[$k] = TRUE;
+      }
+      elseif ($v === 'false') {
+        $params[$k] = FALSE;
+      }
+    }
+
+    array_walk_recursive($params, 'media_recursive_check_plain');
+
+    // Allow modules to alter the parameters.
+    drupal_alter('media_browser_params', $params);
   }
 
-  // Video previews should be displayed using a large filetype icon.
-  if (isset($file_displays['video__preview__file_field_file_default'])) {
-    $file_displays['video__preview__file_field_file_default']->status = FALSE;
-  }
-
-  $file_display = new stdClass();
-  $file_display->api_version = 1;
-  $file_display->name = 'video__preview__file_field_media_large_icon';
-  $file_display->weight = 50;
-  $file_display->status = TRUE;
-  $file_display->settings = '';
-  $file_displays['video__preview__file_field_media_large_icon'] = $file_display;
-
-  // Audio previews should be displayed using a large filetype icon.
-  if (isset($file_displays['audio__preview__file_field_file_default'])) {
-    $file_displays['audio__preview__file_field_file_default']->status = FALSE;
-  }
-
-  $file_display = new stdClass();
-  $file_display->api_version = 1;
-  $file_display->name = 'audio__preview__file_field_media_large_icon';
-  $file_display->weight = 50;
-  $file_display->status = TRUE;
-  $file_display->settings = '';
-  $file_displays['audio__preview__file_field_media_large_icon'] = $file_display;
-
-  // Document previews should be displayed using a large filetype icon.
-  if (isset($file_displays['document__preview__file_field_file_default'])) {
-    $file_displays['document__preview__file_field_file_default']->status = FALSE;
-  }
-
-  $file_display = new stdClass();
-  $file_display->api_version = 1;
-  $file_display->name = 'document__preview__file_field_media_large_icon';
-  $file_display->weight = 50;
-  $file_display->status = TRUE;
-  $file_display->settings = '';
-  $file_displays['document__preview__file_field_media_large_icon'] = $file_display;
+  return $params;
 }
 
 /**
@@ -1051,11 +1123,9 @@ function media_form_file_entity_admin_file_alter(&$form, $form_state) {
   // selected and they try to switch between the "Thumbnail" and "List" local
   // tasks.
   $path = drupal_get_path('module', 'media');
-  require_once $path . '/includes/media.browser.inc';
   $form['#attributes']['class'][] = 'file-entity-admin-file-form';
   $form['#attached']['js'][] = $path . '/js/media.admin.js';
   $form['#attached']['css'][] = $path . '/css/media.css';
-  media_attach_browser_js($form);
 
   // By default, this form contains a table select element called "files". For
   // the 'thumbnails' tab, Media generates a thumbnail for each file and
@@ -1162,6 +1232,31 @@ function media_get_browser_plugin_info() {
   }
 
   return $info;
+}
+
+/**
+ * Gets the MIME type mapped to a given extension.
+ *
+ * @param string $extension
+ *   A file extension.
+ *
+ * @return string
+ *   The MIME type associated with the extension or FALSE if the extension does
+ *   not have an associated MIME type.
+ *
+ * @see file_mimetype_mapping()
+ */
+function media_get_extension_mimetype($extension) {
+  include_once DRUPAL_ROOT . '/includes/file.mimetypes.inc';
+  $mimetype_mappings = file_mimetype_mapping();
+
+  if (isset($mimetype_mappings['extensions'][$extension])) {
+    $id = $mimetype_mappings['extensions'][$extension];
+    return $mimetype_mappings['mimetypes'][$id];
+  }
+  else {
+    return FALSE;
+  }
 }
 
 /**

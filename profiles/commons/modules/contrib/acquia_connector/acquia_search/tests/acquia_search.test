@@ -59,19 +59,20 @@ class AcquiaSearchUnitTestCase extends DrupalUnitTestCase {
    */
   public function testHMACCookie() {
     // Generate the expected hash.
-    $time = REQUEST_TIME;
+    $time = time();
     $nonce = $this->randomName(32);
     $string = $time . $nonce . $this->randomName();
     $hmac = hash_hmac('sha1', $time . $nonce . $string, $this->derivedKey);
 
     // @todo Make the API function more testable.
-    $authenticator = acquia_search_authenticator($string, $nonce, $this->derivedKey);
+    $authenticator = acquia_search_authenticator($string, $nonce, $this->derivedKey, $time);
     preg_match('/acquia_solr_hmac=([a-zA-Z0-9]{40});/', $authenticator, $matches);
     $this->assertEqual($hmac, $matches[1], t('HMAC API function generates the expected hmac hash.'), 'Acquia Search');
     preg_match('/acquia_solr_time=([0-9]{10});/', $authenticator, $matches);
     $this->assertNotNull($matches, t('HMAC API function generates a timestamp.'), 'Acquia Search');
     preg_match('/acquia_solr_nonce=([a-zA-Z0-9]{32});/', $authenticator, $matches);
     $this->assertEqual($nonce, $matches[1], t('HMAC API function generates the expected nonce.'), 'Acquia Search');
+
   }
 
   /**

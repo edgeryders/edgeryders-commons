@@ -60,13 +60,12 @@
   -o-transition: border-color 0.2s;
   transition: border-color 0.2s;
 }
-.primary > [class*="active"],
-.primary > :hover {
-  border-color: #f05724;
-}
 .primary > [class*="active"] a,
 .primary > :hover a {
   color: #333333;
+}
+.primary > [class*="active"] {
+  border-color: #f05724;
 }
 .primary a {
   padding: 0.35355em 0;
@@ -92,16 +91,16 @@
   /* LTR */
 }
 .menu .expanded {
-  list-style-image: url('../images/menu-expanded.png?1388162849');
+  list-style-image: url('../images/menu-expanded.png?1391020745');
   list-style-type: circle;
 }
 .menu .collapsed {
-  list-style-image: url('../images/menu-collapsed.png?1388162849');
+  list-style-image: url('../images/menu-collapsed.png?1391020745');
   /* LTR */
   list-style-type: disc;
 }
 .menu .leaf {
-  list-style-image: url('../images/menu-leaf.png?1388162849');
+  list-style-image: url('../images/menu-leaf.png?1391020745');
   list-style-type: square;
 }
 .menu .active {
@@ -154,6 +153,11 @@ td.menu-disabled {
 #branding .secondary {
   margin-top: 0;
   margin-bottom: 0;
+}
+#branding .primary a,
+#branding .secondary a {
+  color: #aaa;
+  /* todo: change in ux styleguide and remove here */
 }
 #branding .primary > [class*="active"] a,
 #branding .primary > :hover a,

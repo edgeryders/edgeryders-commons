@@ -197,7 +197,7 @@ function lingotek_rules_entity_all_translations_of_status($wrapper, $status) {
   if (empty($target_status_keys)) {
     return FALSE;
   }
-  $query = db_select('lingotek_entity_metadata', 'lem')
+  $query = db_select('{lingotek_entity_metadata}', 'lem')
       ->fields('lem', array('entity_id'))
       ->condition('lem.entity_id', $entity_id)
       ->condition('lem.entity_type', $entity_type)
@@ -235,13 +235,13 @@ function lingotek_rules_event_info() {
   ),
     ),
     'lingotek_entity_translation_pre_download' => $defaults + array(
-  'label' => t('Before a translation is downloaded'),
+  'label' => t('Before a translation is downloaded (acting on source entity)'),
   'variables' => array(
     'entity' => array('type' => 'entity', 'label' => t('entity translation downloaded')),
   ),
     ),
     'lingotek_entity_translation_post_download' => $defaults + array(
-  'label' => t('After a translation was downloaded'),
+  'label' => t('After a translation was downloaded (acting on translated entity)'),
   'variables' => array(
     'entity' => array('type' => 'entity', 'label' => t('entity translation downloaded')),
   ),

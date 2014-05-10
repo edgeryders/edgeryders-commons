@@ -2,7 +2,7 @@
 
 /**
  * @file
- * email registration simpletest
+ * Contains EmailRegistrationTestCase.
  */
 
 class EmailRegistrationTestCase extends DrupalWebTestCase {
@@ -20,7 +20,7 @@ class EmailRegistrationTestCase extends DrupalWebTestCase {
   /**
    * Implementation of setUp().
    */
-  function setUp() {
+  public function setUp() {
     parent::setUp('email_registration');
 
     // Configure to allow set password.
@@ -30,7 +30,7 @@ class EmailRegistrationTestCase extends DrupalWebTestCase {
   /**
    * Test various behaviors for anonymous users.
    */
-  function testRegistration() {
+  public function testRegistration() {
     variable_set('user_register', USER_REGISTER_VISITORS);
     // Try to register a user.
     $name = $this->randomName();
@@ -49,8 +49,12 @@ class EmailRegistrationTestCase extends DrupalWebTestCase {
     );
     $this->drupalPost('user/login', $login, t('Log in'));
 
-    // Really basic confirmation that the user was created and logged in.
-    $this->assertRaw('<title>' . $name . ' | Drupal</title>', t('User properly created, logged in.'));
+    // Get the uid.
+    $accounts = user_load_multiple(array(), array('mail' => $name . '@example.com'));
+    $new_user = reset($accounts);
+
+    // Confirm the user was created and logged in with expected username.
+    $this->assertRaw('<title>' . $name . '_' . $new_user->uid . ' | Drupal</title>', t('User properly created, logged in.'));
 
     // Now try the immediate login.
     $this->drupalLogout();
@@ -65,5 +69,22 @@ class EmailRegistrationTestCase extends DrupalWebTestCase {
     $this->drupalPost('/user/register', $register, t('Create new account'));
     $this->assertRaw('Registration successful. You are now logged in.', t('User properly created, immediately logged in.'));
 
+    // Try to login with just username, should succeed by default.
+    $this->drupalLogout();
+
+    $login = array(
+      'name' => $name,
+      'pass' => $pass,
+    );
+    $this->drupalPost('user/login', $login, t('Log in'));
+    $this->assertRaw('<title>' . $name . ' | Drupal</title>', t('By default, username can log in.'));
+    $this->drupalLogout();
+
+    // Disallow logins with username and try to login with just username, should fail.
+    variable_set('email_registration_login_with_username', FALSE);
+    $this->drupalPost('user/login', $login, t('Log in'));
+    $this->assertRaw('<title>User account | Drupal</title>', t('When disabled, a user cannot login with just their username.'));
+
   }
+
 }

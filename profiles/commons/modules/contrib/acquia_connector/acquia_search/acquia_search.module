@@ -428,7 +428,7 @@ function _acquia_search_create_derived_key($salt, $id, $key) {
 /**
  * Creates an authenticator based on a data string and HMAC-SHA1.
  */
-function acquia_search_authenticator($string, $nonce, $derived_key = NULL, $env_id = NULL) {
+function acquia_search_authenticator($string, $nonce, $derived_key = NULL, $env_id = NULL, $time = NULL) {
   if (empty($derived_key)) {
     $derived_key = _acquia_search_derived_key($env_id);
   }
@@ -437,7 +437,15 @@ function acquia_search_authenticator($string, $nonce, $derived_key = NULL, $env_
     return '';
   }
   else {
-    $time = REQUEST_TIME;
+    // @see http://stackoverflow.com/questions/2524680/check-whether-the-string-is-a-unix-timestamp
+    if (!(is_numeric($time) && (int)$time == $time )) {
+      // Use time() instead of REQUEST_TIME so that long-running operations like
+      // `drush solr-index` continually have fresh request times. Use of
+      // REQUEST_TIME will cause Acquia Search to respond with a 403 Forbidden
+      // after the acquia_solr_time value is older than 15 minutes.
+      $time = time();
+    }
+
     return 'acquia_solr_time='. $time .'; acquia_solr_nonce='. $nonce .'; acquia_solr_hmac='. hash_hmac('sha1', $time . $nonce . $string, $derived_key) .';';
   }
 }

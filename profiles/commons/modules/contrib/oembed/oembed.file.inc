@@ -34,7 +34,6 @@ function oembed_file_formatter_info_alter(&$info) {
       'label' => t('oEmbed image'),
       'view callback' => 'oembed_remote_file_formatter_view',
       'description' => t('oEmbed photo or thumbnail is saved to local filesystem and transformed by image styles.'),
-      'hidden' => FALSE,
     ) + $info['file_image'];
   }
 }

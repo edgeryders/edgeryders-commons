@@ -45,13 +45,12 @@
   -o-transition: border-color 0.2s;
   transition: border-color 0.2s;
 }
-.ui-tabs-nav > [class*="active"],
-.ui-tabs-nav > :hover {
-  border-color: #f05724;
-}
 .ui-tabs-nav > [class*="active"] a,
 .ui-tabs-nav > :hover a {
   color: #333333;
+}
+.ui-tabs-nav > [class*="active"] {
+  border-color: #f05724;
 }
 .ui-tabs-nav a {
   padding: 0.35355em 0;

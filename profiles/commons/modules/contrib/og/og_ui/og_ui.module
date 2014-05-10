@@ -475,6 +475,9 @@ function og_ui_admin_paths() {
     'node/*/group' => TRUE,
     'group/*/*/admin/*' => TRUE,
   );
+  if (!variable_get('node_admin_theme')) {
+    $paths['node/add/group'] = FALSE;
+  }
   return $paths;
 }
 

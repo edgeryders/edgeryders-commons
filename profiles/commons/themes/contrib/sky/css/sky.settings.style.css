@@ -158,9 +158,6 @@ form.node-form div.field-type-image img {
 
 
 /* Background overlays */
-.bb-n {
-  background-image: none;
-}
 .bb-h {
   background-image: url(images/ts/hatch.png);
 }
