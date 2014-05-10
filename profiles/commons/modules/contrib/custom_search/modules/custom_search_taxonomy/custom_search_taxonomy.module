@@ -179,7 +179,7 @@ function _custom_search_taxonomy_admin_form($vocabularies, $delta = '') {
   foreach ($vocabularies as $voc) {
     $form[$voc->name] = array(
       '#type'         => 'fieldset',
-      '#title'        => $voc->name,
+      '#title'        => check_plain($voc->name),
       '#collapsible'  => TRUE,
       '#collapsed'    => (variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector', 'disabled') == 'disabled') ? TRUE : FALSE,
     );
@@ -215,7 +215,7 @@ function _custom_search_taxonomy_admin_form($vocabularies, $delta = '') {
       '#type'           => 'textfield',
       '#title'          => t('Label text'),
       '#default_value'  => variable_get('custom_search_' . $delta . 'voc' . $voc->vid . '_selector_label', $voc->name),
-      '#description'    => t('Enter the label text for the selector. The default value is "!default".', array('!default' => $voc->name)),
+      '#description'    => t('Enter the label text for the selector. The default value is "@default".', array('@default' => $voc->name)),
       '#states' => array(
         'visible' => array(
           ':input[name="custom_search_' . $delta . 'voc' . $voc->vid . '_selector_label_visibility"]' => array('checked' => TRUE),
@@ -247,7 +247,7 @@ function _custom_search_taxonomy_sort_form($vocabularies, $delta = '') {
   $w = 1;
   foreach ($vocabularies as $voc) {
     $form['taxonomy' . $voc->vid] = array(
-      '#title'  => t('Taxonomy') . ': ' . $voc->name,
+      '#title'  => t('Taxonomy') . ': ' . check_plain($voc->name),
       '#weight' => variable_get('custom_search_' . $delta . 'taxonomy' . $voc->vid . '_weight', $w),
     );
     $form['taxonomy' . $voc->vid]['sort'] = array(
