@@ -441,10 +441,12 @@ function commons_tasks_views_default_views() {
 
   /* Display: Cases */
   $handler = $view->new_display('page', 'Cases', 'page_1');
-  $handler->display->display_options['path'] = 'casetracker';
+  $handler->display->display_options['path'] = 'tasks';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'Case Tracker';
-  $handler->display->display_options['menu']['weight'] = '0';
+  $handler->display->display_options['menu']['weight'] = '-1';
+  $handler->display->display_options['menu']['context'] = 0;
+  $handler->display->display_options['menu']['context_only_inline'] = 0;
 
   /* Display: My cases */
   $handler = $view->new_display('page', 'My cases', 'page_2');
@@ -539,10 +541,12 @@ function commons_tasks_views_default_views() {
     3 => 0,
     4 => 0,
   );
-  $handler->display->display_options['path'] = 'casetracker/my';
+  $handler->display->display_options['path'] = 'tasks/my';
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'My cases';
-  $handler->display->display_options['menu']['weight'] = '0';
+  $handler->display->display_options['menu']['weight'] = '1';
+  $handler->display->display_options['menu']['context'] = 0;
+  $handler->display->display_options['menu']['context_only_inline'] = 0;
 
   /* Display: Projects */
   $handler = $view->new_display('page', 'Projects', 'page_3');
@@ -580,18 +584,23 @@ function commons_tasks_views_default_views() {
   $handler->display->display_options['filters']['project']['field'] = 'project';
   $handler->display->display_options['filters']['project']['group'] = '0';
   $handler->display->display_options['filters']['project']['expose']['operator'] = FALSE;
-  $handler->display->display_options['path'] = 'casetracker/projects';
+  $handler->display->display_options['path'] = 'tasks/projects';
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'Projects';
-  $handler->display->display_options['menu']['weight'] = '0';
+  $handler->display->display_options['menu']['weight'] = '1';
+  $handler->display->display_options['menu']['context'] = 0;
+  $handler->display->display_options['menu']['context_only_inline'] = 0;
 
   /* Display: Default tab */
   $handler = $view->new_display('page', 'Default tab', 'page_4');
-  $handler->display->display_options['path'] = 'casetracker/cases';
+  $handler->display->display_options['path'] = 'tasks/cases';
   $handler->display->display_options['menu']['type'] = 'default tab';
-  $handler->display->display_options['menu']['title'] = 'Cases';
+  $handler->display->display_options['menu']['title'] = 'Tasks';
   $handler->display->display_options['menu']['weight'] = '0';
-  $handler->display->display_options['tab_options']['title'] = 'Casetracker';
+  $handler->display->display_options['menu']['context'] = 0;
+  $handler->display->display_options['menu']['context_only_inline'] = 0;
+  $handler->display->display_options['tab_options']['type'] = 'normal';
+  $handler->display->display_options['tab_options']['title'] = 'Tasks';
   $handler->display->display_options['tab_options']['weight'] = '0';
   $translatables['commons_tasks_casetracker_project_cases'] = array(
     t('Defaults'),
