@@ -1,2 +1,10 @@
 <?php
 
+/**
+ * Move the module weighter than other (500)
+ */
+function commons_tasks_update_7002() {
+  db_query("UPDATE {system} SET weight = :weight WHERE type = 'module' AND name = 'commons_tasks'", array(':weight' => 9999));
+}
+
+

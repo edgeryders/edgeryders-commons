@@ -15,6 +15,7 @@ function commons_tasks_og_features_default_permissions() {
     'roles' => array(
       'administrator member' => 'administrator member',
       'member' => 'member',
+      'non-member' => 'non-member',
     ),
   );
 
@@ -30,6 +31,7 @@ function commons_tasks_og_features_default_permissions() {
     'roles' => array(
       'administrator member' => 'administrator member',
       'member' => 'member',
+      'non-member' => 'non-member',
     ),
   );
 
@@ -45,6 +47,7 @@ function commons_tasks_og_features_default_permissions() {
     'roles' => array(
       'administrator member' => 'administrator member',
       'member' => 'member',
+      'non-member' => 'non-member',
     ),
   );
 
