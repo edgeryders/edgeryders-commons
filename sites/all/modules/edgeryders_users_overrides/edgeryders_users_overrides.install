@@ -1,0 +1,9 @@
+<?php
+
+/**
+ * Clear the realname table in order to be rebuilt with the right pattern.
+ */
+function edgeryders_users_overrides_update_7003() {
+  db_query("TRUNCATE TABLE {realname}");
+}
+
