@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Clear the realname table in order to be rebuilt with the right pattern.
+ * Implements hook_enable().
  */
-function edgeryders_users_overrides_update_7003() {
+function edgeryders_users_overrides_enable() {
   db_query("TRUNCATE TABLE {realname}");
 }
 
