@@ -1,0 +1,16 @@
+name = Edgeryders users overrides
+description = Edgeryders user settings overriden by Drupal Commons
+core = 7.x
+package = Edgeryders
+version = 7.x-1.0-dev
+project = edgeryders_users_overrides
+dependencies[] = features_override
+dependencies[] = realname
+features[features_api][] = api:2
+features[features_override_items][] = variable.realname_pattern
+features[features_overrides][] = variable.realname_pattern.value
+features[user_permission][] = administer realname
+features[user_permission][] = execute realname_action_realname_update
+features_exclude[dependencies][actions_permissions] = actions_permissions
+features_exclude[dependencies][commons_profile_base] = commons_profile_base
+features_exclude[dependencies][features] = features
