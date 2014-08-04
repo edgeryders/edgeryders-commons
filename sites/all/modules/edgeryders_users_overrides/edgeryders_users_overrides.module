@@ -1,0 +1,66 @@
+<?php
+/**
+ * @file
+ * Code for the Edgeryders users overrides feature.
+ */
+
+include_once 'edgeryders_users_overrides.features.inc';
+
+/**
+ * Implements hook_token_info().
+ */
+function edgeryders_users_overrides_token_info() {
+  $info['tokens']['user']['name-raw-no-spaces'] = array(
+    'name' => t('Raw user name without spaces'),
+    'description' => t('The login name of the user account without spaces.'),
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_module_implements_alter()
+ */
+function edgeryders_users_overrides_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'username_alter') {
+    // Move hook_username_alter() to the end of the list. module_implements()
+    // iterates through $implementations with a foreach loop which PHP iterates
+    // in the order that the items were added, so to move an item to the end of
+    // the array, we remove it and then add it.
+    $group = $implementations['edgeryders_users_overrides'];
+    unset($implementations['edgeryders_users_overrides']);
+    $implementations['edgeryders_users_overrides'] = $group;
+  }
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function edgeryders_users_overrides_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  $sanitize = !empty($options['sanitize']);
+
+  if ($type == 'user' && !empty($data['user'])) {
+    $account = $data['user'];
+
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'name-raw-no-spaces':
+          $name = $sanitize ? check_plain($account->name) : $account->name;
+          $name = str_replace(' ', '_', $name);
+          $replacements[$original] = $name;
+          break;
+      }
+    }
+  }
+  return $replacements;
+}
+
+/**
+ * Implements hook_username_alter().
+ */
+function edgeryders_users_overrides_username_alter(&$name, $account) {
+  // Just print the raw name (sanitized).
+  $name = check_plain($account->name);
+  return;
+}

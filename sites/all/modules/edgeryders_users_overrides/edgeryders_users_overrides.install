@@ -1,0 +1,9 @@
+<?php
+
+/**
+ * Implements hook_enable().
+ */
+function edgeryders_users_overrides_enable() {
+  db_query("TRUNCATE TABLE {realname}");
+}
+
