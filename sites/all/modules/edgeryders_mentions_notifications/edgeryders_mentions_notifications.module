@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Edgeryders mentions notifications feature.
+ */
+
+include_once 'edgeryders_mentions_notifications.features.inc';
