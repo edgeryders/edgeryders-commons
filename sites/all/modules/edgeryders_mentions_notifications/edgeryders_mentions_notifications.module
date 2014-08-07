@@ -6,6 +6,40 @@
 
 include_once 'edgeryders_mentions_notifications.features.inc';
 
+/**
+ * Parse mentions.
+ *
+ * Code taken from PHP-Instagram project:
+ * https://github.com/galen/PHP-Instagram-API/blob/master/Instagram/Helper.php.
+ */
+function parseMentions($text, \Closure $callback) {
+  return preg_replace_callback( '~@(.+?)(?=\b)~', $callback, $text);
+}
+
+/**
+ * Implements hook_message_subscribe_get_subscribers().
+ */
+function edgeryders_mentions_notifications_message_subscribe_get_subscribers($message, $subscribe_options, $context) {
+  // Extract users from the message.
+  if ($message->type == 'edgeryders_mentions_node') {
+    try {
+      $wrapper = entity_metadata_wrapper('message', $message->mid);
+      $uids = array();
+      foreach ($wrapper->field_target_users->getIterator() as $delta => $account) {
+        // $term_wrapper may now be accessed as a taxonomy term wrapper.
+        $uids[] = $account->getIdentifier();
+      }
+      return $uids;
+    }
+    catch (EntityMetadataWrapperException $exc) {
+      watchdog(
+        'edgeryders_mentions_notifications',
+        'See '  . __FUNCTION__ . '() <pre>' .  $exc->getTraceAsString() . '</pre>',
+         NULL, WATCHDOG_ERROR
+      );
+    }
+  }
+}
 
 /**
  * Implements hook_node_insert().
@@ -15,8 +49,61 @@ include_once 'edgeryders_mentions_notifications.features.inc';
  * see https://drupal.org/node/1918666.
  *
  */
-function edgeryders_mentions_notifications_node_insert_disabled($node) {
-  drupal_register_shutdown_function('edgeryders_mentions_notifications_send_message_on_shutdown', $node);
+function edgeryders_mentions_notifications_node_insert($node) {
+  $message_type = 'edgeryders_mentions_node';
+
+  // We need to clear the static loading cache so that the node body will be
+  // ready in time for token replacement for the  message.
+  entity_get_controller('node')->resetCache(array($node->nid));
+
+  // Allow other modules to specify an alternative messagge type to use.
+  $hook = 'node_insert';
+  drupal_alter('commons_notify_message_selection', $message_type, $hook, $node);
+
+  // Create message.
+  try {
+    $account = user_load($node->uid);
+    $message = message_create($message_type, array('uid' => $account->uid, 'timestamp' => $node->created));
+
+    // Save reference to the node in the node reference field.
+    $wrapper = entity_metadata_wrapper('message', $message);
+    $node_wrapper = entity_metadata_wrapper('node', $node);
+    $body = $node_wrapper->body->value->value(array('decode' => TRUE));
+
+    // Extract mentions.
+    $users_mentioned = array();
+    $wrapper->field_target_nodes[] = $node;
+    $mentions = parseMentions($body, function($mention) use (&$users_mentioned) {
+      if (isset($mention[1])) {
+        $account_name = str_replace('_', ' ', $mention[1]);
+        $target_account = user_load_by_name($account_name);
+        if ($target_account->uid) {
+          $users_mentioned[] = $target_account;
+        }
+      }
+    });
+    if (count($users_mentioned)) {
+      $wrapper->field_target_users = $users_mentioned;
+      $wrapper->save();
+      $options = array(
+        'rendered fields' => array(
+          'message_notify_email_subject' => 'field_message_rendered_subject',
+          'message_notify_email_body' => 'field_message_rendered_body',
+        ),
+      );
+      message_subscribe_send_message('node', $node, $message, array(
+        'email' => $options,
+        'notify message owner' => FALSE,
+      ));
+    }
+  }
+  catch (EntityMetadataWrapperException $exc) {
+    watchdog(
+      'edgeryders_mentions_notifications',
+      'See '  . __FUNCTION__ . '() <pre>' .  $exc->getTraceAsString() . '</pre>',
+       NULL, WATCHDOG_ERROR
+    );
+  }
 }
 
 /**
@@ -25,49 +112,12 @@ function edgeryders_mentions_notifications_node_insert_disabled($node) {
  * in edgeryders_mentions_notifications_node_insert.
  */
 function edgeryders_mentions_notifications_send_message_on_shutdown($node) {
-  // Create a message when a user creates a new node.
-  // Borrowed from message_example.module:
-  // Save the message and assign it to the user realm. Since another user,
-  // usually an admin might create the node, but populate the author field
-  // with another user, we make sure the user realm is populated with the
-  // node's author, instead of the acting user (although in most cases it
-  // would be the same user).
-  // The following example demonstrates that we don't need to explicitly set
-  // the realm to the user, since if no realms are provided then the message
-  // is automatically assigned to the user passed in the function, or if no
-  // user object is provided, then to the acting user.
-  $message_type = 'edgeryders_mentions_node';
-  // We need to clear the static loading cache so that the node body will be
-  // ready in time for token replacement for the  message.
-  entity_get_controller('node')->resetCache(array($node->nid));
-  if (!isset($node->og_group_ref[LANGUAGE_NONE][0]['target_id'])) {
-    $message_type = 'commons_notify_node_created_no_groups';
-  }
-  // Allow other modules to specify an alternative messagge type to use.
-  $hook = 'node_insert';
-  drupal_alter('commons_notify_message_selection', $message_type, $hook, $node);
-  $account = user_load($node->uid);
-  $message = message_create($message_type, array('uid' => $account->uid, 'timestamp' => $node->created));
-  // Save reference to the node in the node reference field.
-  $wrapper = entity_metadata_wrapper('message', $message);
-  // We use a multiple value field in case we wish to use the same
-  // field for grouping messages in the future
-  // (eg http://drupal.org/node/1757060).
-  $wrapper->field_target_nodes[] = $node;
-  $wrapper->save();
-  $options = array(
-    'rendered fields' => array(
-      'message_notify_email_subject' => 'field_message_rendered_subject',
-      'message_notify_email_body' => 'field_message_rendered_body',
-    ),
-  );
-  message_subscribe_send_message('node', $node, $message, array('email' => $options));
 }
 
 /**
  * Implements hook_comment_insert().
  */
-function edgeryders_mentions_notifications_comment_insert_disabled($comment) {
+function edgeryders_mentions_notifications_comment_insert($comment) {
   $account = user_load($comment->uid);
   $node = node_load($comment->nid);
   $message_type = 'commons_notify_comment_created';
@@ -99,4 +149,3 @@ function edgeryders_mentions_notifications_comment_insert_disabled($comment) {
   );
   message_subscribe_send_message('comment', $comment, $message, array('email' => $options));
 }
-
