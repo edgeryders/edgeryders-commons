@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Variable file for Elite Growth migration
+ * Variable file for Commons tasks settings.
  */
 
 /**
