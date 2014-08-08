@@ -16,12 +16,6 @@ function parseMentions($text, \Closure $callback) {
   return preg_replace_callback( '~@(.+?)(?=\b)~', $callback, $text);
 }
 
-function edgeryders_mentions_notifications_message_subscribe_get_subscribers_alter($uids, $values) {
-  //dd('edgeryders_mentions_notifications_message_subscribe_get_subscribers_alter');
-  //dd($uids);
-  //dd($values);
-}
-
 /**
  * Implements hook_message_subscribe_get_subscribers().
  */
@@ -104,7 +98,7 @@ function edgeryders_mentions_notifications_node_insert($node) {
       ),
       array(
         'notify message owner' => FALSE,
-        'entity access' => FALSE,
+        'entity access' => TRUE,
         'skip context' => TRUE,
       ));
     }
@@ -119,17 +113,9 @@ function edgeryders_mentions_notifications_node_insert($node) {
 }
 
 /**
- * Send a notification for newly created nodes.
- * This function is registered as a shutdown function
- * in edgeryders_mentions_notifications_node_insert.
- */
-function edgeryders_mentions_notifications_send_message_on_shutdown($node) {
-}
-
-/**
  * Implements hook_comment_insert().
  */
-function edgeryders_mentions_notifications_comment_insert($comment) {
+function edgeryders_mentions_notifications_comment_insert_disabled($comment) {
   $account = user_load($comment->uid);
   $node = node_load($comment->nid);
   $message_type = 'commons_notify_comment_created';
