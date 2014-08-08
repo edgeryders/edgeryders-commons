@@ -38,7 +38,8 @@ function edgeryders_mentions_notifications_extract_mentions($text) {
  */
 function edgeryders_mentions_notifications_message_subscribe_get_subscribers($message, $subscribe_options, $context) {
   // Extract users from the message.
-  if ($message->type == 'edgeryders_mentions_node') {
+  $message_types = array('edgeryders_mentions_node', 'edgeryders_mentions_comment');
+  if (in_array($message->type, $message_types)) {
     try {
       $wrapper = entity_metadata_wrapper('message', $message->mid);
       $uids = array();
@@ -140,7 +141,7 @@ function edgeryders_mentions_notifications_comment_insert($comment) {
           'message_notify_email_body' => 'field_message_rendered_body',
         ),
       );
-      message_subscribe_send_message('node', $node, $message, array(
+      message_subscribe_send_message('comment', $comment, $message, array(
         'email' => $options,
       ),
       array(

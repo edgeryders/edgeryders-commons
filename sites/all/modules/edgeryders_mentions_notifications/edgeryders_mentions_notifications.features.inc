@@ -28,13 +28,26 @@ function edgeryders_mentions_notifications_default_message_type() {
       "token options" : { "clear" : 0 },
       "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" }
     },
-    "language" : "und",
+    "language" : "en",
     "arguments" : null,
-    "message_text" : { "und" : [
+    "message_text" : {
+      "en" : [
         {
-          "value" : "New comment on [message:field-target-nodes:0:title_field]",
+          "value" : "\\u003Cp\\u003E[Edgeryders] You have been mentioned in a comment.\\u003C\\/p\\u003E\\r\\n",
           "format" : "filtered_html",
-          "safe_value" : "New comment on [message:field-target-nodes:0:title_field]"
+          "safe_value" : "\\n\\u003Cp\\u003E[Edgeryders] You have been mentioned in a comment.\\u003C\\/p\\u003E\\n"
+        },
+        {
+          "value" : "Hi [message:user:name],\\r\\n\\r\\nYou have been mentioned by \\u0022[message:field-target-comments:0:author]\\u0022 on \\u0022[message:field-target-nodes:0:title_field]\\u0022 [commons-groups:in-groups-text]:\\r\\n\\r\\n\\u0022[message:field-target-comments:0:title]\\r\\n\\r\\n[message:field-target-comments:0:body]\\u0022\\r\\n\\r\\nRead \\u0026 respond: [message:field-target-comments:0:url]\\r\\nUpdate your notification settings: [site:url]\\/user\\/[message:user:uid]\\/notification-settings",
+          "format" : "plain_text",
+          "safe_value" : "\\u003Cp\\u003EHi [message:user:name],\\u003C\\/p\\u003E\\n\\u003Cp\\u003EYou have been mentioned by \\u0026quot;[message:field-target-comments:0:author]\\u0026quot; on \\u0026quot;[message:field-target-nodes:0:title_field]\\u0026quot; [commons-groups:in-groups-text]:\\u003C\\/p\\u003E\\n\\u003Cp\\u003E\\u0026quot;[message:field-target-comments:0:title]\\u003C\\/p\\u003E\\n\\u003Cp\\u003E[message:field-target-comments:0:body]\\u0026quot;\\u003C\\/p\\u003E\\n\\u003Cp\\u003ERead \\u0026amp; respond: [message:field-target-comments:0:url]\\u003Cbr \\/\\u003E\\nUpdate your notification settings: [site:url]\\/user\\/[message:user:uid]\\/notification-settings\\u003C\\/p\\u003E\\n"
+        }
+      ],
+      "und" : [
+        {
+          "value" : "\\u003Cp\\u003ENew comment on [message:field-target-nodes:0:title_field]\\u003C\\/p\\u003E\\n",
+          "format" : "filtered_html",
+          "safe_value" : "\\n\\u003Cp\\u003ENew comment on [message:field-target-nodes:0:title_field]\\u003C\\/p\\u003E\\n"
         }
       ]
     },
