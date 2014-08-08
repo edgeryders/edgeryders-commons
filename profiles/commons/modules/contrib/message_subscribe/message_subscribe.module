@@ -130,7 +130,6 @@ function message_subscribe_send_message($entity_type, $entity, Message $message,
     // If we use a queue, it will be deleted.
     return $message;
   }
-
   foreach ($uids as $uid => $values) {
     $last_uid = $uid;
     // Clone the message in case it will need to be saved, it won't

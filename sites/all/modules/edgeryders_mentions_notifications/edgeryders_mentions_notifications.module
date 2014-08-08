@@ -16,6 +16,12 @@ function parseMentions($text, \Closure $callback) {
   return preg_replace_callback( '~@(.+?)(?=\b)~', $callback, $text);
 }
 
+function edgeryders_mentions_notifications_message_subscribe_get_subscribers_alter($uids, $values) {
+  //dd('edgeryders_mentions_notifications_message_subscribe_get_subscribers_alter');
+  //dd($uids);
+  //dd($values);
+}
+
 /**
  * Implements hook_message_subscribe_get_subscribers().
  */
@@ -27,7 +33,8 @@ function edgeryders_mentions_notifications_message_subscribe_get_subscribers($me
       $uids = array();
       foreach ($wrapper->field_target_users->getIterator() as $delta => $account) {
         // $term_wrapper may now be accessed as a taxonomy term wrapper.
-        $uids[] = $account->getIdentifier();
+        $uid = $account->getIdentifier();
+        $uids[$uid] = array('notifiers' => array('email' => 'email'));
       }
       return $uids;
     }
@@ -58,7 +65,6 @@ function edgeryders_mentions_notifications_node_insert($node) {
 
   // Allow other modules to specify an alternative messagge type to use.
   $hook = 'node_insert';
-  drupal_alter('commons_notify_message_selection', $message_type, $hook, $node);
 
   // Create message.
   try {
@@ -72,13 +78,15 @@ function edgeryders_mentions_notifications_node_insert($node) {
 
     // Extract mentions.
     $users_mentioned = array();
+    $uids = array();
     $wrapper->field_target_nodes[] = $node;
-    $mentions = parseMentions($body, function($mention) use (&$users_mentioned) {
+    $mentions = parseMentions($body, function($mention) use (&$users_mentioned, &$uids) {
       if (isset($mention[1])) {
         $account_name = str_replace('_', ' ', $mention[1]);
         $target_account = user_load_by_name($account_name);
         if ($target_account->uid) {
           $users_mentioned[] = $target_account;
+          $uids[] = $target_account->uid;
         }
       }
     });
@@ -93,7 +101,11 @@ function edgeryders_mentions_notifications_node_insert($node) {
       );
       message_subscribe_send_message('node', $node, $message, array(
         'email' => $options,
+      ),
+      array(
         'notify message owner' => FALSE,
+        'entity access' => FALSE,
+        'skip context' => TRUE,
       ));
     }
   }
