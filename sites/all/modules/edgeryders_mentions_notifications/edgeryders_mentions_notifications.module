@@ -13,7 +13,7 @@ include_once 'edgeryders_mentions_notifications.features.inc';
  * https://github.com/galen/PHP-Instagram-API/blob/master/Instagram/Helper.php.
  */
 function parseMentions($text, \Closure $callback) {
-  return preg_replace_callback( '~@(.+?)(?=\b)~', $callback, $text);
+  return preg_replace_callback('~@(.+?)(?=\b)~', $callback, $text);
 }
 
 /**
@@ -44,11 +44,6 @@ function edgeryders_mentions_notifications_message_subscribe_get_subscribers($me
 
 /**
  * Implements hook_node_insert().
- * In order to respect node access restrictions, we register
- * a shutdown function, because node access grants haven not been written
- * by the time hook_node_insert() is invoked. For more background,
- * see https://drupal.org/node/1918666.
- *
  */
 function edgeryders_mentions_notifications_node_insert($node) {
   $message_type = 'edgeryders_mentions_node';
