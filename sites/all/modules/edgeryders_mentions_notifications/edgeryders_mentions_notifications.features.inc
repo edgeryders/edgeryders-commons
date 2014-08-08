@@ -50,13 +50,31 @@ function edgeryders_mentions_notifications_default_message_type() {
       "token options" : { "clear" : 0 },
       "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" }
     },
-    "language" : "und",
+    "language" : "en",
     "arguments" : null,
-    "message_text" : { "und" : [
+    "message_text" : {
+      "en" : [
         {
-          "value" : "New [message:field-target-nodes:0:content-type] in [message:field-target-nodes:0:og-group-ref:0:title]: [message:field-target-nodes:0:title_field]",
-          "format" : "filtered_html",
-          "safe_value" : "New [message:field-target-nodes:0:content-type] in [message:field-target-nodes:0:og-group-ref:0:title]: [message:field-target-nodes:0:title_field]"
+          "value" : "[Edgeryders] You have been mentioned.\\r\\n",
+          "format" : "plain_text",
+          "safe_value" : "\\u003Cp\\u003E[Edgeryders] You have been mentioned.\\u003C\\/p\\u003E\\n"
+        },
+        {
+          "value" : "Hi [message:user:name],\\r\\n\\r\\nYou have been mentioned by \\u0022[message:field-target-nodes:0:author]\\u0022 on \\u0022[message:field-target-nodes:0:title_field]\\u0022.\\r\\n\\r\\nPermalink: [message:field-target-nodes:0:url]\\r\\nAdd a comment at [message:field-target-nodes:0:url]#comment-form\\r\\n\\r\\nChange email notifications at [site:url]user\\/[message:user:uid]\\/notification-settings\\r\\n\\r\\n--\\r\\n[site:name]",
+          "format" : "plain_text",
+          "safe_value" : "\\u003Cp\\u003EHi [message:user:name],\\u003C\\/p\\u003E\\n\\u003Cp\\u003EYou have been mentioned by \\u0026quot;[message:field-target-nodes:0:author]\\u0026quot; on \\u0026quot;[message:field-target-nodes:0:title_field]\\u0026quot;.\\u003C\\/p\\u003E\\n\\u003Cp\\u003EPermalink: [message:field-target-nodes:0:url]\\u003Cbr \\/\\u003E\\nAdd a comment at [message:field-target-nodes:0:url]#comment-form\\u003C\\/p\\u003E\\n\\u003Cp\\u003EChange email notifications at [site:url]user\\/[message:user:uid]\\/notification-settings\\u003C\\/p\\u003E\\n\\u003Cp\\u003E--\\u003Cbr \\/\\u003E\\n[site:name]\\u003C\\/p\\u003E\\n"
+        }
+      ],
+      "und" : [
+        {
+          "value" : "New mentions\\n",
+          "format" : "plain_text",
+          "safe_value" : "\\u003Cp\\u003ENew mentions\\u003C\\/p\\u003E\\n"
+        },
+        {
+          "value" : "Mentions body",
+          "format" : "plain_text",
+          "safe_value" : "\\u003Cp\\u003EMentions body\\u003C\\/p\\u003E\\n"
         }
       ]
     },
