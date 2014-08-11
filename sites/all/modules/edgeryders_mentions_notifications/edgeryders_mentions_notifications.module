@@ -25,7 +25,9 @@ function edgeryders_mentions_notifications_extract_mentions($text) {
     if (isset($mention[1])) {
       $account_name = str_replace('_', ' ', $mention[1]);
       $target_account = user_load_by_name($account_name);
-      if ($target_account->uid) {
+      $mentions_notification
+        = (!isset($account->data['mentions_notifications']) ? 1 : $account->data['mentions_notifications']);
+      if ($target_account->uid && $mentions_notification) {
         $users_mentioned[] = $target_account;
       }
     }
@@ -158,4 +160,34 @@ function edgeryders_mentions_notifications_comment_insert($comment) {
        NULL, WATCHDOG_ERROR
     );
   }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function edgeryders_mentions_notifications_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'commons_follow_ui_notification_settings_form') {
+    global $user;
+    ctools_add_js('auto-submit');
+    $form['mentions_notifications'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send mentions notifications'),
+      '#description' => t("If checked, you'll automatically sign up for email notifications when someone mention your user."),
+      '#default_value' => (isset($user->data['mentions_notifications']) ? $user->data['mentions_notifications'] : 1),
+      '#attributes' => array('class' => array('ctools-auto-submit')),
+    );
+    $form['submit']['#attributes']['class'][] = 'ctools-use-ajax';
+    $form['submit']['#attributes']['class'][] = 'ctools-auto-submit-click';
+    $form['#submit'][] = 'edgeryders_mentions_notifications_form_submit';
+  }
+}
+
+/**
+ * Submit function for edgeryders_mentions_notifications_form_alter.
+ */
+function edgeryders_mentions_notifications_form_submit($form, &$form_state) {
+  global $user;
+  $values = $form_state['values'];
+  $mentions_notification = array('mentions_notifications' => $values['mentions_notifications']);
+  user_save($user, array('data' => $mentions_notification));
 }
