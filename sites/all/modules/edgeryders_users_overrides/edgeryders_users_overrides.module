@@ -61,6 +61,9 @@ function edgeryders_users_overrides_tokens($type, $tokens, array $data = array()
  */
 function edgeryders_users_overrides_username_alter(&$name, $account) {
   // Just print the raw name (sanitized).
+  if ($_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+    return $name;
+  }
   $name = check_plain($account->name);
   return;
 }
