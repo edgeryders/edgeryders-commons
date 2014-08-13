@@ -5,6 +5,7 @@ package = Edgeryders
 version = 7.x-1.0-dev
 project = edgeryders_mentions_notifications
 dependencies[] = text
+dependencies[] = commons_notify
 features[ctools][] = strongarm:strongarm:1
 features[features_api][] = api:2
 features[field_instance][] = message-edgeryders_mentions_comment-field_message_rendered_body
