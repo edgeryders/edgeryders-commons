@@ -63,7 +63,8 @@ function edgeryders_users_overrides_username_alter(&$name, $account) {
   // Just print the raw name (sanitized).
   // We need this in order to be used correctly by ckeditor_mentions module,
   // as we need the username with underscore just in that context.
-  if ($_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+  if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+      && ($_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest')) {
     return $name;
   }
   $name = check_plain($account->name);

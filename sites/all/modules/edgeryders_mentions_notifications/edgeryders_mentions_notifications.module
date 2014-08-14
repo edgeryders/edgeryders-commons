@@ -101,7 +101,7 @@ function edgeryders_mentions_notifications_node_insert($node) {
       ),
       array(
         'notify message owner' => FALSE,
-        'entity access' => TRUE,
+        'entity access' => variable_get_value('edgeryders_mentions_notifications_check_access'),
         'skip context' => TRUE,
       ));
     }
@@ -148,7 +148,7 @@ function edgeryders_mentions_notifications_comment_insert($comment) {
       ),
       array(
         'notify message owner' => FALSE,
-        'entity access' => TRUE,
+        'entity access' => variable_get_value('edgeryders_mentions_notifications_check_access'),
         'skip context' => TRUE,
       ));
     }
