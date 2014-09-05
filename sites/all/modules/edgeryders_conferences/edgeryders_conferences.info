@@ -1,0 +1,4 @@
+name = Edgeryders conferences
+description = TODO: Description of module
+core = 7.x
+files[] = tests/edgeryders_conferences.test

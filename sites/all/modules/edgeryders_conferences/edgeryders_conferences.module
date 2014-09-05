@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * @file edgeryders_conferences.module
+ * TODO: Enter file description here.
+ */
+
+/**
+ * Implements hook_views_api().
+ */
+function edgeryders_conferences_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'edgeryders_conferences') . '/',
+    'template path' => drupal_get_path('module', 'edgeryders_conferences') . '/themes',
+  );
+}
+
+/**
+ * Implements hook_views_post_render().
+ *
+ * Needed to let embedding views (using views_field_view) evaluate correctly when the 
+ * registration_status view has no results. Because without this, registration_status 
+ * returns an empty enclosing tag, so that the "No results behavior" of embedding views 
+ * is not triggered.
+ *
+ * Currently used in: view conference_events.
+ */
+function edgeryders_conferences_views_post_render(&$view, &$output, &$cache) {
+
+  if ($view->name == 'registration_status' && count($view->result) == 0) {
+    $output = '';
+  }
+
+  /*
+  // Debug helper.
+  if ($view->name == 'registration_status') {
+    $output = count($view->result);
+  }
+  */
+}
+
