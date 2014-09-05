@@ -351,7 +351,7 @@ function rules_link_trigger_form($form, &$form_state, $rules_link, $entity_id) {
     '#type' => 'hidden',
     '#value' => $entity_id,
   );
-  return confirm_form($form, $rules_link->getSettingTranslation('confirm_question'), '', $rules_link->getSettingTranslation('confirm_description'));
+  return confirm_form($form, filter_xss_admin($rules_link->getSettingTranslation('confirm_question')), '', filter_xss_admin($rules_link->getSettingTranslation('confirm_description')));
 }
 
 /**
@@ -470,7 +470,6 @@ function template_preprocess_rules_link(&$variables) {
   }
 
   $variables['href'] = check_plain(url($variables['href'], $variables['options']));
-  $variables['title'] = check_plain($variables['title']);
   $variables['attr'] = drupal_attributes($variables['attr']);
 }
 
