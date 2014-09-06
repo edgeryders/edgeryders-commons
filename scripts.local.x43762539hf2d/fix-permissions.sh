@@ -44,10 +44,13 @@ chmod a+r .htaccess* .htpasswd robots.txt* sites/edgeryders.eu/files/.htaccess s
 chmod a+r sites/edgeryders.eu/edgeryders.aliases.drushrc.php;
 chmod u+x scripts.local.x43762539hf2d/fix-permissions.sh;
 
-# Exceptions from file permissions: files that need to be served by Apache directly (media, aggregated and non-aggregated CSS and JS).
+# Exceptions from file permissions: files that need to be served by Apache directly.
+# (Includes media, aggregated and non-aggregated CSS and JS, static HTML.)
 chmod a+r+X sites/ sites/edgeryders.eu/;
 find sites/edgeryders.eu/files/ -type d | xargs -I "{}" chmod u+w,a+r+x {};
 find sites/edgeryders.eu/private/ -type d | xargs -I "{}" chmod u+w {};
-chmod -R u+w,a+r sites/edgeryders.eu/files/*; # Care: * needed to avoid making .htaccess writable.
-find . -name "*.css" -or -name "*.js" -or -name "*.jpg" -or -name "*.png" -or -name "*.svg" | xargs -I "{}" chmod a+r {};
+# Care: * needed to avoid making .htaccess writable here:
+chmod -R u+w,a+r sites/edgeryders.eu/files/*;
+# The following use of -prune is based on a tip from http://stackoverflow.com/a/1489405/1270008
+find . -path "./stats" -prune -or \( -name "*.css" -or -name "*.js" -or -name "*.jpg" -or -name "*.png" -or -name "*.gif" -or -name "*.svg" -or -name "*.html" \) -print | xargs -I "{}" chmod a+r {};
 
