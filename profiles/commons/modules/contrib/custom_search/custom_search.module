@@ -141,9 +141,9 @@ function custom_search_form_alter(&$form, &$form_state, $form_id) {
               unset($form['advanced']['language']['#options'][$key]);
             } 
           }
-        }
-        if (!count($form['advanced']['language']['#options'])) {
-          unset($form['advanced']['language']['#type']);
+          if (!count($form['advanced']['language']['#options'])) {
+            unset($form['advanced']['language']['#type']);
+          }
         }
 
         if (!variable_get('custom_search_results_search', TRUE)) {

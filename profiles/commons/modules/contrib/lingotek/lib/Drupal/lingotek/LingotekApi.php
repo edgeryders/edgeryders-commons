@@ -102,6 +102,7 @@ class LingotekApi {
         if (isset($result->errors) && $result->errors) {
           LingotekLog::error(t('Request to send document to Lingotek failed: ') . print_r($result->errors, TRUE), array());
           $translatable_object->setStatus(LingotekSync::STATUS_FAILED);
+          $translatable_object->setLastError(is_array($result->errors) ? array_shift($result->errors) : $result->errors);
           return FALSE;
         }
         if (get_class($translatable_object) == 'LingotekConfigChunk') {
@@ -149,7 +150,7 @@ class LingotekApi {
 
     $this->addAdvancedParameters($parameters, $translatable_object);
 
-    $result = $this->request('updateContentDocument', $parameters);
+    $result = $this->request('updateContentDocumentAsync', $parameters);
 
     if ($result) {
       if (get_class($translatable_object) == 'LingotekConfigChunk') {

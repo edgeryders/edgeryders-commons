@@ -5,7 +5,7 @@ core = 7.x
 
 projects[acquia_connector][type] = "module"
 projects[acquia_connector][subdir] = "contrib"
-projects[acquia_connector][version] = "2.13"
+projects[acquia_connector][version] = "2.14"
 
 projects[addressfield][type] = "module"
 projects[addressfield][subdir] = "contrib"
@@ -31,7 +31,11 @@ projects[apachesolr_og][subdir] = "contrib"
 projects[apachesolr_og][download][type] = "git"
 projects[apachesolr_og][download][url] = "http://git.drupal.org/project/apachesolr_og.git"
 projects[apachesolr_og][download][branch] = "7.x-1.x"
-projects[apachesolr_og][download]revision] = "49820b4a4fcff7c1c4efe449da033fb6d8711ac5"
+projects[apachesolr_og][download][revision] = "49820b4a4fcff7c1c4efe449da033fb6d8711ac5"
+
+; Check the user object before trying to display a result.
+; https://drupal.org/node/2077281#comment-7807937
+projects[apachesolr_og][patch][] = "https://drupal.org/files/issues/apachesolr_og-check-for-anonymous.patch"
 
 projects[apachesolr_proximity][type] = "module"
 projects[apachesolr_proximity][subdir] = "contrib"
@@ -68,7 +72,7 @@ projects[ckeditor][download][revision] = "b69a9ac"
 
 ; Only load CSS when necessary.
 ; https://drupal.org/node/1370894
-projects[ckeditor][patch][] = "https://drupal.org/files/issues/attach-ckeditor-css-1370894-7.patch"
+projects[ckeditor][patch][] = "https://drupal.org/files/issues/attach-ckeditor-css-1370894-8.patch"
 
 ; Accomodate latest Media changes.
 ; https://drupal.org/node/2159403
@@ -80,14 +84,14 @@ projects[ckeditor][patch][] = "https://drupal.org/files/issues/ckeditor-remove-e
 
 projects[ctools][type] = "module"
 projects[ctools][subdir] = "contrib"
-projects[ctools][version] = "1.4"
+projects[ctools][download][type] = "git"
+projects[ctools][download][url] = "http://git.drupal.org/project/ctools.git"
+projects[ctools][download][branch] = "7.x-1.x"
+projects[ctools][download][revision] = "e720f61d"
 
 projects[custom_search][type] = "module"
 projects[custom_search][subdir] = "contrib"
-projects[custom_search][download][type] = "git"
-projects[custom_search][download][url] = "http://git.drupal.org/project/custom_search.git"
-projects[custom_search][download][branch] = "7.x-1.x"
-projects[custom_search][download][revision] = "20144e64494c83a448067d587e59df5d7e4780bb"
+projects[custom_search][version] = "1.16"
 
 ; Avoid akward sanitization of user-entered search strings.
 ; https://drupal.org/node/2012210
@@ -121,11 +125,14 @@ projects[elements][version] = "1.4"
 
 projects[email_registration][type] = "module"
 projects[email_registration][subdir] = "contrib"
-projects[email_registration][version] = "1.1"
+projects[email_registration][download][type] = "git"
+projects[email_registration][download][url] = "http://git.drupal.org/project/email_registration.git"
+projects[email_registration][download][branch] = "7.x-1.x"
+projects[email_registration][download][revision] = "1656416"
 
 projects[entity][type] = "module"
 projects[entity][subdir] = "contrib"
-projects[entity][version] = "1.3"
+projects[entity][version] = "1.5"
 
 projects[entitycache][type] = "module"
 projects[entitycache][subdir] = "contrib"
@@ -141,7 +148,7 @@ projects[entityreference][version] = "1.1"
 
 projects[entityreference_prepopulate][type] = "module"
 projects[entityreference_prepopulate][subdir] = "contrib"
-projects[entityreference_prepopulate][version] = "1.4"
+projects[entityreference_prepopulate][version] = "1.5"
 
 projects[entity_translation][type] = "module"
 projects[entity_translation][subdir] = "contrib"
@@ -159,21 +166,28 @@ projects[file_entity][type] = "module"
 projects[file_entity][subdir] = "contrib"
 projects[file_entity][version] = "2.0-alpha3"
 
+; Issue #2081713: Fix undefined index errors with empty (remote) files.
+; https://drupal.org/node/2081713
+projects[file_entity][patch][] = "https://drupal.org/files/issues/add-filesize-checks-2081713-13.patch"
+
 projects[flag][type] = "module"
 projects[flag][subdir] = "contrib"
-projects[flag][version] = "2.1"
+projects[flag][version] = "2.2"
 
 ; Issue #1965760: Manually set taxonomy term flag types because its different.
 ; http://drupal.org/node/1965760
-projects[flag][patch][] = "http://drupal.org/files/1965760-flag-taxonomy-types.patch"
-
-; Issue #1971980: Features export does not take flag_definition_alter into account.
-; http://drupal.org/node/1971980
-projects[flag][patch][] = "http://drupal.org/files/flag-features_export-1971980-3.patch"
+projects[flag][patch][] = "https://drupal.org/files/issues/1965760.29.flag_.entity-tokens.patch"
 
 projects[flag_abuse][type] = "module"
 projects[flag_abuse][subdir] = "contrib"
-projects[flag_abuse][version] = "2.0-alpha1"
+projects[flag_abuse][version] = "2.0"
+
+projects[gravatar][type] = "module"
+projects[gravatar][subdir] = "contrib"
+projects[gravatar][download][type] = "git"
+projects[gravatar][download][url] = "http://git.drupal.org/project/gravatar.git"
+projects[gravatar][download][branch] = "7.x-1.x"
+projects[gravatar][download][revision] = "bb2f81e6"
 
 projects[http_client][type] = "module"
 projects[http_client][subdir] = "contrib"
@@ -181,7 +195,7 @@ projects[http_client][version] = "2.4"
 
 projects[i18n][type] = "module"
 projects[i18n][subdir] = "contrib"
-projects[i18n][version] = "1.10"
+projects[i18n][version] = "1.11"
 
 projects[i18nviews][type] = "module"
 projects[i18nviews][subdir] = "contrib"
@@ -196,7 +210,7 @@ projects[kissmetrics][version] = "1.0-rc3"
 
 projects[l10n_update][type] = "module"
 projects[l10n_update][subdir] = "contrib"
-projects[l10n_update][version] = "1.0-beta3"
+projects[l10n_update][version] = "1.0"
 
 projects[libraries][type] = "module"
 projects[libraries][subdir] = "contrib"
@@ -204,7 +218,7 @@ projects[libraries][version] = "2.2"
 
 projects[lingotek][type] = "module"
 projects[lingotek][subdir] = "contrib"
-projects[lingotek][version] = "5.02"
+projects[lingotek][version] = "5.06"
 
 projects[link][type] = "module"
 projects[link][subdir] = "contrib"
@@ -215,7 +229,15 @@ projects[media][subdir] = "contrib"
 projects[media][download][type] = "git"
 projects[media][download][url] = "http://git.drupal.org/project/media.git"
 projects[media][download][branch] = "7.x-2.x"
-projects[media][download][revision] = "6e9c99b"
+projects[media][download][revision] = "b2c2d78"
+
+; New filelfield browser widget is massively confusing the user
+; https://drupal.org/comment/8570379#comment-8570379
+projects[media][patch][] = "https://drupal.org/files/issues/automatically-attach-files-2216329-2.patch"
+
+projects[media_oembed][type] = "module"
+projects[media_oembed][subdir] = "contrib"
+projects[media_oembed][version] = "2.1"
 
 projects[memcache][type] = "module"
 projects[memcache][subdir] = "contrib"
@@ -243,7 +265,7 @@ projects[message_notify][version] = "2.5"
 
 projects[message_subscribe][type] = "module"
 projects[message_subscribe][subdir] = "contrib"
-projects[message_subscribe][version] = "1.0-rc1"
+projects[message_subscribe][version] = "1.0-rc2"
 
 projects[metatag][type] = "module"
 projects[metatag][subdir] = "contrib"
@@ -255,7 +277,7 @@ projects[module_filter][version] = "1.8"
 
 projects[mollom][type] = "module"
 projects[mollom][subdir] = "contrib"
-projects[mollom][version] = "2.8"
+projects[mollom][version] = "2.10"
 
 projects[navbar][type] = "module"
 projects[navbar][subdir] = "contrib"
@@ -285,7 +307,7 @@ projects[oembed][download][revision] = "9aa5303"
 
 projects[og][type] = "module"
 projects[og][subdir] = "contrib"
-projects[og][version] = "2.5"
+projects[og][version] = "2.7"
 
 ; Auto-assign role to group manager broken on groups with overridden roles.
 ; https://drupal.org/node/2005800#comment-7684873
@@ -301,7 +323,10 @@ projects[panelizer][version] = "3.1"
 
 projects[panels][type] = "module"
 projects[panels][subdir] = "contrib"
-projects[panels][version] = "3.4"
+projects[panels][download][type] = "git"
+projects[panels][download][url] = "http://git.drupal.org/project/panels.git"
+projects[panels][download][branch] = "7.x-3.x"
+projects[panels][download][revision] = "8059bda2b"
 
 projects[paranoia][type] = "module"
 projects[paranoia][subdir] = "contrib"
@@ -369,14 +394,7 @@ projects[r4032login][version] = "1.7"
 
 projects[radioactivity][type] = "module"
 projects[radioactivity][subdir] = "contrib"
-projects[radioactivity][download][type] = "git"
-projects[radioactivity][download][url] = "http://git.drupal.org/project/radioactivity.git"
-projects[radioactivity][download][branch] = "7.x-2.x"
-projects[radioactivity][download][revision] = "aee21dbed4f54d0e626e3c19ecc550bf1ec656f6"
-
-; Radioactivity not compatible with Memcache module.
-; http://drupal.org/node/1860216
-projects[radioactivity][patch][] = "http://drupal.org/files/radioactivity-memcache.patch"
+projects[radioactivity][version] = "2.9"
 
 projects[rate][type] = "module"
 projects[rate][subdir] = "contrib"
@@ -392,7 +410,11 @@ projects[rate][patch][] = "https://drupal.org/files/issues/attach-rate-css-21808
 
 projects[realname][type] = "module"
 projects[realname][subdir] = "contrib"
-projects[realname][version] = "1.1"
+projects[realname][version] = "1.2"
+
+; Realname entityreference autocomplete API update
+; https://drupal.org/node/2225889
+projects[realname][patch][] = "https://drupal.org/files/issues/2225889-realname-correct-menu-2.patch"
 
 projects[redirect][type] = "module"
 projects[redirect][subdir] = "contrib"
@@ -408,7 +430,7 @@ projects[rich_snippets][version] = "1.0-beta3"
 
 projects[rules][type] = "module"
 projects[rules][subdir] = "contrib"
-projects[rules][version] = "2.6"
+projects[rules][version] = "2.7"
 
 projects[schemaorg][type] = "module"
 projects[schemaorg][subdir] = "contrib"
@@ -420,7 +442,7 @@ projects[search_facetapi][version] = "1.0-beta2"
 
 projects[sharethis][type] = "module"
 projects[sharethis][subdir] = "contrib"
-projects[sharethis][version] = "2.5"
+projects[sharethis][version] = "2.6"
 
 projects[smartcrop][type] = "module"
 projects[smartcrop][subdir] = "contrib"
@@ -455,11 +477,15 @@ projects[translation_helpers][version] = "1.0"
 
 projects[variable][type] = "module"
 projects[variable][subdir] = "contrib"
-projects[variable][version] = "2.4"
+projects[variable][version] = "2.5"
 
 projects[views][type] = "module"
 projects[views][subdir] = "contrib"
 projects[views][version] = "3.7"
+
+; Update Views Content access filter per core performance improvements.
+; https://drupal.org/comment/8516039#comment-8516039
+projects[views][patch][] = "https://drupal.org/files/issues/2204257-views-content-access-filter-core-depends-on-core-patch.patch"
 
 projects[views_bulk_operations][type] = "module"
 projects[views_bulk_operations][subdir] = "contrib"
@@ -477,6 +503,10 @@ projects[views_load_more][type] = "module"
 projects[views_load_more][subdir] = "contrib"
 projects[views_load_more][version] = "1.2"
 
+; Suppress notice error when loading more content from views_load_more.
+; https://drupal.org/node/2207467
+projects[views_load_more][patch][] = "https://drupal.org/files/issues/fix-notice-undefined-index-2152935-3.patch"
+
 projects[votingapi][type] = "module"
 projects[votingapi][subdir] = "contrib"
 projects[votingapi][version] = "2.11"
@@ -492,23 +522,18 @@ projects[adaptivetheme][subdir] = "contrib"
 projects[adaptivetheme][download][type] = "git"
 projects[adaptivetheme][download][url] = "http://git.drupal.org/project/adaptivetheme.git"
 projects[adaptivetheme][download][branch] = "7.x-3.x"
-projects[adaptivetheme][download][revision] = "b4b38c3c01d066e733c2942020c51962cd64231c"
-
-; Remove link around comment creation date.
-; http://drupal.org/node/1427226#comment-6638836
-projects[adaptivetheme][patch][] = "http://drupal.org/files/remove-comment-creation-link-2018081-1.patch"
-
-; Add styling for link buttons.
-; https://drupal.org/comment/8289329#comment-8289329
-projects[adaptivetheme][patch][] = "https://drupal.org/files/issues/add-link-button-styling-2159783-1.patch"
+projects[adaptivetheme][download][revision] = "18693ff59db7cb3171f282a982d04fe6544b63a1"
 
 projects[ember][type] = "theme"
 projects[ember][subdir] = "contrib"
-projects[ember][version] = "2.0-alpha2"
+projects[ember][download][type] = "git"
+projects[ember][download][url] = "http://git.drupal.org/project/ember.git"
+projects[ember][download][branch] = "7.x-2.x"
+projects[ember][download][revision] = "caf4df7"
 
 projects[sky][type] = "theme"
 projects[sky][subdir] = "contrib"
-projects[sky][version] = "3.0-rc1"
+projects[sky][version] = "3.0"
 
 ; Libraries.
 ; NOTE: These need to be listed in http://drupal.org/packaging-whitelist.
@@ -517,9 +542,21 @@ libraries[backbone][download][type] = "get"
 libraries[backbone][type] = "libraries"
 libraries[backbone][download][url] = "https://github.com/jashkenas/backbone/archive/1.1.0.tar.gz"
 
-libraries[ckeditor][download][type] = get
+libraries[ckeditor][download][type] = "get"
+libraries[ckeditor][download][url] = "http://download.cksource.com/CKEditor/CKEditor/CKEditor%204.3.4/ckeditor_4.3.4_full.zip"
 libraries[ckeditor][type] = "libraries"
-libraries[ckeditor][download][url] = "http://download.cksource.com/CKEditor%20for%20Drupal/edit/ckeditor_4.3.2_edit.zip"
+
+libraries[ckeditor_lineutils][download][type] = "get"
+libraries[ckeditor_lineutils][download][url] = "http://download.ckeditor.com/lineutils/releases/lineutils_4.3.4.zip"
+libraries[ckeditor_lineutils][type] = "libraries"
+libraries[ckeditor_lineutils][subdir] = "ckeditor/plugins"
+libraries[ckeditor_lineutils][directory_name] = "lineutils"
+
+libraries[ckeditor_widget][download][type] = "get"
+libraries[ckeditor_widget][download][url] = "http://download.ckeditor.com/widget/releases/widget_4.3.4.zip"
+libraries[ckeditor_widget][type] = "libraries"
+libraries[ckeditor_widget][subdir] = "ckeditor/plugins"
+libraries[ckeditor_widget][directory_name] = "widget"
 
 libraries[modernizr][download][type] = "get"
 libraries[modernizr][type] = "libraries"
@@ -527,7 +564,7 @@ libraries[modernizr][download][url] = "https://github.com/Modernizr/Modernizr/ar
 
 libraries[timeago][download][type] = "get"
 libraries[timeago][type] = "libraries"
-libraries[timeago][download][url] = "https://raw.github.com/rmm5t/jquery-timeago/v1.3.1/jquery.timeago.js"
+libraries[timeago][download][url] = "https://raw.github.com/rmm5t/jquery-timeago/v1.4.1/jquery.timeago.js"
 
 libraries[underscore][download][type] = "get"
 libraries[underscore][type] = "libraries"

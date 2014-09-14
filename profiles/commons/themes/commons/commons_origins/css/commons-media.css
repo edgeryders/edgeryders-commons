@@ -34,51 +34,139 @@ table[id^="field-media-values"] a.tabledrag-handle .handle {
 table[id^="field-media-values"] .form-item {
   padding-left: 6.875em;
 }
-table[id^="field-media-values"] .preview {
-  float: left;
-  font-size: 1em;
-  margin-left: -6.875em;
-  width: 6.25em;
-  min-height: 6.25em;
-  background: #858585;
-  cursor: pointer;
-}
-@media only screen and (max-width: 480px) {
-  table[id^="field-media-values"] .form-item {
-    padding-left: 0;
-  }
-  table[id^="field-media-values"] .preview {
-    display: block;
-    float: none;
-    margin: 10px auto;
-  }
-}
-table[id^="field-media-values"] .media-item {
-  padding: 0;
-  background-color: transparent;
-  border: none;
-}
-table[id^="field-media-values"] .media-item img {
-  display: block;
-  margin: 0;
-}
-table[id^="field-media-values"] .media-item .label-wrapper {
-  position: static;
-}
-table[id^="field-media-values"] .media-item .label-wrapper label {
-  margin: 0;
-}
-table[id^="field-media-values"] .media-widget .preview .media-item {
-  margin: 0;
-}
-table[id^="field-media-values"] .media-widget .preview .media-item .label-wrapper label {
-  color: white;
-}
 table[id^="field-media-values"] .media-widget .button {
   display: block;
 }
 @media only screen and (min-width: 769px) {
   table[id^="field-media-values"] .media-widget .button {
     max-width: 50%;
+  }
+}
+
+.form-type-media .preview {
+  background: url('../images/icons-sfd37165efe.png') 0 -789px no-repeat;
+  width: 26px;
+  height: 20px;
+  display: inline-block;
+  margin-right: 3px;
+  position: relative;
+  top: 1px;
+  margin-right: 10px;
+}
+@media only screen and (max-width: 480px) {
+  .form-type-media .preview {
+    display: block;
+    float: none;
+    margin: 10px auto;
+  }
+  .form-type-media .button,
+  .form-type-media input[type="submit"] {
+    display: block;
+    float: none;
+    margin: 10px auto;
+    width: 100%;
+  }
+}
+
+.media-wrapper {
+  position: absolute;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #555555;
+  min-width: 100%;
+  max-width: 100%;
+  -webkit-box-shadow: 0 0 0 0.5625em rgba(0, 0, 0, 0.2);
+  -moz-box-shadow: 0 0 0 0.5625em rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 0.5625em rgba(0, 0, 0, 0.2);
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.media-wrapper,
+.media-wrapper .ui-corner-all {
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  -ms-border-radius: 0;
+  -o-border-radius: 0;
+  border-radius: 0;
+}
+.media-wrapper .ui-dialog-title {
+  display: block;
+  margin: 0;
+  line-height: 1.5em;
+  font-size: 2.25em;
+  font-family: "Helvetica Neue", helvetica, "Segoe UI", segoe, "Ubuntu", "Droid Sans", "Arial", sans-serif;
+  font-weight: 200;
+}
+.media-wrapper .ui-dialog-titlebar {
+  position: relative;
+  padding: 0.70711em 1em 0;
+  border: none;
+  color: #848484;
+  background: #303030;
+}
+.media-wrapper .ui-dialog-titlebar-close {
+  position: absolute;
+  float: none;
+  display: block;
+  top: 0.35355em;
+  right: 0.35355em;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  line-height: 1em;
+  color: white;
+  background: none;
+  font-weight: normal;
+}
+.media-wrapper .ui-dialog-titlebar-close:hover {
+  text-decoration: none;
+  border: none;
+}
+.media-wrapper .ui-dialog-titlebar-close:before {
+  content: "\2715";
+}
+.media-wrapper .ui-dialog-content {
+  position: relative;
+  border: 0;
+  background: none;
+  overflow: auto;
+  zoom: 1;
+}
+.media-wrapper .ui-dialog-buttonpane {
+  text-align: left;
+  border-width: 1px 0 0 0;
+  background-image: none;
+  margin: .5em 0 0 0;
+  padding: .3em 1em .5em .4em;
+}
+.media-wrapper .ui-dialog-buttonpane .ui-dialog-buttonset {
+  float: right;
+}
+.media-wrapper .ui-dialog-buttonpane button {
+  margin: .5em .4em .5em 0;
+  cursor: pointer;
+}
+.media-wrapper .ui-resizable-se {
+  width: 14px;
+  height: 14px;
+  right: 3px;
+  bottom: 3px;
+}
+.media-wrapper .ui-draggable .ui-dialog-titlebar {
+  cursor: move;
+}
+@media (min-width: 22.85714em) {
+  .media-wrapper {
+    min-width: 0;
+  }
+}
+@media (min-width: 28.57143em) {
+  .media-wrapper .ui-dialog-titlebar {
+    padding-right: 2em;
+    padding-left: 2em;
   }
 }

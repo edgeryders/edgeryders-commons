@@ -49,7 +49,7 @@ function at_core_touch_icons_form(&$form, $theme_name) {
   // iPad retina
   $form['at']['ati']['icon-paths']['apple_touch_icon_path_ipad_retina'] = array(
     '#type' => 'textfield',
-    '#title' => t('iPad Retina: 156x156'),
+    '#title' => t('iPad Retina: 152x152'),
     '#description' => t('Apple touch icon for iPads with retina displays.'),
     '#field_prefix' => $theme_name . '/',
     '#default_value' => check_plain(at_get_setting('apple_touch_icon_path_ipad_retina')),

@@ -68,11 +68,13 @@
 
   > [class*="active"],
   > :hover {
-    border-color: $color-link-alternate;
-
     a {
       color: $color-text;
     }
+  }
+
+  > [class*="active"] {
+    border-color: $color-link-alternate;
   }
 
   a {

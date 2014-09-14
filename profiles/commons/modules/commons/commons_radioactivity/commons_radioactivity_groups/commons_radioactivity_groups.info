@@ -11,9 +11,9 @@ features[features_api][] = api:2
 features[views_view][] = commons_radioactivity_groups_active_in_group
 features[views_view][] = commons_radioactivity_groups_most_active
 
-; Information added by Drupal.org packaging script on 2014-02-12
-version = "7.x-3.9"
+; Information added by Drupal.org packaging script on 2014-05-08
+version = "7.x-3.12"
 core = "7.x"
 project = "commons"
-datestamp = "1392234217"
+datestamp = "1399579131"
 

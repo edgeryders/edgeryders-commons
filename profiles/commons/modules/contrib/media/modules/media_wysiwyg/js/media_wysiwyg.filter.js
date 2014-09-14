@@ -155,6 +155,10 @@
           }
         });
         delete(file_info.attributes['data-file_info']);
+
+        // Extract the link text, if there is any.
+        file_info.link_text = element.find('a').html();
+
       }
 
       return file_info;

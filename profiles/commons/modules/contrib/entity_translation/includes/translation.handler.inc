@@ -15,21 +15,6 @@
 interface EntityTranslationHandlerInterface {
 
   /**
-   * Injects the translation handler factory.
-   */
-  public function setFactory(EntityTranslationHandlerFactory $factory);
-
-  /**
-   * Registers a child translation handler for the given entity.
-   */
-  public function addChild($entity_type, $entity);
-
-  /**
-   * Removes a previously registered child translation handler.
-   */
-  public function removeChild($entity_type, $entity);
-
-  /**
    * Loads the translation data into the wrapped entity.
    */
   public function loadTranslations();
@@ -113,9 +98,6 @@ interface EntityTranslationHandlerInterface {
 
   /**
    * Returns TRUE if the entity is currently being translated.
-   *
-   * @deprecated This is no longer used and will be removed before the first
-   *   stable release.
    */
   public function isTranslating();
 
@@ -124,9 +106,6 @@ interface EntityTranslationHandlerInterface {
    *
    * @param $translating
    *   A boolean value.
-   *
-   * @deprecated This is no longer used and will be removed before the first
-   *   stable release.
    */
   public function setTranslating($translating);
 
@@ -142,22 +121,6 @@ interface EntityTranslationHandlerInterface {
    *   The entity to be translated.
    */
   public function setEntity($entity);
-
-  /**
-   * Returns the wrapped entity.
-   *
-   * @param return
-   *   The wrapped entity.
-   */
-  public function getEntity();
-
-  /**
-   * Returns the wrapped entity type.
-   *
-   * @param return
-   *   The wrapped entity type.
-   */
-  public function getEntityType();
 
   /**
    * Checks that the wrapped entity matches the give entity
@@ -339,20 +302,6 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
   protected $entityId;
   protected $bundle;
 
-  /**
-   * The translation handler factory.
-   *
-   * @var EntityTranslationHandlerFactory
-   */
-  protected $factory;
-
-  /**
-   * The translation handler hierarchy storage.
-   *
-   * @var array
-   */
-  protected $children = array();
-
   private $entityForm;
   private $translating;
   private $outdated;
@@ -443,46 +392,6 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
       $links = language_negotiation_get_switch_links(LANGUAGE_TYPE_INTERFACE, $path);
     }
     return $links;
-  }
-
-  /**
-   * @see EntityTranslationHandlerInterface::setFactory()
-   */
-  public function setFactory(EntityTranslationHandlerFactory $factory) {
-    $this->factory = $factory;
-  }
-
-  /**
-   * @see EntityTranslationHandlerInterface::addChild()
-   */
-  public function addChild($entity_type, $entity) {
-    if (!empty($this->factory)) {
-      $handler = $this->factory->getHandler($entity_type, $entity);
-      $handler->setFormLanguage($this->getFormLanguage());
-      $handler->setSourceLanguage($this->getSourceLanguage());
-      // Avoid registering more than one child handler for each entity.
-      $hid = $this->factory->getHandlerId($entity_type, $entity);
-      $this->children[$hid] = $handler;
-    }
-  }
-
-  /**
-   * @see EntityTranslationHandlerInterface::removeChild()
-   */
-  public function removeChild($entity_type, $entity) {
-    if (!empty($this->factory)) {
-      $hid = $this->factory->getHandlerId($entity_type, $entity);
-      unset($this->children[$hid]);
-    }
-  }
-
-  /**
-   * Proxies the specified method invocation to a child translation handler.
-   */
-  protected function notifyChildren($method, $args) {
-    foreach ($this->children as $handler) {
-      call_user_func_array(array($handler, $method), $args);
-    }
   }
 
   /**
@@ -621,9 +530,6 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
         }
       }
     }
-
-    $args = func_get_args();
-    $this->notifyChildren(__FUNCTION__, $args);
   }
 
   /**
@@ -694,7 +600,7 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
     if (empty($this->getTranslations()->data)) {
       $this->initTranslations();
     }
-    elseif (!empty($langcode)) {
+    elseif (!empty($langcode) && !$this->isTranslating()) {
       $this->setOriginalLanguage($langcode);
     }
   }
@@ -796,17 +702,13 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
   public function setOriginalLanguage($langcode) {
     $translations = $this->getTranslations();
 
-    if (!isset($translations->original) || $translations->original != $langcode) {
-      if (isset($translations->original)) {
-        $translations->data[$langcode] = $translations->data[$translations->original];
-        $translations->data[$langcode]['language'] = $langcode;
-        unset($translations->data[$translations->original]);
-      }
-
-      $translations->original = $langcode;
-      $args = func_get_args();
-      $this->notifyChildren(__FUNCTION__, $args);
+    if (isset($translations->original) && $translations->original != $langcode) {
+      $translations->data[$langcode] = $translations->data[$translations->original];
+      $translations->data[$langcode]['language'] = $langcode;
+      unset($translations->data[$translations->original]);
     }
+
+    $translations->original = $langcode;
   }
 
   /**
@@ -844,25 +746,6 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
 
     // Update bundle and entity id properties.
     list($this->entityId, , $this->bundle) = entity_extract_ids($this->entityType, $this->entity);
-
-    // Initialize the handler id if needed.
-    if (!empty($this->factory)) {
-      $this->factory->getHandlerId($this->entityType, $entity);
-    }
-  }
-
-  /**
-   * @see EntityTranslationHandlerInterface::getEntity()
-   */
-  public function getEntity() {
-    return $this->entity;
-  }
-
-  /**
-   * @see EntityTranslationHandlerInterface::getEntityType()
-   */
-  public function getEntityType() {
-    return $this->entityType;
   }
 
   /**
@@ -884,8 +767,6 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
           $translation['translate'] = 1;
         }
       }
-      $args = func_get_args();
-      $this->notifyChildren(__FUNCTION__, $args);
     }
   }
 
@@ -1041,8 +922,6 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
    */
   public function setFormLanguage($langcode) {
     $this->formLanguage = $langcode;
-    $args = func_get_args();
-    $this->notifyChildren(__FUNCTION__, $args);
   }
 
   /**
@@ -1057,8 +936,6 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
    */
   public function setSourceLanguage($langcode) {
     $this->sourceLanguage = $langcode;
-    $args = func_get_args();
-    $this->notifyChildren(__FUNCTION__, $args);
   }
 
   /**
@@ -1097,15 +974,11 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
     $languages = language_list();
     $access = user_access('translate any entity') || user_access("translate $this->entityType entities");
 
-    // Store contextual information in the form state.
-    $form_state['entity_translation']['form_langcode'] = $form_langcode;
-    $form_state['entity_translation']['source_langcode'] = $this->getSourceLanguage();
     // The only way to determine whether we are editing the original values is
     // comparing form language and entity language. Since a language change
     // might render impossible to make this check after form submission, we
     // store the related information here.
     $form_state['entity_translation']['is_translation'] = $is_translation;
-
 
     // Adjust page title to specify the current language being edited, if we
     // have at least one translation.
@@ -1146,7 +1019,7 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
     // Add the entity language switcher.
     $this->entityFormLanguageWidget($form, $form_state);
 
-    if ($is_translation && isset($form['actions']['delete'])) {
+    if ($is_translation) {
       // Replace the delete button with the delete translation one.
       if (!$new_translation) {
         $weight = 100;
@@ -1269,9 +1142,8 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
    * Either remove access or add a translatability clue depending on the current
    * user's "edit translation shared fields" permissions.
    */
-  public function entityFormSharedElements(&$element, $access = NULL) {
-    static $ignored_types, $shared_labels;
-
+  public function entityFormSharedElements(&$element) {
+    static $ignored_types, $shared_labels, $access;
     if (!isset($ignored_types)) {
       $ignored_types = array_flip(array('actions', 'value', 'hidden', 'vertical_tabs', 'token'));
     }
@@ -1284,7 +1156,7 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
 
     foreach (element_children($element) as $key) {
       if (!isset($element[$key]['#type'])) {
-        $this->entityFormSharedElements($element[$key], $access);
+        $this->entityFormSharedElements($element[$key]);
       }
       else {
         // Ignore non-widget form elements.
@@ -1311,7 +1183,7 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
   public function entityFormLanguageWidget(&$form, &$form_state) {
     if (entity_translation_enabled($this->entityType, $this->bundle)) {
       $is_new = $this->isNewEntity();
-      $is_translation = !empty($form_state['entity_translation']['is_translation']);
+      $is_translation = !$is_new && !empty($form_state['entity_translation']['is_translation']);
       $translations = $this->getTranslations();
       $settings = entity_translation_settings($this->entityType, $this->bundle);
       $languages = entity_translation_languages($this->entityType, $this->entity);
@@ -1319,8 +1191,8 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
 
       foreach ($languages as $langcode => $language) {
         // Disable languages for existing translations, so it is not possible to
-        // switch this entity to some language which is already in the
-        // translation set.
+        // switch this entity to some language which is already in the translation
+        // set.
         if (!isset($translations->data[$langcode]) || empty($translations->data[$langcode]['source'])) {
           $options[$langcode] = t($language->name);
         }
@@ -1345,14 +1217,17 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
       }
     }
 
-    // Prepend an empty form element to the form array so that we can update the
-    // form language before any other form handler has been called.
-    $form = array(
-      'entity_translation_entity_form_language_update' => array(
-        '#element_validate' => array('entity_translation_entity_form_language_update'),
-        '#entity_type' => $this->entityType,
-       ),
-    ) + $form;
+    if (!empty($form['actions']['submit']['#submit'])) {
+      $submit = &$form['actions']['submit']['#submit'];
+    }
+    else {
+      if (!isset($form['#submit'])) {
+        $form['#submit'] = array();
+      }
+      $submit = &$form['#submit'];
+    }
+
+    array_unshift($submit, 'entity_translation_language_widget_submit');
   }
 
   /**
@@ -1385,32 +1260,28 @@ class EntityTranslationDefaultHandler implements EntityTranslationHandlerInterfa
   protected function updateFormLanguage($form_state) {
     // Update the form language as it might have changed. We exploit the
     // validation phase to be sure to act as early as possible.
-    $language_key = $this->getLanguageKey();
-    if (isset($form_state['values'][$language_key]) && !$this->isTranslationForm()) {
-      $langcode = $form_state['values'][$language_key];
-      $this->setFormLanguage($langcode);
+    if (isset($form_state['values']['language']) && !$this->isTranslationForm()) {
+      $this->setFormLanguage($form_state['values'][$this->getLanguageKey()]);
     }
   }
 
   /**
    * @see EntityTranslationHandlerInterface::entityFormLanguageWidgetSubmit()
    */
-  public function entityFormLanguageWidgetSubmit($form, &$form_state) {
+  function entityFormLanguageWidgetSubmit($form, &$form_state) {
     $this->updateFormLanguage($form_state);
     $form_langcode = $this->getFormLanguage();
 
     foreach (field_info_instances($this->entityType, $this->bundle) as $instance) {
       $field_name = $instance['field_name'];
-      if (isset($form[$field_name]['#language'])) {
-        $field = field_info_field($field_name);
-        $previous_langcode = $form[$field_name]['#language'];
+      $field = field_info_field($field_name);
+      $previous_langcode = $form[$field_name]['#language'];
 
-        // Handle a possible language change: new language values are inserted,
-        // previous ones are deleted.
-        if ($field['translatable'] && $previous_langcode != $form_langcode && isset($form_state['values'][$field_name][$previous_langcode])) {
-          $form_state['values'][$field_name][$form_langcode] = $form_state['values'][$field_name][$previous_langcode];
-          $form_state['values'][$field_name][$previous_langcode] = array();
-        }
+      // Handle a possible language change: new language values are inserted,
+      // previous ones are deleted.
+      if ($field['translatable'] && $previous_langcode != $form_langcode) {
+        $form_state['values'][$field_name][$form_langcode] = $form_state['values'][$field_name][$previous_langcode];
+        $form_state['values'][$field_name][$previous_langcode] = array();
       }
     }
   }

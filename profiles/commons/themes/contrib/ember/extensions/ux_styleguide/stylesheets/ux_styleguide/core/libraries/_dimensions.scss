@@ -20,3 +20,7 @@ $rhythm-space: ms(-1) !default;
 $rhythm-space-short: ms(-5) !default;
 $inset-space: ms(4) !default;
 $inset-space-short: ms(2) !default;
+
+$breakpoint-small: px-to-em(320px, (16px / $font-size)) !default;
+$breakpoint-medium: px-to-em(480px, (16px / $font-size)) !default;
+$breakpoint-large: px-to-em(980px, (16px / $font-size)) !default;

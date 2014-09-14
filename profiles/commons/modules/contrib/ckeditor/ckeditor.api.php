@@ -48,12 +48,23 @@ function hook_ckeditor_plugin() {
       'path' => drupal_get_path('module', 'my_module') . '/plugin_dir/',
       'buttons' => array(
         'button_name' => array(
-          'icon' => 'path to button icon',
+          'icon' => 'icon/plugin_name.png',
           'label' => 'Button Label',
         )
       )
     )
   );
+}
+
+/**
+ * Hook to extend/change CKEditor plugins.
+ *
+ * @param $plugins
+ *   An associative array of plugins.
+ */
+function hook_ckeditor_plugin_alter(&$plugins) {
+  // Remove a plugin button.
+  unset($plugins['plugin_name']['buttons']['button']);
 }
 
 /**
@@ -79,22 +90,9 @@ function hook_ckeditor_security_filter() {
  *
  * @param $settings
  *   An associative array of settings.
- * @param $conf
- *   An associative array with access to raw profile settings that might be helpful to alter the real $settings.
  */
-function hook_ckeditor_settings_alter(&$settings, $conf) {
+function hook_ckeditor_settings_alter(&$settings) {
   // Change the ckeditor config path.
   $settings['customConfig'] = drupal_get_path('module', 'ckeditor') . '/ckeditor.config.js';
 }
 
-/**
- * Hook that allows to alter the user default settings.
- *
- * @param $settings
- *   An associative array of settings.
- * @param $profile
- *   CKEditor profile information.
- */
-function hook_ckeditor_default_settings_alter(&$settings, $profile) {
-  $settings['show_toggle'] = 'f';
-}

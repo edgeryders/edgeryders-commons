@@ -7,9 +7,9 @@ files[] = lib/DrupalOAuth2Client.inc
 
 
 
-; Information added by drush on 2014-02-12
+; Information added by drush on 2014-05-08
 version = "7.x-1.0-beta2+0-dev"
 core = "7.x"
 project = "oauthconnector"
-datestamp = "1392234254"
+datestamp = "1399579141"
 

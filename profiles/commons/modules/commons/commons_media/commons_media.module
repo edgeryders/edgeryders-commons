@@ -6,6 +6,9 @@
 
 include_once 'commons_media.features.inc';
 
+// Functions to ensure that the private file system is used when embedding files in private group content.
+include_once 'commons_media.private_files.inc';
+
 /**
  * Implements hook_system_info_alter().
  */
@@ -63,7 +66,7 @@ function commons_ajax_upload() {
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
-  list($form, $form_state) = ajax_get_form();
+  list($form, $form_state, $form_id, $form_build_id, $commands) = ajax_get_form();
 
   if (!$form) {
     // Invalid form_build_id.
@@ -101,36 +104,36 @@ function commons_ajax_upload() {
   $js = drupal_add_js();
   $settings = call_user_func_array('array_merge_recursive', $js['settings']['data']);
 
-  $commands = array();
   $commands[] = ajax_command_replace(NULL, $output, $settings);
   return array('#type' => 'ajax', '#commands' => $commands);
 }
 
 /**
- * Implements hook_file_view_alter().
+ * Implements hook_element_info_alter().
  */
-function commons_media_file_view_alter(&$build) {
-  $file_type = $build['#bundle'];
-
-  // Add responsive CSS to image and video files.
-  if ($file_type == 'image' || $file_type == 'video') {
-    $build['#attached']['css'][] = drupal_get_path('module', 'commons_media') . '/commons_media.css';
-  }
+function commons_media_element_info_alter(&$type) {
+  $type['media']['#process'][] = 'commons_media_simplify_media_buttons';
 }
 
 /**
- * Implements hook_preprocess_oembed().
+ * Extra #process callback which simplifies the media element buttons.
  */
-function commons_media_preprocess_oembed(&$variables) {
-  $embed = $variables['embed'];
+function commons_media_simplify_media_buttons($element, $edit, &$form_state) {
+  // Remove extraneous elements.
+  $element['#title_display'] = 'invisible';
 
-  // Video and rich type must have HTML content.
-  // Wrap the HTML content in a <div> to allow it to be made responsive.
-  if (in_array($embed['type'], array('video', 'rich'))) {
-    $embed['html'] = '<div class="oembed">' . $embed['html'] . '</div>';
-  }
+  return $element;
+}
 
-  $variables['embed'] = $embed;
+/**
+ * Implements hook_page_build().
+ */
+function commons_media_page_build(&$page) {
+  $page['page_bottom']['commons_media']['#attached']['css'] = array(
+    drupal_get_path('module', 'commons_media') . '/commons_media.css' => array(
+      'every_page' => TRUE,
+    ),
+  );
 }
 
 /**
@@ -138,6 +141,9 @@ function commons_media_preprocess_oembed(&$variables) {
  */
 function commons_media_filter_default_formats_alter(&$formats) {
   if (module_exists('media_wysiwyg')) {
+    // Allow markup from remote media.
+    $formats['filtered_html']['filters']['filter_html']['settings']['allowed_html'] = '<a> <em> <strong> <u> <cite> <blockquote> <code> <ul> <ol> <li> <dl> <dt> <dd> <h4> <h5> <h6>  <p> <br> <img> <strike> <iframe></iframe>';
+
     // Enable the media filter.
     $formats['filtered_html']['filters'] += array(
       'media_filter' => array(
@@ -153,6 +159,9 @@ function commons_media_filter_default_formats_alter(&$formats) {
  */
 function commons_media_ckeditor_profile_defaults_alter(&$profiles) {
   if (module_exists('media_wysiwyg')) {
+    // Disable the advanced content filter.
+    $profiles['Advanced']['settings']['allowed_content'] = 'f';
+
     // Add the media button.
     $profiles['Advanced']['settings']['toolbar'] = '[
     [\'Format\'],
@@ -171,4 +180,114 @@ function commons_media_ckeditor_profile_defaults_alter(&$profiles) {
       ),
     );
   }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function commons_media_form_file_entity_add_upload_alter(&$form, &$form_state, $form_id) {
+  // Automatically upload selected files.
+  if ($form['#step'] == 1) {
+    $form['#attached']['js'][] = drupal_get_path('module', 'commons_media') . '/commons_media_autoupload.js';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function commons_media_form_media_internet_add_alter(&$form, &$form_state, $form_id) {
+  if (isset($form['embed_code'])) {
+    $form['embed_code']['#description'] = t('Enter a URL or link to the media you would like to embed, such as a video or image. You can upload video from a range of providers, such as YouTube, Flickr or Vimeo.');
+  }
+}
+
+/**
+ * Implements hook_media_format_form_prepare_alter().
+ */
+function commons_media_media_wysiwyg_format_form_prepare_alter(&$form, &$form_state, $media) {
+  // Remove the ability to override field values through WYSIWYG.
+  $form['options']['fields']['#access'] = FALSE;
+
+  // Attach JavaScript to automatically embed files.
+  $form['#attached']['js'][] = drupal_get_path('module', 'commons_media') . '/commons_media_autoembed.js';
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function commons_media_entity_presave($entity, $type) {
+  // Only proceed if the private file system has been configured.
+  if (!variable_get('file_private_path', FALSE)) {
+    return;
+  }
+
+  list($entity_id, $entity_vid, $entity_bundle) = entity_extract_ids($type, $entity);
+
+  // Only proceed if the entity has been configured as group content.
+  if (!og_is_group_content_type($type, $entity_bundle)) {
+    return;
+  }
+
+  // Loop over all the file and image fields attached to this entity.
+  foreach (_commons_media_get_file_and_image_fields($entity, $type) as $field_name) {
+    // Iterate over the items arrays for each language.
+    foreach (array_keys($entity->{$field_name}) as $langcode) {
+      $items = isset($entity->{$field_name}[$langcode]) ? $entity->{$field_name}[$langcode] : array();
+
+      // Ensure that the private file system is used when attaching files to
+      // private group content.
+      foreach ($items as $delta => $item) {
+        // Move files to the private file system if the content is private.
+        if ($entity->group_content_access[LANGUAGE_NONE][0]['value'] == 2) {
+          $source_file = file_load($item['fid']);
+
+          // Only move public files.
+          if (file_uri_scheme($source_file->uri) == 'public') {
+            $usage = file_usage_list($source_file);
+
+            // Only move files that aren't currently in use.
+            if (empty($usage)) {
+              $scheme = 'private://';
+              $uri = file_stream_wrapper_uri_normalize($scheme . $source_file->filename);
+              file_move($source_file, $uri, FILE_EXISTS_RENAME);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Returns an array of image field names from a specific entity.
+ *
+ * @param $entity
+ *   The entity variable passed through hook_entity_presave().
+ * @param $type
+ *   The entity type variable passed through hook_entity_presave().
+ *
+ * @return array
+ *   An array of file and image field names or an empty array if none are found.
+ */
+function _commons_media_get_file_and_image_fields($entity, $type) {
+  $collected_fields = array();
+
+  // Determine the list of instances to iterate on.
+  list(, , $bundle) = entity_extract_ids($type, $entity);
+  $instances = field_info_instances($type, $bundle);
+  $fields = field_info_fields();
+
+  // Iterate through the instances and collect results.
+  foreach ($instances as $instance) {
+    $field_name = $instance['field_name'];
+
+    // Only collect file and image fields.
+    if ($fields[$field_name]['type'] == 'file' || $fields[$field_name]['type'] == 'image') {
+      if (isset($entity->{$field_name})) {
+        $collected_fields[] = $field_name;
+      }
+    }
+  }
+
+  return $collected_fields;
 }

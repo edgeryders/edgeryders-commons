@@ -43,6 +43,7 @@ class LingotekEntity implements LingotekTranslatableEntity {
     $this->language = $entity->language;
     $this->language_targets = Lingotek::getLanguagesWithoutSource($this->language);
     $this->entity_type = $entity_type;
+    $this->info = entity_get_info($this->entity_type);
   }
   
   /**
@@ -82,7 +83,7 @@ class LingotekEntity implements LingotekTranslatableEntity {
   public static function loadByLingotekDocumentId($lingotek_document_id) {
     $entity = FALSE;
     
-    $query = db_select('lingotek_entity_metadata', 'l')->fields('l');
+    $query = db_select('{lingotek_entity_metadata}', 'l')->fields('l');
     $query->condition('entity_key', 'document_id');
     $query->condition('value', $lingotek_document_id);
     $result = $query->execute();
@@ -151,8 +152,8 @@ class LingotekEntity implements LingotekTranslatableEntity {
   protected function metadata() {
     $metadata = array();
 
-    $results = db_select('lingotek_entity_metadata', 'meta')
-      ->fields('meta')
+    $results = db_select('{lingotek_entity_metadata}', 'meta')
+        ->fields('meta')
       ->condition('entity_id', $this->getId())
       ->condition('entity_type', $this->entity_type)
       ->execute();
@@ -174,8 +175,8 @@ class LingotekEntity implements LingotekTranslatableEntity {
    *   The value for the specified key, if it exists.
    */
   public function getMetadataValue($key) {
-    return db_select('lingotek_entity_metadata', 'meta')
-      ->fields('meta', array('value'))
+    return db_select('{lingotek_entity_metadata}', 'meta')
+            ->fields('meta', array('value'))
       ->condition('entity_key', $key)
       ->condition('entity_id', $this->getId())
       ->condition('entity_type', $this->getEntityType())
@@ -194,8 +195,8 @@ class LingotekEntity implements LingotekTranslatableEntity {
   public function setMetadataValue($key, $value) {
     $metadata = $this->metadata();
     if (!isset($metadata[$key])) {
-      db_insert('lingotek_entity_metadata')
-        ->fields(array(
+      db_insert('{lingotek_entity_metadata}')
+          ->fields(array(
           'entity_id' => $this->getId(),
           'entity_type' => $this->getEntityType(),
           'entity_key' => $key,
@@ -205,8 +206,8 @@ class LingotekEntity implements LingotekTranslatableEntity {
 
     }
     else {
-      db_update('lingotek_entity_metadata')
-        ->fields(array(
+      db_update('{lingotek_entity_metadata}')
+          ->fields(array(
           'value' => $value
         ))
         ->condition('entity_id', $this->getId())
@@ -225,8 +226,8 @@ class LingotekEntity implements LingotekTranslatableEntity {
   public function deleteMetadataValue($key) {
     $metadata = $this->metadata();
     if (isset($metadata[$key])) {
-      db_delete('lingotek_entity_metadata')
-        ->condition('entity_id', $this->getId())
+      db_delete('{lingotek_entity_metadata}')
+          ->condition('entity_id', $this->getId())
         ->condition('entity_type', $this->getEntityType())
         ->condition('entity_key', $key, 'LIKE')
         ->execute();
@@ -261,11 +262,15 @@ class LingotekEntity implements LingotekTranslatableEntity {
   }
   
   public function getTitle() {
-    if ($this->entity_type == 'node') {
-      return $this->entity->title;
-    } else if ($this->entity_type == 'comment') {
+    if (!empty($this->info['entity keys']['label']) && !empty($this->entity->{$this->info['entity keys']['label']})) {
+      return $this->entity->{$this->info['entity keys']['label']};
+    }
+    if ($this->entity_type == 'comment') {
       return $this->entity->subject;
     }
+    LingotekLog::info('Did not find a label for @entity_type #!entity_id, using default label.',
+        array('@entity_type' => $this->entity_type, '@entity_id' => $this->entity_id));
+    return $this->entity_type . " #" . $this->entity_id;
   }
   
   public function getDescription() {
@@ -293,7 +298,7 @@ class LingotekEntity implements LingotekTranslatableEntity {
    *   The ID associated with this object
    */
   public function getId() {
-    list($id, $vid, $bundle) = entity_extract_ids($this->entity_type, $this->entity);
+    list($id, $vid, $bundle) = lingotek_entity_extract_ids($this->entity_type, $this->entity);
     return $id;
   }
   
@@ -331,23 +336,6 @@ class LingotekEntity implements LingotekTranslatableEntity {
     $id = $this->getId();
     
     if ($type == 'node') {
-      if (!$completed) {
-        //do nothing
-      }
-      else {
-        lingotek_keystore($type, $id, 'target_sync_progress_' . $lingotek_locale, 100);
-
-        $query = db_select('lingotek_entity_metadata');
-        $query->condition('entity_type', 'node');
-        $query->addExpression('AVG(value)');
-
-        $total = $query->condition('entity_key', 'target_sync_progress_%', 'LIKE')
-          ->condition('entity_id', $id)
-          ->execute()->fetchField();
-        lingotek_keystore($type, $id, 'translation_progress', $total);
-
-        lingotek_keystore($type, $id, 'target_sync_last_progress_updated_' . $lingotek_locale, time());
-      }
       // clear any caching from entitycache module to allow the new translation to show immediately
       if (module_exists('entitycache')) {
         cache_clear_all($id, 'cache_entity_node');
@@ -357,6 +345,15 @@ class LingotekEntity implements LingotekTranslatableEntity {
 
   public function setStatus($status) {
     $this->setMetadataValue('node_sync_status', $status);
+    return $this;
+  }
+
+  /**
+   * Set the entity's last error in the entity metadata table
+   */
+  public function setLastError($errors) {
+    $this->setMetadataValue('last_sync_error', substr($errors, 0, 255));
+    return $this;
   }
 
   public function setTargetsStatus($status, $lingotek_locale = 'all') {

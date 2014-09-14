@@ -768,7 +768,7 @@ function file_field_widget_submit($form, &$form_state) {
   $langcode = $element['#language'];
   $parents = $element['#field_parents'];
 
-  $submitted_values = drupal_array_get_nested_value($form_state['values'], array_slice($button['#array_parents'], 0, -2));
+  $submitted_values = drupal_array_get_nested_value($form_state['values'], array_slice($button['#parents'], 0, -2));
   foreach ($submitted_values as $delta => $submitted_value) {
     if (!$submitted_value['fid']) {
       unset($submitted_values[$delta]);
@@ -779,7 +779,7 @@ function file_field_widget_submit($form, &$form_state) {
   $submitted_values = array_values($submitted_values);
 
   // Update form_state values.
-  drupal_array_set_nested_value($form_state['values'], array_slice($button['#array_parents'], 0, -2), $submitted_values);
+  drupal_array_set_nested_value($form_state['values'], array_slice($button['#parents'], 0, -2), $submitted_values);
 
   // Update items.
   $field_state = field_form_get_state($parents, $field_name, $langcode, $form_state);
@@ -999,6 +999,30 @@ function file_field_formatter_view($entity_type, $entity, $field, $instance, $la
   }
 
   return $element;
+}
+
+/**
+ * Determine whether a field references files stored in {file_managed}.
+ *
+ * @param array $field
+ *   A field array.
+ *
+ * @return
+ *   The field column if the field references {file_managed}.fid, typically
+ *   fid, FALSE if it doesn't.
+ */
+
+function file_field_find_file_reference_column($field) {
+  foreach ($field['foreign keys'] as $data) {
+    if ($data['table'] == 'file_managed') {
+      foreach ($data['columns'] as $field_column => $column) {
+        if ($column == 'fid') {
+          return $field_column;
+        }
+      }
+    }
+  }
+  return FALSE;
 }
 
 /**

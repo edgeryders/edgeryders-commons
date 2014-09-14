@@ -204,8 +204,6 @@ function entity_translation_overview($entity_type, $entity, $callback = NULL) {
   }
 
   $handler = entity_translation_get_handler($entity_type, $entity);
-  // Ensure $entity holds an entity object and not an id.
-  $entity = $handler->getEntity();
   $handler->initPathScheme();
 
   // Initialize translations if they are empty.
@@ -286,7 +284,7 @@ function entity_translation_overview($entity_type, $entity, $callback = NULL) {
         // No such translation in the set yet: help user to create it.
         $row_title = $source_name = t('n/a');
 
-        if ($source != $langcode && $handler->getAccess('update') && $handler->getTranslationAccess($langcode)) {
+        if ($source != $langcode && $handler->getAccess('update')) {
           list(, , $bundle) = entity_extract_ids($entity_type, $entity);
           $translatable = FALSE;
 
@@ -384,14 +382,12 @@ function theme_entity_translation_overview_outdated($variables){
  */
 function entity_translation_delete_confirm($form, $form_state, $entity_type, $entity, $langcode) {
   $handler = entity_translation_get_handler($entity_type, $entity);
-  $handler->setFormLanguage($langcode);
   $languages = language_list();
 
   $form = array(
     '#handler' => $handler,
     '#entity_type' => $entity_type,
-    // Ensure $entity holds an entity object and not an id.
-    '#entity' => $handler->getEntity(),
+    '#entity' => $entity,
     '#language' => $langcode,
   );
 

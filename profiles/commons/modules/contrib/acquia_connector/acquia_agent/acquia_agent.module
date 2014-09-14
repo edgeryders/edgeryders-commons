@@ -248,7 +248,7 @@ function acquia_agent_theme() {
  * This check also sends a heartbeat to the Acquia Network unless
  * $params['no_heartbeat'] == 1.
  *
- * @return FALSE, integer (xmlrpc error number), or subscription data
+ * @return xmlrpc error number int or subscription data
  */
 function acquia_agent_check_subscription($params = array()) {
   $current_subscription = acquia_agent_settings('acquia_subscription_data');
@@ -275,6 +275,10 @@ function acquia_agent_check_subscription($params = array()) {
           return $current_subscription;
       }
     }
+    elseif ($subscription === FALSE) {
+      // Occurs when response validation failed so do not invoke status update.
+      return $current_subscription;
+    }
     variable_set('acquia_subscription_data', $subscription);
     // Check if our main subscription is active
     if ($subscription) {
@@ -296,7 +300,7 @@ function acquia_agent_check_subscription($params = array()) {
 function acquia_agent_get_subscription($params = array(), $identifier = NULL, $key = NULL, $acquia_network_address = NULL) {
   // There is an identifier and key, so attempt communication.
   $subscription = array();
-  $subscription['timestamp'] = REQUEST_TIME;
+  $subscription['timestamp'] = time();
 
   // Include version number information.
   acquia_agent_load_versions();
@@ -806,7 +810,7 @@ function _acquia_agent_authenticator($params = array(), $identifier = NULL, $key
   if (empty($key)) {
     $key = acquia_agent_settings('acquia_key');
   }
-  $time = REQUEST_TIME;
+  $time = time();
   $nonce = base64_encode(hash('sha256', drupal_random_bytes(55), TRUE));
   $authenticator['identifier'] = $identifier;
   $authenticator['time'] = $time;
@@ -848,7 +852,7 @@ function _acquia_agent_hmac($key, $time, $nonce, $params) {
  */
 function _acquia_agent_create_authenticator($body, $pass = NULL) {
   $auth = array();
-  $auth['time'] = REQUEST_TIME;
+  $auth['time'] = time();
   $auth['nonce'] = base64_encode(hash('sha256', drupal_random_bytes(55), TRUE));
   if (isset($pass)) {
     $auth['hash'] = _acquia_agent_hmac($pass, $auth['time'], $auth['nonce'], $body);

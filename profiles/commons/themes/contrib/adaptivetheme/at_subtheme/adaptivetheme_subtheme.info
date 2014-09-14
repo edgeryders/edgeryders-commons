@@ -113,10 +113,10 @@
   ; Remove the semicolon to umcomment and clear the sites cache.
 
   ; Page layout plugins
-  :plugins[page_layout][layouts] = layouts/page
+  ;plugins[page_layout][layouts] = layouts/page
 
   ; Panels layout plugins
-  :plugins[panels][layouts] = layouts/panels
+  ;plugins[panels][layouts] = layouts/panels
 
 
 ;----------// Site Features
@@ -471,9 +471,10 @@
   ; Custom CSS
   settings[custom_css] = ''
 
-; Information added by Drupal.org packaging script on 2014-03-23
-version = "7.x-3.2"
+
+; Information added by drush on 2014-05-08
+version = "7.x-3.2+1-dev"
 core = "7.x"
 project = "adaptivetheme"
-datestamp = "1395575059"
+datestamp = "1399579137"
 

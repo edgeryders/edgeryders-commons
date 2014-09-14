@@ -42,7 +42,7 @@ function commons_activity_streams_views_default_views() {
   $handler->display->display_options['empty']['area']['table'] = 'views';
   $handler->display->display_options['empty']['area']['field'] = 'area';
   $handler->display->display_options['empty']['area']['empty'] = TRUE;
-  $handler->display->display_options['empty']['area']['content'] = 'No activity matched the filters you selected.';
+  $handler->display->display_options['empty']['area']['content'] = 'Nobody has performed any activity on the site recently.';
   $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
   /* Relationship: Entity Reference: Referenced Entity */
   $handler->display->display_options['relationships']['field_target_nodes_target_id']['id'] = 'field_target_nodes_target_id';
@@ -79,11 +79,6 @@ function commons_activity_streams_views_default_views() {
   $handler->display->display_options['arguments']['mid']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['mid']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['mid']['break_phrase'] = TRUE;
-  /* Filter criterion: Content access: Access */
-  $handler->display->display_options['filters']['nid']['id'] = 'nid';
-  $handler->display->display_options['filters']['nid']['table'] = 'node_access';
-  $handler->display->display_options['filters']['nid']['field'] = 'nid';
-  $handler->display->display_options['filters']['nid']['relationship'] = 'field_target_nodes_target_id';
   /* Filter criterion: Content: Published or admin */
   $handler->display->display_options['filters']['status_extra']['id'] = 'status_extra';
   $handler->display->display_options['filters']['status_extra']['table'] = 'node';
@@ -147,13 +142,6 @@ function commons_activity_streams_views_default_views() {
   $handler->display->display_options['filters']['status_extra']['table'] = 'node';
   $handler->display->display_options['filters']['status_extra']['field'] = 'status_extra';
   $handler->display->display_options['filters']['status_extra']['relationship'] = 'field_target_nodes_target_id';
-  /* Filter criterion: Content access: Access */
-  $handler->display->display_options['filters']['nid']['id'] = 'nid';
-  $handler->display->display_options['filters']['nid']['table'] = 'node_access';
-  $handler->display->display_options['filters']['nid']['field'] = 'nid';
-  $handler->display->display_options['filters']['nid']['relationship'] = 'field_target_nodes_target_id';
-  $handler->display->display_options['pane_category']['name'] = 'Commons';
-  $handler->display->display_options['pane_category']['weight'] = '0';
 
   /* Display: Activity - Full view */
   $handler = $view->new_display('panel_pane', 'Activity - Full view', 'panel_pane_3');
@@ -178,7 +166,7 @@ function commons_activity_streams_views_default_views() {
     t('‹ previous'),
     t('next ›'),
     t('last »'),
-    t('No activity matched the filters you selected.'),
+    t('Nobody has performed any activity on the site recently.'),
     t('Content entity referenced from field_target_nodes'),
     t('All'),
     t('Show'),
@@ -220,7 +208,7 @@ function commons_activity_streams_views_default_views() {
   $handler->display->display_options['empty']['area']['table'] = 'views';
   $handler->display->display_options['empty']['area']['field'] = 'area';
   $handler->display->display_options['empty']['area']['empty'] = TRUE;
-  $handler->display->display_options['empty']['area']['content'] = 'This person doesn\'t have any activity on the site yet.';
+  $handler->display->display_options['empty']['area']['content'] = 'This person hasn\'t performed any activities on the site yet.';
   $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
   /* Relationship: Entity Reference: Referenced Entity */
   $handler->display->display_options['relationships']['field_target_nodes_target_id']['id'] = 'field_target_nodes_target_id';
@@ -256,11 +244,6 @@ function commons_activity_streams_views_default_views() {
   $handler->display->display_options['arguments']['user']['summary']['number_of_records'] = '0';
   $handler->display->display_options['arguments']['user']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['user']['summary_options']['items_per_page'] = '25';
-  /* Filter criterion: Content access: Access */
-  $handler->display->display_options['filters']['nid']['id'] = 'nid';
-  $handler->display->display_options['filters']['nid']['table'] = 'node_access';
-  $handler->display->display_options['filters']['nid']['field'] = 'nid';
-  $handler->display->display_options['filters']['nid']['relationship'] = 'field_target_nodes_target_id';
   /* Filter criterion: Content: Published or admin */
   $handler->display->display_options['filters']['status_extra']['id'] = 'status_extra';
   $handler->display->display_options['filters']['status_extra']['table'] = 'node';
@@ -324,7 +307,7 @@ function commons_activity_streams_views_default_views() {
     t('‹ previous'),
     t('next ›'),
     t('last »'),
-    t('This person doesn\'t have any activity on the site yet.'),
+    t('This person hasn\'t performed any activities on the site yet.'),
     t('Content entity referenced from field_target_nodes'),
     t('All'),
     t('Activity (Sidebar)'),

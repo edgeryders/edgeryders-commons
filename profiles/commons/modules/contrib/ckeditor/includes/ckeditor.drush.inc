@@ -63,7 +63,7 @@ function ckeditor_drush_download() {
  */
 function drush_ckeditor_post_enable() {
   $modules = func_get_args();
-  if (in_array('ckeditor', $modules) && !drush_get_option('skip')) {
+  if (in_array('ckeditor', $modules)) {
     ckeditor_drush_download();
   }
 }

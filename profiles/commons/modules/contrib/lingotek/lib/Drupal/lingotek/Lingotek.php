@@ -363,7 +363,7 @@ class Lingotek {
    *   An array of Lingotek language codes.
    */
   public static function getLanguages($pluck_field = NULL, $include_disabled = FALSE, $lingotek_locale_to_exclude = NULL) {
-    lingotek_add_missing_locales();
+    lingotek_add_missing_locales(FALSE);
     $languages = array();
 
     foreach (language_list() as $target_language) {
