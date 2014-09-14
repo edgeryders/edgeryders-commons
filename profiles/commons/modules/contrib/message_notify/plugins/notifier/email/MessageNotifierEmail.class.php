@@ -3,9 +3,10 @@
 /**
  * Email notifier.
  */
-class MessageNotifierEmail extends MessageNotifierBase {
-
-  public function deliver(array $output = array()) {
+class MessageNotifierEmail extends MessageNotifierBase
+{
+  public function deliver(array $output = array())
+  {
     $plugin = $this->plugin;
     $message = $this->message;
 
@@ -17,8 +18,7 @@ class MessageNotifierEmail extends MessageNotifierBase {
     $languages = language_list();
     if (!$options['language override']) {
       $lang = !empty($account->language) && $account->language != LANGUAGE_NONE ? $languages[$account->language]: language_default();
-    }
-    else {
+    } else {
       $lang = $languages[$message->language];
     }
 
@@ -29,6 +29,7 @@ class MessageNotifierEmail extends MessageNotifierBase {
     $output['message_entity'] = $message;
 
     $result =  drupal_mail('message_notify', $message->type, $mail, $lang, $output);
+
     return $result['result'];
   }
 
