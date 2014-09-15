@@ -90,3 +90,75 @@ function commons_tasks_views_pre_render(&$view) {
     }
   }
 }
+
+/**
+ * Implements hook_node_update().
+ */
+function commons_tasks_node_update($node) {
+  if ($node->type === 'task') {
+    $wrapper = entity_metadata_wrapper('node', $node);
+    $original_wrapper = entity_metadata_wrapper('node', $node->original);
+    $assignee = $wrapper->field_assignee[0]->value();
+    $assignee_original = $original_wrapper->field_assignee[0]->value();
+    if ($assignee) {
+      $send = TRUE;
+      // Check if we had an original assignee and if they are different.
+      if ($assignee_original && ($assignee->uid === $assignee_original->uid)) {
+        $send = FALSE;
+      }
+      if ($send) {
+        $params['account'] = $assignee;
+        $params['node'] = $node;
+        drupal_mail('commons_tasks', 'assignee_notification', $assignee->mail, user_preferred_language($assignee), $params);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function commons_tasks_node_insert($node) {
+  if ($node->type === 'task') {
+    $wrapper = entity_metadata_wrapper('node', $node);
+    $assignee = $wrapper->field_assignee[0]->value();
+    if ($assignee) {
+      $params['account'] = $assignee;
+      $params['node'] = $node;
+      drupal_mail('commons_tasks', 'assignee_notification', $assignee->mail, user_preferred_language($assignee), $params);
+    }
+  }
+}
+
+/**
+ * Implements hook_mail().
+ */
+function commons_tasks_mail($key, &$message, $params) {
+  if ($key === 'assignee_notification') {
+    $language = $message['language'];
+    $variables = array(
+     'user' => $params['account'],
+     'node' => $params['node'],
+    );
+
+    // Get standard variables.
+    $subject_default = variable_get_value('common_tasks_assignee_notification_subject');
+    $body_default = variable_get_value('common_tasks_assignee_notification_body');
+
+    // Get replaced variables.
+    $subject = token_replace($subject_default, $variables);
+    $body = token_replace($body_default, $variables);
+    $message['subject'] .= $subject;
+    $message['body'][] = $body;
+  }
+}
+
+/**
+ * Returns a mail string for a variable name.
+ *
+ * Used by commons_tasks_mail() and the settings forms to retrieve strings.
+ */
+function _commons_tasks_mail_text($key, $language = NULL, $variables = array(), $replace = TRUE) {
+  $subject = variable_get_value('common_tasks_assignee_notification_subject');
+  $body = variable_get_value('common_tasks_assignee_notification_subject');
+}

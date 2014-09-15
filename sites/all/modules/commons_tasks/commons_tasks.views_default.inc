@@ -100,3 +100,4 @@ function commons_tasks_views_default_views() {
 
   return $export;
 }
+
