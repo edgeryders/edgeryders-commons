@@ -66,6 +66,7 @@ function oembed_field_formatter_view($entity_type, $entity, $field, $instance, $
   $element = array();
 
   foreach ($items as $delta => $item) {
+    $parameters = array();
     $url = url($item['url'], $item + array('external' => TRUE));
     $parameters = $display['settings'];
 

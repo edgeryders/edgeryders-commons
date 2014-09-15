@@ -61,12 +61,6 @@ function lingotek_download_translations_form($form, $form_state, $node, $documen
         $target_status = ($marked_complete) ? LingotekSync::STATUS_READY : LingotekSync::STATUS_PENDING;
         lingotek_keystore('node', $node->nid, 'target_sync_status_' . $lingotek_locale, $target_status);
       }
-      lingotek_keystore('node', $node->nid, 'target_sync_progress_' . $lingotek_locale, $progress_percentage);
-      lingotek_keystore('node', $node->nid, 'target_sync_last_progress_updated_' . $lingotek_locale, time());
-    }
-    $count = count($document_progress->translationTargets);
-    if ($count) {
-      lingotek_keystore('node', $node->nid, 'translation_progress', $sum_progress/$count);// unused
     }
 
     $form['fieldset'] = array(
@@ -185,67 +179,6 @@ function lingotek_push_form_submit($form, $form_state) {
   }
 
   lingotek_entity_upload($node, 'node');
-}
-
-/**
- * Form constructor for the node disassociate form. (Formerly "Reset Translations")
- */
-function lingotek_node_disassociate_form($form, $form_state, $nids = array(), $collapse_fieldset = TRUE) {
-
-  if (isset($form_state['nids'])) {
-    $nids = $form_state['nids'];
-    $collapse_fieldset = FALSE;
-  }
-
-  $form = array();
-  if (!is_array($nids)) {
-    $nids = array($nids);
-  }
-
-  $form['disassociate_translations'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Disassociate Translations'),
-    '#description' => t("Should only be used to change the Lingotek project or TM vault associated with the node’s translation. Disassociates node translations on Lingotek’s servers from the copies downloaded to Drupal. Additional translation using Lingotek will require re-uploading the node’s content to restart the translation process."),
-    '#collapsible' => $collapse_fieldset,
-    '#collapsed' => $collapse_fieldset,
-  );
-
-  $form['disassociate_translations']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Disassociate Translations'),
-  );
-
-  $form['node_id'] = array(
-    '#type' => 'hidden',
-    '#value' => json_encode($nids),
-  );
-
-  return $form;
-}
-
-/**
- * Submit handler for the lingotek_node_disassociate form.
- */
-function lingotek_node_disassociate_form_submit($form, $form_state) {
-  if (isset($form_state['values']['node_id'])) {
-    $drupal_node_ids_json = json_decode($form_state['values']['node_id']);
-  }
-  elseif (isset($form_state['nids'])) {
-    $drupal_node_ids_json = json_decode($form_state['nids']);
-  }
-  $entity_type = isset($form_state['entity_type']) ? $form_state['entity_type'] : 'node';
-  $entity_ids = array();
-  foreach ($drupal_node_ids_json as $id) {
-    $entity_ids[] = $id;
-  }
-  $doc_ids = LingotekSync::getDocIdsFromEntityIds($entity_type, $entity_ids);
-
-  $api = LingotekApi::instance();
-  $api->removeDocument($doc_ids);
-  lingotek_keystore_delete_multiple($entity_type, $entity_ids, 'document_id');
-  lingotek_keystore_delete_multiple($entity_type, $entity_ids, 'node_sync_status');
-
-  drupal_set_message(t('Translations disassociated for @number entities.', array('@number' => count($entity_ids))));
 }
 
 /**
@@ -439,7 +372,7 @@ function lingotek_pm($node) {
       }
       
       /* REMOVE DISASSOCIATE_TRANSLTIONS FORM FROM THE TRANSLATE PAGE, FOR NOW
-      $disassociate_translations_form = drupal_get_form('lingotek_node_disassociate_form', $node->nid);
+      $disassociate_translations_form = drupal_get_form('lingotek_entity_disassociate_form', $node->nid);
       $output['disassociate_translations'] = array(
         '#markup' => drupal_render($disassociate_translations_form),
       );
@@ -702,7 +635,7 @@ function lingotek_workbench_redirect($entity_type, $entity_id, $lingotek_locale)
     cache_clear_all($entity_id, "cache_entity_$entity_type");
   }
 
-  $entity = entity_load_single($entity_type, $entity_id);
+  $entity = lingotek_entity_load_single($entity_type, $entity_id);
 
   if ($entity->language == $drupal_language_code) {
     drupal_goto($entity_type . '/' . $entity_id . '/edit');

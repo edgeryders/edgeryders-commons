@@ -785,8 +785,9 @@ input[id^="edit-next"],
   /* Reset all button fonts to a similar baseline in webkit. */
   font: -webkit-small-control;
   font-family: "Helvetica Neue", helvetica, "Segoe UI", segoe, "Ubuntu", "Droid Sans", "Arial", sans-serif;
-  font-weight: 400;
-  letter-spacing: .06em;
+  font-weight: 700;
+  /* revised to bold by TKO */
+  /*letter-spacing: .06em; this doesn't look good, no need for it TKO */
   text-align: center;
   text-decoration: none;
   cursor: pointer;
@@ -1364,7 +1365,7 @@ input[type="button"][class*="action-item-large"],
 }
 
 body {
-  background: white url('../images/spark_bg_tile.png?1376700820');
+  background: #f5f5f5;
 }
 
 p,
@@ -1442,7 +1443,7 @@ td {
 /* FORM ELEMENTS */
 /* Make fake buttons inherit the given styles. */
 .form-select, .form-select:focus, .form-select:active {
-  background: white url('../images/select_sprite.svg?1388162849') no-repeat right center;
+  background: white url('../images/select_sprite.svg?1391181263') no-repeat right center;
 }
 [dir="ltr"] .form-select {
   padding-right: 3.51961em;
@@ -1515,7 +1516,7 @@ ul.admin-list {
   padding: 0;
 }
 ul.admin-list li {
-  background: url('../images/list-item.png?1376700820') no-repeat scroll 0 0 transparent;
+  background: url('../images/list-item.png?1391020745') no-repeat scroll 0 0 transparent;
   list-style-image: none;
   list-style-type: none;
   margin: 0 0 1em;
@@ -1556,14 +1557,14 @@ div.add-or-remove-shortcuts {
 div.add-or-remove-shortcuts a span.icon {
   display: block;
   width: 24px;
-  background: transparent url('../images/no_shortcut.svg?1388162849') no-repeat scroll 0 0;
+  background: transparent url('../images/no_shortcut.svg?1391020745') no-repeat scroll 0 0;
   height: 24px;
   float: right;
   margin-left: 8px;
 }
 
 div.add-shortcut a:focus span.icon, div.add-shortcut a:hover span.icon {
-  background: transparent url('../images/shortcut.svg?1388162849') no-repeat scroll 0 0;
+  background: transparent url('../images/shortcut.svg?1391020745') no-repeat scroll 0 0;
   -webkit-transition: all 1s;
   -moz-transition: all 1s;
   -o-transition: all 1s;
@@ -1571,10 +1572,10 @@ div.add-shortcut a:focus span.icon, div.add-shortcut a:hover span.icon {
 }
 
 div.remove-shortcut a span.icon {
-  background: transparent url('../images/no_shortcut.svg?1388162849') no-repeat scroll 0 0;
+  background: transparent url('../images/no_shortcut.svg?1391020745') no-repeat scroll 0 0;
 }
 div.remove-shortcut a:focus span.icon, div.remove-shortcut a:hover span.icon {
-  background: transparent url('../images/no_shortcut.svg?1388162849') no-repeat scroll 0 0;
+  background: transparent url('../images/no_shortcut.svg?1391020745') no-repeat scroll 0 0;
   -webkit-transition: all 1s;
   -moz-transition: all 1s;
   -o-transition: all 1s;
@@ -1750,6 +1751,11 @@ body div.form-type-radio div.description, body div.form-type-checkbox div.descri
 }
 
 /* TABLES */
+thead {
+  background: #eee;
+  border-top: 1px solid #ddd;
+}
+
 tr {
   /* Exception for webkit bug with the right border of the last cell in some
    * tables, since it's webkit only, we can use :last-child */
@@ -1807,6 +1813,9 @@ table.sticky-header {
   padding: 10px 20px;
 }
 
+div.vertical-tabs {
+  background: #fff;
+}
 div.vertical-tabs fieldset {
   -webkit-box-shadow: none;
   -moz-box-shadow: none;
@@ -1819,6 +1828,10 @@ div.vertical-tabs ul li.vertical-tab-button a:hover, div.vertical-tabs ul li.ver
 
 .vertical-tabs-pane div.form-item {
   display: block;
+}
+
+.vertical-tabs fieldset.vertical-tabs-pane {
+  padding: 2em;
 }
 
 /* DROPBUTTON */
@@ -2023,14 +2036,14 @@ ol.task-list li {
   /* LTR */
 }
 ol.task-list li.active {
-  background: transparent url('../images/task-item.png?1376700820') no-repeat 3px 50%;
+  background: transparent url('../images/task-item.png?1391020745') no-repeat 3px 50%;
   /* LTR */
   color: #000;
   padding: 0.5em 1em 0.5em 20px;
   /* LTR */
 }
 ol.task-list li.done {
-  background: transparent url('../images/task-check.png?1376700820') no-repeat 0 50%;
+  background: transparent url('../images/task-check.png?1391020745') no-repeat 0 50%;
   color: green;
 }
 
@@ -2865,7 +2878,7 @@ div.dashboard-block {
 }
 
 dl.page-manager-wizards {
-  background: url('../images/list-item.png?1376700820') no-repeat scroll 0 0 transparent;
+  background: url('../images/list-item.png?1391020745') no-repeat scroll 0 0 transparent;
   margin: 0 0 1em;
   padding: 0 0 0 2.5em;
 }
@@ -3051,7 +3064,7 @@ fieldset.features-export-component, fieldset.features-export-component.collapsed
    MEDIA QUERIES
 
    ========================================================================== */
-@media (max-width: 960px) {
+@media (max-width: 70em) {
   /* dashboard */
   div#dashboard_sidebar {
     clear: both;
@@ -3072,10 +3085,15 @@ fieldset.features-export-component, fieldset.features-export-component.collapsed
     width: 100%;
   }
 }
-@media (max-width: 480px) {
+@media (max-width: 22.85714em) {
   #page {
     margin: 0;
     padding: 1em;
+  }
+
+  #branding {
+    padding-right: 1em;
+    padding-left: 1em;
   }
 
   #overlay {
@@ -3151,7 +3169,7 @@ fieldset.features-export-component, fieldset.features-export-component.collapsed
 
   /* vertical tabs */
   div.vertical-tabs {
-    background: url('../images/fc.png?1376700820') repeat-y scroll -97px 0 white;
+    background: url('../images/fc.png?1391020745') repeat-y scroll -97px 0 white;
     border: 1px solid #ddd;
   }
   div.vertical-tabs .vertical-tabs-list {

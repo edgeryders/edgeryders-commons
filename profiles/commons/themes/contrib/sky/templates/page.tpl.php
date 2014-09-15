@@ -16,7 +16,7 @@
 
         <?php if ($site_name || $site_slogan): ?>
           <!-- start: Site name and Slogan hgroup -->
-          <hgroup id="name-and-slogan"<?php print $hgroup_attributes; ?>>
+          <div id="name-and-slogan"<?php print $hgroup_attributes; ?>>
 
             <?php if ($site_name): ?>
               <h1 id="site-name"<?php print $site_name_attributes; ?>><?php print $site_name; ?></h1>
@@ -26,7 +26,7 @@
               <h2 id="site-slogan"<?php print $site_slogan_attributes; ?>><?php print $site_slogan; ?></h2>
             <?php endif; ?>
 
-          </hgroup><!-- /end #name-and-slogan -->
+          </div><!-- /end #name-and-slogan -->
 
         <?php endif; ?>
 

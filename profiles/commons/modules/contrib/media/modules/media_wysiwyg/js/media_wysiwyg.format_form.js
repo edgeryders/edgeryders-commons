@@ -37,7 +37,7 @@ Drupal.media.formatForm.getOptions = function () {
 };
 
 Drupal.media.formatForm.getFormattedMedia = function () {
-  var formatType = $("select#edit-format option:selected").val();
+  var formatType = $("#edit-format").val();
   return { type: formatType, options: Drupal.media.formatForm.getOptions(), html: Drupal.settings.media.formatFormFormats[formatType] };
 };
 

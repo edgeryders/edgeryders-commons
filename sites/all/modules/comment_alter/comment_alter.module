@@ -33,6 +33,15 @@ function comment_alter_form_field_ui_field_edit_form_alter(&$form, &$form_state,
       '#weight' => $form['instance']['required']['#weight'] + 0.5,
       '#default_value' => !empty($form['#instance']['comment_alter']),
     );
+    $form['instance']['comment_alter_hide'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Hide alterations of this field from diffs.'),
+      '#weight' => $form['instance']['required']['#weight'] + 0.7,
+      '#default_value' => !empty($form['#instance']['comment_alter_hide']),
+      '#states' => array(
+        'invisible' => array(':input[name="instance[comment_alter]"]' => array('checked' => FALSE)),
+      ),
+    );
 
     // Make sure the field isn't already on the Comment entity.
     if (!empty($comment_fields[$field_name])) {
@@ -237,7 +246,7 @@ function comment_alter_form_comment_form_alter(&$form, &$form_state, $form_id) {
  * Removes 'add_more' and non-alterable columns (like _weight) so we can compare
  * the old and new field values and find changes.
  *
- * @param array $a
+ * @param array $values
  *   Array whose elements should be cleaned up.
  * @param string $field_name
  *   Clean up this field of the array.
@@ -363,10 +372,8 @@ function _comment_alter_submit_node_fields($form, &$form_state) {
       // objects; though $node does not have a $node->original property, all the
       // affected fields' information (both previous and current values) are
       // available in the comment object.
-      foreach (module_implements('comment_alter_node_postsave') as $module) {
-        $function = $module . '_comment_alter_node_postsave';
-        $function($node, $form_state['comment']);
-      }
+      $node->original = node_load($node->nid, $values['comment_alter']['old_vid']);
+      module_invoke_all('comment_alter_node_postsave', $node, $form_state['comment']);
       $comment_alter = array(
         'old_vid' => $values['comment_alter']['old_vid'],
         'new_vid' => $node->vid,
@@ -413,7 +420,7 @@ function comment_alter_comment_load($comments) {
 function comment_alter_get_changed_fields($comment, $langcode) {
   $changed_fields = array();
 
-  if (isset($comment->comment_alter)) {
+  if (isset($comment->comment_alter) && isset($comment->comment_alter['new_vid'])) {
     $node = node_load($comment->nid);
     module_load_include('inc', 'diff', 'diff.pages');
     $old_node = node_load($comment->nid, $comment->comment_alter['old_vid']);
@@ -436,8 +443,25 @@ function comment_alter_get_changed_fields($comment, $langcode) {
       // Only compare fields that belong to us.
       $field = field_info_field($field_name);
       if (field_access('view', $field, 'node') && in_array($field_name, $comment_alter_fields)) {
+        $instance = field_info_instance('node', $field_name, $node->type);
         list ($old, $new) = diff_extract_state($diff, $context['states'][0]);
         if ($old != $new) {
+          if (!empty($instance['comment_alter_hide'])) {
+            if (diff_node_revision_access($node)) {
+              $changed_fields[$field_name][] = array(
+                'name' => $diff['#name'],
+                'changes' => l(t('View changes'), 'node/' . $node->nid . '/revisions/view/' . $old_node->vid . '/' . $new_node->vid),
+              );
+            }
+            else {
+              $changed_fields[$field_name][] = array(
+                'name' => $diff['#name'],
+                'old' => array('&hellip;'),
+                'new' => array('&hellip;'),
+              );
+            }
+            continue;
+          }
           $rows = diff_get_rows($old, $new);
           $line = 0;
           foreach ($rows as $row) {
@@ -506,12 +530,21 @@ function theme_comment_alter_diff(&$variables) {
   $rows = array();
   foreach ($variables['changed_fields'] as $field) {
     foreach ($field as $value) {
-      $rows[] = array(
+      $row = array(
         empty($value['name']) ? '' : ($value['name'] . ':'),
-        implode(', ', $value['old']),
-        '&raquo;',
-        implode(', ', $value['new']),
       );
+      if (!empty($value['changes'])) {
+        $row[] = array(
+          'data' => $value['changes'],
+          'colspan' => 3,
+        );
+      }
+      else {
+        $row[] = implode(', ', $value['old']);
+        $row[] = '&raquo;';
+        $row[] = implode(', ', $value['new']);
+      }
+      $rows[] = $row;
     }
   }
   drupal_add_css(drupal_get_path('module', 'comment_alter') . '/comment_alter.css');
@@ -581,4 +614,31 @@ function comment_alter_permission() {
     );
   }
   return $return;
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function comment_alter_node_presave($node) {
+  if (!isset($node->notifications_content_disable) && module_exists('rules')) {
+    rules_invoke_event('comment_alter_node_presave', $node);
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function comment_alter_node_update($node) {
+  if (!isset($node->notifications_content_disable) && module_exists('rules')) {
+    rules_invoke_event('comment_alter_node_update', $node);
+  }
+}
+
+/**
+ * Implements hook_comment_alter_node_postsave().
+ */
+function comment_alter_comment_alter_node_postsave($node, $comment) {
+  if (module_exists('rules')) {
+    rules_invoke_event('comment_alter_node_postsave', $node, $comment);
+  }
 }

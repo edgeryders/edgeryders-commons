@@ -15,7 +15,10 @@ lingotek.forms = lingotek.forms || {};
         $('#edit-lingotek-create-lingotek-document').change(updateVerticalTabSummary);
         $('#edit-lingotek-sync-method').change(updateVerticalTabSummary);
         $('#edit-lingotek-profile').change(updateVerticalTabSummary);
+        $('#edit-lingotek-profile').change(checkForEnablement);
         updateVerticalTabSummary();
+        checkForEnablement();
+        toggleMenuSelector();
     };
     
     lingotek.forms.enableLtkFromET = false;
@@ -31,12 +34,26 @@ lingotek.forms = lingotek.forms || {};
     
     var toggleMenuSelector = function() {
         if ($("#edit-language").val() == 'en') { // locales tables assume English language
-          $('#edit-menu-non-english').hide();
           $('#edit-menu-english').show();
+          $('#edit-menu-non-english').hide();
         }
         else {
-          $('#edit-menu-non-english').show();
           $('#edit-menu-english').hide();           
+          if ($("#edit-language").val() != 'und') { // show the note if neither English or Undefined
+            $('#edit-menu-non-english').show();
+          }
+          else {
+            $('#edit-menu-non-english').hide();
+          }
+        }
+    }
+
+    var checkForEnablement = function() {
+        if ($('#edit-lingotek-profile').val() != 'DISABLED') {
+            $('#edit-lingotek-overwrite-warning').show();
+        }
+        else {
+            $('#edit-lingotek-overwrite-warning').hide();
         }
     }
     

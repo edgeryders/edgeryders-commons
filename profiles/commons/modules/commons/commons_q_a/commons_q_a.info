@@ -77,6 +77,7 @@ features[variable][] = node_preview_answer
 features[variable][] = node_preview_question
 features[variable][] = node_submitted_answer
 features[variable][] = node_submitted_question
+features[variable][] = pathauto_node_answer_pattern
 features[views_view][] = commons_bw_q_a
 features[views_view][] = commons_question_answers
 features_exclude[dependencies][message] = message
@@ -94,9 +95,9 @@ features_exclude[field_instance][og_group_ref] = og_group_ref
 features_exclude[field_instance][node-answer-og_group_ref] = node-answer-og_group_ref
 features_exclude[field_instance][node-question-og_group_ref] = node-question-og_group_ref
 
-; Information added by Drupal.org packaging script on 2014-02-12
-version = "7.x-3.9"
+; Information added by Drupal.org packaging script on 2014-05-08
+version = "7.x-3.12"
 core = "7.x"
 project = "commons"
-datestamp = "1392234217"
+datestamp = "1399579131"
 

@@ -1,6 +1,5 @@
-/* Editor classes */
-
 /* CKEditor padding in IE */
+
 table.cke_editor fieldset {
     padding: 0 !important;
 }
@@ -14,11 +13,4 @@ table.cke_editor fieldset {
 /* Fix table border for Drupal's Seven theme - [#1020612] */
 .cke_dialog tr td:last-child {
     border-right: 0;
-}
-/* Panels in IE11 [#2244835] */
-.cke.cke_chrome {
-    visibility: inherit;
-}
-.cke.cke_panel {
-    visibility: visible;
 }

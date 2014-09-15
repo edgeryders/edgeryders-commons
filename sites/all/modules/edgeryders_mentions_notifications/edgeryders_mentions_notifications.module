@@ -1,0 +1,193 @@
+<?php
+/**
+ * @file
+ * Code for the Edgeryders mentions notifications feature.
+ */
+
+include_once 'edgeryders_mentions_notifications.features.inc';
+
+/**
+ * Parse mentions.
+ *
+ * Code taken from PHP-Instagram project:
+ * https://github.com/galen/PHP-Instagram-API/blob/master/Instagram/Helper.php.
+ */
+function parseMentions($text, \Closure $callback) {
+  return preg_replace_callback('~@(.+?)(?=\b)~', $callback, $text);
+}
+
+/**
+ * Extract mentions from a text.
+ */
+function edgeryders_mentions_notifications_extract_mentions($text) {
+  $users_mentioned = array();
+  parseMentions($text, function($mention) use (&$users_mentioned) {
+    if (isset($mention[1])) {
+      $account_name = str_replace('_', ' ', $mention[1]);
+      $target_account = user_load_by_name($account_name);
+      $mentions_notification
+        = (!isset($account->data['mentions_notifications']) ? 1 : $account->data['mentions_notifications']);
+      if ($target_account->uid && $mentions_notification) {
+        $users_mentioned[] = $target_account;
+      }
+    }
+  });
+  return $users_mentioned;
+}
+
+/**
+ * Implements hook_message_subscribe_get_subscribers().
+ */
+function edgeryders_mentions_notifications_message_subscribe_get_subscribers($message, $subscribe_options, $context) {
+  // Extract users from the message.
+  $message_types = array('edgeryders_mentions_node', 'edgeryders_mentions_comment');
+  if (in_array($message->type, $message_types)) {
+    try {
+      $wrapper = entity_metadata_wrapper('message', $message->mid);
+      $uids = array();
+      foreach ($wrapper->field_target_users->getIterator() as $delta => $account) {
+        // $term_wrapper may now be accessed as a taxonomy term wrapper.
+        $uid = $account->getIdentifier();
+        $uids[$uid] = array('notifiers' => array('email' => 'email'));
+      }
+      return $uids;
+    }
+    catch (EntityMetadataWrapperException $exc) {
+      watchdog(
+        'edgeryders_mentions_notifications',
+        'See '  . __FUNCTION__ . '() <pre>' .  $exc->getTraceAsString() . '</pre>',
+         NULL, WATCHDOG_ERROR
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function edgeryders_mentions_notifications_node_insert($node) {
+  $message_type = 'edgeryders_mentions_node';
+
+  // We need to clear the static loading cache so that the node body will be
+  // ready in time for token replacement for the  message.
+  entity_get_controller('node')->resetCache(array($node->nid));
+
+  // Create message.
+  try {
+    $account = user_load($node->uid);
+    $message = message_create($message_type, array('uid' => $account->uid, 'timestamp' => $node->created));
+
+    // Save reference to the node in the node reference field.
+    $wrapper = entity_metadata_wrapper('message', $message);
+    $node_wrapper = entity_metadata_wrapper('node', $node);
+    $body = trim($node_wrapper->body->value->value(array('decode' => TRUE)));
+
+    // Extract mentions.
+    $wrapper->field_target_nodes[] = $node;
+    $users_mentioned
+      = edgeryders_mentions_notifications_extract_mentions($body);
+
+    if (count($users_mentioned)) {
+      $wrapper->field_target_users = $users_mentioned;
+      $wrapper->save();
+      $options = array(
+        'rendered fields' => array(
+          'message_notify_email_subject' => 'field_message_rendered_subject',
+          'message_notify_email_body' => 'field_message_rendered_body',
+        ),
+      );
+      message_subscribe_send_message('node', $node, $message, array(
+        'email' => $options,
+      ),
+      array(
+        'notify message owner' => FALSE,
+        'entity access' => variable_get_value('edgeryders_mentions_notifications_check_access'),
+        'skip context' => TRUE,
+      ));
+    }
+  }
+  catch (EntityMetadataWrapperException $exc) {
+    watchdog(
+      'edgeryders_mentions_notifications',
+      'See '  . __FUNCTION__ . '() <pre>' .  $exc->getTraceAsString() . '</pre>',
+       NULL, WATCHDOG_ERROR
+    );
+  }
+}
+
+/**
+ * Implements hook_comment_insert().
+ */
+function edgeryders_mentions_notifications_comment_insert($comment) {
+  $account = user_load($comment->uid);
+  $node = node_load($comment->nid);
+  $message_type = 'edgeryders_mentions_comment';
+  try {
+    $message = message_create($message_type, array('uid' => $account->uid, 'timestamp' => $comment->created));
+
+    // Save reference to the node in the node reference field, and the
+    // "publish" state (i.e. if the node is published or unpublished).
+    $comment_wrapper = entity_metadata_wrapper('comment', $comment->cid);
+    $wrapper = entity_metadata_wrapper('message', $message);
+    $wrapper->field_target_nodes[] = $node;
+    $wrapper->field_target_comments[] = $comment;
+    $body = trim($comment_wrapper->comment_body->value->value(array('decode' => TRUE)));
+    $users_mentioned
+      = edgeryders_mentions_notifications_extract_mentions($body);
+    if (count($users_mentioned)) {
+      $wrapper->field_target_users = $users_mentioned;
+      $wrapper->save();
+      $options = array(
+        'rendered fields' => array(
+          'message_notify_email_subject' => 'field_message_rendered_subject',
+          'message_notify_email_body' => 'field_message_rendered_body',
+        ),
+      );
+      message_subscribe_send_message('comment', $comment, $message, array(
+        'email' => $options,
+      ),
+      array(
+        'notify message owner' => FALSE,
+        'entity access' => variable_get_value('edgeryders_mentions_notifications_check_access'),
+        'skip context' => TRUE,
+      ));
+    }
+  }
+  catch (EntityMetadataWrapperException $exc) {
+    watchdog(
+      'edgeryders_mentions_notifications',
+      'See '  . __FUNCTION__ . '() <pre>' .  $exc->getTraceAsString() . '</pre>',
+       NULL, WATCHDOG_ERROR
+    );
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function edgeryders_mentions_notifications_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'commons_follow_ui_notification_settings_form') {
+    global $user;
+    ctools_add_js('auto-submit');
+    $form['mentions_notifications'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send mentions notifications'),
+      '#description' => t("If checked, you'll automatically sign up for email notifications when someone mention your user."),
+      '#default_value' => (isset($user->data['mentions_notifications']) ? $user->data['mentions_notifications'] : 1),
+      '#attributes' => array('class' => array('ctools-auto-submit')),
+    );
+    $form['submit']['#attributes']['class'][] = 'ctools-use-ajax';
+    $form['submit']['#attributes']['class'][] = 'ctools-auto-submit-click';
+    $form['#submit'][] = 'edgeryders_mentions_notifications_form_submit';
+  }
+}
+
+/**
+ * Submit function for edgeryders_mentions_notifications_form_alter.
+ */
+function edgeryders_mentions_notifications_form_submit($form, &$form_state) {
+  global $user;
+  $values = $form_state['values'];
+  $mentions_notification = array('mentions_notifications' => $values['mentions_notifications']);
+  user_save($user, array('data' => $mentions_notification));
+}

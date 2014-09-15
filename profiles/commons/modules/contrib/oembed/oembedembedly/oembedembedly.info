@@ -4,9 +4,10 @@ description = Provides definitions for all of Embed.ly:s providers
 core = 7.x
 dependencies[] = oembed
 
-; Information added by Drupal.org packaging script on 2014-02-26
-version = "7.x-1.0-rc2+20-dev"
+
+; Information added by drush on 2014-05-08
+version = "7.x-1.0-rc2+15-dev"
 core = "7.x"
 project = "oembed"
-datestamp = "1393403916"
+datestamp = "1399579141"
 

@@ -32,6 +32,7 @@ function ckeditor_styles_schema() {
         'unsigned' => TRUE,
         'not null' => FALSE,
         'description' => 'The primary identifier for a ckeditor style rule.',
+        'no export' => TRUE, // Do not export database-only keys. Would lead to "Duplicate entry" database errors on cloning (which is export + import).
       ),
       'name' => array(
         'type' => 'varchar',
@@ -79,7 +80,7 @@ function ckeditor_styles_schema() {
     ),
     'primary key' => array('rid'),
     'unique keys' => array(
-      'instance' => array('name'),
+      'instance' => array('machine_name'),
     ),
   );
   return $schema;

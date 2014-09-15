@@ -458,7 +458,7 @@ function drupal_get_query_array($query) {
   $result = array();
   if (!empty($query)) {
     foreach (explode('&', $query) as $param) {
-      $param = explode('=', $param);
+      $param = explode('=', $param, 2);
       $result[$param[0]] = isset($param[1]) ? rawurldecode($param[1]) : '';
     }
   }
@@ -1426,7 +1426,6 @@ function filter_xss_admin($string) {
  *   valid UTF-8.
  *
  * @see drupal_validate_utf8()
- * @ingroup sanitization
  */
 function filter_xss($string, $allowed_tags = array('a', 'em', 'strong', 'cite', 'blockquote', 'code', 'ul', 'ol', 'li', 'dl', 'dt', 'dd')) {
   // Only operate on valid UTF-8 strings. This is necessary to prevent cross
@@ -4340,6 +4339,7 @@ function drupal_get_js($scope = 'header', $javascript = NULL, $skip_alter = FALS
     switch ($item['type']) {
       case 'setting':
         $js_element = $element;
+        $js_element['#attributes'] = !empty($item['attributes']) ? $item['attributes'] : array();
         $js_element['#value_prefix'] = $embed_prefix;
         $js_element['#value'] = 'jQuery.extend(Drupal.settings, ' . drupal_json_encode(drupal_array_merge_deep_array($item['data'])) . ");";
         $js_element['#value_suffix'] = $embed_suffix;
@@ -4348,6 +4348,7 @@ function drupal_get_js($scope = 'header', $javascript = NULL, $skip_alter = FALS
 
       case 'inline':
         $js_element = $element;
+        $js_element['#attributes'] = !empty($item['attributes']) ? $item['attributes'] : array();
         if ($item['defer']) {
           $js_element['#attributes']['defer'] = 'defer';
         }
@@ -4359,6 +4360,7 @@ function drupal_get_js($scope = 'header', $javascript = NULL, $skip_alter = FALS
 
       case 'file':
         $js_element = $element;
+        $js_element['#attributes'] = !empty($item['attributes']) ? $item['attributes'] : array();
         if (!$item['preprocess'] || !$preprocess_js) {
           if ($item['defer']) {
             $js_element['#attributes']['defer'] = 'defer';
@@ -5067,6 +5069,11 @@ function drupal_get_private_key() {
  * @param $value
  *   An additional value to base the token on.
  *
+ * The generated token is based on the session ID of the current user. Normally,
+ * anonymous users do not have a session, so the generated token will be
+ * different on every page request. To generate a token for users without a
+ * session, manually start a session prior to calling this function.
+ *
  * @return string
  *   A 43-character URL-safe token for validation, based on the user session ID,
  *   the hash salt provided from drupal_get_hash_salt(), and the
@@ -5290,8 +5297,15 @@ function drupal_cron_run() {
     $end = time() + (isset($info['time']) ? $info['time'] : 15);
     $queue = DrupalQueue::get($queue_name);
     while (time() < $end && ($item = $queue->claimItem())) {
-      $function($item->data);
-      $queue->deleteItem($item);
+      try {
+        $function($item->data);
+        $queue->deleteItem($item);
+      }
+      catch (Exception $e) {
+        // In case of exception log it and leave the item in the queue
+        // to be processed again later.
+        watchdog_exception('cron', $e);
+      }
     }
   }
   // Restore the user.
@@ -5946,14 +5960,16 @@ function drupal_render(&$elements) {
 /**
  * Renders children of an element and concatenates them.
  *
- * This renders all children of an element using drupal_render() and then
- * joins them together into a single string.
- *
- * @param $element
+ * @param array $element
  *   The structured array whose children shall be rendered.
- * @param $children_keys
- *   If the keys of the element's children are already known, they can be passed
- *   in to save another run of element_children().
+ * @param array $children_keys
+ *   (optional) If the keys of the element's children are already known, they
+ *   can be passed in to save another run of element_children().
+ *
+ * @return string
+ *   The rendered HTML of all children of the element.
+
+ * @see drupal_render()
  */
 function drupal_render_children(&$element, $children_keys = NULL) {
   if ($children_keys === NULL) {
@@ -7827,7 +7843,10 @@ function entity_load_unchanged($entity_type, $id) {
 }
 
 /**
- * Get the entity controller class for an entity type.
+ * Gets the entity controller for an entity type.
+ *
+ * @return DrupalEntityControllerInterface
+ *   The entity controller object for the specified entity type.
  */
 function entity_get_controller($entity_type) {
   $controllers = &drupal_static(__FUNCTION__, array());

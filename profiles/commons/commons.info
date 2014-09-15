@@ -23,9 +23,6 @@ dependencies[] = shortcut
 dependencies[] = taxonomy
 
 ; Install required contributed modules.
-; For Commons 3.6, media is included, but left disabled by default.
-; Uncomment if you wish to enable on install. Alternatively, enabling the
-; commons_media module post install will enable all of the media modules.
 dependencies[] = addressfield
 dependencies[] = addressfield_tokens
 dependencies[] = breakpoints
@@ -40,13 +37,13 @@ dependencies[] = entityreference
 dependencies[] = entitycache
 dependencies[] = edit_profile
 dependencies[] = features
-;dependencies[] = file_entity
+dependencies[] = file_entity
 dependencies[] = flag
 dependencies[] = http_client
 dependencies[] = libraries
-;dependencies[] = media
-;dependencies[] = media_internet
-;dependencies[] = media_wysiwyg
+dependencies[] = media
+dependencies[] = media_internet
+dependencies[] = media_wysiwyg
 dependencies[] = menu_attributes
 dependencies[] = message
 dependencies[] = message_notify
@@ -54,7 +51,7 @@ dependencies[] = message_subscribe
 dependencies[] = metatag
 dependencies[] = module_filter
 dependencies[] = navbar
-;dependencies[] = oembed
+dependencies[] = media_oembed
 dependencies[] = og
 dependencies[] = panelizer
 dependencies[] = panels
@@ -97,7 +94,7 @@ dependencies[] = commons_groups_directory
 dependencies[] = commons_groups_pages
 dependencies[] = commons_like
 dependencies[] = commons_location
-;dependencies[] = commons_media
+dependencies[] = commons_media
 dependencies[] = commons_misc
 dependencies[] = commons_notify
 dependencies[] = commons_pages
@@ -121,9 +118,9 @@ dependencies[] = commons_wysiwyg
 ; System Requirements.
 php_memory_limit = 128M
 
-; Information added by Drupal.org packaging script on 2014-02-12
-version = "7.x-3.9"
+; Information added by Drupal.org packaging script on 2014-05-08
+version = "7.x-3.12"
 core = "7.x"
 project = "commons"
-datestamp = "1392234217"
+datestamp = "1399579131"
 

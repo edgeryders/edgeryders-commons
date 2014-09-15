@@ -43,9 +43,32 @@ function apachesolr_index_user_solr_document(ApacheSolrDocument $document, $acco
 
   $document->mail = $account->mail;
   $document->signature = $account->signature;
-
   // Note the conspicuous lack of password hash. :-)
-
+  // get all props into an array
+  $fields = get_object_vars($account);
+  foreach ($fields as $key => $value) {
+    if (preg_match('/field_.+$/', $key) === 0) {
+      unset($fields[$key]);
+    }
+  }
+  // create doc fields
+  foreach ($fields as $key => $value) {
+    $field_values = field_view_field('user', $account, $key, $value, array(''));
+    $field_index = array();
+    foreach ($field_values as $delta => $field_value) {
+      if (is_numeric($delta) && strlen($field_value['#markup']) > 0) {
+        $field_index[] =  apachesolr_clean_text($field_value['#markup']);
+      }
+    }
+    if (sizeof($field_index) > 1) {
+      $slr_key = str_replace('field_', 'tm_', $key);
+      $document->$slr_key = $field_index;
+    }
+    elseif (sizeof($field_index) == 1) {
+      $slr_key = str_replace('field_', 'ts_', $key);
+      $document->$slr_key = $field_index[0];
+    }
+  }
   // Build the user body.
   $build = user_view($account, 'search_index');
   // Why do we need this?

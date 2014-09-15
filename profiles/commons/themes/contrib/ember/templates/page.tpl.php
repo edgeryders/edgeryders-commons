@@ -3,7 +3,7 @@
 
 <div id="branding" class="clearfix">
     <?php print render($title_prefix); ?>
-	<?php if ($title): ?>
+    <?php if ($title): ?>
       <h1 class="page-title">
 	    <?php print $title; ?>
       </h1>

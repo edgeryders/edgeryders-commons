@@ -30,8 +30,8 @@ $button-contrast: 80 !default;
     /* Reset all button fonts to a similar baseline in webkit. */
     font: -webkit-small-control;
     font-family: $font-sansserif;
-    font-weight: $font-regular;
-    letter-spacing: .06em;
+    font-weight: $font-bold; /* revised to bold by TKO */
+    /*letter-spacing: .06em; this doesn't look good, no need for it TKO */
     text-align: center;
     text-decoration: none;
     cursor: pointer;

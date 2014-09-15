@@ -5,9 +5,10 @@ package = Chaos tool suite
 dependencies[] = ctools
 dependencies[] = color
 
-; Information added by Drupal.org packaging script on 2014-02-12
-version = "7.x-1.4"
+
+; Information added by drush on 2014-05-08
+version = "7.x-1.4+4-dev"
 core = "7.x"
 project = "ctools"
-datestamp = "1392220730"
+datestamp = "1399579147"
 

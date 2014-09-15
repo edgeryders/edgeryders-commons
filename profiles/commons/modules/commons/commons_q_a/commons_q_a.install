@@ -114,3 +114,36 @@ function commons_q_a_update_3109() {
   features_revert($revert);
   return array();
 }
+
+/**
+ * Indicate in the view that empty answers text is overridden by commons_q_a.
+ */
+function commons_q_a_update_3110() {
+  $revert = array(
+    'commons_q_a' => array('views_view'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Change the Answer URL alias to be a subpath of the question.
+ */
+function commons_q_a_update_3111() {
+  $revert = array(
+    'commons_q_a' => array('variable'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Improve the browsing widget empty text.
+ */
+function commons_q_a_update_3112() {
+  $revert = array(
+    'commons_q_a' => array('views_view'),
+  );
+  features_revert($revert);
+  return array();
+}

@@ -102,5 +102,5 @@ function theme_addressfield_formatter__components($vars) {
     }
   }
   
-  return implode($separator, $out);
+  return filter_xss(implode($separator, $out));
 }

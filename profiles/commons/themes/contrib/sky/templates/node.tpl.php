@@ -7,7 +7,7 @@
   <?php if(!empty($user_picture) || $title || (!empty($submitted) && $display_submitted)): ?>
     <header<?php print $header_attributes; ?>>
 
-      <?php print $user_picture; ?>
+      <?php if(!empty($submitted) && $display_submitted) print $user_picture; ?>
 
       <?php if ($title && !$page): ?>
         <h1<?php print $title_attributes; ?>>

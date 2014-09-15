@@ -46,7 +46,7 @@ function commons_q_a_views_default_views() {
   $handler->display->display_options['empty']['area']['table'] = 'views';
   $handler->display->display_options['empty']['area']['field'] = 'area';
   $handler->display->display_options['empty']['area']['empty'] = TRUE;
-  $handler->display->display_options['empty']['area']['content'] = 'No questions have been asked in this group.';
+  $handler->display->display_options['empty']['area']['content'] = 'No questions have been added to this group.';
   $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
   /* Relationship: OG membership: OG membership from Node */
   $handler->display->display_options['relationships']['og_membership_rel']['id'] = 'og_membership_rel';
@@ -132,7 +132,7 @@ function commons_q_a_views_default_views() {
   $view = new view();
   $view->name = 'commons_question_answers';
   $view->description = '';
-  $view->tag = 'default';
+  $view->tag = 'Commons Q&A';
   $view->base_table = 'node';
   $view->human_name = 'Answers to a question';
   $view->core = 7;
@@ -155,7 +155,7 @@ function commons_q_a_views_default_views() {
   $handler->display->display_options['empty']['area']['table'] = 'views';
   $handler->display->display_options['empty']['area']['field'] = 'area';
   $handler->display->display_options['empty']['area']['empty'] = TRUE;
-  $handler->display->display_options['empty']['area']['content'] = 'This question hasn\'t been answered yet. You can be the first to answer it!';
+  $handler->display->display_options['empty']['area']['content'] = 'This Empty text is overridden in commons_q_a.module';
   $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
   /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
@@ -230,7 +230,7 @@ function commons_q_a_views_default_views() {
     t('‹ previous'),
     t('next ›'),
     t('last »'),
-    t('This question hasn\'t been answered yet. You can be the first to answer it!'),
+    t('This Empty text is overridden in commons_q_a.module'),
     t('All'),
     t('Content pane'),
     t('Commons'),

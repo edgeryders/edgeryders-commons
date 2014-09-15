@@ -170,6 +170,11 @@ function commons_install_finished(&$install_state) {
   // Cache a fully-built schema.
   drupal_get_schema(NULL, TRUE);
 
+  variable_set('title_node', array(
+    'auto_attach' => array('title' => 'title'),
+    'hide_label' => array('page' => 0, 'entity' => 0),
+  ));
+
   // Run cron to populate update status tables (if available) so that users
   // will be warned if they've installed an out of date Drupal version.
   // Will also trigger indexing of profile-supplied content or feeds.
@@ -451,8 +456,10 @@ function commons_demo_content() {
     $event->field_topics[LANGUAGE_NONE][]['tid'] = commons_create_topic($term);
   }
 
-  $event->field_date[LANGUAGE_NONE][0]['value'] = '2014-01-12 10:00:00';
-  $event->field_date[LANGUAGE_NONE][0]['value2'] = '2014-01-13 13:00:00';
+  // The event starts 6 months from now.
+  $event->field_date[LANGUAGE_NONE][0]['value'] = format_date(REQUEST_TIME + 15552000, 'custom', 'Y-m-d 10:00:00');
+  // The event ends 6 months and one day from now.
+  $event->field_date[LANGUAGE_NONE][0]['value2'] = format_date(REQUEST_TIME + 15638400, 'custom', 'Y-m-d 10:00:00');
 
   $event->field_address[LANGUAGE_NONE][0]['thoroughfare'] = '25 Corporate Drive';
   $event->field_address[LANGUAGE_NONE][0]['premise'] = '4th floor';
@@ -856,5 +863,56 @@ function commons_update_3112() {
     'commons_activity_streams' => array('message_type'),
   );
   features_revert($revert);
+  return array();
+}
+
+/*
+ * Delete the AdvancedQueue class variable for sites that did not uninstall AdvancedQueue.
+ */
+function commons_update_3113() {
+  if (variable_get('queue_default_class', '') == 'AdvancedQueue') {
+    variable_del('queue_default_class');
+  }
+  return array();
+}
+
+/*
+ * Automatically use field_title for all nodes instead of the node base title.
+ */
+function commons_update_3114() {
+  variable_set('title_node', array(
+    'auto_attach' => array('title' => 'title'),
+    'hide_label' => array('page' => 0, 'entity' => 0),
+  ));
+
+  foreach (node_type_get_types() as $node_type) {
+    // Set the title as "Replaced by title_field".
+    if (!title_field_replacement_enabled('node', $node_type->type, 'title')) {
+      title_field_replacement_toggle('node', $node_type->type, 'title');
+    }
+
+    // Migrate the titles to the title field.
+    title_field_replacement_batch_set('node', $node_type->type, 'title');
+  }
+
+  drupal_flush_all_caches();
+}
+
+/*
+ * Replace the oEmbed module with the Media: oEmbed module.
+ */
+function commons_update_3115() {
+  if (module_exists('oembed')) {
+    module_disable(array('oembed'));
+  }
+  module_enable(array('media_oembed'));
+  return array();
+}
+
+/*
+ * Enable the Commons: Media and Media: WYSIWYG modules.
+ */
+function commons_update_3116() {
+  module_enable(array('commons_media', 'media_wysiwyg'));
   return array();
 }

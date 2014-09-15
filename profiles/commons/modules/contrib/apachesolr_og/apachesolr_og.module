@@ -7,11 +7,11 @@
 
 /**
  * Implements hook_apachesolr_field_mappings_alter().
- * 
+ *
  * Adds some special facets for the Audience Field as defined by OG
  */
 function apachesolr_og_apachesolr_field_mappings_alter(&$mappings) {
-  $mappings['per-field'][OG_AUDIENCE_FIELD] = $mappings['entityreference'];  
+  $mappings['per-field'][OG_AUDIENCE_FIELD] = $mappings['entityreference'];
   $mappings['per-field'][OG_AUDIENCE_FIELD]['alter callbacks'][] = 'apachesolr_og_alter_callback';
   $mappings['per-field'][OG_AUDIENCE_FIELD]['map callback'] = 'apachesolr_og_map_gid_label';
 }
@@ -19,7 +19,7 @@ function apachesolr_og_apachesolr_field_mappings_alter(&$mappings) {
 /**
  * Alters the build array of the OG_AUDIENCE_FIELD filter.
  * Adds a filter that allows the user to filter on his groups.
- * 
+ *
  * @global type $user
  * @param array $build
  * @param FacetapiAdapter $adapter
@@ -40,18 +40,23 @@ function apachesolr_og_alter_callback(&$build, FacetapiAdapter $adapter, $facet)
     }
 
     $search_string = apachesolr_og_get_my_groups_filter();
-    $build[$search_string] = array('#count' => $count);    
+    $build[$search_string] = array('#count' => $count);
   }
 }
 
 /**
  * Creates a special filter for filtering on the content for the current
  * users groups
- * 
+ *
  * @global type $user
  * @return type
  */
 function apachesolr_og_get_my_groups_filter() {
+  // No need to filter for anonymous users.
+  if (user_is_anonymous()) {
+    return;
+  }
+
   global $user;
   $user_groups = og_get_groups_by_user($user);
 

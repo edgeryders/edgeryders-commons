@@ -1,0 +1,80 @@
+<?php
+
+/**
+ * @file
+ * Rules link i18n integration module via entity API i18n support.
+ *
+ * @see EntityDefaultI18nController
+ */
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function rules_link_i18n_entity_info_alter(&$info) {
+  // Enable i18n support via the entity API.
+  $info['rules_link']['i18n controller class'] = 'RulesLinkI18nController';
+}
+
+/**
+ * Customized i18n string integration controller.
+ */
+class RulesLinkI18nController extends EntityDefaultI18nStringController {
+
+  /**
+   * Overriddes EntityDefaultI18nStringController::hook_object_info() to include a custom object wrapper.
+   */
+  public function hook_object_info() {
+    $info = parent::hook_object_info();
+    $info['rules_link']['class'] = 'RulesLinkI18nStringObjectWrapper';
+    return $info;
+  }
+
+  /**
+   * Overrides EntityDefaultI18nStringController::translatableProperties() to define our custom ones.
+   */
+  protected function translatableProperties() {
+    $properties = array();
+    $properties['text'] = t('Link text');
+    $properties['confirm_question'] = t('Confirm question');
+    $properties['confirm_description'] = t('Confirm description');
+    return $properties;
+  }
+}
+
+/**
+ * Custom i18n object wrapper.
+ */
+class RulesLinkI18nStringObjectWrapper extends i18n_string_object_wrapper {
+
+  /**
+   * Overrides i18n_string_object_wrapper::get_field() to read properties from the settings array.
+   */
+  public function get_field($field, $default = NULL) {
+    return isset($this->object->settings[$field]) ? $this->object->settings[$field] : parent::get_field($field, $default);
+  }
+}
+
+/**
+ * Implements hook_rules_link_insert().
+ */
+function rules_link_i18n_rules_link_insert($rules_link) {
+  i18n_string_object_update('rules_link', $rules_link);
+}
+
+/**
+ * Implements hook_rules_link_update().
+ */
+function rules_link_i18n_rules_link_update($rules_link) {
+  // Account for name changes.
+  if ($rules_link->original->name != $rules_link->name) {
+    i18n_string_update_context("rules_link:rules_link:{$rules_link->original->name}:*", "rules_link:rules_link:{$rules_link->name}:*");
+  }
+  i18n_string_object_update('rules_link', $rules_link);
+}
+
+/**
+ * Implements hook_rules_link_delete().
+ */
+function rules_link_i18n_rules_link_delete($rules_link) {
+  i18n_string_object_remove('rules_link', $rules_link);
+}

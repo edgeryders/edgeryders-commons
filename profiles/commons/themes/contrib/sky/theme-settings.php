@@ -22,6 +22,11 @@ function sky_form_system_theme_settings_alter(&$form, &$form_state) {
     '#default_value' => TRUE,
   );
 
+  // Remove option to use full width wrappers
+  $form['at']['modify-output']['design']['page_full_width_wrappers'] = array(
+    '#access' => FALSE,
+  );
+
   if (at_get_setting('enable_extensions') === 1) {
     $form['at']['corners'] = array(
       '#type' => 'fieldset',
