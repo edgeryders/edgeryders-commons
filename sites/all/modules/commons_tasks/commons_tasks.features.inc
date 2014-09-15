@@ -7,10 +7,8 @@
 /**
  * Implements hook_ctools_plugin_api().
  */
-function commons_tasks_ctools_plugin_api($module = NULL, $api = NULL) {
-  if ($module == "field_group" && $api == "field_group") {
-    return array("version" => "1");
-  }
+function commons_tasks_ctools_plugin_api() {
+  list($module, $api) = func_get_args();
   if ($module == "strongarm" && $api == "strongarm") {
     return array("version" => "1");
   }
@@ -19,7 +17,7 @@ function commons_tasks_ctools_plugin_api($module = NULL, $api = NULL) {
 /**
  * Implements hook_views_api().
  */
-function commons_tasks_views_api($module = NULL, $api = NULL) {
+function commons_tasks_views_api() {
   return array("api" => "3.0");
 }
 
@@ -31,9 +29,9 @@ function commons_tasks_node_info() {
     'task' => array(
       'name' => t('Task'),
       'base' => 'node_content',
-      'description' => t('Start a collaboration by listing what has to be done.'),
+      'description' => 'Start a collaboration by listing what has to be done.',
       'has_title' => '1',
-      'title_label' => t('Task name'),
+      'title_label' => t('Title'),
       'help' => '',
     ),
   );

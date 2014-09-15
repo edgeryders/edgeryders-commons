@@ -7,25 +7,6 @@
 include_once 'commons_tasks.features.inc';
 
 /**
- * Implements hook_menu_alter().
- */
-function commons_tasks_menu_alter(&$items) {
-  $items['casetracker']['page callback']
-    = 'commons_tasks_redirect_case_to_tasks';
-  $items['casetracker/my']['page callback']
-    = 'commons_tasks_redirect_case_to_tasks';
-  $items['casetracker/projects']['page callback']
-    = 'commons_tasks_redirect_case_to_tasks';
-}
-
-/**
- * Redirect casetracker to tasks.
- */
-function commons_tasks_redirect_case_to_tasks() {
-  drupal_goto('tasks');
-}
-
-/**
 * Implements hook_commons_bw_group_widget().
 */
 function commons_tasks_commons_bw_group_widget() {
@@ -181,31 +162,3 @@ function _commons_tasks_mail_text($key, $language = NULL, $variables = array(), 
   $subject = variable_get_value('common_tasks_assignee_notification_subject');
   $body = variable_get_value('common_tasks_assignee_notification_subject');
 }
-
-/**
- * Implements hook_views_query_alter()
- */
-function commons_tasks_views_query_alter(&$view, &$query) {
-  if ($view->name == 'commons_tasks_casetracker_project_cases'
-    && ($view->current_display == 'page_2')) {
-    global $user;
-    $field_to_override = 'field_data_field_assignee.field_assignee_target_id';
-    $conditions = &$query->where[1]['conditions'];
-    foreach ($conditions as $key => $condition) {
-      if ($condition['field'] === $field_to_override) {
-        $conditions[$key]['value'] = $user->uid;
-      }
-    }
-  }
-}
-
-/**
- * Implements hook_module_implements_alter()
- */
- function commons_tasks_module_implements_alter(&$implementations, $hook) {
-   if ($hook == 'views_query_alter') {
-     $group = $implementations['commons_tasks'];
-     unset($implementations['commons_tasks']);
-     $implementations['commons_tasks'] = $group;
-   }
- }

@@ -7,4 +7,3 @@ function commons_tasks_update_7001() {
   db_query("UPDATE {system} SET weight = :weight WHERE type = 'module' AND name = 'commons_tasks'", array(':weight' => 9999));
 }
 
-
