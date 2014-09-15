@@ -4,7 +4,6 @@ core = 7.x
 package = Commons - Content types
 version = 7.x-3.3
 project = commons_tasks
-dependencies[] = casetracker
 dependencies[] = commons_groups
 dependencies[] = features_override
 dependencies[] = field_group
