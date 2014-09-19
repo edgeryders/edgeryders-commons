@@ -1,0 +1,97 @@
+<?php
+/**
+ * @file
+ *   A simple Groups Audience token for Organic Groups.
+ */
+
+/**
+ * Implements hook_token_info().
+ */
+function og_token_token_info() {
+  $info = array();
+
+  $info['tokens']['node']['og-group-audience'] = array(
+    'name' => t('Group audience labels'),
+    'description' => t('Outputs the group audience labels of a node.'),
+    'type' => 'array',
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function og_token_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  $join = isset($options['join']) ? $options['join'] : ', ';
+
+  // Skip if we are not given a node with a group audience field.
+  if ($type == 'node' && !empty($data['node']->group_audience)) {
+    // Loop through the given tokens.
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'og-group-audience':
+          // Avoid loading the labels more than once.
+          if (!isset($labels)) {
+            $groups = og_token_get_group_audience_groups($data['node']);
+            $labels = og_token_get_group_labels($groups, $options);
+          }
+          $replacements[$original] = implode($join, $labels);
+          break;
+      }
+    }
+
+    // Resolve chained token relationships.
+    if ($group_audience_tokens = token_find_with_prefix($tokens, 'og-group-audience')) {
+      if (!isset($labels)) {
+        $groups = og_token_get_group_audience_groups($data['node']);
+        $labels = og_token_get_group_labels($groups, $options);
+      }
+      $replacements += token_generate('array', $group_audience_tokens, array('array' => $labels), $options);
+    }
+  }
+  return $replacements;
+}
+
+/**
+ * Return the group labels of a given array of groups.
+ *
+ * @param array $groups
+ *   An array of Organic Group group objects.
+ * @param array $options
+ *   An associative array of options for token replacement.
+ *
+ * @return array
+ *   An array containing the labels of the passed in groups.
+ */
+function og_token_get_group_labels($groups, $options) {
+  $labels = array();
+  $sanitize = !empty($options['sanitize']);
+
+  foreach ($groups as $group) {
+    $labels[] = $sanitize ? check_plain($group->label) : $group->label;
+  }
+  return $labels;
+}
+
+/**
+ * Return the groups that are referenced in the group_audience field of a node.
+ *
+ * @param object $node
+ *   A node object.
+ *
+ * @return array
+ *   An array of Organic Group group objects.
+ */
+function og_token_get_group_audience_groups($node) {
+  $groups = array();
+
+  $group_audiences = field_get_items('node', $node, 'group_audience');
+  foreach ($group_audiences as $group_audience) {
+    if (!empty($group_audience['gid']) && $group = og_get_group('group', $group_audience['gid'])) {
+      $groups[] = $group;
+    }
+  }
+  return $groups;
+}

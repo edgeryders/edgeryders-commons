@@ -1,0 +1,6 @@
+name = OG Token
+description = Provides a token to retrieve Organic Groups' groups audience labels
+core = 7.x
+package = Organic groups
+dependencies[] = og
+dependencies[] = token
