@@ -70,7 +70,8 @@ function og_token_get_group_labels($nodes, $options) {
   $sanitize = !empty($options['sanitize']);
 
   foreach ($nodes as $group) {
-    $labels[] = $sanitize ? check_plain($group->title) : $group->title;
+    $label = drupal_get_path_alias('node/' . $group->nid);
+    $labels[] = $sanitize ? check_plain($label) : $label;
   }
   return $labels;
 }
