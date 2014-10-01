@@ -1,0 +1,26 @@
+# Armenian translation of Devel (7.x-1.5)
+# Copyright (c) 2014 by the Armenian translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Devel (7.x-1.5)\n"
+"POT-Creation-Date: 2014-05-02 19:21+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Armenian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+msgid "delete"
+msgstr "հեռացնել"
+msgid "Delete"
+msgstr "Հեռացնել"
+msgid "Submit"
+msgstr "Կիրառել"
+msgid "Operations"
+msgstr "Գործողություններ"
+msgid "Closed"
+msgstr "Փակված"
+msgid "Front page"
+msgstr "Առջևի էջ"

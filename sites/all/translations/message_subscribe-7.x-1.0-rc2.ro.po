@@ -1,0 +1,28 @@
+# Romanian translation of Message  Subscribe (7.x-1.0-rc2)
+# Copyright (c) 2014 by the Romanian translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Message  Subscribe (7.x-1.0-rc2)\n"
+"POT-Creation-Date: 2014-03-30 18:21+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Romanian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=((n==1)?(0):(((n==0)||(((n%100)>0)&&((n%100)<20)))?(1):2));\n"
+
+msgid "more"
+msgstr "mai multe"
+msgid "Reset"
+msgstr "Resetează"
+msgid "Message"
+msgstr "Mesaj"
+msgid "Subscriptions"
+msgstr "Abonări"
+msgid "All"
+msgstr "Toate"
+msgid "Sort by"
+msgstr "Sortare după"
+msgid "Apply"
+msgstr "Aplicare"

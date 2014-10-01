@@ -1,0 +1,26 @@
+# Arabic translation of Content Experiments (7.x-1.4)
+# Copyright (c) 2013 by the Arabic translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Content Experiments (7.x-1.4)\n"
+"POT-Creation-Date: 2013-07-27 21:02+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Arabic\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=((n==1)?(0):((n==0)?(1):((n==2)?(2):((((n%100)>=3)&&((n%100)<=10))?(3):((((n%100)>=11)&&((n%100)<=99))?(4):5)))));\n"
+
+msgid "Pages"
+msgstr "الصفحات"
+msgid ""
+"Enter one page per line as Drupal paths. The '*' character is a "
+"wildcard. Example paths are %blog for the blog page and %blog-wildcard "
+"for every personal blog. %front is the front page."
+msgstr ""
+"أدخل مسارات دروبال: عنوان صفحة واحد في "
+"كل سطر. علامة '*' تحل محل أي سلسلة حرفية. "
+"على سبيل المثال %blog هو مسار المدونات، "
+"%blog-wildcard لمدونة كل مستخدم. %front هي "
+"الصفحة الرئيسية."

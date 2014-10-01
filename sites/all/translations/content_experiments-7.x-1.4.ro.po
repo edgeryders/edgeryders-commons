@@ -1,0 +1,25 @@
+# Romanian translation of Content Experiments (7.x-1.4)
+# Copyright (c) 2013 by the Romanian translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Content Experiments (7.x-1.4)\n"
+"POT-Creation-Date: 2013-07-27 21:03+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Romanian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=((n==1)?(0):(((n==0)||(((n%100)>0)&&((n%100)<20)))?(1):2));\n"
+
+msgid "Pages"
+msgstr "Pagini"
+msgid ""
+"Enter one page per line as Drupal paths. The '*' character is a "
+"wildcard. Example paths are %blog for the blog page and %blog-wildcard "
+"for every personal blog. %front is the front page."
+msgstr ""
+"Introdu câte o pagină pe rând, sub formă de căi de acces Drupal. "
+"Caracterul '*' este universal. Exemple de căi sunt '%blog' pentru "
+"pagina de blog şi %blog-wildcard pentru fiecare blog personal. %front "
+"este prima pagină."

@@ -1,0 +1,20 @@
+# German translation of Custom Search (7.x-1.16)
+# Copyright (c) 2014 by the German translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Custom Search (7.x-1.16)\n"
+"POT-Creation-Date: 2014-04-24 06:22+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "Search results"
+msgstr "Suchergebnisse"
+msgid "Your search yielded no results"
+msgstr "Diese Suche lieferte keine Ergebnisse."
+msgid "The block cannot be placed in this region."
+msgstr "Der Block kann nicht in dieser Region abgelegt werden."

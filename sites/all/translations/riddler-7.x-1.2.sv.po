@@ -1,0 +1,28 @@
+# Swedish translation of Captcha Riddler (7.x-1.2)
+# Copyright (c) 2011 by the Swedish translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Captcha Riddler (7.x-1.2)\n"
+"POT-Creation-Date: 2011-05-18 20:37+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "Delete"
+msgstr "Radera"
+msgid "Weight"
+msgstr "Vikt"
+msgid "Add another"
+msgstr "Lägg till fler"
+msgid "Question"
+msgstr "Fråga"
+msgid "Answer"
+msgstr "Svar"
+msgid "Save settings"
+msgstr "Spara inställningar"
+msgid "Spam control"
+msgstr "Reglerar spam"

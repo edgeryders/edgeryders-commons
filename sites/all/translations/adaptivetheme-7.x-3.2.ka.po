@@ -1,0 +1,24 @@
+# Georgian translation of AdaptiveTheme (7.x-3.2)
+# Copyright (c) 2014 by the Georgian translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: AdaptiveTheme (7.x-3.2)\n"
+"POT-Creation-Date: 2014-03-23 19:14+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Georgian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "Home"
+msgstr "მთავარი"
+msgid "Type"
+msgstr "ტიპი"
+msgid "None"
+msgstr "არცერთი"
+msgid "Weight"
+msgstr "წონა"
+msgid "Extensions"
+msgstr "გაფართოებები"

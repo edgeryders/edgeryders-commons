@@ -1,0 +1,20 @@
+# Spanish translation of Message notify (7.x-2.5)
+# Copyright (c) 2013 by the Spanish translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Message notify (7.x-2.5)\n"
+"POT-Creation-Date: 2013-04-23 12:13+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "None"
+msgstr "Ninguno"
+msgid "Message"
+msgstr "Mensaje"
+msgid "Email"
+msgstr "Correo electrónico"

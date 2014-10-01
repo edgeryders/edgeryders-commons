@@ -1,0 +1,28 @@
+# Spanish translation of Secure Login (7.x-1.4)
+# Copyright (c) 2013 by the Spanish translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Secure Login (7.x-1.4)\n"
+"POT-Creation-Date: 2013-02-12 02:01+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "Comment form"
+msgstr "Formulario de comentario"
+msgid "User login form"
+msgstr "Formulario de acceso del usuario"
+msgid "User edit form"
+msgstr "Formulario de modificación del usuario"
+msgid "User registration form"
+msgstr "Formulario de registro de usuario"
+msgid "Webform"
+msgstr "Formulario web"
+msgid "Node form"
+msgstr "Formulario de nodo"
+msgid "Personal contact form"
+msgstr "Formulario de contacto personal"

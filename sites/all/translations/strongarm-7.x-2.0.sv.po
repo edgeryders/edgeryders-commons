@@ -1,0 +1,26 @@
+# Swedish translation of Strongarm (7.x-2.0)
+# Copyright (c) 2013 by the Swedish translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Strongarm (7.x-2.0)\n"
+"POT-Creation-Date: 2013-03-19 08:37+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "Value"
+msgstr "Värde"
+msgid "Variable"
+msgstr "Variabel"
+msgid "Overridden"
+msgstr "Åsidosatt"
+msgid "Storage"
+msgstr "Lagring"
+msgid "Strongarm"
+msgstr "Strongarm"
+msgid "In code"
+msgstr "I kod"
