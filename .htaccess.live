@@ -52,6 +52,20 @@ DirectoryIndex index.php index.html index.htm
   </FilesMatch>
 </IfModule>
 
+# Redirects to temporarily work around non-working international frontpages.
+RedirectMatch 301 ^/ar/$ /
+RedirectMatch 301 ^/hy/$ /
+RedirectMatch 301 ^/nl/$ /
+RedirectMatch 301 ^/en/$ /
+RedirectMatch 301 ^/fr/$ /
+RedirectMatch 301 ^/ka/$ /
+RedirectMatch 301 ^/de/$ /
+RedirectMatch 301 ^/it/$ /
+RedirectMatch 301 ^/ro/$ /
+RedirectMatch 301 ^/ru/$ /
+RedirectMatch 301 ^/es/$ /
+RedirectMatch 301 ^/sv/$ /
+
 # Various rewrite rules.
 <IfModule mod_rewrite.c>
   RewriteEngine on
