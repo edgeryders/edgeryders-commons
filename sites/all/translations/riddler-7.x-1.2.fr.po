@@ -1,0 +1,28 @@
+# French translation of Captcha Riddler (7.x-1.2)
+# Copyright (c) 2012 by the French translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Captcha Riddler (7.x-1.2)\n"
+"POT-Creation-Date: 2012-06-30 17:47+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+msgid "Delete"
+msgstr "Supprimer"
+msgid "Weight"
+msgstr "Poids"
+msgid "Add another"
+msgstr "En ajouter un(e) autre"
+msgid "Question"
+msgstr "Question"
+msgid "Answer"
+msgstr "Réponse"
+msgid "Save settings"
+msgstr "Enregistrer les paramètres"
+msgid "Spam control"
+msgstr "Contrôle du pollupostage"

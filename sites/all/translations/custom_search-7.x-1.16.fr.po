@@ -1,0 +1,27 @@
+# French translation of Custom Search (7.x-1.16)
+# Copyright (c) 2014 by the French translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Custom Search (7.x-1.16)\n"
+"POT-Creation-Date: 2014-04-24 06:22+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+msgid "Search results"
+msgstr "Résultats de la recherche"
+msgid "Your search yielded no results"
+msgstr "Votre recherche n'a donné aucun résultat"
+msgid "The block cannot be placed in this region."
+msgstr "Le bloc ne peut pas être placé dans cette région."
+msgid ""
+"Select the vocabularies to present as search options in the search "
+"block. If none is selected, no selector will be displayed."
+msgstr ""
+"Sélectionnez les vocabulaires à présenter comme options de "
+"recherche dans le bloc de recherche. Si aucun n'est sélectionné, "
+"aucun sélecteur ne sera affiché."

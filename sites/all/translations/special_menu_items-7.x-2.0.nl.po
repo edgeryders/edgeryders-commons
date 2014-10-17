@@ -1,0 +1,22 @@
+# Dutch translation of Special menu items (7.x-2.0)
+# Copyright (c) 2012 by the Dutch translation team
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Special menu items (7.x-2.0)\n"
+"POT-Creation-Date: 2012-09-04 20:02+0000\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Language-Team: Dutch\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "HTML tag for \"nolink\""
+msgstr "HTML-tag voor 'nolink'"
+msgid "Special Menu Items"
+msgstr "Speciale menu-items"
+msgid "Configure Special Menu Items."
+msgstr "Speciale menu-items instellen."
+msgid "Special menu items"
+msgstr "Speciale menu-items"
