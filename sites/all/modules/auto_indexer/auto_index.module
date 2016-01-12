@@ -1,0 +1,101 @@
+<?php
+
+ /**
+  * @file
+  * Auto-index: Automatically indexes node content on update.
+  * 
+  * Uses Drupal's search module to automatically index updated nodes as and when they are updated.
+  * This means that a user can update node content and that content is immediately searchable,
+  * by users of the site.
+  * 
+  * @author Steve Osguthorpe <steve@futurate.com>
+  */
+
+
+/**
+ * Implementation of hook_node_delete
+ */
+function auto_index_node_delete($node){
+	
+	// Update search totals to reflect deleted node content.
+	search_update_totals();
+}
+
+/**
+ * Implementation of hook_node_update
+ */
+function auto_index_node_update($node){
+	_auto_index_index_node($node);
+}
+
+/**
+ * Implementation of hook_node_insert
+ */
+function auto_index_node_insert($node){
+	_auto_index_index_node($node);
+}
+
+/**
+ * Implementation of hook_comment_insert
+ */
+function auto_index_comment_insert($comment) {
+	_auto_index_index_node($comment);
+}
+
+/**
+ * Implementation of hook_comment_update
+ */
+function auto_index_comment_update($comment) {
+	_auto_index_index_node($comment);
+}
+
+/**
+ * Implementation of hook_comment_delete
+ */
+function auto_index_comment_delete($comment) {
+	_auto_index_index_node($comment);
+}
+
+/**
+ * Implementation of hook_comment_publish
+ */
+function auto_index_comment_publish($comment) {
+	_auto_index_index_node($comment);
+}
+
+/**
+ * Implementation of hook_comment_unpublish
+ */
+function auto_index_comment_unpublish($comment) {
+	_auto_index_index_node($comment);
+}
+
+
+function _auto_index_index_node(&$node) {
+	
+	// Static variable to keep track of any node ids already indexed.
+	static $indexed_nodes = array();
+
+	// Extract the node ID
+	$node_id = is_array($node) ? $node['nid'] : $node->nid;
+	
+	// Check if the node ID has already been indexed.
+	if (array_search($node_id, $indexed_nodes) === false) {
+		
+		// Ensure we force the cache to be updated so latest content is indexed.
+		$node_obj = node_load(
+			$node_id,  		// The node id.
+			NULL,					// Default to current version.
+			TRUE					// Flag that the cache should be updated to ensure the latest content is indexed.
+		);
+	
+		// Do the indexing of this node only.
+		_node_index_node($node_obj);
+	
+		// Update search totals.
+		search_update_totals();
+		
+		// Append to array to ensure node only indexed once per action.
+		$indexed_nodes[] = $node_id;
+	}
+}

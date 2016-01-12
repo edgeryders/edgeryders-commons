@@ -1,0 +1,322 @@
+.right-side > .content {
+    padding-top:10px;
+}
+
+#dashboard-controls {
+    display:none;
+}
+.content-header {
+    width: 100%;
+    z-index: 999;
+}
+.rickshaw_graph .x_tick .title {
+    left: -3px;
+    font-size:10px;
+}
+.rickshaw_graph .x_tick {
+    border-left: 1px dotted rgba(255,255,255,.3);
+}
+.big-metric {
+    height: 185px;
+}
+.sub-metric {
+    text-align:right;
+    margin-right:10px;
+    font-size:16px;
+    line-height:16px;
+    clear: right;
+}
+.minichart {
+    padding:10px;
+    height:90px;
+    margin:0 auto;
+}
+.minichart .x_tick .title {
+    font-size:10px;
+    margin-left:0px;
+    left:3px;
+}
+#network-container {
+    height:785px;
+    position:relative;
+    background-color:#101010;
+    overflow: hidden;
+    border-top: 0 !important;
+}
+#network-container .box-tools {
+    position:absolute;
+    z-index:900;
+    right:10px;
+    top:10px;
+    display:none;
+}
+#network-container #node-marker {
+    position:absolute;
+    width:1px;
+    height:1px;
+    background-color:transparent;
+    z-index:999;
+}
+#network-container #node-marker,
+#network-container .popover {
+    pointer-events: none;    
+}
+#network {
+    height:785px;
+    z-index:100;
+}
+.node-hover-title {
+    font-size:12px;
+    font-weight:bold;
+}
+.node-hover-data {
+    padding-left: 0px;
+    font-size: 11px;
+    white-space:nowrap;
+    list-style-type:none;
+}
+.node-hover-data li span {
+    font-weight:bold;    
+}
+.filter-btn {
+    width:19px;
+    height:19px;
+    display:inline-block;
+    padding:0;
+    margin:3px;
+    color:#fefefe;
+}
+.user-search {
+    font-size:12px;
+}
+.user-search .input-group {
+    margin-top: 8px;
+}
+.user-search .ac-content li.ui-menu-item:last-child:after {
+    content: "";
+}
+.user-search .ac-content li.ui-menu-item:after {
+    content: ",";
+}
+.user-search .ac-content ul {
+    margin-left: 0;
+    padding-left: 0;
+}
+.user-search .ac-content li.ui-menu-item {
+    display: inline-block;
+    margin-right: 0.75em;
+    cursor: pointer;
+}
+.moderators-check-cnt {
+    line-height:52px;
+    font-size:12px;
+}
+
+.multi-metric {
+        position: relative;
+}
+.multi-metric .chart-cnt {
+        position: relative;
+}
+.rickshaw_graph .y_ticks {
+        left: 0;
+}
+.rickshaw_graph .detail {
+    bottom:18px;
+    background:rgba(0, 192, 239, 0.4);
+}
+.multi-metric .chart-cnt .chart {
+        position: absolute;
+        top: 0;
+        left: 40px;
+}
+.multi-metric .chart-cnt .y_ax {
+        position: absolute;
+        top: 0;
+        left: 10px;
+        width: 30px;
+}
+.multi-metric .chart-cnt .x_ax {
+        position: absolute;
+        bottom: 0;
+        left: 40px;
+        height: 30px;
+}
+.multi-metric .chart-legend {
+    padding: 0 10px 20px 40px;
+    overflow:hidden;
+}
+.multi-metric .chart-legend span {
+    display:block;
+    float:left;
+    margin-right:20px;
+}
+.small-box .inner {
+    height:85px;
+}
+.small-box h3 {
+    font-size: 45px;
+    margin: 0 10px 0 0;
+    float: right;
+}
+.small-box p {
+    font-size: 20px;
+}
+.helped {
+    position:relative;
+}
+.help-button {
+    cursor:pointer;
+}
+#tutorial {
+    display:none;
+    position:relative;
+    padding-top:10px;
+}
+#tutorial-close {
+    font-size:10px;
+}
+#tutorial .box {
+    margin-bottom:0px;
+}
+.content-header .toprightmenu {
+  float: right;
+  list-style: none;
+  background: transparent;
+  margin-top: 0px;
+  margin-bottom: 0;
+  font-size: 12px;
+  padding: 7px 5px;
+  position: absolute;
+  top: 15px;
+  right: 10px;
+  -webkit-border-radius: 2px;
+  -moz-border-radius: 2px;
+  border-radius: 2px;
+}
+.content-header .toprightmenu > li {
+  display: inline-block;
+}
+.content-header .toprightmenu > li > a {
+  color: rgb(240, 240, 240);
+  text-decoration: none;
+}
+.content-header .toprightmenu > li > a > .fa,
+.content-header .toprightmenu > li > a > .glyphicon,
+.content-header .toprightmenu > li > a > .ion {
+  margin-right: 5px;
+}
+.content-header .toprightmenu > li + li:before {
+  content: '|\00a0';
+}
+#gexf-save .fa {
+ margin-left: 5px;   
+}
+@media screen and (max-width: 767px) {
+  .right-side > .content-header > .toprightmenu {
+    position: relative;
+    margin-top: 5px;
+    top: 0;
+    right: 0;
+    float: none;
+    background: #efefef;
+  }
+}
+
+#tutorial .tut-answer {
+    display:none;
+}
+#tutorial .tut-text {
+    overflow:hidden;
+    padding-bottom: 10px;
+    font-size: 1.1em;
+}
+#tutorial .tut-result {
+    margin-top:18px;
+}
+#tutorial-open {
+}
+#datapackage {
+    margin-bottom:20px;
+}
+body {
+  color: rgb(240, 240, 240)  !important;
+  background-color: rgb(51, 51, 51) !important;
+}
+.btn.btn-gray {
+  background-color: rgb(82, 82, 82);
+  border-color: rgb(115, 115, 115);
+  color: rgb(255, 255, 255);
+}
+.btn.btn-gray:hover,
+.btn.btn-gray:active,
+.btn.btn-gray.hover {
+  background-color: rgb(115, 115, 115);
+}
+.bg-darkgray {
+  background-color: rgb(34, 34, 34) !important;
+  color: rgb(240, 240, 240)  !important;
+}
+
+.box {
+  background-color: rgb(34, 34, 34) !important;
+  border-top: 0px solid rgb(34, 34, 34);
+  color: rgb(240, 240, 240)  !important;
+}
+.box .box-header {
+    color: rgb(240, 240, 240)  !important;
+}
+.content-header {
+  background-color: rgb(68, 68, 68) !important;
+}
+#main-block {
+  background-color: rgb(51, 51, 51) !important;
+}
+.rickshaw_graph.y_axis {
+  color: rgb(240, 240, 240)  !important;
+  fill: rgb(240, 240, 240)  !important;
+  stroke:rgba(255,255,255,.16) !important;
+}
+.popover {
+  color: rgb(0,0,0) !important;
+}
+
+.rickshaw_graph .y_grid .tick,
+.rickshaw_graph .x_grid_d3 .tick,
+.rickshaw_graph.y_axis .tick line {
+  stroke:rgba(255,255,255,.16) !important;
+}
+#tutorial .box {
+  background-color: rgb(255, 255, 255) !important;
+  color: rgb(34, 34, 34)  !important;
+}
+#tutorial .box-header {
+  color: rgb(34, 34, 34)  !important;
+}
+#tutorial  .callout.callout-warning {
+  background-color: rgb(240, 240, 240) !important;
+  border-color: rgb(221, 221, 221);
+}
+#max-age-message {
+  background-color: rgb(255, 212, 212) !important;
+  color: rgb(243, 53, 18) !important;
+  text-align:center;
+  padding:4px 0;
+}
+
+#max-age-message a {
+  display:block;
+  float: right;
+  margin-right: 10px;
+  color: rgb(243, 53, 18) !important;
+  cursor:pointer;
+}
+
+.network-params .row {
+    margin-bottom:4px;
+}
+
+#network-filter {
+    width:108px !important;
+    margin:0 auto;
+}
