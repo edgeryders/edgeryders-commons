@@ -31,15 +31,14 @@ function commons_activity_streams_default_message_type() {
     "argument_keys" : [],
     "argument" : [],
     "category" : "message_type",
-    "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
+    "data" : {
+      "token options" : { "clear" : 1 },
+      "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" }
+    },
     "language" : "",
     "arguments" : null,
     "message_text" : { "und" : [
-        {
-          "value" : "[message:user:picture:35x35]",
-          "format" : "filtered_html",
-          "safe_value" : "[message:user:picture:35x35]"
-        },
+        { "value" : "[message:user:picture:35x35]", "format" : "filtered_html" },
         {
           "value" : "\\u003Ca href=\\u0022[message:user:url:absolute]\\u0022\\u003E[message:user:name]\\u003C\\/a\\u003E commented on \\u003Ca href=\\u0022[message:field-target-nodes:0:url]\\u0022\\u003E[message:field-target-nodes:0:title_field]\\u003C\\/a\\u003E",
           "format" : "full_html",
@@ -60,15 +59,14 @@ function commons_activity_streams_default_message_type() {
     "argument_keys" : [],
     "argument" : [],
     "category" : "message_type",
-    "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
+    "data" : {
+      "token options" : { "clear" : 1 },
+      "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" }
+    },
     "language" : "",
     "arguments" : null,
     "message_text" : { "und" : [
-        {
-          "value" : "[message:user:picture:35x35]",
-          "format" : "filtered_html",
-          "safe_value" : "[message:user:picture:35x35]"
-        },
+        { "value" : "[message:user:picture:35x35]", "format" : "filtered_html" },
         {
           "value" : "\\u003Ca href=\\u0022[message:user:url:absolute]\\u0022\\u003E[message:user:name]\\u003C\\/a\\u003E created \\u003Ca href=\\u0022[message:field-target-nodes:0:url]\\u0022\\u003E[message:field-target-nodes:0:title_field]\\u003C\\/a\\u003E",
           "format" : "full_html",
@@ -89,15 +87,14 @@ function commons_activity_streams_default_message_type() {
     "argument_keys" : [],
     "argument" : [],
     "category" : "message_type",
-    "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
+    "data" : {
+      "token options" : { "clear" : 1 },
+      "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" }
+    },
     "language" : "",
     "arguments" : null,
     "message_text" : { "und" : [
-        {
-          "value" : "[message:user:picture:35x35]",
-          "format" : "filtered_html",
-          "safe_value" : "[message:user:picture:35x35]"
-        },
+        { "value" : "[message:user:picture:35x35]", "format" : "filtered_html" },
         {
           "value" : "\\u003Ca href=\\u0022[message:user:url:absolute]\\u0022\\u003E[message:user:name]\\u003C\\/a\\u003E has an updated profile",
           "format" : "full_html",

@@ -57,7 +57,7 @@ function theme_radioactivity_gauge($vars) {
  * Theme callback
  */
 function theme_radioactivity_history($vars) {
-  
+
   drupal_add_js(drupal_get_path('module', 'radioactivity') . '/js/jquery.sparkline.min.js');
   drupal_add_js(drupal_get_path('module', 'radioactivity') . '/js/radioactivity-history.js');
   drupal_add_css(drupal_get_path('module', 'radioactivity') . '/css/radioactivity.css');
@@ -68,7 +68,7 @@ function theme_radioactivity_history($vars) {
     'cutoff' => $vars['cutoff'],
     'tooltipFormat' => '<span style="color:{{color}}">&#9679;</span> {{value}} | {{offset:tooltips}}'
   );
-  
+
   foreach ($vars['dataset'] as $time => $value) {
     $data['values'][] = round($value, 2);
     $data['tooltips'][] = format_date($time, 'short');
@@ -243,42 +243,76 @@ function radioactivity_requirements($phase) {
 }
 
 /**
- * Update field energy for given entity_id+entity_type+bundle+field_name
+ * Update field energy for given entity.
+ *
+ * @param string $entity_type
+ *   The type of entity such as 'node' or 'user'.
+ * @param int $entity_id
+ *   The ID of the entity to update energy for.
+ * @param string $field_name
+ *   The name of the radioactivity field to update.
+ * @param string $language
+ *   The language code of the field, such as LANGUAGE_NONE.
+ * @param int $energy_delta
+ *   The change in energy to apply to the field.
+ * @param int $time
+ *   The Unix timestamp of when the energy was emitted.
+ * @param bool $force
+ *   Optional parameter. Set to TRUE to replace the current energy with the
+ *   value passed in $energy_delta instead of updating it.
  */
-function _radioactivity_update_energy(
-  $entity_type,
-  $bundle,
-  $field_name,
-  $language,
-  $entity_id,
-  $energy_delta,
-  $time,
-  $force = FALSE
-) {
+function _radioactivity_update_energy($entity_type, $entity_id, $field_name, $language, $energy_delta, $time, $force = FALSE) {
+  $entities = entity_load($entity_type, array($entity_id));
+  $entity = reset($entities);
 
-  $table_name = "field_data_" . $field_name;
-
-  $energy_column_name = $field_name . '_' . RADIOACTIVITY_FIELD_ENERGY;
-  $timestamp_column_name = $field_name . '_' . RADIOACTIVITY_FIELD_TIMESTAMP;
-
-  $q = db_merge($table_name)->key(array(
-      'entity_type' => $entity_type,
-      'bundle' => $bundle,
-      'entity_id' => $entity_id,
-      'language' => $language,
-      'delta' => 0,
-    ))->fields(array(
-      'revision_id' => $entity_id,
-      $timestamp_column_name => $time,
-      $energy_column_name => $energy_delta,
-    ));
-
-  if (!$force) {
-    // update instead of set the energy
-    $q->expression($energy_column_name, $energy_column_name . ' + :inc', array(':inc' => $energy_delta));
+  // Ensure a field value is set so it can be incremented if $force is not TRUE.
+  if (!isset($entity->{$field_name}[$language])) {
+    $entity->{$field_name}[$language] = array(
+      0 => array(
+        RADIOACTIVITY_FIELD_ENERGY => 0.0,
+      ),
+    );
   }
 
-  $q->execute();
+  if ($force) {
+    $entity->{$field_name}[$language][0][RADIOACTIVITY_FIELD_ENERGY] = $energy_delta;
+  }
+  else {
+    $entity->{$field_name}[$language][0][RADIOACTIVITY_FIELD_ENERGY] += $energy_delta;
+  }
+
+  $entity->{$field_name}[$language][0][RADIOACTIVITY_FIELD_TIMESTAMP] = $time;
+
+  // Some modules use the original property.
+  if (!isset($entity->original)) {
+    $entity->original = $entity;
+  }
+
+  // Ensure that file_field_update() will not trigger additional usage.
+  unset($entity->revision);
+
+  // Check the field info:
+  $info = field_info_field($field_name);
+
+  // If we are using the sql storage, we can use the faster field_sql_storage_field_storage_write function:
+  if($info['storage']['type'] == 'field_sql_storage') {
+    $fields = array($info['id']);
+    field_sql_storage_field_storage_write($entity_type, $entity, 'update', $fields);
+
+    // Clear the field cache for the entity:
+    list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+    $entity_info = entity_get_info($entity_type);
+    if ($entity_info['field cache']) {
+      cache_clear_all("field:$entity_type:$id", 'cache_field');
+    }
+  } else {
+    // In case the field uses another type of storage, invoke the field presave and update hooks.
+    field_attach_presave($entity_type, $entity);
+    field_attach_update($entity_type, $entity);
+    // Clear the cache for this entity.
+    entity_get_controller($entity_type)->resetCache(array($entity_id));
+  }
+
 }
 
 /**
@@ -517,6 +551,9 @@ function radioactivity_cron() {
         } // History
 
       } // Bundles
+
+      // Clear the entity caches.
+      entity_get_controller($entity_type)->resetCache();
     }
   }
 
@@ -616,13 +653,13 @@ function radioactivity_decay_profile_delete($machine_name) {
  * Callback for testing if certain machine name already exists
  */
 function radioactivity_decay_profile_exists($machine_name) {
-  
+
   $obj = db_select("radioactivity_decay_profile", "dcp")
     ->fields("dcp", array("machine_name"))
     ->condition("dcp.machine_name", $machine_name)
     ->execute()
     ->fetch();
-  
+
   return $obj != NULL;
 
 }
@@ -654,4 +691,28 @@ function radioactivity_form_ctools_export_ui_list_form_alter(&$form, &$form_stat
       );
     }
   }
+}
+
+/**
+ * Implements hook_page_alter()
+ * This is one of the two ways the emitters end up on the page, the other is hook_ajax_render_alter().
+ */
+function radioactivity_page_alter($page) {
+  radioactivity_update_emitters();
+}
+
+/**
+ * Implements hook_ajax_render_alter().
+ * This is one of the two ways the emitters end up on the page, the other is hook_page_alter().
+ */
+function radioactivity_ajax_render_alter(&$commands) {
+  radioactivity_update_emitters();
+
+  // Add the JS we have generated (this is a blatant copy from the ajax_render() func. :)
+  $scripts = drupal_add_js();
+  if (!empty($scripts['settings'])) {
+    $settings = $scripts['settings'];
+    array_unshift($commands, ajax_command_settings(call_user_func_array('array_merge_recursive', $settings['data']), TRUE));
+  }
+
 }

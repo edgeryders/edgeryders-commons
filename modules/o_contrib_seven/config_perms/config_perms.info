@@ -1,0 +1,14 @@
+name = Custom Permissions
+description = "Allows additional permissions to be created and managed through an administration form.
+<br /><small>Machine name: config_perms</small>"
+core = 7.x
+package = Permissions
+
+configure = admin/people/custom_permissions
+
+; Information added by Drupal.org packaging script on 2015-06-12
+version = "7.x-2.1"
+core = "7.x"
+project = "config_perms"
+datestamp = "1434074882"
+

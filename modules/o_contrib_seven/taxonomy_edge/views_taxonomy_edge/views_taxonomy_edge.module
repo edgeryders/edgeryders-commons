@@ -1,0 +1,77 @@
+<?php
+/**
+ * @file
+ * Integration with Views using Taxonomy Edge.
+ *
+ * Overrides the depth arguments and uses Taxonomy Edge for these.
+ * This now allows using 'all' as a depth argument.
+ */
+
+/**
+ * Implements hook_views_api().
+ */
+function views_taxonomy_edge_views_api() {
+  return array(
+    'api' => 3,
+  );
+}
+
+/**
+ * Implements hook_views_data_alter().
+ */
+function views_taxonomy_edge_views_data_alter(&$data) {
+  // Override term_node logic.
+  $data['node']['term_node_tid_depth'] = array(
+    'help' => t('Display content if it has the selected taxonomy terms, or children of the selected terms. Due to additional complexity, this has fewer options than the versions without depth.'),
+    'real field' => 'nid',
+    'argument' => array(
+      'title' => t('Has taxonomy term ID (with depth)'),
+      'handler' => 'views_handler_argument_term_edge_node_tid_depth',
+      'accept depth modifier' => TRUE,
+    ),
+    'filter' => array(
+      'title' => t('Has taxonomy terms (with depth)'),
+      'handler' => 'views_handler_filter_term_edge_node_tid_depth',
+    ),
+  );
+
+  $data['node']['term_node_tid_depth_modifier'] = array(
+    'title' => t('Has taxonomy term ID depth modifier'),
+    'help' => t('Allows the "depth" for Taxonomy: Term ID (with depth) to be modified via an additional contextual filter value.'),
+    'argument' => array(
+      'handler' => 'views_handler_argument_term_edge_node_tid_depth_modifier',
+    ),
+  );
+
+  // Tell taxonomy_term_data how to join with the edge tables.
+  $data['taxonomy_term_data']['table']['join']['taxonomy_term_edge'] = array(
+    'field' => 'tid',
+    'left_field' => 'tid',
+    'type' => 'INNER',
+    'handler' => 'views_join_term_edge',
+  );
+
+  $data['taxonomy_term_data']['children'] = array(
+    'title' => t('Term Children'),
+    'help' => t('The children taxonomy terms'),
+    'real field' => 'tid',
+    'relationship' => array(
+      'base' => 'taxonomy_term_edge',
+      'base field' => 'parent',
+      'handler' => 'views_handler_relationship',
+      'label' => t('Child terms'),
+      'title' => t('Child terms'),
+      'help' => t('The children of the current term'),
+    ),
+  );
+
+  // Hierarchy sort handler.
+  $data['taxonomy_term_data']['term_sort_hierarchy'] = array(
+    'group' => t('Taxonomy edge'),
+    'title' => t('taxonomy hierarchy order'),
+    'help' => t('Sort by hierarchy order'),
+    'sort' => array(
+      'handler' => 'views_handler_sort_term_edge_hierarchy',
+    ),
+  );
+}

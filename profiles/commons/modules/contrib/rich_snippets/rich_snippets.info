@@ -8,9 +8,9 @@ files[] = lib/Drupal/RichSnippets/SchemaPreprocessorInterface.php
 files[] = lib/Drupal/RichSnippets/Apachesolr/ApachesolrSchemaPreprocessor.php
 files[] = lib/Drupal/RichSnippets/Node/NodeSchemaPreprocessor.php
 
-; Information added by drupal.org packaging script on 2013-05-03
-version = "7.x-1.0-beta3"
+; Information added by Drupal.org packaging script on 2014-07-03
+version = "7.x-1.0-beta4"
 core = "7.x"
 project = "rich_snippets"
-datestamp = "1367621411"
+datestamp = "1404350028"
 

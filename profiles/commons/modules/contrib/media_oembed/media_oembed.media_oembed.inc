@@ -6,6 +6,17 @@
  */
 
 /**
+ * Implements hook_media_oembed_request_alter().
+ */
+function media_oembed_media_oembed_request_alter(&$parameters, &$provider, $url) {
+  // Instagram doesn't support requesting the maxheight parameter.
+  // @see http://instagram.com/developer/embedding/#oembed
+  if ($provider['name'] == 'default:instagram') {
+    unset($parameters['maxheight']);
+  }
+}
+
+/**
  * Implement hook_media_oembed_response_alter().
  */
 function media_oembed_media_oembed_response_alter(&$response) {

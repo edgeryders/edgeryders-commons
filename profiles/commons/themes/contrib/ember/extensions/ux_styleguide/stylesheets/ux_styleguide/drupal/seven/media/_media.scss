@@ -9,21 +9,6 @@
 /* jQuery UI Resets */
 
 .ui-dialog.media-wrapper {
-  min-width: 100%;
-
-  @include breakpoint($breakpoint-small) {
-    min-width: 0;
-  }
-
-  @include breakpoint(($breakpoint-small / .8)) {
-    .ui-dialog-titlebar {
-      padding: {
-        right: $inset-space;
-        left: $inset-space;
-      }
-    }
-  }
-
   .ui-dialog-buttonpane {
     display: none;
   }
@@ -32,8 +17,8 @@
 /* Media item display */
 
 .media-item {
-  background: #fff;
-  border: 1px solid #ccc;
+  background: #FFFFFF;
+  border: 1px solid #CCCCCC;
   padding: 5px;
   position: relative;
 
@@ -80,17 +65,17 @@
 
   .media-item {
     &.selected {
-      background: #f4ecc7;
-      border-color: #058ac5;
+      background: #F4ECC7;
+      border-color: #058AC5;
     }
 
     &:hover {
-      border-color: #058ac5;
+      border-color: #058AC5;
       cursor: pointer;
     }
 
     .label-wrapper label {
-      color: #058ac5;
+      color: #058AC5;
 
       &:hover {
         cursor: pointer;
@@ -136,6 +121,7 @@
     margin-right: 10px;
 
     &:hover {
+      border-color: #058AC5;
       cursor: pointer;
     }
 

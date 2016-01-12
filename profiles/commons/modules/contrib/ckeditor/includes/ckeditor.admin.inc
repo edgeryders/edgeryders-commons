@@ -44,7 +44,7 @@ function ckeditor_admin_main() {
   $ckconfig_file = $editor_path . '/config.js';
 
   //check if CKEditor plugin is installed
-  if (!_ckeditor_requirements_isinstalled()) {
+  if ($editor_path != '<URL>' && !_ckeditor_requirements_isinstalled()) {
     drupal_set_message(t(
             'Checking for !filename or !file.', array(
           '!filename' => '<code>' . $ckconfig_file . '</code>',
@@ -253,6 +253,10 @@ function ckeditor_admin_global_profile_form($form, $form_state, $mode = 'add') {
     '#collapsed' => FALSE,
   );
 
+  $current_path = ckeditor_path('relative');
+  if ($current_path == '<URL>') {
+    $current_path = ckeditor_path('url');
+  }
   $form['ckeditor_advanced_settings']['ckeditor_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Path to CKEditor'),
@@ -260,12 +264,13 @@ function ckeditor_admin_global_profile_form($form, $form_state, $mode = 'add') {
     '#size' => 40,
     '#maxlength' => 128,
     '#description' => t(
-        'The path to CKEditor (the WYSIWYG rich text editor downloaded from !ckeditorcom) relative to the document root.', array(
-      '!ckeditorcom' => l(t('ckeditor.com'), 'http://ckeditor.com/download')
+        'The path to CKEditor (the WYSIWYG rich text editor downloaded from !ckeditorcom). Provide a path relative to the document root, unless CKEditor is located on an external URL. In such case enter the full URL to a folder with CKEditor.<br />The simplest way to have the editor running is to use CDN, to use it set: !cdn', array(
+      '!ckeditorcom' => l(t('ckeditor.com'), 'http://ckeditor.com/download'),
+      '!cdn' => '<strong>//cdn.ckeditor.com/4.4.3/full-all</strong>'
         )
     ) .
-    '<br /> ' .
-    t('Available placeholders:!b &ndash; path of the Drupal installation (!base) !m &ndash; path where the CKEditor module is stored (!module).!l &ndash; path to the libraries directory (!library)', array(
+    '<br /><br /> ' .
+    t('Available placeholders:!b &ndash; path of the Drupal installation (!base) !m &ndash; path where the CKEditor module is stored (!module).!l &ndash; path to the libraries directory (!library).', array(
       '!b' => '<br /><code>%b</code>',
       '!m' => '<br /><code>%m</code>',
       '!l' => '<br /><code>%l</code>',
@@ -276,12 +281,16 @@ function ckeditor_admin_global_profile_form($form, $form_state, $mode = 'add') {
     ) .
     '<br /> ' .
     t('Current path: !path', array(
-      '!path' => '<code>' . ckeditor_path('relative') . '</code>'
+      '!path' => '<code>' . $current_path . '</code>'
         )
     ),
     '#required' => TRUE
   );
 
+  $local_path = ckeditor_path('local');
+  if ($local_path == '<URL>') {
+    $local_path = t('CKEditor is loaded from URL. Local path is not available.');
+  }
   $form['ckeditor_advanced_settings']['ckeditor_local_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Local path to CKEditor'),
@@ -295,7 +304,7 @@ function ckeditor_admin_global_profile_form($form, $form_state, $mode = 'add') {
     ) .
     '<br /> ' .
     t('Current path: !path', array(
-      '!path' => '<code>' . ckeditor_path('local') . '</code>'
+      '!path' => '<code>' . $local_path . '</code>'
         )
     )
   );
@@ -501,7 +510,7 @@ function ckeditor_admin_global_profile_form_submit($form, &$form_state) {
     $edit['ckeditor_path'] = '';
   }
   $edit['ckeditor_path'] = trim(rtrim($edit['ckeditor_path'], "/"));
-  if ($edit['ckeditor_path'] && 0 !== strpos($edit['ckeditor_path'], "/") && 0 !== strpos($edit['ckeditor_path'], "%")) {
+  if ($edit['ckeditor_path'] && 0 !== strpos($edit['ckeditor_path'], "/") && 0 !== strpos($edit['ckeditor_path'], "%") && !preg_match("|^http(s)?://|i", $edit['ckeditor_path'])) {
     //ensure that slash is at the beginning
     $edit['ckeditor_path'] = "/" . $edit['ckeditor_path'];
   }
@@ -556,7 +565,7 @@ function ckeditor_admin_global_profile_form_submit($form, &$form_state) {
 /**
  * Form builder for a profile
  */
-function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
+function ckeditor_admin_profile_form($form, $form_state, $task, $profile = NULL) {
   global $theme;
 
   if ($profile != NULL) {
@@ -595,7 +604,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     '#collapsed' => TRUE
   );
 
-  switch (arg(4)) {
+  switch ($task) {
     case 'clone':
       //load all profiles to check their names
       $profiles = ckeditor_profile_load();
@@ -640,7 +649,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
 
   $orig_formats = filter_formats();
 
-  if (arg(4) == 'edit' && !empty($profile->name)) {
+  if ($task == 'edit' && !empty($profile->name)) {
     $used_formats = db_select('ckeditor_input_format', 'f')->fields('f', array("format"))->distinct()->condition("f.name", array($profile->name), 'NOT IN')->execute()->fetchAllAssoc('format');
   }
   else {
@@ -651,7 +660,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
   $formats = array();
   $input_format_config_links = array();
   foreach ($orig_formats AS $format) {
-    if ((arg(4) == 'edit' && !empty($profile->input_formats) && array_key_exists($format->format, $profile->input_formats)) || !array_key_exists($format->format, $used_formats)) {
+    if (($task == 'edit' && !empty($profile->input_formats) && array_key_exists($format->format, $profile->input_formats)) || !array_key_exists($format->format, $used_formats)) {
       $formats[$format->format] = $format->name;
       $input_format_config_links[$format->format] = array("name" => $format->name, "config_url" => url("admin/config/content/formats/" . $format->format));
     }
@@ -726,28 +735,6 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     '#collapsed' => TRUE,
   );
 
-  $form['appearance']['default'] = array(
-    '#type' => 'radios',
-    '#title' => t('Default state'),
-    '#default_value' => !empty($profile->settings['default']) ? $profile->settings['default'] : 't',
-    '#options' => array(
-      't' => t('Enabled'),
-      'f' => t('Disabled')
-    ),
-    '#description' => t('Default editor state. If disabled, the rich text editor may still be enabled by using toggle.'),
-  );
-
-  $form['appearance']['show_toggle'] = array(
-    '#type' => 'radios',
-    '#title' => t('Show the disable/enable rich text editor toggle'),
-    '#default_value' => !empty($profile->settings['show_toggle']) ? $profile->settings['show_toggle'] : 't',
-    '#options' => array(
-      't' => t('Show'),
-      'f' => t('Hide')
-    ),
-    '#description' => t('Whether or not to show the disable/enable rich text editor toggle below the textarea.'),
-  );
-
   $ui_colors = array(
     "default" => t('CKEditor default'),
     "custom" => t('Select manually')
@@ -776,8 +763,13 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     drupal_add_js(array('ckeditor_uicolor' => $color_palette), 'setting');
   }
 
-  drupal_add_js('window.CKEDITOR_BASEPATH = "' . $editor_path . '/"', array('type' => 'inline', 'weight' => -100));
-  drupal_add_js($editor_url_path . '/ckeditor.js', array('type' => 'file', 'preprocess' => FALSE));
+  if ($editor_path == '<URL>') {
+    drupal_add_js($editor_url_path . '/ckeditor.js', 'external');
+  }
+  else {
+    drupal_add_js('window.CKEDITOR_BASEPATH = "' . $editor_path . '/"', array('type' => 'inline', 'weight' => -100));
+    drupal_add_js($editor_url_path . '/ckeditor.js', array('type' => 'file', 'preprocess' => FALSE));
+  }
   drupal_add_js($module_drupal_url_path . '/ckeditor.config.js', 'file');
   drupal_add_js($module_drupal_url_path . '/includes/ckeditor.admin.js', 'file');
 
@@ -786,6 +778,62 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     drupal_add_library('system', 'ui.sortable');
     drupal_add_js($module_drupal_url_path . '/includes/jqueryUI/sort.js', 'file');
   }
+
+  $form['appearance']['toolbar'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Toolbar'),
+    '#default_value' => !empty($profile->settings['toolbar']) ? $profile->settings['toolbar'] : '',
+    '#description' => t('Load sample toolbar: !toolbars', array("!toolbars" => '<a href="#" id="cke_toolbar_DrupalBasic" class="cke_load_toolbar">' . t('Basic') . '</a> | <a href="#" id="cke_toolbar_DrupalAdvanced" class="cke_load_toolbar">' . t('Advanced') . '</a> | <a href="#" id="cke_toolbar_DrupalFull" class="cke_load_toolbar">' . t('Full') . '</a>')),
+    '#wysiwyg' => FALSE,
+    '#rows' => 15
+  );
+
+  if ($toolbar_wizard == 't') {
+    $form['appearance']['toolbar_wizzard_used'] = array(
+      '#markup' => '<div>' . t('Current toolbar') . '</div><div class="sortableList" id="groupLayout"></div><br/>',
+      '#description' => t('Currently used buttons'),
+    );
+
+    drupal_add_js(array('cke_toolbar_buttons_all' => ckeditor_toolbar_buttons_all()), 'setting');
+
+    $form['appearance']['toolbar_wizzard_all'] = array(
+      '#markup' => '<div>' . t('Available buttons') . '</div><div id="allButtons" class="sortableList"></div><br/>',
+      '#description' => t('All available buttons'),
+    );
+  }
+
+  $form['appearance']['expand'] = array(
+    '#type' => 'radios',
+    '#title' => t('Toolbar state on startup'),
+    '#default_value' => !empty($profile->settings['expand']) ? $profile->settings['expand'] : 't',
+    '#options' => array(
+      't' => t('Expanded'),
+      'f' => t('Collapsed')
+    ),
+    '#description' => t('The toolbar will start in an expanded or collapsed state.'),
+  );
+
+  $form['appearance']['default'] = array(
+    '#type' => 'radios',
+    '#title' => t('Default editor state'),
+    '#default_value' => !empty($profile->settings['default']) ? $profile->settings['default'] : 't',
+    '#options' => array(
+      't' => t('Enabled'),
+      'f' => t('Disabled')
+    ),
+    '#description' => t('Default editor state. If disabled, the rich text editor may still be enabled by using toggle.'),
+  );
+
+  $form['appearance']['show_toggle'] = array(
+    '#type' => 'radios',
+    '#title' => t('Show the disable/enable rich text editor toggle'),
+    '#default_value' => !empty($profile->settings['show_toggle']) ? $profile->settings['show_toggle'] : 't',
+    '#options' => array(
+      't' => t('Show'),
+      'f' => t('Hide')
+    ),
+    '#description' => t('Whether or not to show the disable/enable rich text editor toggle below the textarea.'),
+  );
 
   $form['appearance']['uicolor'] = array(
     '#type' => 'select',
@@ -805,36 +853,13 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     )
   ));
   $form['appearance']['skinframe'] = array(
-    '#markup' => '<iframe frameborder="0" id="skinframe" marginheight="0" marginwidth="0" src="' . $skinframe_url . '" style="height:500px;width:700px;"></iframe><br/>',
+    '#markup' => '<iframe frameborder="0" id="skinframe" marginheight="0" marginwidth="0" src="' . $skinframe_url . '" style="height:430px;width:700px;"></iframe><br/>',
     '#description' => '',
   );
   $form['appearance']['uicolor_user'] = array(
     '#type' => 'hidden',
     '#default_value' => !empty($profile->settings['uicolor_user']) ? $profile->settings['uicolor_user'] : 'default',
   );
-
-  $form['appearance']['toolbar'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Toolbar'),
-    '#default_value' => !empty($profile->settings['toolbar']) ? $profile->settings['toolbar'] : '',
-    '#description' => t('Load sample toolbar: !toolbars', array("!toolbars" => '<a href="#" id="cke_toolbar_DrupalBasic" class="cke_load_toolbar">' . t('Basic') . '</a> | <a href="#" id="cke_toolbar_DrupalAdvanced" class="cke_load_toolbar">' . t('Advanced') . '</a> | <a href="#" id="cke_toolbar_DrupalFull" class="cke_load_toolbar">' . t('Full') . '</a>')),
-    '#wysiwyg' => FALSE,
-    '#rows' => 15
-  );
-
-  if ($toolbar_wizard == 't') {
-    $form['appearance']['toolbar_wizzard_used'] = array(
-      '#markup' => '<div>' . t('Used buttons') . '</div><div class="sortableList" id="groupLayout"></div><br/>',
-      '#description' => t('Currently used buttons'),
-    );
-
-    drupal_add_js(array('cke_toolbar_buttons_all' => ckeditor_toolbar_buttons_all()), 'setting');
-
-    $form['appearance']['toolbar_wizzard_all'] = array(
-      '#markup' => '<div>' . t('All buttons') . '</div><div id="allButtons" class="sortableList"></div><br/>',
-      '#description' => t('All available buttons'),
-    );
-  }
 
   $plugin_list = ckeditor_load_plugins();
   $plugins = array();
@@ -861,18 +886,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     '#description' => t('Choose the plugins that you want to enable in CKEditor.')
   );
 
-  $form['appearance']['expand'] = array(
-    '#type' => 'radios',
-    '#title' => t('Toolbar state on startup'),
-    '#default_value' => !empty($profile->settings['expand']) ? $profile->settings['expand'] : 't',
-    '#options' => array(
-      't' => t('Expanded'),
-      'f' => t('Collapsed')
-    ),
-    '#description' => t('The toolbar will start in an expanded or collapsed state.'),
-  );
-
-  if (file_exists(ckeditor_path('local') . '/plugins/divarea/plugin.js')) {
+  if ($editor_local_path != '<URL>' && file_exists($editor_local_path . '/plugins/divarea/plugin.js')) {
     $form['appearance']['use_divarea'] = array(
       '#type' => 'radios',
       '#title' => t('"Div-based" editor'),
@@ -1064,6 +1078,9 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
     '#collapsed' => TRUE
   );
 
+  $current_theme = variable_get('theme_default', $theme);
+  $theme_path = drupal_get_path('theme', $current_theme);
+
   $form['css']['css_mode'] = array(
     '#type' => 'select',
     '#title' => t('Editor CSS'),
@@ -1101,7 +1118,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
       '!h' => '<br /><code>%h</code>',
       '!t' => '<br /><code>%t</code>',
       '!host' => '<code>' . base_path() . '</code>',
-      '!theme' => '<code>' . base_path() . path_to_theme() . '/</code>'
+      '!theme' => '<code>' . base_path() . $theme_path . '/</code>'
         )
     )
   );
@@ -1119,7 +1136,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
         'Define the location of the !ckeditor_styles_js_file file. It is used by the <strong>Style</strong> drop-down list available in the default toolbar. Copy the !ckeditor_styles_js_path file into your theme directory (!theme) and adjust it to your needs.', array(
       '!ckeditor_styles_js_file' => '<code>ckeditor.styles.js</code>',
       '!ckeditor_styles_js_path' => '<code>' . drupal_get_path('module', 'ckeditor') . '/ckeditor.styles.js</code>',
-      '!theme' => '<code>' . path_to_theme() . '/ckeditor.styles.js' . '</code>'
+      '!theme' => '<code>' . $theme_path . '/ckeditor.styles.js' . '</code>'
         )
     )
   );
@@ -1143,7 +1160,7 @@ function ckeditor_admin_profile_form($form, $form_state, $profile = NULL) {
       '!t' => '<br /><code>%t</code>',
       '!m' => '<br /><code>%m</code>',
       '!host' => '<code>' . base_path() . '</code>',
-      '!theme' => '<code>' . base_path() . path_to_theme() . '/</code>',
+      '!theme' => '<code>' . base_path() . $theme_path . '/</code>',
       '!module' => '<code>' . drupal_get_path('module', 'ckeditor') . '</code>'
         )
     )
@@ -1476,6 +1493,13 @@ function ckeditor_admin_profile_form_validate($form, &$form_state) {
   $toolbar = $edit['toolbar'];
   $toolbar = str_replace("'", '"', $toolbar);
   $toolbar = preg_replace('/(\w*)\s*\:/', '"${1}":', $toolbar);
+
+  if (strpos($toolbar, 'CodeSnippet') !== false && empty($edit['loadPlugins']['codesnippet'])) {
+    form_set_error('loadPlugins][codesnippet', t('The Code Snippet plugin must be enabled if the CodeSnippet button is enabled in the toolbar.'));
+  }
+  if (strpos($toolbar, 'Mathjax') !== false && empty($edit['loadPlugins']['mathjax'])) {
+    form_set_error('loadPlugins][mathjax', t('The Mathjax plugin must be enabled if the Mathjax button is enabled in the toolbar.'));
+  }
   if (!json_decode($toolbar)) {
     form_set_error('toolbar', t('Enter a valid toolbar configuration.'));
   }
@@ -1517,8 +1541,8 @@ function ckeditor_admin_profile_form_submit($form, &$form_state) {
 /**
  * Form builder for a clone profile
  */
-function ckeditor_admin_profile_clone_form($form, $form_state, $oldprofile) {
-  return ckeditor_admin_profile_form($form, $form_state, $oldprofile);
+function ckeditor_admin_profile_clone_form($form, $form_state, $task, $oldprofile) {
+  return ckeditor_admin_profile_form($form, $form_state, $task, $oldprofile);
 }
 
 /**
@@ -1614,7 +1638,9 @@ function ckeditor_admin_values_to_settings($values) {
   unset($values['name'], $values['input_formats'], $values['_profile'], $values['op'], $values['submit'], $values['form_build_id'], $values['form_token'], $values['form_id'], $values['loadPlugins']);
 
   // Replace CRLF with LF in toolbar settings
-  $values['toolbar'] = str_replace("\r\n", "\n", $values['toolbar']);
+  if(isset($values['toolbar'])){
+    $values['toolbar'] = str_replace("\r\n", "\n", $values['toolbar']);
+  }
 
   module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
   $plugin_list = ckeditor_load_plugins();
@@ -1648,10 +1674,14 @@ function ckeditor_profile_delete($name) {
 
 function _ckeditor_load_methods() {
   $result = array('ckeditor.js' => 'ckeditor.js');
-  if (file_exists(ckeditor_path('local') . '/ckeditor_basic.js')) {
+  $ckeditor_local_path = ckeditor_path('local');
+  if ($ckeditor_local_path == '<URL>') {
+    return $result;
+  }
+  if (file_exists($ckeditor_local_path . '/ckeditor_basic.js')) {
     $result['ckeditor_basic.js'] = 'ckeditor_basic.js';
   }
-  if (file_exists(ckeditor_path('local') . '/ckeditor_source.js')) {
+  if (file_exists($ckeditor_local_path . '/ckeditor_source.js')) {
     $result['ckeditor_source.js'] = 'ckeditor_source.js (' . t('for developers only') . ')';
   }
   return $result;
@@ -1682,75 +1712,76 @@ function ckeditor_toolbar_buttons_all() {
   $buttons = array(
     'Source' => array('name' => 'Source', 'icon' => $path . '/images/buttons/source.png', 'title' => 'Source', 'row' => 1),
     'Save' => array('name' => 'Save', 'icon' => $path . '/images/buttons/save.png', 'title' => 'Save', 'row' => 1),
-    'NewPage' => array('name' => 'NewPage', 'icon' => $path . '/images/buttons/newPage.png', 'title' => 'New Page', 'row' => 1),
+    'NewPage' => array('name' => 'NewPage', 'icon' => $path . '/images/buttons/newpage.png', 'title' => 'New Page', 'row' => 1),
     'Preview' => array('name' => 'Preview', 'icon' => $path . '/images/buttons/preview.png', 'title' => 'Preview', 'row' => 1),
     'Templates' => array('name' => 'Templates', 'icon' => $path . '/images/buttons/templates.png', 'title' => 'Templates', 'row' => 1),
     'Cut' => array('name' => 'Cut', 'icon' => $path . '/images/buttons/cut.png', 'title' => 'Cut', 'row' => 1),
     'Copy' => array('name' => 'Copy', 'icon' => $path . '/images/buttons/copy.png', 'title' => 'Copy', 'row' => 1),
     'Paste' => array('name' => 'Paste', 'icon' => $path . '/images/buttons/paste.png', 'title' => 'Paste', 'row' => 1),
-    'PasteText' => array('name' => 'PasteText', 'icon' => $path . '/images/buttons/pastePlainText.png', 'title' => 'Paste as plain text', 'row' => 1),
-    'PasteFromWord' => array('name' => 'PasteFromWord', 'icon' => $path . '/images/buttons/pasteWord.png', 'title' => 'Paste from Word', 'row' => 1),
+    'PasteText' => array('name' => 'PasteText', 'icon' => $path . '/images/buttons/pastetext.png', 'title' => 'Paste as plain text', 'row' => 1),
+    'PasteFromWord' => array('name' => 'PasteFromWord', 'icon' => $path . '/images/buttons/pastefromword.png', 'title' => 'Paste from Word', 'row' => 1),
     'Print' => array('name' => 'Print', 'icon' => $path . '/images/buttons/print.png', 'title' => 'Print', 'row' => 1),
-    'SpellChecker' => array('name' => 'SpellChecker', 'icon' => $path . '/images/buttons/checkSpelling.png', 'title' => 'Check Spelling', 'row' => 1),
-    'Scayt' => array('name' => 'Scayt', 'icon' => $path . '/images/buttons/checkSpelling.png', 'title' => 'Spell Check As you Type', 'row' => 1), //TODO sprawdzic ta opcje
+    'SpellChecker' => array('name' => 'SpellChecker', 'icon' => $path . '/images/buttons/spellchecker.png', 'title' => 'Check Spelling', 'row' => 1),
+    'Scayt' => array('name' => 'Scayt', 'icon' => $path . '/images/buttons/scayt.png', 'title' => 'Spell Check As you Type', 'row' => 1), //TODO sprawdzic ta opcje
     'Undo' => array('name' => 'Undo', 'icon' => $path . '/images/buttons/undo.png', 'title' => 'Undo', 'row' => 1),
     'Redo' => array('name' => 'Redo', 'icon' => $path . '/images/buttons/redo.png', 'title' => 'Redo', 'row' => 1),
     'Find' => array('name' => 'Find', 'icon' => $path . '/images/buttons/find.png', 'title' => 'Find', 'row' => 1),
     'Replace' => array('name' => 'Replace', 'icon' => $path . '/images/buttons/replace.png', 'title' => 'Replace', 'row' => 1),
-    'SelectAll' => array('name' => 'SelectAll', 'icon' => $path . '/images/buttons/selectAll.png', 'title' => 'Select All', 'row' => 1),
-    'RemoveFormat' => array('name' => 'RemoveFormat', 'icon' => $path . '/images/buttons/removeFormat.png', 'title' => 'Remove Format', 'row' => 1),
+    'SelectAll' => array('name' => 'SelectAll', 'icon' => $path . '/images/buttons/selectall.png', 'title' => 'Select All', 'row' => 1),
+    'RemoveFormat' => array('name' => 'RemoveFormat', 'icon' => $path . '/images/buttons/removeformat.png', 'title' => 'Remove Format', 'row' => 1),
     'Form' => array('name' => 'Form', 'icon' => $path . '/images/buttons/form.png', 'title' => 'Form', 'row' => 1),
     'Checkbox' => array('name' => 'Checkbox', 'icon' => $path . '/images/buttons/checkbox.png', 'title' => 'Checkbox', 'row' => 1),
-    'Radio' => array('name' => 'Radio', 'icon' => $path . '/images/buttons/radioButton.png', 'title' => 'Radio Button', 'row' => 1),
-    'TextField' => array('name' => 'TextField', 'icon' => $path . '/images/buttons/textField.png', 'title' => 'Text Field', 'row' => 1),
+    'Radio' => array('name' => 'Radio', 'icon' => $path . '/images/buttons/radio.png', 'title' => 'Radio Button', 'row' => 1),
+    'TextField' => array('name' => 'TextField', 'icon' => $path . '/images/buttons/textfield.png', 'title' => 'Text Field', 'row' => 1),
     'Textarea' => array('name' => 'Textarea', 'icon' => $path . '/images/buttons/textarea.png', 'title' => 'Textarea', 'row' => 1),
-    'Select' => array('name' => 'Select', 'icon' => $path . '/images/buttons/selectionField.png', 'title' => 'Selection Field', 'row' => 1),
+    'Select' => array('name' => 'Select', 'icon' => $path . '/images/buttons/select.png', 'title' => 'Selection Field', 'row' => 1),
     'Button' => array('name' => 'Button', 'icon' => $path . '/images/buttons/button.png', 'title' => 'Button', 'row' => 1),
-    'ImageButton' => array('name' => 'ImageButton', 'icon' => $path . '/images/buttons/imageButton.png', 'title' => 'Image Button', 'row' => 1),
-    'HiddenField' => array('name' => 'HiddenField', 'icon' => $path . '/images/buttons/hiddenField.png', 'title' => 'Hidden Field', 'row' => 1),
+    'ImageButton' => array('name' => 'ImageButton', 'icon' => $path . '/images/buttons/imagebutton.png', 'title' => 'Image Button', 'row' => 1),
+    'HiddenField' => array('name' => 'HiddenField', 'icon' => $path . '/images/buttons/hiddenfield.png', 'title' => 'Hidden Field', 'row' => 1),
     'Bold' => array('name' => 'Bold', 'icon' => $path . '/images/buttons/bold.png', 'title' => 'Bold', 'row' => 2),
     'Italic' => array('name' => 'Italic', 'icon' => $path . '/images/buttons/italic.png', 'type' => 'command', 'title' => 'Italic', 'row' => 2),
     'Underline' => array('name' => 'Underline', 'icon' => $path . '/images/buttons/underline.png', 'title' => 'Underline', 'row' => 2),
     'Strike' => array('name' => 'Strike', 'icon' => $path . '/images/buttons/strike.png', 'title' => 'Strike Through', 'row' => 2),
     'Subscript' => array('name' => 'Subscript', 'icon' => $path . '/images/buttons/subscript.png', 'title' => 'Subscript', 'row' => 2),
     'Superscript' => array('name' => 'Superscript', 'icon' => $path . '/images/buttons/superscript.png', 'title' => 'Superscript', 'row' => 2),
-    'NumberedList' => array('name' => 'NumberedList', 'icon' => $path . '/images/buttons/numberedList.png', 'title' => 'Insert/Remove Numbered List', 'row' => 2),
-    'BulletedList' => array('name' => 'BulletedList', 'icon' => $path . '/images/buttons/bulletedList.png', 'title' => 'Insert/Remove Bulleted List', 'row' => 2),
-    'Outdent' => array('name' => 'Outdent', 'icon' => $path . '/images/buttons/decreaseIndent.png', 'title' => 'Decrease Indent', 'row' => 2),
-    'Indent' => array('name' => 'Indent', 'icon' => $path . '/images/buttons/increaseIndent.png', 'title' => 'Increase Indent', 'row' => 2),
-    'Blockquote' => array('name' => 'Blockquote', 'icon' => $path . '/images/buttons/blockQuote.png', 'title' => 'Block Quote', 'row' => 2),
-    'CreateDiv' => array('name' => 'CreateDiv', 'icon' => $path . '/images/buttons/createDivContainer.png', 'title' => 'Create Div Container', 'row' => 2),
-    'JustifyLeft' => array('name' => 'JustifyLeft', 'icon' => $path . '/images/buttons/leftJustify.png', 'title' => 'Left Justify', 'row' => 2),
-    'JustifyCenter' => array('name' => 'JustifyCenter', 'icon' => $path . '/images/buttons/centerJustify.png', 'title' => 'Center Justify', 'row' => 2),
-    'JustifyRight' => array('name' => 'JustifyRight', 'icon' => $path . '/images/buttons/rightJustify.png', 'title' => 'Right Justify', 'row' => 2),
-    'JustifyBlock' => array('name' => 'JustifyBlock', 'icon' => $path . '/images/buttons/blockJustify.png', 'title' => 'Block Justify', 'row' => 2),
-    'BidiLtr' => array('name' => 'BidiLtr', 'icon' => $path . '/images/buttons/bidiLeft.png', 'title' => 'Text direction from left to right', 'row' => 2),
-    'BidiRtl' => array('name' => 'BidiRtl', 'icon' => $path . '/images/buttons/bidiRight.png', 'title' => 'Text direction from right to left', 'row' => 2),
+    'NumberedList' => array('name' => 'NumberedList', 'icon' => $path . '/images/buttons/numberedlist.png', 'title' => 'Insert/Remove Numbered List', 'row' => 2),
+    'BulletedList' => array('name' => 'BulletedList', 'icon' => $path . '/images/buttons/bulletedlist.png', 'title' => 'Insert/Remove Bulleted List', 'row' => 2),
+    'Outdent' => array('name' => 'Outdent', 'icon' => $path . '/images/buttons/outdent.png', 'title' => 'Decrease Indent', 'row' => 2),
+    'Indent' => array('name' => 'Indent', 'icon' => $path . '/images/buttons/indent.png', 'title' => 'Increase Indent', 'row' => 2),
+    'Blockquote' => array('name' => 'Blockquote', 'icon' => $path . '/images/buttons/blockquote.png', 'title' => 'Block Quote', 'row' => 2),
+    'CreateDiv' => array('name' => 'CreateDiv', 'icon' => $path . '/images/buttons/creatediv.png', 'title' => 'Create Div Container', 'row' => 2),
+    'JustifyLeft' => array('name' => 'JustifyLeft', 'icon' => $path . '/images/buttons/justifyleft.png', 'title' => 'Left Justify', 'row' => 2),
+    'JustifyCenter' => array('name' => 'JustifyCenter', 'icon' => $path . '/images/buttons/justifycenter.png', 'title' => 'Center Justify', 'row' => 2),
+    'JustifyRight' => array('name' => 'JustifyRight', 'icon' => $path . '/images/buttons/justifyright.png', 'title' => 'Right Justify', 'row' => 2),
+    'JustifyBlock' => array('name' => 'JustifyBlock', 'icon' => $path . '/images/buttons/justifyblock.png', 'title' => 'Block Justify', 'row' => 2),
+    'BidiLtr' => array('name' => 'BidiLtr', 'icon' => $path . '/images/buttons/bidiltr.png', 'title' => 'Text direction from left to right', 'row' => 2),
+    'BidiRtl' => array('name' => 'BidiRtl', 'icon' => $path . '/images/buttons/bidirtl.png', 'title' => 'Text direction from right to left', 'row' => 2),
+    'Language' => array('name' => 'Language', 'icon' => $path . '/images/buttons/language.png', 'title' => 'Set Language', 'row' => 2),
     'Link' => array('name' => 'Link', 'icon' => $path . '/images/buttons/link.png', 'title' => 'Link', 'row' => 2),
     'Unlink' => array('name' => 'Unlink', 'icon' => $path . '/images/buttons/unlink.png', 'title' => 'Unlink', 'row' => 2),
     'Anchor' => array('name' => 'Anchor', 'icon' => $path . '/images/buttons/anchor.png', 'title' => 'Anchor', 'row' => 2),
     'Image' => array('name' => 'Image', 'icon' => $path . '/images/buttons/image.png', 'title' => 'Image', 'row' => 2),
     'Flash' => array('name' => 'Flash', 'icon' => $path . '/images/buttons/flash.png', 'title' => 'Flash', 'row' => 2),
     'Table' => array('name' => 'Table', 'icon' => $path . '/images/buttons/table.png', 'title' => 'Table', 'row' => 2),
-    'HorizontalRule' => array('name' => 'HorizontalRule', 'icon' => $path . '/images/buttons/horizontalLine.png', 'title' => 'Insert Horizontal Line', 'row' => 2),
+    'HorizontalRule' => array('name' => 'HorizontalRule', 'icon' => $path . '/images/buttons/horizontalrule.png', 'title' => 'Insert Horizontal Line', 'row' => 2),
     'Smiley' => array('name' => 'Smiley', 'icon' => $path . '/images/buttons/smiley.png', 'title' => 'Smiley', 'row' => 2),
-    'SpecialChar' => array('name' => 'SpecialChar', 'icon' => $path . '/images/buttons/specialCharacter.png', 'title' => 'Inseert Special Character', 'row' => 2),
-    'PageBreak' => array('name' => 'PageBreak', 'icon' => $path . '/images/buttons/pageBreakPrinting.png', 'title' => 'Insert Page Break for Printing', 'row' => 2),
+    'SpecialChar' => array('name' => 'SpecialChar', 'icon' => $path . '/images/buttons/specialchar.png', 'title' => 'Insert Special Character', 'row' => 2),
+    'PageBreak' => array('name' => 'PageBreak', 'icon' => $path . '/images/buttons/pagebreak.png', 'title' => 'Insert Page Break for Printing', 'row' => 2),
     'Styles' => array('name' => 'Styles', 'icon' => $path . '/images/buttons/styles.png', 'title' => 'Formatting Styles', 'row' => 3),
     'Format' => array('name' => 'Format', 'icon' => $path . '/images/buttons/format.png', 'title' => 'Paragraph Format', 'row' => 3),
     'Font' => array('name' => 'Font', 'icon' => $path . '/images/buttons/font.png', 'title' => 'Font Name', 'row' => 3),
-    'FontSize' => array('name' => 'FontSize', 'icon' => $path . '/images/buttons/fontSize.png', 'title' => 'Font Size', 'row' => 3),
-    'TextColor' => array('name' => 'TextColor', 'icon' => $path . '/images/buttons/textColor.png', 'title' => 'Text Color', 'row' => 3),
-    'BGColor' => array('name' => 'BGColor', 'icon' => $path . '/images/buttons/backgroundColor.png', 'title' => 'Background Color', 'row' => 3),
+    'FontSize' => array('name' => 'FontSize', 'icon' => $path . '/images/buttons/size.png', 'title' => 'Font Size', 'row' => 3),
+    'TextColor' => array('name' => 'TextColor', 'icon' => $path . '/images/buttons/textcolor.png', 'title' => 'Text Color', 'row' => 3),
+    'BGColor' => array('name' => 'BGColor', 'icon' => $path . '/images/buttons/bgcolor.png', 'title' => 'Background Color', 'row' => 3),
     'Maximize' => array('name' => 'Maximize', 'icon' => $path . '/images/buttons/maximize.png', 'title' => 'Maximize', 'row' => 3),
-    'ShowBlocks' => array('name' => 'ShowBlocks', 'icon' => $path . '/images/buttons/showBlocks.png', 'title' => 'Show Blocks', 'row' => 3),
+    'ShowBlocks' => array('name' => 'ShowBlocks', 'icon' => $path . '/images/buttons/showblocks.png', 'title' => 'Show Blocks', 'row' => 3),
     'Iframe' => array('name' => 'Iframe', 'icon' => $path . '/images/buttons/iframe.png', 'title' => 'IFrame', 'row' => 3),
     'About' => array('name' => 'About', 'icon' => $path . '/images/buttons/about.png', 'title' => 'About', 'row' => 3),
     '__spacer' => array('name' => FALSE, 'icon' => $path . '/images/buttons/spacer.png', 'title' => 'Spacer', 'row' => 4),
     '__group' => array('name' => FALSE, 'icon' => $path . '/images/buttons/group.png', 'title' => 'Group', 'row' => 4)
   );
 
-  $plugins = ckeditor_load_plugins();
+  $plugins = ckeditor_load_plugins(TRUE);
   foreach ($plugins as $plugin_name => $plugin) {
     if (!isset($plugin['buttons']) || $plugin['buttons'] == FALSE)
       continue;
@@ -1815,6 +1846,8 @@ function ckeditor_skinframe() {
   }
 
   $editor_path = ckeditor_path('relative');
+  if ($editor_path == '<URL>')
+    $editor_path = ckeditor_path('url');
   $module_drupal_path = ckeditor_module_path('relative');
 
   $html = "<!DOCTYPE html>";
@@ -1853,7 +1886,7 @@ CKEDITOR.on('dialogDefinition', function( ev ) {
 });
 CKEDITOR.replace('editor', {
   extraPlugins : 'uicolor',
-  height: 400,
+  height: 330,
   uiColor: '#' + uicolor,
   toolbar : [[ 'Bold', 'Italic', '-', 'NumberedList', 'BulletedList'],[ 'UIColor' ]],
   skin: skin,

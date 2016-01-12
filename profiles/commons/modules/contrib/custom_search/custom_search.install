@@ -77,13 +77,30 @@ function custom_search_update_7103() {
         }
       }
     }
-    $vocabularies = taxonomy_get_vocabularies();
-    foreach ($vocabularies as $voc) {
-      if (variable_get('custom_search_voc' . $voc->vid . '_selector', 'disabled') == 'disabled') {
-        variable_set('custom_search_advanced_voc' . $voc->vid . '_display', FALSE);
+    if (module_exists('taxonomy')) {
+      $vocabularies = taxonomy_get_vocabularies();
+      foreach ($vocabularies as $voc) {
+        if (variable_get('custom_search_voc' . $voc->vid . '_selector', 'disabled') == 'disabled') {
+          variable_set('custom_search_advanced_voc' . $voc->vid . '_display', FALSE);
+        }
       }
     }
   }
   variable_del('custom_search_results_advanced_override');
   return t('Advanced search form settings changed.');
+}
+
+/**
+ * Store vids - machine names association.
+ */
+function custom_search_update_7104() {
+  if (module_exists('taxonomy')) {
+    $vocabularies = taxonomy_get_vocabularies();
+    $machine_names = array();
+    foreach ($vocabularies as $voc) {
+      $machine_names[$voc->machine_name] = $voc->vid;
+    }
+    // This will be needed for those upgrading to Drupal 8 or Backdrop.
+    variable_set('custom_search_taxonomy_machine_names', $machine_names);
+  }
 }

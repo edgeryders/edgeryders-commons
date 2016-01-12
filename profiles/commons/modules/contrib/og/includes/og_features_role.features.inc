@@ -69,17 +69,19 @@ function og_features_role_features_export_render($module, $data) {
 
   foreach ($data as $name) {
     list($group_type, $bundle, $rolename) = explode(':', $name);
-    $role = array(
-      'gid' => 0,
-      'group_type' => $group_type,
-      'group_bundle' => $bundle,
-      'name' => $rolename,
-    );
-    $role_identifier = features_var_export($name);
-    $role_export = features_var_export($role, '  ');
-    $code[] = "  // Exported OG Role: {$role_identifier}.";
-    $code[] = "  \$roles[{$role_identifier}] = ${role_export};";
-    $code[] = "";
+    if (_og_features_role_exists($rolename, $group_type, $bundle) !== FALSE) {
+      $role = array(
+        'gid' => 0,
+        'group_type' => $group_type,
+        'group_bundle' => $bundle,
+        'name' => $rolename,
+      );
+      $role_identifier = features_var_export($name);
+      $role_export = features_var_export($role, '  ');
+      $code[] = "  // Exported OG Role: {$role_identifier}.";
+      $code[] = "  \$roles[{$role_identifier}] = ${role_export};";
+      $code[] = "";
+    }
   }
 
   $code[] = '  return $roles;';

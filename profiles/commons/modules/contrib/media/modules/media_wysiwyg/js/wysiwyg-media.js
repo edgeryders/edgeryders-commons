@@ -20,8 +20,9 @@ Drupal.wysiwyg.plugins.media = {
    *   A DOM element
    */
   isNode: function(node) {
-    return $(node).is('img.media-element');
+    return $(node).is('img[data-media-element]');
   },
+
   /**
    * Execute the button.
    *

@@ -4,10 +4,12 @@ package = Media
 core = 7.x
 hidden = TRUE
 
+files[] = includes/MediaModuleTest.inc
 
-; Information added by drush on 2014-05-08
-version = "7.x-2.0-alpha3+79-dev"
+
+; Information added by drush on 2015-10-28
+version = "7.x-2.0-beta1+8-dev"
 core = "7.x"
 project = "media"
-datestamp = "1399579144"
+datestamp = "1446047079"
 

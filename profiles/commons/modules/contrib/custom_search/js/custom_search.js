@@ -66,7 +66,7 @@
       // Reselect types and terms in advanced search
       var edit_keys = encodeURIComponent($('#edit-keys').val());
 
-      if(edit_keys) {
+      if (edit_keys) {
         // types
         var pos = edit_keys.indexOf('type:');
         if (pos != -1) {
@@ -95,7 +95,7 @@
         }
         // languages
         var pos = edit_keys.indexOf('language:');
-        if (pos != 1) {
+        if (pos != -1) {
           var pos2 = edit_keys.indexOf(' ', pos);
           if (pos2 == -1) {
             pos2 = edit_keys.length;

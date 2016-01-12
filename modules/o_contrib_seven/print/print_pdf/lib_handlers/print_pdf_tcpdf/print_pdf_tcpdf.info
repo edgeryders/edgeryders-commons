@@ -1,0 +1,7 @@
+name = "TCPDF library handler"
+description = "PDF generation library using TCPDF."
+core = 7.x
+package = "Printer, email and PDF versions"
+dependencies[] = print_pdf
+files[] = print_pdf_tcpdf.class.inc
+configure = admin/config/user-interface/print/pdf/tcpdf

@@ -5,48 +5,44 @@
 
 .ui-dialog {
   position: absolute;
+  // padding: .2em;
+  width: 300px;
   overflow: hidden;
-  border: $base-border-width solid $color-border;
-  @include box-shadow(0 0 0 ms(-2) rgba($color-background-reverse, .2));
-  @include box-sizing(border-box);
 
   .ui-dialog-titlebar {
+    // padding: .5em 1em .3em;
     position: relative;
-    padding: $rhythm-space $rhythm-space 0;
-    background-color: $color-background-reverse;
-    color: $color-text-light;
   }
 
   .ui-dialog-title {
-    @extend %font-sansserif-light;
-    display: block;
-    font-size: ms(3);
-    line-height: ms(1);
+    // float: left;
+    // margin: .1em 16px .2em 0;
   }
 
   .ui-dialog-titlebar-close {
     position: absolute;
-    display: block;
-    top: $rhythm-space-short;
-    right: $rhythm-space-short;
-    width: ms(0);
-    height: ms(0);
-    text-align: center;
-    line-height: 1em;
-    color: $color-text-reverse;
+    right: .3em;
+    top: 50%;
+    width: 19px;
+    margin: -10px 0 0 0;
+    padding: 1px;
+    height: 18px;
 
-    &:hover {
-      text-decoration: none;
+    span {
+      display: block;
+      margin: 1px;
     }
 
-    &:before {
-      content: "\2715";
+    &:hover,
+    &:focus {
+      padding: 0;
     }
   }
 
   .ui-dialog-content {
     position: relative;
     border: 0;
+    // padding: .5em 1em;
     background: none;
     overflow: auto;
     zoom: 1;

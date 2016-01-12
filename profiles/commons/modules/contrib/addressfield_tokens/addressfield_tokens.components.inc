@@ -1,15 +1,7 @@
 <?php
-// $Id$
-/*
- * Copyright © 2012 New Signature
- *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * You can contact New Signature by electronic mail at labs@newsignature.com -or- by U.S. Postal Service at 1100 H St. NW, Suite 940, Washington, DC 20005.
- */
-/** 
- * @file Webform Component information for an address field type 
+/**
+ * @file
+ * Webform Component information for an address field type
  */
 
 /**
@@ -19,16 +11,16 @@
  *   An array defining the default structure of a component.
  */
 function _webform_defaults_addressfield() {
-  return array (
+  return array(
     'name'      => '',
     'form_key'  => NULL,
-    'mandatory' => 0,
+    'required' => 0,
     'pid'       => 0,
     'weight'    => 0,
-    'extra'     => array (
+    'extra'     => array(
       'title_display'             => 0,
       'private'                   => FALSE,
-      'attributes'                => array (),
+      'attributes'                => array(),
       'description'               => '',
       'available_countries'       => array(),
       'csv_separate'              => 0,
@@ -51,7 +43,7 @@ function _webform_defaults_addressfield() {
  *   An array of form items to be displayed on the edit component page
  */
 function _webform_edit_addressfield($component) {
-  $form = array ();
+  $form = array();
   
   $form['extra']['available_countries'] = array(
     '#type' => 'select',
@@ -92,16 +84,16 @@ function _webform_edit_addressfield($component) {
  * @see _webform_client_form_add_component()
  */
 function _webform_render_addressfield($component, $value = NULL, $filter = TRUE) {
-  $element = array (
+  $element = array(
     '#type'             => 'fieldset',
     '#title'            => $filter ? _webform_filter_xss($component['name']) : $component['name'],
     '#title_display'    => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
     '#attributes'       => $component['extra']['attributes'],
-    '#theme_wrappers'   => array ( 'webform_element' ),
+    '#theme_wrappers'   => array('webform_element'),
     '#description'      => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
-    '#required'         => $component['mandatory'],
+    '#required'         => $component['required'],
     '#weight'           => $component['weight'],
-    '#translatable'     => array (
+    '#translatable'     => array(
       'title',
       'description',
     ),
@@ -220,12 +212,12 @@ function _webform_display_addressfield($component, $value, $format = 'html') {
       $address = unserialize($address);
     }
   }
-  return array (
+  return array(
     '#title'          => $component['name'],
     '#weight'         => $component['weight'],
     '#theme'          => $format == 'html' ? 'addressfield_formatter' : 'addressfield_formatter__linear',
-    '#theme_wrappers' => $format == 'html' ? array ( 'webform_element' ) : array ( 'webform_element_text' ),
-    '#post_render'    => array ( 'webform_element_wrapper' ),
+    '#theme_wrappers' => $format == 'html' ? array('webform_element' ) : array('webform_element_text'),
+    '#post_render'    => array('webform_element_wrapper'),
     '#component'      => $component,
     '#format'         => $format,
     '#address'        => $address,
@@ -275,12 +267,12 @@ function _webform_submit_addressfield($component, $value) {
  *   An array of data rows, each containing a statistic for this component's
  *   submissions.
  */
-function _webform_analysis_addressfield($component, $sids = array (), $single = FALSE) {
+function _webform_analysis_addressfield($component, $sids = array(), $single = FALSE) {
   // TODO Update this function
   
   // Generate the list of options and questions.
   $query = db_select('webform_submitted_data', 'wsd')
-    ->fields('wsd', array ('data'))
+    ->fields('wsd', array('data'))
     ->condition('nid', $component['nid'])
     ->condition('cid', $component['cid']);
     
@@ -296,11 +288,11 @@ function _webform_analysis_addressfield($component, $sids = array (), $single = 
     }
     $submissions++;
   }
-  $rows[0] = array (
+  $rows[0] = array(
     t('Left Blank'),
     ( $submissions - $non_blanks )
   );
-  $rows[1] = array (
+  $rows[1] = array(
     t('User entered value'),
     $non_blanks
   );
@@ -343,7 +335,7 @@ function _webform_table_addressfield($component, $value) {
  *   including either prefixed or trailing commas.
  */
 function _webform_csv_headers_addressfield($component, $export_options) {
-  $header = array ();
+  $header = array();
   if (!empty($component['extra']['csv_separate']) && $component['extra']['csv_separate'] == 1) {
     $header[0] = array();
     $header[1] = array();

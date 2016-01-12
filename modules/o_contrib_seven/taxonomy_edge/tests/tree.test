@@ -1,0 +1,420 @@
+<?php
+/**
+ * @file
+ * Web test cases for Taxonomy Edge.
+ */
+
+class TaxonomyEdgeTreeTestCase extends DrupalWebTestCase {
+  private $terms = array();
+  private $vocabulary;
+
+  function setUp() {
+    parent::setUp(array('taxonomy_edge'));
+    #$this->setup = TRUE;
+
+    $this->treeInit();
+    module_load_include('core.inc', 'taxonomy_edge');
+    module_load_include('rebuild.inc', 'taxonomy_edge');
+  }
+
+  function tearDown() {
+    taxonomy_vocabulary_delete($this->vocabulary->vid);
+    parent::tearDown();
+  }
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Tree',
+      'description' => 'Test tree handling functions.',
+      'group' => 'Taxonomy Edge',
+    );
+  }
+
+  function testInit() {
+    $terms = &$this->terms;
+    $vocabulary = &$this->vocabulary;
+    $vid = $vocabulary->vid;
+
+    $tree = $this->formatTree();
+    $expect =
+"test1
+- test2
+-- test3
+- test4
+-- test5
+sub1
+sub2
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Tree initialized" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+  }
+
+
+  function testTerm() {
+    $terms = &$this->terms;
+    $term = clone $terms['sub3'];
+    unset($term->tid);
+    $term->name = 'sub4';
+    $term->weight--;
+    taxonomy_term_save($term);
+
+    $tree = $this->formatTree();
+    $expect =
+"test1
+- test2
+-- test3
+- test4
+-- test5
+sub1
+sub2
+sub4
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Add 'sub4' to tree" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+
+    taxonomy_term_delete($terms['test1']->tid);
+
+    $tree = $this->formatTree();
+    $expect =
+"sub1
+sub2
+sub4
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Remove 'sub1' from tree" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+  }
+
+  function testTree() {
+    $terms = &$this->terms;
+    $vocabulary = &$this->vocabulary;
+    $vid = $vocabulary->vid;
+
+    // Move 'test1' to 'sub1'
+    $term = $terms['test1'];
+    $term->parent = $terms['sub1']->tid;
+    taxonomy_term_save($term);
+
+    $tree = $this->formatTree();
+    $expect =
+"sub1
+- test1
+-- test2
+--- test3
+-- test4
+--- test5
+sub2
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Move 'test1' to 'sub1'" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+
+    // Move 'test1' back to root
+    $term = $terms['test1'];
+    $term->parent = 0;
+    taxonomy_term_save($term);
+
+    $tree = $this->formatTree();
+    $expect =
+"test1
+- test2
+-- test3
+- test4
+-- test5
+sub1
+sub2
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Move 'test1' back to root" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+
+    // Move 'test1' to 'sub3'
+    $term = $terms['test1'];
+    $term->parent = $terms['sub3']->tid;
+    taxonomy_term_save($term);
+
+    $tree = $this->formatTree();
+    $expect =
+"sub1
+sub2
+sub3
+- test1
+-- test2
+--- test3
+-- test4
+--- test5
+";
+    $match = $tree == $expect;
+    $message = "Move 'test1' to 'sub3'" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+
+    // Move 'test1' back to root
+    $term = $terms['test1'];
+    $term->parent = 0;
+    taxonomy_term_save($term);
+
+    $tree = $this->formatTree();
+    $expect =
+"test1
+- test2
+-- test3
+- test4
+-- test5
+sub1
+sub2
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Move 'test1' back to root" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+
+
+    // Copy 'test1' to 'sub2'
+    $term = $terms['test1'];
+    $term->parent = array(0, $terms['sub2']->tid);
+    taxonomy_term_save($term);
+
+    $tree = $this->formatTree();
+    $expect =
+"test1
+- test2
+-- test3
+- test4
+-- test5
+sub1
+sub2
+- test1
+-- test2
+--- test3
+-- test4
+--- test5
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Copy 'test1' to 'sub2'" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+
+    // Remove 'test1' from root
+    $term = $terms['test1'];
+    $term->parent = array($terms['sub2']->tid);
+    taxonomy_term_save($term);
+
+    $tree = $this->formatTree();
+    $expect =
+"sub1
+sub2
+- test1
+-- test2
+--- test3
+-- test4
+--- test5
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Remove 'test1' from root" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+
+    // Copy 'test1' to root
+    $term = $terms['test1'];
+    $term->parent = array(0, $terms['sub2']->tid);
+    taxonomy_term_save($term);
+
+    $tree = $this->formatTree();
+    $expect =
+"test1
+- test2
+-- test3
+- test4
+-- test5
+sub1
+sub2
+- test1
+-- test2
+--- test3
+-- test4
+--- test5
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Copy 'test1' to root" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+
+    // Remove 'test1' from root
+    $term = $terms['test1'];
+    $term->parent = array($terms['sub2']->tid);
+    taxonomy_term_save($term);
+
+    $tree = $this->formatTree();
+    $expect =
+"sub1
+sub2
+- test1
+-- test2
+--- test3
+-- test4
+--- test5
+sub3
+";
+    $match = $tree == $expect;
+    $message = "Remove 'test1' from root" . ($match ? "" : "\n<pre>Assumed:\n$expect\nGot:\n$tree");
+    $this->assertTRUE($match, $message);
+  }
+
+  function testOrder() {
+    $valid_order = taxonomy_edge_is_order_valid($this->vocabulary->vid, TRUE);
+    $this->assertFALSE($valid_order, 'Order is invalid before sort');
+
+    $invalid_order = taxonomy_edge_is_order_invalid($this->vocabulary->vid, TRUE);
+    $this->assertTRUE($invalid_order, 'At least one order is invalid before sort');
+
+    $context = array();
+    taxonomy_edge_rebuild_order($this->vocabulary->vid, $context);
+
+    $valid_order = taxonomy_edge_is_order_valid($this->vocabulary->vid, TRUE);
+    $this->assertTRUE($valid_order, 'Order is valid after sort');
+
+    $invalid_order = taxonomy_edge_is_order_invalid($this->vocabulary->vid, TRUE);
+    $this->assertFALSE($invalid_order, 'All orders are valid after sort');
+
+    taxonomy_edge_invalidate_order($this->vocabulary->vid);
+    $valid_order = taxonomy_edge_is_order_valid($this->vocabulary->vid, TRUE);
+    $this->assertFALSE($valid_order, 'Order is invalid after invalidation');
+  }
+
+  function testParents() {
+    $terms = &$this->terms;
+    $parents = taxonomy_edge_get_parents($terms['test5']->tid);
+    $expect = array(1 =>  $terms['test4']->tid, 2 => $terms['test1']->tid);
+    $match = $expect == $parents;
+    $message = "Get parents for 'test5'" . ($match ? "" : "\n<pre>Assumed:\n" . print_r($expect, TRUE) . "\nGot:\n" . print_r($parents, TRUE));
+    $this->assertTRUE($match, $message);
+
+    $tids = taxonomy_edge_get_top_tids($terms['test3']->tid);
+    $expect = array($terms['test1']->tid => $terms['test1']->tid);
+    $match = $expect == $tids;
+    $message = "Get top tids for 'test5'" . ($match ? "" : "\n<pre>Assumed:\n" . print_r($expect, TRUE) . "\nGot:\n" . print_r($tids, TRUE));
+    $this->assertTRUE($match, $message);
+
+    $tid = taxonomy_edge_get_top_tid($terms['test3']->tid);
+    $expect = $terms['test1']->tid;
+    $match = $expect == $tid;
+    $message = "Get top tid for 'test3'" . ($match ? "" : "\n<pre>Assumed:\n" . print_r($expect, TRUE) . "\nGot:\n" . print_r($tids, TRUE));
+    $this->assertTRUE($match, $message);
+  }
+  
+  function testNodes() {
+    $time = time();
+    $tids = array(
+      array(array('tid' => $this->terms['test1']->tid), array('tid' => $this->terms['test5']->tid)),
+      array(array('tid' => $this->terms['test2']->tid), array('tid' => $this->terms['test5']->tid)),
+      array(array('tid' => $this->terms['test3']->tid), array('tid' => $this->terms['test5']->tid)),
+      array(array('tid' => $this->terms['test4']->tid), array('tid' => $this->terms['test3']->tid)),
+      array(array('tid' => $this->terms['test5']->tid), array('tid' => $this->terms['test3']->tid)),
+      array(array('tid' => $this->terms['sub1']->tid), array('tid' => $this->terms['test5']->tid)),
+      array(array('tid' => $this->terms['sub2']->tid), array('tid' => $this->terms['sub1']->tid)),
+      array(array('tid' => $this->terms['sub3']->tid), array('tid' => $this->terms['sub2']->tid)),
+    );
+
+    $gen_nids = array();
+    for ($i = 0; $i < 8; $i++) {
+      $node = $this->drupalCreateNode(
+        array(
+          'type' => 'article',
+          'title' => "Test $i",
+          'field_tags' => array(LANGUAGE_NONE => $tids[$i]),
+          'created' => $time - $i,
+        )
+      );
+      $gen_nids[] = $node->nid;
+    }
+
+    $nids = taxonomy_edge_select_nodes($this->terms['test1']->tid, TRUE, 4, 4);
+    $expect = array($gen_nids[0], $gen_nids[1], $gen_nids[2], $gen_nids[3]);
+    $match = $expect == $nids;
+    $message = "Select nodes for 'test1' first page limit 4" . ($match ? "" : "\n<pre>Assumed:\n" . print_r($expect, TRUE) . "\nGot:\n" . print_r($nids, TRUE));
+    $this->assertTRUE($match, $message);
+
+    $_GET['page'] = "0,1";
+    $nids = taxonomy_edge_select_nodes($this->terms['test1']->tid, TRUE, 4, 4);
+    $expect = array($gen_nids[4], $gen_nids[5]);
+    $match = $expect == $nids;
+    $message = "Select nodes for 'test1' second page limit 4" . ($match ? "" : "\n<pre>Assumed:\n" . print_r($expect, TRUE) . "\nGot:\n" . print_r($nids, TRUE));
+    $this->assertTRUE($match, $message);
+    unset($_GET['page']);
+
+    $nids = taxonomy_edge_select_nodes($this->terms['test1']->tid, TRUE, 30, 4);
+    $expect = array($gen_nids[0], $gen_nids[1], $gen_nids[2], $gen_nids[3], $gen_nids[4], $gen_nids[5]);
+    $match = $expect == $nids;
+    $message = "Select nodes for 'test1'" . ($match ? "" : "\n<pre>Assumed:\n" . print_r($expect, TRUE) . "\nGot:\n" . print_r($nids, TRUE));
+    $this->assertTRUE($match, $message);
+  }
+
+  function formatTree() {
+    $vid = $this->vocabulary->vid;
+
+    global $conf;
+    $conf['taxonomy_edge_exclude_root'] = FALSE;
+    $conf['taxonomy_edge_static_caching'] = FALSE;
+
+    $tree = taxonomy_edge_get_tree_generic($vid);
+    $output = '';
+    foreach ($tree as $term) {
+      $output .= str_repeat('-', $term->depth);
+      $output .= $term->depth ? ' ' : '';
+      $output .= $term->name . "\n";
+    }
+    return $output;
+  }
+
+  private function treeInit() {
+    // Create a vocabulary.
+    $vocabulary = new stdClass();
+    $vocabulary->name = 'taxonomy_edge_test1';
+    $vocabulary->description = 'taxonomy_edge_test1';
+    $vocabulary->machine_name = 'taxonomy_edge_test1' . rand(0, 10000);
+    $vocabulary->help = '';
+    taxonomy_vocabulary_save($vocabulary);
+    $this->vocabulary = $vocabulary;
+
+    $tree = array();
+    $tree[] = "test1";
+    $tree[] = "test1/test2";
+    $tree[] = "test1/test2/test3";
+    $tree[] = "test1/test4";
+    $tree[] = "test1/test4/test5";
+    $tree[] = "sub1";
+    $tree[] = "sub2";
+    $tree[] = "sub3";
+
+    $terms = array();
+    $weight = 0;
+    foreach ($tree as $path) {
+      $parts = explode('/', $path);
+      $name = array_pop($parts);
+      $parent = array_pop($parts);
+      $term = new stdClass();
+      $term->name = $name;
+      $term->vid = $vocabulary->vid;
+      $term->parent = $parent ? $terms[$parent]->tid : 0;
+      $term->weight = $weight++;
+      taxonomy_term_save($term);
+      $terms[$name] = $term;
+    }
+    $this->terms = $terms;
+  }
+
+  function myLog($queries) {
+    $o = '';
+    foreach ($queries as $query) {
+      $o .= sprintf("[%.08f] %s\n", $query['time'], strtr($query['query'], $query['args'])) . "\n";
+    }
+    return $o;
+  }
+}

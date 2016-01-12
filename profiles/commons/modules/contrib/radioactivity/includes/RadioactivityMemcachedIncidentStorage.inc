@@ -65,7 +65,7 @@ class RadioactivityMemcachedIncidentStorage extends RadioactivityIncidentStorage
     }
     while ($i < $to) {
       $incident = $mc->get("radioactivity_incident_" . $i);
-      if ($incident->floodCheck()) {
+      if ($incident && $incident->floodCheck()) {
         $incident->updateEnergy();
       }
       $i++;

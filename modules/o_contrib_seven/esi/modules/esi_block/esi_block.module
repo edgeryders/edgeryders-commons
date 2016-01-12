@@ -1,0 +1,297 @@
+<?php
+/**
+ * @file
+ * ESI handler for blocks.
+ *
+ * Architectural philosophy:
+ * - Remove the existing block as early as possible, to avoid building the
+ *   contents of the block, only to throw them away.  This happens with
+ *   hook_block_list_alter().
+ * - Use the block's existing cache settings (DRUPAL_CACHE_PER_PAGE, etc) to
+ *   govern how the ESI URL is constructed, and the cache headers provided when
+ *   the ESI fragment is delivered.
+ * - Provide *no* theme furniture around the ESI tag. Ensure that the relevant
+ *   theme furniture is invoked to be delivered with the ESI fragment.
+ */
+
+/**
+ * Implements hook_esi_component().
+ *
+ * @see esi_block_prepare()
+ * @see esi_block_render()
+ */
+function esi_block_esi_component_info() {
+  return array(
+    'block' => array(
+      'preprocess' => 'esi_block__esi_block_prepare',
+      'render'     => 'esi_block__esi_block_render',
+      'flush'      => 'esi_block__esi_block_flush',
+      'file'       => 'esi_block.esi.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function esi_block_page_alter(&$page) {
+  // The block system hard-codes some aspects of block information
+  // in _block_get_renderable_array().
+  // ESI blocks need to:
+  // - Remove the contextual-links data.
+  // - Remove the 'block' theme wrapper.
+  foreach (element_children($page) as $region_key) {
+    foreach (element_children($page[$region_key]) as $block_key) {
+      if (isset($page[$region_key][$block_key]['#block']) && is_object($page[$region_key][$block_key]['#block']) && !empty($page[$region_key][$block_key]['#block']->esi_enabled)) {
+        // Remove contextual-links.
+        unset($page[$region_key][$block_key]['#contextual_links']);
+        // Remove the theme wrapper.
+        unset($page[$region_key][$block_key]['#theme_wrappers']);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_block_list_alter().
+ *
+ * @see _block_load_blocks()
+ */
+function esi_block_block_list_alter(&$block_info) {
+  // Remove the blocks which have been marked as being served via ESI, and
+  // replace the blocks with the ESI handler.
+  // Altering the blocks here (rather than in the theme layer) is more
+  // performant because the overhead of block-generation (for a block which
+  // won't be rendered) is removed.
+  foreach ($block_info as $key => $block) {
+    if ($block->esi_enabled) {
+      // Preserve the original module-delta combination and pass to ESI as the
+      // replacement block's new delta.
+      // The format allows the delta to be gracefully split into the original
+      // module:delta components but still conforms to the standards which let
+      // the module:delta be used in constructing function names - for
+      // altering, themeing, etc.
+      $new_delta = esi_block__new_delta($block->module, $block->delta);
+      $block_info[$key]->module = 'esi_block';
+      $block_info[$key]->delta  = $new_delta;
+    }
+  }
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function esi_block_block_view($delta) {
+  // At this stage, the region where the block is being rendered isn't
+  // provided.  Return an empty content value, and the content will be
+  // populated once hook_block_view_alter() is invoked.
+
+  return array(
+    'content' => array('#markup' => ''),
+  );
+}
+
+/**
+ * Implements hook_block_view_alter().
+ */
+function esi_block_block_view_alter(&$data, $block) {
+  // The region isn't known in hook_block_view().  This is the first hook where
+  // the region is provided.
+  if ($block->module == 'esi_block') {
+    // Build a URL which contains all the necessary data.
+    $url = url(esi_block_url($block), array('absolute' => TRUE));
+    $data['content'] = array(
+      '#type' => 'esi',
+      '#url' => $url,
+    );
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * for block_admin_configure
+ *   Add ESI-configuration options to the block-config pages.
+ */
+function esi_block_form_block_admin_configure_alter(&$form, $form_state) {
+  $module = $form['module']['#value'];
+  $delta  = $form['delta']['#value'];
+  $block = block_load($module, $delta);
+
+  $element['esi_config'] = array(
+    '#title'        => t('<acronym title="Edge Side Includes">ESI</acronym> settings'),
+    '#type'         => 'fieldset',
+    '#description'  => t('Control how this block is cached on an ESI-enabled reverse proxy.'),
+    '#collapsible'  => TRUE,
+    // Only open the block is ESI is enabled.
+    '#collapsed'    => empty($block->esi_enabled),
+  );
+  $element['esi_config']['esi_enabled'] = array(
+    '#title' => t('Enable ESI'),
+    '#type' => 'checkbox',
+    '#default_value' => $block->esi_enabled,
+  );
+  $element['esi_config']['esi_ttl'] = array(
+    '#title' => t('Cache Maximum Age (TTL)'),
+    '#type' => 'select',
+    '#options' => esi_max_age_options($block->esi_ttl),
+    '#default_value' => (is_null($block->esi_ttl)) ? ESI_DEFAULT_TTL : $block->esi_ttl,
+    '#description' => t('The maximum time (in seconds) that proxies or external caches should cache this individual block.'),
+  );
+
+  // Target the "visibility_title" vertical-tabs, and inject the form elements
+  // before them.
+  if ($index = array_search('visibility_title', array_keys($form))) {
+    $form = array_slice($form, 0, $index) + $element + array_slice($form, $index);
+  }
+  else {
+    $form += $element;
+  }
+
+  // The form only saves particular fields. Add a submit handler to save the
+  // ESI data.
+  array_unshift($form['#submit'], 'esi_block_block_admin_configure_submit');
+}
+
+/**
+ * Submit handler for the block_admin_configure form.
+ */
+function esi_block_block_admin_configure_submit($form, &$form_state) {
+  // The regular block-configuration form only saves particular fields. This
+  // submit handler stores the ESI-specific data.
+  esi_block__set_esi_settings($form_state['values']['module'], $form_state['values']['delta'], (bool) $form_state['values']['esi_enabled'], (int) $form_state['values']['esi_ttl']);
+}
+
+/**
+ * Configure the ESI settings for a particular block.
+ *
+ * @param String $module
+ * Module implementing the block.
+ * @param String $delta
+ * The block's delta.
+ * @param Boolean $esi_enabled
+ * Set to TRUE if this block should be served by ESI.
+ * @param Int $esi_ttl
+ * Time-to-live: cache lifetime for this block when served by ESI.
+ */
+function esi_block__set_esi_settings($module, $delta, $esi_enabled, $esi_ttl) {
+  $transaction = db_transaction();
+  try {
+    db_update('block')
+      ->fields(array(
+        'esi_enabled' => (int) $esi_enabled,
+        'esi_ttl'     => (int) $esi_ttl,
+      ))
+      ->condition('module', $module)
+      ->condition('delta', $delta)
+      ->execute();
+  }
+  catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('ESI block', $e);
+    throw $e;
+  }
+}
+
+/**
+ * Convert $module and $delta to and from the new encoded $delta.
+ *
+ * @example
+ * $new_delta = esi_block__new_delta($module, $delta);
+ * @example
+ * list($module, $delta) = esi_block__new_delta($new_delta);
+ */
+function esi_block__new_delta() {
+  $args = func_get_args();
+
+  // Pass 2 arguments to convert from $module, $delta to the new $delta.
+  if (count($args) == 2) {
+    $module = $args[0];
+    $delta = $args[1];
+    $new_delta = 's' . strlen($module) . '_' . $module . '_' . $delta;
+    return $new_delta;
+  }
+
+  // Pass 1 argument (the new $delta) to convert back to $module, $delta.
+  else if (count($args) == 1) {
+    $new_delta = $args[0];
+    // Strip the prefixed 's' from the size value.
+    list($size, $delta) = explode('_', substr($new_delta, 1), 2);
+    $module = substr($delta, 0, $size);
+    $delta = substr($delta, $size + 1);
+    return array($module, $delta);
+  }
+}
+
+/**
+ * Build the URL to use for this ESI component.  The URL must contain all the
+ * relevant information required to restore the original context of this block.
+ *
+ * @param Object $block.
+ * A populated block object (as made available in hook_block_view_alter())
+ * containing as a minimum the keys:
+ * - cache
+ * - module
+ * - delta
+ * - region
+ * - theme
+ *
+ * @return String
+ * The internal URL. Generate a fully-qualified path by running through url().
+ */
+function esi_block_url($block) {
+  // ESI 6.x-1.x and 6.x-2.x used the URL patterns:
+  // Default:                esi/block/theme:region:module:delta
+  // Cache-per-page:         esi/block/theme:region:module:delta/[base64($_GET['q'])]
+  // Cache-per-role:         esi/block/theme:region:module:delta/CACHE=ROLE
+  // Cache-per-role DI:      esi/block/theme:region:module:delta/CACHE=[rolehash]
+  // Cache-per-page-role:    esi/block/theme:region:module:delta/[base64($_GET['q'])]/CACHE=ROLE
+  // Cache-per-page-role DI: esi/block/theme:region:module:delta/[base64($_GET['q'])]/CACHE=[rolehash]
+  // Cache-per-user:         esi/block/theme:region:module:delta/CACHE=USER
+  // Cache-per-user DI:      esi/block/theme:region:module:delta/CACHE=[userhash]
+  // Cache-per-user-page:    esi/block/theme:region:module:delta/[base64($_GET['q'])]/CACHE=USER
+  // Cache-per-user-page DI: esi/block/theme:region:module:delta/[base64($_GET['q'])]/CACHE=[userhash]
+
+
+  // Get the original module/delta.
+  list($module, $delta) = esi_block__new_delta($block->delta);
+  // Build the "theme:region:module:delta" key.
+  $component_key = implode(':', array(
+    $block->theme,
+    $block->region,
+    $module,
+    $delta,
+  ));
+  $url = "esi/block/{$component_key}";
+
+  // Use the $block->cache parameter (as defined in the database) to determine
+  // the caching rules for this block (per-user, per-role, etc).
+  // The cache configuration is defined in hook_block_info(), and may be
+  // altered through hook_block_info_alter().  The alter hook is the correct
+  // method to specify a custom cache configuration which is different from
+  // that defined in the original hook_block_info().
+
+  // If the block changes per page, encode the page URL in the ESI URL.
+  if ($block->cache & DRUPAL_CACHE_PER_PAGE) {
+    $url .= '/' . base64_encode($_GET['q']);
+  }
+
+  if ($block->cache != DRUPAL_NO_CACHE) {
+    // DRUPAL_CACHE_PER_ROLE and DRUPAL_CACHE_PER_USER are mutually exclusive.
+    // DRUPAL_CACHE_PER_USER takes precedence.
+    // Do not inject the actual roles or user data here; this string must not
+    // contain any personalisation, if the current page is to be cacheable.
+    if ($block->cache & DRUPAL_CACHE_PER_USER) {
+      $url .= '/CACHE=USER';
+    }
+    elseif ($block->cache & DRUPAL_CACHE_PER_ROLE) {
+      $url .= '/CACHE=ROLE';
+    }
+  }
+
+
+  // Allow other modules to alter the ESI URL (or respond to it).
+  // @see hook_esi_block_url_alter().
+  drupal_alter('esi_block_url', $url);
+
+  return $url;
+}

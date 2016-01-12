@@ -240,9 +240,10 @@ class FeatureContext extends DrupalContext
       if ($end === FALSE) {
         break;
       }
+      $random_generator = new Random;
       $name = substr($argument, $start + 1, $end - $start - 1);
       if ($name == 'random') {
-        $this->vars[$name] = Random::name(8);
+        $this->vars[$name] = $random_generator->name(8);
         $random[] = $this->vars[$name];
       }
       // In order to test previous random values stored in the form,
@@ -264,5 +265,41 @@ class FeatureContext extends DrupalContext
     }
 
     return $argument;
+  }
+
+  /**
+   * @Given /^I log in with the One Time Login Url$/
+   */
+  public function iLogInWithTheOneTimeLoginUrl() {
+    if ($this->loggedIn()) {
+      $this->logOut();
+    }
+
+    $random = new Random;
+
+    // Create user (and project)
+    $user = (object) array(
+      'name' => $random->name(8),
+      'pass' => $random->name(16),
+      'role' => 'authenticated user',
+    );
+    $user->mail = "{$user->name}@example.com";
+
+    // Create a new user.
+    $this->getDriver()->userCreate($user);
+
+    $this->users[$user->name] = $this->user = $user;
+
+    $base_url = rtrim($this->locatePath('/'), '/');
+    $login_link = $this->getMainContext()->getDriver('drush')->drush('uli', array(
+      "'$user->name'",
+      '--browser=0',
+      "--uri=${base_url}",
+    ));
+    // Trim EOL characters. Required or else visiting the link won't work.
+    $login_link = trim($login_link);
+    $login_link = str_replace("/login", '', $login_link);
+    $this->getSession()->visit($this->locatePath($login_link));
+    return TRUE;
   }
 }

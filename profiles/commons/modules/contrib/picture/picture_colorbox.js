@@ -1,26 +1,39 @@
-/*
- * Lazy load picture element.
- */
- 
-(function(win) {
-  'use strict';
+(function ($) {
+  Drupal.behaviors.pictureLazyloadPictures = {
+    attach: function (context, settings) {
+      $(context).bind('cbox_load', function () {
+        var href = $.colorbox.element()[0].hash;
 
-  function _lazyload_pictures() {
-    var pics    = win.document.getElementsByTagName('span'),
-        picl    = pics.length,
-        pic     = null;
+        if (href.search('#picture-colorbox-') === 0) {
+          href = '.' + href.substr(1, href.length) + ', #' + href.substr(1, href.length);
+        }
+        var $target = $(href);
+        $('span[lazyload]', $target).replaceWith(function () {
+          var picture = $('<div>').append($(this).clone()).html();
 
-    while (picl-- && (pic = pics[picl])) {
-      if (pic.getAttribute('data-picture-lazy') === 'lazy') {
-        pic.setAttribute('data-picture', '');
-        pic.removeAttribute('data-picture-lazy');
-      }
+          picture = picture.replace(/<span/ig, '<picture');
+          picture = picture.replace(/<\/span>/ig, '</picture>');
+          picture = picture.replace(/ data-srcset="/ig, ' srcset="');
+          $('img', picture).load(function() {
+            // Ensure there's no max-width / max-height otherwise we won't get
+            // the proper values. We could use naturalWeight / naturalHeight
+            // but that's not supported by <IE9 and Opera.
+            this.style.maxHeight = $(window).height() + 'px';
+            this.style.maxWidth = $(window).width() + 'px';
+            $.colorbox.resize({innerHeight: this.height, innerWidth: this.width});
+            // Remove overwrite of this values again to ensure we respect the
+            // stylesheet.
+            this.style.maxHeight = null;
+            this.style.maxWidth = null;
+
+            $.colorbox.resize();
+          });
+
+          return $(picture).attr('lazyload', null);
+        });
+      }).bind('cbox_complete', function () {
+        $.colorbox.resize();
+      });
     }
-  }
-
-  if (win.addEventListener) {
-      win.addEventListener('load', _lazyload_pictures);
-  } else {
-      win.attachEvent('onload', _lazyload_pictures);
-  }  
-})(window);
+  };
+})(jQuery);

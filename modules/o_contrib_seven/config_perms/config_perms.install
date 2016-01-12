@@ -1,0 +1,215 @@
+<?php
+
+/**
+ * @file
+ * Installation file
+ */
+
+/**
+ * Implements hook_install().
+ */
+function config_perms_install() {
+  // Install defaults
+  _config_perms_install_data();
+
+  // Rebuild menu and cache
+  config_perms_cache_rebuild();
+  menu_rebuild();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function config_perms_uninstall() {
+  // Clear cache and rebuild menu
+  cache_clear_all('config_perms', 'cache');
+  menu_rebuild();
+}
+
+/**
+ * Implements hook_schema().
+ */
+function config_perms_schema() {
+  $schema['config_perms'] = array(
+    'description' => 'The config perms table.',
+    // Optional CTools export.inc integration
+    'export' => array(
+      'key' => 'machine_name',
+      'identifier' => 'config_perms',
+      'default hook' => 'config_perms',
+      'api' => array(
+        'owner' => 'config_perms',
+        'api' => 'config_perms',
+        'minimum_version' => 1,
+        'current_version' => 1,
+      ),
+    ),
+    'fields' => array(
+      'machine_name' => array(
+        'description' => 'The primary identifier for a permission',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'pid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary ID field for the table. Not used for anything except internal lookups.',
+        'no export' => TRUE, // Do not export database-only keys.
+      ),
+      'status' => array(
+        'description' => 'Whether this field is enabled or not.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'path' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('pid'),
+    'unique keys' => array(
+      'name' => array('machine_name'),
+    ),
+  );
+
+  return $schema;
+}
+
+function _config_perms_install_data() {
+  $perms = array(
+    'administer account settings' => array('admin/config/people/accounts'),
+    'administer clean-urls' => array('admin/config/search/clean-urls'),
+    'administer date-time' => array('admin/config/regional/date-time', 'admin/config/regional/date-time/*'),
+    'administer error reporting' => array('admin/config/error-reporting'),
+    'administer file system' => array('admin/config/file-system'),
+    'administer performance' => array('admin/config/development/performance'),
+    'administer site information' => array('admin/config/system/site-information'),
+    'administer site maintenance' => array('admin/config/development/maintenance'),
+    'display site structure menu' => array('admin/structure'),
+    'display site configuration menu' => array('admin/config'),
+    'display site reports menu' => array('admin/reports'),
+  );
+
+  foreach ($perms as $name => $paths) {
+    $id = db_insert('config_perms')
+  ->fields(array(
+      'machine_name' => config_perms_generate_machine_name($name),
+      'status' => 1,
+      'name' => $name,
+      'path' => serialize($paths),
+    ))
+  ->execute();
+  }
+}
+
+/**
+ * Fix permissions that were incorrectly stored with escaped HTML characters.
+ */
+function config_perms_update_7201() {
+  $config_perms = config_perms_perms();
+  $role_perms = user_role_permissions(user_roles());
+  $updates = array();
+
+  foreach ($config_perms as $config_perm) {
+    $derivatives = array();
+    $decoded_name = config_perms_unescape_perm_name($config_perm->name, $derivatives);
+    // Reverse the array and remove the end item, which is the new name.
+    $derivatives = array_reverse($derivatives);
+    array_shift($derivatives);
+    if ($config_perm->name !== $decoded_name) {
+      // Fix the config perms config for this permission.
+      $updates[$config_perm->name] = $decoded_name;
+      $config_perm->name = $decoded_name;
+      $config_perm = config_perms_save($config_perm);
+      // Make sure to refresh the config perms cache, otherwise the system will
+      // think the new perm we are adding doesn't exist.
+      config_perms_cache_rebuild();
+      // Fix perms best as possible.
+      // It is possible that a config perm has had multiple names with different
+      // perms so we have to take just one.
+      // Possibly the newest perm is the most correct, however the newest one
+      // is also likely to have been checnged by accident. The oldest one would
+      // be the most likely to have been correctly configured by the admin so
+      // take the oldest one and then notify the admin to check the config.
+      // Don't take the one we just changed to though.
+      foreach ($role_perms as $rid => $perms) {
+        $new_perms = array();
+        foreach ($derivatives as $derivative) {
+          // If a permission is in the database for this derivative.
+          if (isset($perms[$derivative])) {
+            // Set the new value if we haven't already.
+            if (is_null($new_perm_value)) {
+              $new_perms[$decoded_name] = $perms[$derivative];
+            }
+            // Remove the old perm.
+            $new_perms[$derivative] = FALSE;
+          }
+        }
+        // Set a default if there isn't a value for the new perm.
+        if (!isset($new_perms[$decoded_name])) {
+          $new_perms[$decoded_name] = FALSE;
+        }
+        // Save the new config.
+        user_role_change_permissions($rid, $new_perms);
+      }
+    }
+  }
+
+  if ($updates) {
+    foreach ($updates as $old_name => $new_name) {
+      $updates_str = '<li>' . t('%old_name is now %new_name', array('%old_name' => $old_name, '%new_name' => $new_name)) . '</li>';
+    }
+
+    return format_plural(count($updates), '1 custom permission name was updated.', '@count custom permission names were updated.') . '<br />' .
+           t('User role permissions should have been transferred to the newly named custom permissions but please check your permissions manually to be sure.') . '<br />' .
+           t('The permission names that were updated are:') . '<ul>' . $updates_str . '</ul>';
+  }
+}
+
+/**
+ * Add the administer account settings permission.
+ */
+function config_perms_update_7202() {
+  if (!array_key_exists('administer account settings', config_perms_perms())) {
+    config_perms_save(array(
+      'name' => 'administer account settings',
+      'path' => array('admin/config/people/accounts'),
+      'status' => 1,
+    ));
+  }
+}
+
+/**
+ * Recursively decode HTML in the permission name becasue we don't know how
+ * many times it has been encoded.
+ *
+ * @param string $name
+ *   The permission name.
+ * @param array $derivitives
+ *   An array of derivative name for the permission name.
+ *
+ * @return string
+ *   The new permission name.
+ */
+function config_perms_unescape_perm_name($name, &$derivatives) {
+  $derivatives[] = $name;
+  $decoded_name = htmlspecialchars_decode($name, ENT_QUOTES);
+  if ($name != $decoded_name) {
+    return config_perms_unescape_perm_name($decoded_name, $derivatives);
+  }
+  else {
+    return $name;
+  }
+}

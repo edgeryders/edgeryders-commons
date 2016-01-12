@@ -1,0 +1,11 @@
+name = Flood control
+description = "Interface for hidden flood control options."
+core = 7.x
+configure = admin/config/system/flood-control
+
+; Information added by drupal.org packaging script on 2013-09-30
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "flood_control"
+datestamp = "1380579747"
+

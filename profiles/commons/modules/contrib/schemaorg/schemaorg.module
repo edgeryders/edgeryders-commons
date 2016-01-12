@@ -72,6 +72,7 @@ function schemaorg_features_api() {
       'name' => t('Schema.org mappings'),
       'default_hook' => 'rdf_default_mappings',
       'file' => drupal_get_path('module', 'schemaorg') .'/schemaorg.features.inc',
+      'feature_source' => TRUE,
     ),
   );
 }

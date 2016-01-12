@@ -79,16 +79,24 @@ function _radioactivity_require_bootstrapping() {
     }
 
     require_once './includes/bootstrap.inc';
-    drupal_bootstrap(DRUPAL_BOOTSTRAP_VARIABLES);
+    drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
     variable_set("radioactivity_bootstrap_warning", TRUE);
   }
+}
+
+/**
+ * Internal function to filter nested arrays().
+ * @param type $array
+ */
+function _radioactivity_filter_nested_array($array) {
+  return !is_array($array) ? TRUE : FALSE;
 }
 
 /**
  * Generate a checksum for given data
  */
 function _radioactivity_checksum_generate($data) {
-  $temp = $data;
+  $temp = array_filter($data, "_radioactivity_filter_nested_array");
   unset($temp['checksum']);
   ksort($temp);
   $temp = join(',', $temp);

@@ -1,0 +1,561 @@
+<?php
+/**
+ * @file
+ *   Adds support for ESI (Edge-Side-Include) integration, allowing components\
+ *   to be delivered by ESI, with support for per-component cache times.
+ *
+ * Architectural philosophy:
+ * - The ESI module provides a base API, but does not serve ESIs by itself.
+ * - Each ESI component (a block, a panel pane, etc) will require different
+ *   approaches for:
+ *   a) removing the original content from the page delivery.
+ *   b) replacing the content with an ESI tag.
+ *   c) dictating the level of context required to rebuild the original
+ *      component when delivering an ESI fragment.
+ *   d) constructing an ESI URL which contains all the required context
+ *      information.
+ *   Therefore, each ESI component will typically be a module by itself.
+ *   Separating components into individual modules will also help performance:
+ *   for example, sites which don't use panels will not be required to load
+ *   hooks and handlers for ESI-panels integration.
+ * - Each ESI component will have a menu path in the format:
+ *   /esi/{$esi_component_name}/any/context/information/required
+ * - ESI fragments will be delivered using a minimalist delivery method -
+ *   drupal_deliver_html_page() is not required or used; it is replaced by
+ *   esi_deliver_esi_component().
+ * - ESI's primary use-case is integration with Varnish, so the module is
+ *   optimised and primarily tested against Varnish (Varnish versions 2.x and
+ *   3.x).
+ * - Some components - for example, blocks - may vary according to user-roles.
+ *   Caching those fragments separately could unnecessarily increase the size
+ *   of cache needed, because the user's session cookie doesn't provide role
+ *   information to a proxy.  ESI provides a role cookie (and has an API to
+ *   provide any arbitrary context cookie) to allow proxies more-granular
+ *   control over fragment-cacheing. This will almost-certainly require custom
+ *   configuration of the proxy (the example VCLs demonstrate this for Varnish)
+ *   and some proxies may not have this capability, so will typically have a
+ *   lower cache-hit rate and may require a larger cache size to compensate.
+ * - Components typically vary by user, role, and page. Of these, page context
+ *   is usually provided in the ESI URL, users will already have a SESS cookie,
+ *   but roles do not expose context to external proxies. Core ESI module
+ *   provides a role cookie (via an API) to provide role context.
+ *   Contexts can be GET/SET/ROTATED.
+ */
+
+// Default TTL for all components served by ESI is 5 minutes.
+define('ESI_DEFAULT_TTL', 300);
+
+// Default render mode is to use an ESI tag.
+define('ESI_DEFAULT_RENDER_MODE', 'esi');
+
+// Enable the AJAX fallback by default.
+define('ESI_DEFAULT_AJAX_FALLBACK', TRUE);
+
+// By default, do not alter the ESI URLs when AJAX rendering.
+define('ESI_DEFAULT_AJAX_FALLBACK_CONTEXTUALIZE_URL', FALSE);
+
+// Default interval for rotating the seed key: change each day by default.
+define('ESI_SEED_ROTATION_INTERVAL', 86400);
+
+// By default, user context-cookies are hardened.
+define('ESI_DEFAULT_CONTEXT_COOKIES_HARDENING', TRUE);
+
+// When ESI sets cookies, prefix the cookie name with 'ESI_' by default.
+define('ESI_DEFAULT_COOKIE_NAME_PREFIX', 'ESI_');
+
+/**
+ * Implements hook_flush_caches().
+ */
+function esi_flush_caches() {
+  // No cache-tables to report.
+  // @TODO: Instruct expire to flush URLs if configured to do so.
+
+}
+
+/**
+ * Implements hook_element_info().
+ */
+function esi_element_info() {
+  $types['esi'] = array(
+    '#url' => '',
+    '#mode' => '',
+    '#pre_render' => array('esi_prerender_esi_tag'),
+    '#theme' => 'esi_tag',
+  );
+  return $types;
+}
+
+/**
+ * Prerender handler to load the correct render function for an ESI tag.
+ */
+function esi_prerender_esi_tag($element) {
+  if (empty($element['#mode'])) {
+    $element['#mode'] = variable_get('esi_render_mode', ESI_DEFAULT_RENDER_MODE);
+  }
+
+  if ($render_function = esi_get_tag_render_function($element['#mode'])) {
+    $element['#children'] = $render_function($element['#url']);
+    unset($element['#theme']);
+  }
+  return $element;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function esi_theme() {
+  return array(
+    'esi_tag' => array(
+      'render element' => 'element',
+    ),
+  );
+}
+
+/**
+ * Implements hook_init().
+ */
+function esi_init() {
+  // Add the AJAX fallback handler, if it's enabled.
+  if (variable_get('esi_ajax_fallback', ESI_DEFAULT_AJAX_FALLBACK)) {
+    $path = drupal_get_path('module', 'esi');
+    drupal_add_js("{$path}/js/esi.js");
+    drupal_add_js("{$path}/js/jquery.esi.js");
+
+    // Contextualize the URLs, if required.
+    // Drupal.ESI.contextualize_URLs
+    if (variable_get('esi_ajax_fallback_contextualize_url', ESI_DEFAULT_AJAX_FALLBACK_CONTEXTUALIZE_URL)) {
+      $harden_cookies = variable_get('esi_harden_cookie_key', ESI_DEFAULT_CONTEXT_COOKIES_HARDENING);
+
+      $setting = array(
+        'ESI' => array(
+          'cookie_prefix' => variable_get('esi_cookie_name_prefix', ESI_DEFAULT_COOKIE_NAME_PREFIX),
+          'cookie_suffix' => ($harden_cookies) ? '_' . session_name() : '',
+          'contextualize_URLs' => TRUE,
+        ),
+      );
+      drupal_add_js($setting, 'setting');
+    }
+  }
+}
+
+/**
+ * Implements hook_boot().
+ */
+function esi_boot() {
+  // Set context cookies if not set and user is logged in.
+  global $user;
+
+  // ESI will *always* set a cookie in order to determine if cookies need to be
+  // resent. That cookie's name will be:
+  // ESI_:                    if the "Harden cookie key" setting is disabled.
+  // ESI_{_32-char-MD5-hash}: if the "Harden cookie key" setting is enabled.
+  $sessify = variable_get('esi_harden_cookie_key', TRUE);
+  $session_name = $sessify ? '_' . session_name() : '';
+
+  // Expect *at least* an "ESI_{$session_name}" cookie.
+  // Use this as the basis for refreshing context cookies.
+  if ($user->uid && empty($_COOKIE["ESI_{$session_name}"])) {
+    // No ESI cookie? REFRESH ALL THE ESI COOKIES!
+    esi__set_user_contexts($user);
+  }
+}
+
+/**
+ * Implementation of hook_cron().
+ * Every interval, rotate the seed (used to generate the context-cookies).
+ * (Each rotation will invalidate the varnish-cache for previously-cached
+ * contexts).
+ */
+function esi_cron() {
+  $age_of_current_seed = time() - variable_get('esi_seed_key_last_changed', 0);
+  $interval = variable_get('esi_seed_key_rotation_interval', ESI_SEED_ROTATION_INTERVAL);
+  if ($age_of_current_seed > $interval) {
+    _esi__rotate_seed_key();
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function esi_menu() {
+  $items = array();
+
+  // An ESI component must be provided with all the parameters required to
+  // reconstruct the required context.
+  $items['esi/%esi_component'] = array(
+    'page callback' => 'esi_handle_component',
+    'page arguments' => array(1),
+    // @TODO: allow menu-handler to be locked down, for example controlling
+    // access by a HTTP header sent by the proxy.
+    'access callback' => TRUE,
+    'delivery callback' => 'esi_deliver_esi_component',
+    'type' => MENU_CALLBACK,
+    'file' => 'esi.pages.inc',
+  );
+
+  // Add a high-level menu entry for admin_menu/flush-cache/esi.
+  // This allows the ESI module to integrate with the admin_menu module and
+  // provide a link to clear ESI caches.
+  $items['admin_menu/flush-cache/esi'] = array(
+    'page callback' => 'esi_admin_menu_flush_cache',
+    'access arguments' => array('flush caches'),
+    'type' => MENU_CALLBACK,
+    'file' => 'esi.admin.inc',
+  );
+
+  $items['admin/config/development/esi'] = array(
+    'title' => 'ESI',
+    'description' => 'Configure the default TTL, type of ESI tag and other ESI settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('esi_admin_configuration_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'esi.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_admin_menu_output_alter().
+ *
+ * Integrate with admin_menu to add a cache flush for ESI.
+ */
+function esi_admin_menu_output_alter(&$admin_menu) {
+  // Add an entry for resetting the ESI caches.
+  $destination = drupal_get_destination();
+  if ($admin_menu['icon'] && isset($admin_menu['icon']['icon']['flush-cache']) && is_array($admin_menu['icon']['icon']['flush-cache'])) {
+    $admin_menu['icon']['icon']['flush-cache']['esi'] = array(
+      '#title' => t('Edge-side Includes'),
+      '#href' => 'admin_menu/flush-cache/esi',
+      '#options' => array(
+        'query' => $destination,
+      ),
+    );
+  }
+  ksort($admin_menu['icon']['icon']['flush-cache']);
+}
+
+/**
+ * Menu-wildcard loader for %esi_component.
+ */
+function esi_component_load($component) {
+  $components = esi_get_components();
+  // Do not return FALSE: even if the requested component is not valid, allow
+  // the menu handler to return control to esi_handle_component() in order to
+  // return a custom ESI 404.  Having an entire theme Drupal 404 page embedded
+  // within another Drupal page would not be desirable.
+  return array_key_exists($component, $components) ? $components[$component] : NULL;
+}
+
+/**
+ * Implements hook_user_login().
+ */
+function esi_user_login(&$edit, $account) {
+  esi__set_user_contexts($account);
+}
+
+/**
+ * Implements hook_user_logout().
+ */
+function esi_user_logout($account) {
+  // Remove all the cookies that have been created.
+  $cookie_data = esi__get_cookie_data($account);
+
+  // Transmit the cookies.
+  foreach ($cookie_data as $cookie) {
+    setcookie($cookie['name'], 'removed', 1, $cookie['path'], $cookie['domain'], $cookie['secure'], $cookie['httponly']);
+  }
+}
+
+/**
+ * Implements hook_esi_mode().
+ */
+function esi_esi_mode() {
+  return array(
+    'esi' => array(
+      'title' => 'ESI tag',
+      'render' => 'esi_esi_tag',
+    ),
+    'esi_comment' => array(
+      'title' => 'Comment-wrapped ESI tag',
+      'render' => 'esi_esi_comment_tag',
+    ),
+    'ssi' => array(
+      'title' => 'SSI tag',
+      'render' => 'esi_ssi_tag',
+    ),
+    'ssi_remote' => array(
+      'title' => 'SSI remote tag',
+      'render' => 'esi_ssi_remote_tag',
+    ),
+  );
+}
+
+/**
+ * List all the modules which implement hook_esi_component_info().
+ */
+function esi_get_components() {
+  if ($result = cache_get('esi_component_info')) {
+    return $result->data;
+  }
+  else {
+    $components = array();
+    // Invoke hook_esi_component_info().
+    foreach (module_implements('esi_component_info') as $module) {
+      foreach (module_invoke($module, 'esi_component_info') as $key => $component) {
+        // Modules may specify an include file.
+        // Provide a default include path (if the module doesn't provide one).
+        if (!empty($component['file']) && empty($component['filepath'])) {
+          $component['filepath'] = drupal_get_path('module', $module);
+        }
+
+        // Use the key supplied by the module, rather than the module name.
+        // This allows modules to override other implementations if required.
+        $components[$key] = $component;
+      }
+    }
+    drupal_alter('esi_component_info', $components);
+    cache_set('esi_component_info', $components);
+    return $components;
+  }
+}
+
+/**
+ * Get the function callback which is used to render an ESI element for a
+ * particular mode (for example, render as ESI vs SSI).
+ */
+function esi_get_tag_render_function($mode) {
+  $render_modes = esi_get_modes();
+  if (!empty($render_modes[$mode])) {
+    return $render_modes[$mode]['render'];
+  }
+}
+
+/**
+ * Get the possible modes of rendering an ESI tag.
+ *
+ * @see hook_esi_mode().
+ */
+function esi_get_modes() {
+  $modes = &drupal_static(__FUNCTION__);
+  if (empty($modes)) {
+    if (!$result = cache_get('esi_modes')) {
+      $modes = module_invoke_all('esi_mode');
+      drupal_alter('esi_mode', $modes);
+      cache_set('esi_mode', $modes);
+    }
+  }
+  return $modes;
+}
+
+/**
+ * Get a list of possible max age (ttl) choices.
+ *
+ * @param optional Int $current_max_age
+ * The defined max age might not amongst the pre-defined options.  Adding the
+ * current max age as a parameter allows it to be added to the list of options,
+ * ensuring the current configuration doesn't get overridden.
+ *
+ * @return Array
+ * Array of potential max-age choices. The key is the TTL (in seconds) and the
+ * value is the human-readable description of that TTL.
+ */
+function esi_max_age_options($current_max_age = NULL) {
+  if (is_null($current_max_age)) {
+    $current_max_age = variable_get('esi_default_ttl', ESI_DEFAULT_TTL);
+  }
+
+  $options = drupal_map_assoc(
+    array(0, 5, 15, 30, 60, 120, 180, 240, 300, 600, 900, 1200, 1800, 3600, 7200, 14400, 28800, 43200, 64800, 86400, 86400*2, 86400*3, 86400*4, 86400*5, 86400*6, 86400*7),
+    'format_interval');
+
+  // If the given max age isn't one of our options, add the current max age as a custom option.
+  if (!isset($options[$current_max_age])) {
+    $options[$current_max_age] = t('Custom: @time', array('@time' => format_interval($current_max_age)), array('context' => 'Cache Duration'));
+    ksort($options);
+  }
+  $options[0] = '<' . t('none', array(), array('context' => 'Cache Duration')) . '>';
+
+  return $options;
+}
+
+/**
+ * Set the cookies to track current ESI contexts.
+ */
+function esi__set_user_contexts($account) {
+  $cookie_data = esi__get_cookie_data($account);
+
+  // Transmit the cookies.
+  foreach ($cookie_data as $cookie) {
+    setcookie($cookie['name'], $cookie['value'], $cookie['expire'], $cookie['path'], $cookie['domain'], $cookie['secure'], $cookie['httponly']);
+  }
+}
+
+/**
+ * Get all the relevant cookie data for an account.
+ */
+function esi__get_cookie_data($account) {
+  $cookie_data = array();
+
+  // Allow other modules to generate context for this user.
+  $contexts = esi__get_user_contexts($account);
+
+  // Use the same path/domain/secure/httponly params as the main site config.
+  $params = session_get_cookie_params();
+  $expire = $params['lifetime'] ? REQUEST_TIME + $params['lifetime'] : 0;
+
+  $cookie_name_prefix = variable_get('esi_cookie_name_prefix', ESI_DEFAULT_COOKIE_NAME_PREFIX);
+
+  // If support for the AJAX fallback with contextualized URLs is needed, then
+  // the ESI cookies must be accessible to JavaScript.
+  $ajax_with_contextualize_urls = variable_get('esi_ajax_fallback', ESI_DEFAULT_AJAX_FALLBACK) && variable_get('esi_ajax_fallback_contextualize_url', ESI_DEFAULT_AJAX_FALLBACK_CONTEXTUALIZE_URL);
+  if ($ajax_with_contextualize_urls) {
+    $params['httponly'] = FALSE;
+  }
+
+  foreach ($contexts as $key => $context) {
+    // Each context has the session key appended to it, to ensure site-
+    // specifity.
+    $cookie_data[] = array(
+      'name'     => $cookie_name_prefix . $key,
+      'value'    => $context,
+      'expire'   => $expire,
+      'path'     => $params['path'],
+      'domain'   => $params['domain'],
+      'secure'   => $params['secure'],
+      'httponly' => $params['httponly'],
+    );
+  }
+
+  // Allow other modules to alter the contexts.
+  // This is where the context gets encrypted against the rotating seed.
+  drupal_alter('esi_context_cookies', $cookie_data);
+
+  // Add a *consistent* cookie, so that hook_boot() can determine if a cache-
+  // refresh is necessary.
+  $cookie_data[] = array(
+    'name'     => 'ESI_',
+    'value'    => time(),
+    'expire'   => $expire,
+    'path'     => $params['path'],
+    'domain'   => $params['domain'],
+    'secure'   => $params['secure'],
+    'httponly' => $params['httponly'],
+  );
+
+  // The ESI cookie names are predictable. They can be made less predictable,
+  // by using the same session-naming convention as core - adding a hash of the
+  // domain name as a suffix.
+  // See drupal_settings_initialize() where the session name is initialized.
+  $harden_esi_cookies = variable_get('esi_harden_cookie_key', ESI_DEFAULT_CONTEXT_COOKIES_HARDENING);
+  if ($harden_esi_cookies) {
+    $session_name = '_' . session_name();
+    foreach ($cookie_data as &$cookie) {
+      $cookie['name'] .= $session_name;
+    }
+  }
+
+  return $cookie_data;
+}
+
+/**
+ * Get the ESI contexts for a single user.
+ */
+function esi__get_user_contexts($account = NULL) {
+  // Invoke hook_esi_context().
+  $contexts = module_invoke_all('esi_context', $account);
+  drupal_alter('esi_context', $contexts, $account);
+  return $contexts;
+}
+
+/**
+ * Implements hook_esi_context().
+ */
+function esi_esi_context($account) {
+  global $user;
+  return array(
+    // Add a role context.
+    'ROLE' => implode(',', array_keys($user->roles)),
+    // Add a user context (to match the primary session key).
+    'USER' => session_id(),
+  );
+}
+
+/**
+ * Implements hook_esi_context_cookies_alter().
+ */
+function esi_esi_context_cookies_alter(&$cookie_data) {
+  $seed = _esi__get_seed();
+
+  // Encrypt each value according to the current seed key.
+  foreach ($cookie_data as &$cookie) {
+    $cookie['value'] = md5($seed . md5($cookie['value']));
+  }
+}
+
+/**
+ * Render an ESI tag.
+ */
+function esi_esi_tag($url) {
+  return '<esi:include src="' . $url . '" />';
+}
+
+/**
+ * Render a comment-wrapped ESI tag.
+ */
+function esi_esi_comment_tag($url) {
+  return '<!--esi' . PHP_EOL . esi_esi_tag($url) . PHP_EOL . '-->';
+}
+
+/**
+ * Render an SSI tag.
+ */
+function esi_ssi_tag($url) {
+  return '<!--# include virtual="' . $url . '" -->';
+}
+
+/**
+ * Render a remote SSI tag (as used by mod_publisher).
+ */
+function esi_ssi_remote_tag($url) {
+  return '<!--# include url="' . $url . '" -->';
+}
+
+
+/**
+ * Get the current short-term rotating-seed, which provides the security that
+ * users with expired credentials have limited access to secured data.
+ *
+ * @return String
+ * The new 32-character seed key.
+ */
+function _esi__get_seed() {
+  // Attempt to load the current seed key.
+  $seed = variable_get('esi_seed_key', FALSE);
+
+  // If the seed hasn't yet been set, or is too old, rotate the key.
+  $age = variable_get('esi_seed_key_last_changed', 0);
+  if (empty($seed) || $age < variable_get('esi_seed_key_rotation_interval', ESI_SEED_ROTATION_INTERVAL)) {
+    $seed = _esi__rotate_seed_key();
+  }
+  return $seed;
+}
+
+
+/**
+ * Rotate the seed key.
+ *
+ * @return String
+ * The new 32-character seed key.
+ */
+function _esi__rotate_seed_key() {
+  $seed = '';
+  for ($i=0; $i<32; $i++) {
+    // get a random character from the printable ASCII character set: 32-176
+    $seed += chr(mt_rand(32, 176));
+  }
+  variable_set('esi_seed_key', $seed);
+  variable_set('esi_seed_key_last_changed', time());
+  return $seed;
+}

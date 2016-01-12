@@ -1,0 +1,410 @@
+<?php
+
+/**
+ * @file
+ * Tests for Editor module.
+ */
+
+class EditorTestBase extends DrupalWebTestCase {
+  protected $profile = 'testing';
+
+  /**
+   * The admin user.
+   */
+  protected $admin_user;
+
+  /**
+   * The test user.
+   */
+  protected $webUser;
+
+  function setUp() {
+    $modules = func_get_args();
+    if (isset($modules[0]) && is_array($modules[0])) {
+      $modules = $modules[0];
+    }
+    $modules[] = 'editor';
+    $modules[] = 'node';
+    parent::setUp($modules);
+
+    // Create a page content type.
+    $content_type = $this->drupalCreateContentType(array('type' => 'page', 'name' => 'Basic page'));
+    node_add_body_field($content_type);
+
+    // Create an article content type.
+    $content_type = $this->drupalCreateContentType(array('type' => 'article', 'name' => 'Article'));
+    node_add_body_field($content_type);
+
+    // Create Filtered HTML text format.
+    $format = new stdClass();
+    $format->format = 'custom_format';
+    $format->name = 'Custom format';
+    filter_format_save($format);
+
+    // Reset permissions so that permissions for the filter are available.
+    $this->checkPermissions(array(), TRUE);
+
+    // Create a user with required permissions.
+    $this->webUser = $this->drupalCreateUser(array(
+      'access content',
+      'create page content',
+      'use text format custom_format',
+    ));
+
+    // Create and log in as the admin user.
+    $this->admin_user = $this->drupalCreateUser(array(
+      'administer filters',
+      'access administration pages',
+      'access content',
+      'administer nodes',
+      'create article content',
+    ));
+  }
+}
+
+class EditorTestCase extends EditorTestBase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Editor',
+      'description' => 'Check the functionality of Editor module.',
+      'group' => 'Editor',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp('editor_ckeditor');
+
+    $this->drupalLogin($this->admin_user);
+  }
+
+  /**
+   * Test the addition of the library to the page when configured.
+   *
+   * With no JavaScript level testing, we can only ensure the library is present
+   * on the page.
+   */
+  function testLibrary() {
+    $this->drupalGet('admin/config/content/formats');
+    $this->clickLink(t('Add text format'));
+
+    // Select CKEditor and refresh the page.
+    $this->drupalPost(NULL, array(
+      'name' => 'CKEditor',
+      'format' => 'ckeditor',
+      'editor' => 'ckeditor',
+      'roles[' . DRUPAL_AUTHENTICATED_RID . ']' => TRUE,
+    ), t('Configure editor'));
+
+    $toolbar = array(
+      // First row.
+      array(
+        array(
+          'name' => 'Formatting',
+          'items' => array('Bold', 'Italic', 'Underline', 'Strike'),
+        ),
+        array(
+          'name' => 'Alignment',
+          'items' => array('JustifyLeft', 'JustifyCenter', 'JustifyRight'),
+        ),
+        array(
+          'name' => 'Lists',
+          'items' => array('BulletedList', 'NumberedList'),
+        ),
+        array(
+          'name' => 'Media',
+          'items' => array('Blockquote', 'DrupalImage', 'Styles'),
+        ),
+      ),
+    );
+
+    $this->drupalPost(NULL, array(
+      'editor_settings[toolbar]' => json_encode($toolbar),
+      'editor_settings[plugins][style][style_list]' => "h1.title|Title\np.custom-class|Custom class\n",
+      'filters[filter_autop][status]' => TRUE,
+      'filters[editor_align][status]' => TRUE,
+      'filters[editor_caption][status]' => TRUE,
+    ), t('Save configuration'));
+
+    $this->drupalGet('node/add/article');
+    $this->assertRaw('editor/modules/editor_ckeditor/css/ckeditor.css');
+    $this->assertRaw('editor/modules/editor_ckeditor/lib/ckeditor/ckeditor.js');
+    $this->assertRaw('editor/modules/editor_ckeditor/js/ckeditor.js');
+    $settings = $this->drupalGetSettings();
+    $format_settings = $settings['editor']['formats']['ckeditor'];
+    $this->assertEqual($format_settings['editorSettings']['toolbar'], $toolbar[0], 'CKEditor toolbar settings saved and added correctly.');
+    $this->assertEqual($format_settings['editorSettings']['extraPlugins'], 'drupalimagecaption,drupalimage', 'Added custom plugins include custom image caption support.');
+    $style_list = array(
+      array('name' => 'Title', 'element' => 'h1', 'attributes' => array('class' => 'title')),
+      array('name' => 'Custom class', 'element' => 'p', 'attributes' => array('class' => 'custom-class')),
+    );
+    $this->assertEqual($format_settings['editorSettings']['stylesSet'], $style_list, 'Style list settings correct');
+  }
+}
+
+/**
+ * Tests file usage.
+ */
+class EditorFileUsageTest extends EditorTestBase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Editor file usage test',
+      'description' => 'Tests usage tracking of embedded file entities.',
+      'group' => 'Editor',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp();
+
+    $this->drupalLogin($this->webUser);
+  }
+
+  /**
+   * Tests usage tracking of embedded files.
+   */
+  function testFileUsage() {
+    // Create a file.
+    $files = $this->drupalGetTestFiles('image');
+    $file = file_save($files[0]);
+    $fid = $file->fid;
+
+    // The file should start without any usage.
+    $file_uses = file_usage_list($file);
+    $this->assertEqual(empty($file_uses), TRUE, t('Created a new file without any usage.'));
+
+    // Create a node with an embedded file.
+    $content = '<img src="awesome-llama.jpg" data-entity-type="file" data-entity-id="' . $fid . '" />';
+    $settings = array();
+    $settings['body'] = array(LANGUAGE_NONE => array(array('value' => $content, 'format' => 'custom_format')));
+    $node = $this->drupalCreateNode($settings);
+    $nid = $node->nid;
+
+    // Verify that file usage increased.
+    $file_uses = file_usage_list($file);
+    $this->assertEqual($file_uses['editor']['node'][$nid], 1, t('File usage increases after embedding a file in a new node.'));
+
+    // Create a new revision of the node that has the file on it.
+    $node = node_load($nid);
+    $node->revision = TRUE;
+    node_save($node);
+
+    $node = node_load($nid);
+    $file_uses = file_usage_list($file);
+    $revisions = count(node_revision_list($node));
+
+    // Keep track of this VID to test deletion later on.
+    $delete_one = $node->vid;
+
+    // Verify that there are two revisions of the node.
+    // File should now be used twice.
+    $this->assertEqual($revisions, 2, t('Node save created a second revision'));
+    $this->assertEqual($file_uses['editor']['node'][$nid], 2, t('File usage incremented with a new node revision.'));
+
+    // Create a new revision of the node that has the file on it.
+    // Embed two instances of the file.
+    $node = node_load($nid);
+    $content = '';
+    $content .= '<img src="awesome-llama.jpg" data-entity-type="file" data-entity-id="' . $fid . '" />';
+    $content .= '<img src="awesome-llama.jpg" data-entity-type="file" data-entity-id="' . $fid . '" />';
+    $node->body[LANGUAGE_NONE][0]['value'] = $content;
+    $node->revision = TRUE;
+    node_save($node);
+
+    $node = node_load($nid);
+    $file_uses = file_usage_list($file);
+    $revisions = count(node_revision_list($node));
+
+    // Keep track of this VID to test deletion later on.
+    $delete_two = $node->vid;
+
+    // Verify that there are three revisions of the node.
+    // File should now be used four times.
+    $this->assertEqual($revisions, 3, t('Node save created a third revision.'));
+    $this->assertEqual($file_uses['editor']['node'][$nid], 4, t('File usage incremented with multiple files and a new node revision.'));
+
+    // Create a new revision of the node that has the file on it.
+    // Remove all embedded files.
+    $node = node_load($nid);
+    $node->body[LANGUAGE_NONE][0]['value'] = '';
+    $node->revision = TRUE;
+    node_save($node);
+
+    $node = node_load($nid);
+    $file_uses = file_usage_list($file);
+    $revisions = count(node_revision_list($node));
+
+    // Keep track of this VID to test deletion later on.
+    $delete_zero = $node->vid;
+
+    // Verify that there are four revisions of the node.
+    // File should continue to be used four times.
+    $this->assertEqual($revisions, 4, t('Node save created a fourth revision.'));
+    $this->assertEqual($file_uses['editor']['node'][$nid], 4, t('File usage is unchanged with a new revision of the node that does not contain any embedded files.'));
+
+    // Create a new revision of the node that has the file on it.
+    // Embed one instance of the file.
+    $node = node_load($nid);
+    $node->body[LANGUAGE_NONE][0]['value'] = '<img src="awesome-llama.jpg" data-entity-type="file" data-entity-id="' . $fid . '" />';
+    $node->revision = TRUE;
+    node_save($node);
+
+    $node = node_load($nid);
+    $file_uses = file_usage_list($file);
+    $revisions = count(node_revision_list($node));
+
+    // Verify that there are five revisions of the node.
+    // File should now be used five times.
+    $this->assertEqual($revisions, 5, t('Node save created a new revision.'));
+    $this->assertEqual($file_uses['editor']['node'][$nid], 5, t('File usage incremented with a single file on a new node revision.'));
+
+    // Delete a revision that has one embedded file. File usage will be 4.
+    node_revision_delete($delete_one);
+    $file_uses = file_usage_list($file);
+    $this->assertEqual($file_uses['editor']['node'][$nid], 4, t('Deleting revision with file decreases file usage.'));
+
+    // Delete a revision that has no embedded files. File usage will continue to
+    // be 4.
+    node_revision_delete($delete_zero);
+    $file_uses = file_usage_list($file);
+    $this->assertEqual($file_uses['editor']['node'][$nid], 4, t('Deleting revision without a file does not change file usage.'));
+
+    // Delete a revision that has two embedded files. File usage will be 2.
+    node_revision_delete($delete_two);
+    $file_uses = file_usage_list($file);
+    $this->assertEqual($file_uses['editor']['node'][$nid], 2, t('Deleting revision with file decreases file usage'));
+
+    // Create a new revision of the node that has the file on it.
+    // Embed two instances of the file.
+    $node = node_load($nid);
+    $content = '';
+    $content .= '<img src="awesome-llama.jpg" data-entity-type="file" data-entity-id="' . $fid . '" />';
+    $content .= '<img src="awesome-llama.jpg" data-entity-type="file" data-entity-id="' . $fid . '" />';
+    $node->body[LANGUAGE_NONE][0]['value'] = $content;
+    $node->revision = TRUE;
+    node_save($node);
+
+    $file_uses = file_usage_list($file);
+
+    // File should now be used four times.
+    $this->assertEqual($file_uses['editor']['node'][$nid], 4,  t('File usage incremented with files on a new node revision.'));
+
+    // Remove one instance of the embedded file and re-save the current revision
+    // of the node.
+    $node = node_load($nid);
+    $node->body[LANGUAGE_NONE][0]['value'] = '<img src="awesome-llama.jpg" data-entity-type="file" data-entity-id="' . $fid . '" />';
+    $saved_vid = $node->vid;
+    node_save($node);
+
+    $node = node_load($nid);
+    $file_uses = file_usage_list($file);
+
+    // Verify that the current revision was used.
+    // File should now be used three times.
+    $this->assertEqual($node->vid, $saved_vid, t('Resaved node revision does not create new revision.'));
+    $this->assertEqual($file_uses['editor']['node'][$nid], 3, t('Resaved node revision with fewer files reduces file usage.'));
+
+    // Delete the node.
+    // The file should now be unused.
+    node_delete($nid);
+
+    $node = node_load($nid);
+    $file_uses = file_usage_list($file);
+
+    // Verify that the node was deleted and the file is now unused.
+    $this->assertEqual(empty($node), TRUE, t('Node has been deleted.'));
+    $this->assertEqual(empty($file_uses), TRUE, t('Deleting the node removes all file uses.'));
+  }
+
+  /**
+   * Tests usage tracking when deleting content or files.
+   */
+  function testFileUsageDeleted() {
+    // Create a file.
+    $files = $this->drupalGetTestFiles('image');
+    $file = file_save($files[1]);
+    $fid = $file->fid;
+
+    // The file should start without any usage.
+    $file_uses = file_usage_list($file);
+    $this->assertEqual(empty($file_uses), TRUE, t('Created a new file without any usage.'));
+
+    // Create a node with an embedded file.
+    $content = '<img src="awesome-llama.jpg" data-entity-type="file" data-entity-id="' . $fid . '" />';
+    $settings = array();
+    $settings['body'] = array(LANGUAGE_NONE => array(array('value' => $content, 'format' => 'custom_format')));
+    $node = $this->drupalCreateNode($settings);
+    $nid = $node->nid;
+
+    // Verify that file usage increased.
+    $file_uses = file_usage_list($file);
+    $this->assertEqual($file_uses['editor']['node'][$nid], 1, t('File usage increases after embedding a file in a new node.'));
+
+    // Try to delete the file. file_delete() should return file_usage().
+    $deleted = file_delete($file);
+    $this->assertTrue(is_array($deleted), t('File cannot be deleted while in use by a node.'));
+
+    // Delete the node.
+    node_delete($nid);
+    $node = node_load($nid);
+    $file_uses = file_usage_list($file);
+
+    // Verify that the node was deleted and the file is now unused.
+    $this->assertEqual(empty($node), TRUE, t('Node has been deleted.'));
+    $this->assertEqual(empty($file_uses), TRUE, t('File has zero usage after node is deleted.'));
+
+    // Delete the file.
+    // Verify that the file can be deleted when it is unused.
+    $deleted = file_delete($file);
+    $this->assertTrue($deleted, t('File can be deleted with no usage.'));
+
+    // Verify that the file was deleted.
+    $file = file_load($fid);
+    $this->assertTrue(empty($file), t('File no longer exists after delete.'));
+  }
+
+  /**
+   * Tests usage tracking after forcefully deleting content or files.
+   */
+  function testFileUsageForcefullyDeleted() {
+    // Create a file.
+    $files = $this->drupalGetTestFiles('image');
+    $file = file_save($files[1]);
+    $fid = $file->fid;
+
+    // The file should start without any usage.
+    $file_uses = file_usage_list($file);
+    $this->assertEqual(empty($file_uses), TRUE, t('Created a new file without any usage.'));
+
+    // Create a node with an embedded file.
+    $content = '<img src="awesome-llama.jpg" data-entity-type="file" data-entity-id="' . $fid . '" />';
+    $settings = array();
+    $settings['body'] = array(LANGUAGE_NONE => array(array('value' => $content, 'format' => 'custom_format')));
+    $node = $this->drupalCreateNode($settings);
+    $nid = $node->nid;
+
+    // Verify that file usage increased.
+    $file_uses = file_usage_list($file);
+    $this->assertEqual($file_uses['editor']['node'][$nid], 1, t('File usage increases after embedding a file in a new node.'));
+
+    // Forcefully delete the file.
+    $deleted = file_delete($file, TRUE);
+    $this->assertTrue($deleted, t('File was deleted despite having usage.'));
+
+    // Try to update the node that references a non-existent file.
+    $account = $this->drupalCreateUser(array('edit any page content', 'use text format custom_format'));
+    $node = node_load($nid);
+    $this->drupalLogin($account);
+    $this->drupalGet('node/' . $nid . '/edit');
+    $this->assertRaw(check_plain($node->body['und'][0]['value']), t('Reference to deleted file found in node body.'));
+    $edit = array(
+      'body[und][0][value]' => '',
+    );
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // Verify that the node was save successfully.
+    $type = node_type_load($node->type);
+    $this->assertRaw(t('@type %title has been updated.', array('@type' => $type->name, '%title' => $node->title)), t('Node without reference to deleted file saved successfully.'));
+  }
+}

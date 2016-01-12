@@ -1,1 +1,18 @@
-/data/all/001/commons-3.32-7.41.1/xmlrpc.php
+<?php
+
+/**
+ * @file
+ * PHP page for handling incoming XML-RPC requests from clients.
+ */
+
+/**
+ * Root directory of Drupal installation.
+ */
+define('DRUPAL_ROOT', getcwd());
+
+include_once DRUPAL_ROOT . '/includes/bootstrap.inc';
+drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+include_once DRUPAL_ROOT . '/includes/xmlrpc.inc';
+include_once DRUPAL_ROOT . '/includes/xmlrpcs.inc';
+
+xmlrpc_server(module_invoke_all('xmlrpc'));

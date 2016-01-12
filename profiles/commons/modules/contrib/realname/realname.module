@@ -68,7 +68,7 @@ function realname_menu() {
 function realname_menu_alter(&$items) {
   // Implement realname autocomplete.
   $items['user/autocomplete']['page callback'] = 'realname_autocomplete';
-  $items['user/autocomplete']['page arguments'] = array('', '', '', 2);
+  $items['user/autocomplete']['page arguments'] = array('', '', 'user', 'user', '');
 }
 
 /**

@@ -12,7 +12,7 @@ function media_oembed_file_formatter_info() {
   $formatters['media_oembed'] = array(
     'label' => t('oEmbed'),
     'description' => t('All-purpose oEmbed formatter.'),
-    'file types' => array('audio, document, image, video'),
+    'file types' => array('audio', 'document', 'image', 'video'),
     'mime types' => array('audio/oembed', 'image/oembed', 'text/oembed', 'video/oembed'),
     'default settings' => array(
       'width' => '640',
@@ -24,7 +24,7 @@ function media_oembed_file_formatter_info() {
   $formatters['media_oembed_thumbnail'] = array(
     'label' => t('oEmbed thumbnail'),
     'description' => t('oEmbed thumbnail media.'),
-    'file types' => array('audio, document, image, video'),
+    'file types' => array('audio', 'document', 'image', 'video'),
     'mime types' => array('audio/oembed', 'image/oembed', 'text/oembed', 'video/oembed'),
     'default settings' => array(
       'image_style' => '',

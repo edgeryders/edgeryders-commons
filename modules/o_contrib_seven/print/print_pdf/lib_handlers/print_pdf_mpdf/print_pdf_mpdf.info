@@ -1,0 +1,5 @@
+name = "mPDF library handler"
+description = "PDF generation library using mPDF."
+core = 7.x
+package = "Printer, email and PDF versions"
+dependencies[] = print_pdf

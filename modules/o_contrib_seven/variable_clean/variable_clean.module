@@ -1,0 +1,290 @@
+<?php
+
+/**
+ * @file
+ * Allows you to remove variables not currently used.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function variable_clean_menu() {
+  $items['admin/config/development/variable_clean'] = array(
+    'title' => 'Variable Cleanup',
+    'description' => 'Allows you to remove variables not currently used.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('variable_clean_form'),
+    'access arguments' => array('administer site configuration'),
+  );
+  return $items;
+}
+
+/**
+ * Form builder for variable cleanup.
+ *
+ * @ingroup forms
+ *
+ * @see variable_clean_form_submit()
+ */
+function variable_clean_form($form, &$form_state) {
+  _variable_clean_timeouts();
+
+  // Confirmation form.
+  if (empty($form_state['storage']['step']) || $form_state['storage']['step'] == 'confirm') {
+    $form_state['storage']['step'] = 'confirm';
+    return confirm_form($form,
+      t('Cleanup variables'),
+      'admin/config',
+      t('Are you sure you want to scan your codebase for all used variables (This may take a long time)?'),
+      t('Scan codebase'),
+      t('Cancel')
+    );
+  }
+
+  // Scan results form.
+  $form_state['storage']['step'] = 'scan';
+  $code_lines = $not_in = array();
+  $return_var = 0;
+
+  _variable_clean_timeouts();
+
+  // Compile a list of directories to scan.
+  $code_directories = array(
+    'update.php',
+    'install.php',
+    'includes' . DIRECTORY_SEPARATOR,
+    'modules' . DIRECTORY_SEPARATOR,
+    'profiles' . DIRECTORY_SEPARATOR,
+    'themes' . DIRECTORY_SEPARATOR,
+    'sites' . DIRECTORY_SEPARATOR . 'all' . DIRECTORY_SEPARATOR,
+  );
+  $site_directory = dirname($_SERVER['SCRIPT_FILENAME']) . DIRECTORY_SEPARATOR . conf_path() . DIRECTORY_SEPARATOR;
+  foreach ((array) glob($site_directory . '*', GLOB_ONLYDIR) as $directory) {
+    $sub_directory = str_replace($site_directory, '', $directory);
+    if (!in_array($sub_directory, array('files', 'CVS', '.svn'))) {
+      $code_directories[] = conf_path() . DIRECTORY_SEPARATOR . $sub_directory . DIRECTORY_SEPARATOR;
+    }
+  }
+
+  // Get a list of all lines of code using variables.
+  chdir(dirname($_SERVER['SCRIPT_FILENAME']));
+  foreach ($code_directories as $code_directory) {
+    drupal_set_message(t('Scaning %directory.', array('%directory' => $code_directory)));
+    exec('grep -rn "^[:space:]*[^/\*]*variable_[g,s]et" ' . escapeshellarg($code_directory), $code_lines, $return_var);
+  }
+
+  drupal_set_message(t('Scaning complete.'));
+
+  // If there's less than 50 instances, something went horribly wrong.
+  $variable_count = count($code_lines);
+  if (!$variable_count || $variable_count < 50) {
+    $message = t('Only %variable_count variable uses were found in code. This could not possibly be correct. <pre>!dump</pre>',
+            array('%variable_count' => $variable_count, '!dump' => filter_xss_admin(var_export($code_lines, TRUE))));
+    $form['error']['#markup'] = '<p>' . $message . '</p>';
+    return $form;
+  }
+
+  // Reduce the list of code to a list of variables.
+  extract(_variable_clean_code_get_variables($code_lines));
+
+  //  dpm($static_variables, '$static_variables');
+  //  dpm($dynamic_variables, '$dynamic_variables');
+  //  dpm($non_processable_variables, '$non_processable_variables');
+
+  if ($non_processable_variables) {
+    // Remove our test vars.
+    foreach ($non_processable_variables as $key => $variable) {
+      if (strpos($variable, 'variable_clean_test') !== FALSE) {
+        unset($non_processable_variables[$key]);
+      }
+    }
+    $form['non_processable_variables']['#markup'] = '<p>' . t('The following code prevents an accurate determination of what variables are in use.  Proceed carefully! !variables',
+      array('!variables' => '<br />' . filter_xss_admin(theme('item_list', array('items' => $non_processable_variables))))) . '</p>';
+  }
+
+  $form['variables'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('The following variables appear to be unused and could be deleted.  Do so at your own risk'),
+    '#options' => array(),
+  );
+
+  // Get all variables in the DB that are not used as static variables.
+  if ($static_variables) {
+    $query = db_select('variable', 'v')
+      ->fields('v', array('name'))
+      ->condition('name', $static_variables, 'NOT IN')
+      ->orderBy('name')
+      ->execute();
+    while ($db_variable = $query->fetch(PDO::FETCH_OBJ)) {
+
+      // Is it a dynamic variable?
+      foreach ($dynamic_variables as $variable) {
+        if (strpos($db_variable->name, $variable) === 0) {
+          continue(2);
+        }
+      }
+
+      // We found an honest-to-goodness unused variable.
+      $form['variables']['#options'][$db_variable->name] = $db_variable->name;
+    }
+  }
+  else {
+    $form['error']['#markup'] = '<p>' . t('Error.  No variables were found in the code.') . '/<p>';
+  }
+
+  if ($form['variables']['#options']) {
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Delete'),
+    );
+  }
+  else {
+    unset($form['variables']);
+    $form['error']['#markup'] = '<p>' . t('All variables in the database are used in code.') . '</p>';
+  }
+
+  return $form;
+}
+
+/**
+ * Form submit handler for variable cleanup.
+ *
+ * @ingroup Forms
+ *
+ * @see variable_clean_form()
+ */
+function variable_clean_form_submit($form, &$form_state) {
+
+  // Confirmation complete.
+  if ($form_state['storage']['step'] == 'confirm') {
+    $form_state['storage']['step'] = 'scan';
+    $form_state['rebuild'] = TRUE;
+    return;
+  }
+
+  // Delete the variables.
+  $deleted_variables = array();
+  foreach ($form_state['values']['variables'] as $variable) {
+    if ($variable) {
+      variable_del($variable);
+      $deleted_variables[] = $variable;
+    }
+  }
+  drupal_set_message(t('The following variables have been removed from the database: !variables',
+    array('!variables' => '<br />' . filter_xss_admin(implode('<br />', $deleted_variables)))));
+  $form_state['storage']['step'] = 'confirm';
+  $form_state['rebuild'] = TRUE;
+
+}
+
+/**
+ * Reduce a list of code into a list of variables, both static and dynamic.
+ *
+ * @param array $code_lines
+ *
+ * @return mixed
+ *  Array of three arrays: 'static_variables', 'dyamic_variables', and 'non_processable_variables'.
+ */
+function _variable_clean_code_get_variables($code_lines) {
+  $static_variables = $dynamic_variables = $non_processable_variables = array();
+  foreach ($code_lines as $line) {
+
+    // Skip stuff in SVN.
+    // @todo This could be done when we grep, but would require also using find.
+    if (strpos($line, DIRECTORY_SEPARATOR . '.svn' . DIRECTORY_SEPARATOR) !== FALSE) {
+      continue;
+    }
+
+    // Extract the variable name.
+    $matches = array();
+    if (preg_match_all('!variable_[g,s]et\(([^\',"]*?[\',"](.+?)[\',"].*?),!', $line, $matches, PREG_SET_ORDER)) {
+      foreach ($matches as $match) {
+        // $match[1] is what is between ( and ,
+        // $match[2] is what is enclosed in the first set of quotes
+
+        $cleaned_match_1 = str_replace(array('"', "'"), '', $match[1]);
+
+        // Test for really twisted syntax that we aren't going to even try to deal with.
+        // ex. "foo_{$bar['baz']}"
+        if (preg_match('![\',"][^\',"]*?{[^\',"]*?\[!', $match[1])) {
+          $non_processable_variables[] = $line;
+        }
+
+        // Is this a dynamic variable?
+        // If $match[1] does not equal $match[2] sans quotes, then it must be a dynamic variable.
+        elseif ($match[2] != $cleaned_match_1) {
+
+          // If static portion is not at the beginning, we are screwed.
+          if (strpos($cleaned_match_1, $match[2]) !== 0 || !$match[2]) {
+            $non_processable_variables[] = $line;
+          }
+          else {
+            $dynamic_variables[$match[2]] = $match[2];
+          }
+        }
+        // If a dollar sign is within the quotes then the string was something like "foo_$bar".
+        elseif (($dollar_position = strpos($match[2], '$')) !== FALSE) {
+
+          // If the dollar is in position 0 we are screwed.
+          if ($dollar_position === 0) {
+            $non_processable_variables[] = $line;
+          }
+          else {
+            $variable = str_replace('{', '', substr($match[2], 0, $dollar_position));
+            if ($variable) {
+              $dynamic_variables[$variable] = $variable;
+            }
+            else {
+              $non_processable_variables[] = $line;
+            }
+          }
+        }
+
+        // Else it must be a straight-up variable.
+        else {
+          $static_variables[$match[2]] = $match[2];
+        }
+      }
+    }
+  }
+  return array(
+    'static_variables' => $static_variables,
+    'dynamic_variables' => $dynamic_variables,
+    'non_processable_variables' => $non_processable_variables,
+  );
+}
+
+/**
+ * Setup some timeouts and check for required stuff.
+ */
+function _variable_clean_timeouts() {
+  // This may take a long time.  Set some timeouts in a way that shared hosting can handle.
+  if (ini_get('safe_mode')) {
+    drupal_set_message(t('You are running PHP in safe-mode.  If you have trouble with PHP timing-out before processing completes you will need to increase "max_execution_time" in php.ini. Note that the use of safe-mode is depricated and not recommended.'), 'error');
+  }
+  else {
+    if (function_exists('set_time_limit')) {
+      drupal_set_time_limit(300);
+    }
+    else {
+      drupal_set_message(t('The set_time_limit() function does not exist.  If you have trouble with PHP timing-out before processing completes you will need to increase "max_execution_time" in php.ini.'), 'error');
+    }
+
+  }
+  if (function_exists('memory_get_usage')) {
+    ini_set('memory_limit', '256M');
+  }
+  else {
+    drupal_set_message(t('The version of PHP is old and not compiled with --enable-memory-limit.  If you have trouble with PHP timing-out before processing completes you will need to increase "memory_limit" in php.ini. But you should really be using a modern version of PHP.'), 'error');
+  }
+  db_query('SET SESSION wait_timeout = 300');
+
+  // Test for grep.
+  $return_var = 0;
+  $grep_out = array();
+  exec('grep --version', $grep_out, $return_var);
+  if ($return_var != 0) {
+    drupal_set_message(t('This module requires the command line utility "grep".  The following error was received: !error',
+      array('!error' => $return_var . '<br />' . filter_xss_admin(implode('<br />', $grep_out)))));
+  }
+}

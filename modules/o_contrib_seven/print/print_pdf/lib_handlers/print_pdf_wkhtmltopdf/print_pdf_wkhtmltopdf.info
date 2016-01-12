@@ -1,0 +1,6 @@
+name = "wkhtmltopdf library handler"
+description = "PDF generation library using wkhtmltopdf."
+core = 7.x
+package = "Printer, email and PDF versions"
+dependencies[] = print_pdf
+configure = admin/config/user-interface/print/pdf/wkhtmltopdf

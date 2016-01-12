@@ -26,7 +26,7 @@ function sharethis_help($path, $arg) {
       $return_value .= "<li>" . t("The block can be placed anywhere on a page, the node is limited to where nodes normally go") . '</li>';
       $return_value .= "<li>" . t("The block module is more likely to be compatible with other plugins that use blocks rather than nodes. (Panels works nicely with the block)") . '</li></ul>';
       $return_value .= "<p>" . t('For various configuration options please got to <a href="@sharethis">the settings page</a>.', array('@sharethis' => url('admin/config/services/sharethis'))) . '</p>';
-      $return_value .= '<p>' . t('For more information, please visit <a href="@help">help.sharethis.com</a>.', array('@help' => 'http://help.sharethis.com/integration/drupal')) . '</p>';
+      $return_value .= '<p>' . t('For more information, please visit <a href="@help">support.sharethis.com</a>.', array('@help' => 'http://support.sharethis.com/customer/portal/articles/446621-drupal-integration')) . '</p>';
       return $return_value;
       break;
   }
@@ -298,18 +298,6 @@ function sharethis_configuration_form($form, &$form_state) {
 		'hashaddress' => t('Measure copy & shares of your site\'s URLs'),
 		),
     '#default_value' => $current_options_array['sharethis_cns'],
-  );
-  $form['advanced']['sharethis_widget_option'] = array(
-	'#options' => array(
-	  'st_multi' => t("Multi-Post Widget"),
-	  'st_direct' => t("Direct-Post Widget")
-	),
-	'#default_value' => $widget_type,
-	'#type' => 'radios',
-	'#required' => TRUE,
-	'#title' => t("Choose a widget type:"),
-	'#prefix' => '<div class="st_widgetContain"><div class="st_widgetPic ' . $widget_markup . '"><div class="st_widgetPicContain"><img src="' . $base_url . '/' . $my_path . '/img/widget.png"></img></div></div>',
-	'#suffix' => '</div>'
   );
 
   $form['#submit'][] = 'sharethis_configuration_form_submit';
@@ -598,7 +586,7 @@ function theme_sharethis($variables) {
     }
     // Only show the display text if the type is set.
     if (!empty($type)) {
-      $attributes['displaytext'] = check_plain($display);
+      $attributes['displayText'] = check_plain($display);
     }
     // Render the span tag.
     $st_spans .= theme('html_tag', array(
@@ -635,8 +623,12 @@ function sharethis_include_js() {
     }
     drupal_add_js($st_js, 'inline');
     
-    //$external = "//ws.sharethis.com/button/buttons.js";
-    $external = ((isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on') ? "https://ws." : "http://w.") . "sharethis.com/button/buttons.js";
+	if((isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) == 'https')) {
+		$external = "https://ws.sharethis.com/button/buttons.js";
+	} else {
+		$external = "http://w.sharethis.com/button/buttons.js";
+	}
+
     drupal_add_js($external, 'external');
     
     $stlight = get_stLight_options($data_options);

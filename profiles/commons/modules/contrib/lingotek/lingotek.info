@@ -5,6 +5,7 @@ core = "7.x"
 php = "5.3"
 configure = admin/config/lingotek/setup
 
+
 dependencies[] = locale
 dependencies[] = field_ui
 dependencies[] = title
@@ -21,14 +22,13 @@ dependencies[] = i18n_taxonomy
 dependencies[] = i18n_translation
 dependencies[] = i18n_variable
 dependencies[] = views
-dependencies[] = l10n_update
 dependencies[] = ctools
 dependencies[] = potx
 
 files[] = lib/Drupal/lingotek/Lingotek.php
 files[] = lib/Drupal/lingotek/LingotekApi.php
 files[] = lib/Drupal/lingotek/LingotekAccount.php
-files[] = lib/Drupal/lingotek/LingotekConfigChunk.php
+files[] = lib/Drupal/lingotek/LingotekConfigSet.php
 files[] = lib/Drupal/lingotek/LingotekDocument.php
 files[] = lib/Drupal/lingotek/LingotekLog.php
 files[] = lib/Drupal/lingotek/LingotekEntity.php
@@ -44,9 +44,9 @@ files[] = lingotek_views_handler_workbench_link.inc
 
 stylesheets[all][] = style/base.css
 
-; Information added by Drupal.org packaging script on 2014-05-05
-version = "7.x-5.06"
+; Information added by Drupal.org packaging script on 2015-03-24
+version = "7.x-6.02"
 core = "7.x"
 project = "lingotek"
-datestamp = "1399330130"
+datestamp = "1427170701"
 

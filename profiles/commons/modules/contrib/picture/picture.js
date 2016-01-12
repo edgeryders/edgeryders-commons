@@ -1,15 +1,23 @@
 if (typeof Drupal !== 'undefined' && typeof jQuery !== 'undefined') {
-  // only load if Drupal and jQuery are defined.
+  // Only load if Drupal and jQuery are defined.
   (function ($) {
     Drupal.behaviors.picture = {
       attach: function (context) {
-        // Ensure we always pass a raw DOM element to picture fill, otherwise it
-        // will fallback to the document scope and maybe handle to much.
-        window.picturefill($(context)[0]);
+        // Don't load if there's native picture element support.
+        if (!('HTMLPictureElement' in window)) {
+          // Ensure we always pass a raw DOM element to picture fill, otherwise it
+          // will fallback to the document scope and maybe handle to much.
+          var imgs = $(context).find('img');
+          if (imgs.length) {
+            window.picturefill({
+              elements: imgs.get()
+            });
+          }
+        }
         // If this is an opened colorbox ensure the content dimensions are set
         // properly. colorbox.js of the colorbox modules sets #cboxLoadedContent
         // as context.
-        if (context == '#cboxLoadedContent') {
+        if (context === '#cboxLoadedContent' && $(context).find('picture').length) {
           // Try to resize right away.
           $.colorbox.resize();
           // Make sure the colorbox resizes always when the image is changed.

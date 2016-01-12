@@ -26,24 +26,26 @@ dependencies[] = taxonomy
 dependencies[] = addressfield
 dependencies[] = addressfield_tokens
 dependencies[] = breakpoints
-dependencies[] = ckeditor
+dependencies[] = editor_ckeditor
 dependencies[] = ctools
 dependencies[] = custom_search
+dependencies[] = dialog
 dependencies[] = diff
 dependencies[] = elements
 dependencies[] = email_registration
 dependencies[] = entity
+dependencies[] = entity_embed
 dependencies[] = entityreference
-dependencies[] = entitycache
+
 dependencies[] = edit_profile
 dependencies[] = features
 dependencies[] = file_entity
 dependencies[] = flag
 dependencies[] = http_client
+dependencies[] = jquery_update
 dependencies[] = libraries
 dependencies[] = media
 dependencies[] = media_internet
-dependencies[] = media_wysiwyg
 dependencies[] = menu_attributes
 dependencies[] = message
 dependencies[] = message_notify
@@ -72,6 +74,7 @@ dependencies[] = strongarm
 dependencies[] = token
 dependencies[] = views
 dependencies[] = views_bulk_operations
+dependencies[] = views_field_view
 dependencies[] = views_ui
 dependencies[] = votingapi
 
@@ -104,6 +107,8 @@ dependencies[] = commons_profile_base
 dependencies[] = commons_profile_social
 dependencies[] = commons_q_a
 dependencies[] = commons_q_a_pages
+dependencies[] = commons_radioactivity
+dependencies[] = commons_radioactivity_groups
 dependencies[] = commons_search
 dependencies[] = commons_search_core
 dependencies[] = commons_site_homepage
@@ -118,9 +123,9 @@ dependencies[] = commons_wysiwyg
 ; System Requirements.
 php_memory_limit = 128M
 
-; Information added by Drupal.org packaging script on 2014-05-08
-version = "7.x-3.12"
+; Information added by Drupal.org packaging script on 2015-10-28
+version = "7.x-3.32"
 core = "7.x"
 project = "commons"
-datestamp = "1399579131"
+datestamp = "1446047047"
 

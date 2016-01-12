@@ -37,6 +37,18 @@ function commons_update_projects_alter(&$projects) {
 }
 
 /**
+ * Implements hook_hook_info().
+ */
+function commons_hook_info() {
+  $hooks = array(
+    'commons_entity_integration',
+    'commons_entity_integration_alter',
+  );
+
+  return array_fill_keys($hooks, array('group' => 'commons'));
+}
+
+/**
  * Get Commons entity integration information.
  *
  * @param $entity_type
@@ -49,9 +61,9 @@ function commons_update_projects_alter(&$projects) {
  *   define the type of integration to enable and whose values contain the
  *   status of the integration. TRUE = enabled, FALSE = disabled.
  */
-function commons_entity_integration_info($entity_type = NULL) {
+function commons_entity_integration_info($entity_type = NULL, $cache = TRUE) {
   $info = &drupal_static(__FUNCTION__);
-  if (!$info) {
+  if (!$info || !$cache) {
     $info = module_invoke_all('commons_entity_integration');
     drupal_alter('commons_entity_integration', $info);
   }
@@ -143,10 +155,23 @@ function commons_admin_save_fullname($form_id, &$form_state) {
  * Check if the Acquia Connector box was selected.
  */
 function commons_check_acquia_connector($form_id, &$form_state) {
-  $values = $form_state['values'];
-  if (isset($values['enable_acquia_connector']) && $values['enable_acquia_connector'] == 1) {
-    $options = array_filter($values['acquia_connector_modules']);
-    variable_set('commons_install_acquia_connector', TRUE);
-    variable_set('commons_install_acquia_modules', array_keys($options));
+  if (!empty($form_state['values']['enable_acquia_connector'])) {
+    $selected_extras = variable_get('commons_selected_extras', array());
+
+    $modules = $form_state['values']['acquia_connector_modules'];
+
+    if (!empty($modules['acquia_agent'])) {
+      $selected_extras['acquia_agent'] = TRUE;
+    }
+
+    if (!empty($modules['acquia_search'])) {
+      $selected_extras['acquia_search'] = TRUE;
+    }
+
+    if (!empty($modules['acquia_spi'])) {
+      $selected_extras['acquia_spi'] = TRUE;
+    }
+
+    variable_set('commons_selected_extras', $selected_extras);
   }
 }

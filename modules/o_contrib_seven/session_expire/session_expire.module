@@ -1,0 +1,156 @@
+<?php
+
+/**
+ * @file
+ * Expires rows from the session table older than a certain time.
+ *
+ * @copyright Copyright 2007 Khalid Baheyeldin http://2bits.com
+ */
+
+if(!defined('SESSION_EXPIRE_AGE'))
+  define('SESSION_EXPIRE_AGE',      'session_expire_age');
+if(!defined('SESSION_EXPIRE_MODE'))
+  define('SESSION_EXPIRE_MODE',     'session_expire_mode');
+if(!defined('SESSION_EXPIRE_LAST'))
+  define('SESSION_EXPIRE_LAST', 'session_expire_last');
+if(!defined('SESSION_EXPIRE_MAX_DELETIONS'))
+  define('SESSION_EXPIRE_MAX_DELETIONS', 'session_expire_max_deletions');
+if(!defined('SESSION_EXPIRE_INTERVAL'))
+  define('SESSION_EXPIRE_INTERVAL', 'session_expire_interval');
+
+/**
+ * Implements hook_menu().
+ *
+ * @return array
+ */
+function session_expire_menu() {
+  $items['admin/config/system/session_expire'] = array(
+    'type'               => MENU_NORMAL_ITEM,
+    'title'              => 'Session expire',
+    'description'        => 'Settings for session expiry',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('session_expire_settings'),
+    'access arguments'   => array('administer site configuration'),
+  );
+  return $items;
+}
+
+function session_expire_settings() {
+  // We want a count
+  $session_count = db_select('sessions')
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+
+  $form['session_expire_desc'] = array(
+    '#markup' => t('This module requires cron to be correctly configured and running for Drupal. You currently have !count rows in your sessions table.', array('!count' => filter_xss_admin($session_count))),
+  );
+
+  $period = drupal_map_assoc(array(60, 300, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200), 'format_interval');
+  $period['1000000000'] = t('Never');
+
+  $form[SESSION_EXPIRE_AGE] = array(
+    '#type'          => 'select',
+    '#title'         => t('Age'),
+    '#default_value' => variable_get(SESSION_EXPIRE_AGE, 604800),
+    '#options'       => $period,
+    '#description'   => t('Expire sessions that are older than the specified age. Older entries will be discarded.')
+  );
+
+  $form[SESSION_EXPIRE_MODE] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Session types'),
+    '#default_value' => variable_get(SESSION_EXPIRE_MODE, 0),
+    '#options'       => array(
+      t('Anonymous'),
+      t('Both anonymous and authenticated users'),
+      ),
+    '#description'   => t('Types of sessions to discard. This option indicates whether only anonymous users, or both anonymous and authenticated users are expired. Note that if you choose authenticated users, they will be logged off and have to login again after the "age" specified above.'),
+  );
+
+  $max_deletions = drupal_map_assoc(array(100, 500, 1000, 2500, 5000, 10000, 50000, 100000, 500000));
+  $max_deletions['0'] = t('Unlimited');
+  $form[SESSION_EXPIRE_MAX_DELETIONS] = array(
+    '#type'          => 'select',
+    '#title'         => t('Maximum deletions per run'),
+    '#default_value' => variable_get(SESSION_EXPIRE_MAX_DELETIONS, 1000),
+    '#options'       => $max_deletions,
+    '#description'   => t('Limit the number of sessions deleted during each invocation of the cron job by this amount. This is important if your sessions table is very large (e.g. more than 10,000 rows) because the job may run for a long time. One strategy is to use <a href="!url">Elysia Cron</a> to manage the frequency of execution of your cron jobs and set session_expire_cron to run hourly with this value set relatively low (1000 should be ok on most servers).', array('!url' => 'http://drupal.org/project/elysia_cron'))
+  );
+
+  $interval = drupal_map_assoc(array(0, 7200, 10800, 21600, 43200, 86400, 172800, 259200, 604800), 'format_interval');
+  $interval['0'] = t('Everytime');
+  $form[SESSION_EXPIRE_INTERVAL] = array(
+    '#type'          => 'select',
+    '#title'         => t('Cron Interval'),
+    '#default_value' => variable_get(SESSION_EXPIRE_INTERVAL, 86400),
+    '#options'       => $interval,
+    '#description'   => t('Run the cleanup at the specified interval. This tells Drupal how often to run the cleanup. On a busy site, you want that to be more frequent (e.g. every day at a minimum). You don\'t want it to be too frequent though (e.g. every hour), as it can tie up the sessions table for a long time. Cron must be configured to run more frequently than the value you chose here.')
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_cron().
+ */
+function session_expire_cron() {
+  $affected_rows = 0;
+  // Check if it is the first time this hook fires
+  $last_run_time = variable_get(SESSION_EXPIRE_LAST, 0);
+  if (!$last_run_time) {
+    // Set the time
+    variable_set(SESSION_EXPIRE_LAST, REQUEST_TIME);
+  }
+
+  // Check if we should run, this should only be once a day
+  if (REQUEST_TIME > $last_run_time + variable_get(SESSION_EXPIRE_INTERVAL, 86400)) {
+    $timestamp = REQUEST_TIME - variable_get(SESSION_EXPIRE_AGE, 604800);
+
+    // Perform the deletion
+    $query = db_delete('sessions');
+    $query->condition('timestamp', $timestamp, '<');
+
+    // Check if we should delete anonymous only or both anonymous and authenticated users
+    $mode = variable_get(SESSION_EXPIRE_MODE, 0);
+    if (!$mode) {
+      $query->condition('uid', '0', '=');
+    }
+
+    // $max_deletions is way to prevent clearing out a huge amount of sessions.
+    // Current implementation un-pops the latest ones starting just before $timestamp.
+    // Better way => use Drupal Queues ?
+    // Set SESSION_EXPIRE_MAX_DELETIONS to 0 for removing all session before $timestamp.
+    $max_deletions = (int) variable_get(SESSION_EXPIRE_MAX_DELETIONS, 1000);
+    if ($max_deletions > 0) {
+      // Define the latest min_timestamp existing for $max_deletions sessions
+      $max_query = db_select('sessions', 's')
+        ->fields('s', array('timestamp'))
+        ->condition('timestamp', $timestamp, '<');
+
+      if (!$mode) {
+        // On MySQL, adding this condition triggers a filesort. This can be an issue on very big tables.
+        $max_query->condition('uid', '0', '=');
+      }
+      // Order by timestamp, and grab the first $max_deletions
+      $max_query->orderBy('timestamp', 'DESC')->range(0, $max_deletions);
+      // Take the lowest value of the range
+      $result = $max_query->execute()->fetchCol();
+      $min_timestamp = array_pop($result);
+
+      // We actually got a timestamp, so use it.
+      if (isset($min_timestamp)) {
+        $query->condition('timestamp', array($min_timestamp, $timestamp), 'BETWEEN');
+      }
+    }
+
+    // Delete the sessions
+    $num_updated = $query->execute();
+
+    // Write to the watchdog
+    watchdog('cron', 'Number of sessions deleted: @num.', array('@num' => $num_updated));
+
+    // Set the last time we deleted
+    variable_set(SESSION_EXPIRE_LAST, REQUEST_TIME);
+  }
+}

@@ -13,7 +13,7 @@ files[] = i18nviews.i18n.inc
 ; Handlers, Plugins
 files[] = includes/i18nviews_handler_argument_taxonomy_index_tid.inc
 files[] = includes/i18nviews_handler_argument_taxonomy_term_name.inc
-files[] = includes/i18nviews_handler_argument_term_language.inc
+files[] = includes/i18nviews_handler_argument_taxonomy_term_language.inc
 files[] = includes/i18nviews_handler_argument_term_node_tid_depth.inc
 files[] = includes/i18nviews_handler_field_taxonomy_term_description.inc
 files[] = includes/i18nviews_handler_field_taxonomy_term_language.inc
@@ -27,8 +27,9 @@ files[] = includes/i18nviews_handler_filter_term_node_tid_depth.inc
 files[] = includes/i18nviews_plugin_argument_validate_i18n_taxonomy_term.inc
 files[] = includes/i18nviews_plugin_localization_i18nstrings.inc
 
-; Information added by drush on 2014-05-08
+
+; Information added by drush on 2015-10-28
 version = ""
 project = "i18nviews"
-datestamp = "1399579144"
+datestamp = "1446047080"
 

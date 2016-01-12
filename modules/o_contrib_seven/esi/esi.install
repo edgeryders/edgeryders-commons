@@ -1,0 +1,31 @@
+<?php
+/**
+ * File
+ * Update hooks for the ESI module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function esi_uninstall() {
+  variable_del('esi_default_ttl');
+  variable_del('esi_seed_key');
+  variable_del('esi_seed_key_last_changed');
+  variable_del('esi_seed_key_rotation_interval');
+  variable_del('esi_harden_cookie_key');
+}
+
+/**
+ * Implements hook_update_n().
+ */
+function esi_update_7001() {
+  // @TODO: should this belong to esi_block?
+
+  // The variable 'esi_block_default_max_age' has been renamed to
+  // 'esi_block_default_ttl'.
+  $ttl = variable_get('esi_block_default_max_age', FALSE);
+  if (is_numeric($ttl) || $ttl === 0) {
+    variable_set('esi_block_default_ttl', $ttl);
+    variable_del('esi_block_default_max_age');
+  }
+}

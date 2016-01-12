@@ -35,9 +35,9 @@ function _custom_search_default_admin_form($delta = '') {
   );
   $form['search_box']['custom_search_' . $delta . 'text'] = array(
     '#type'           => 'textfield',
-    '#title'          => t('Search box default text'),
+    '#title'          => t('Search box placeholder text'),
     '#default_value'  => variable_get('custom_search_' . $delta . 'text', ''),
-    '#description'    => t('This will change the default text inside the search form. Leave blank for no text. This field is blank by default.'),
+    '#description'    => t('This will change the default text inside the search form. This is the <a href="http://www.w3schools.com/tags/att_input_placeholder.asp" target="_blank">placeholder</a> attribute for the TextField. Leave blank for no text. This field is blank by default.'),
   );
   $form['search_box']['custom_search_' . $delta . 'hint_text'] = array(
     '#type'           => 'textfield',
@@ -276,7 +276,7 @@ function _custom_search_content_admin_form($delta = '') {
   $form['custom_search_' . $delta . 'node_types_excluded'] = array(
     '#type'           => 'checkboxes',
     '#title'          => t('Content exclusion'),
-    '#description'    => t("Select the content types you don't want to be displayed as results."),
+    '#description'    => t("Select the content types you don't want to be displayed as results.<br/><strong>Notice</strong>: content exclusion only works with the core Search module."),
     '#default_value'  => variable_get('custom_search_' . $delta . 'node_types_excluded', array()),
     '#options'        => node_type_get_names(),
   );

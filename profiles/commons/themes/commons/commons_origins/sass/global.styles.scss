@@ -447,7 +447,8 @@ var {
 }
 
 .user-picture,
-.views-field-picture {
+.views-field-picture,
+.profile-badge-picture {
   background:$white;
   display: inline-block;
   padding:4px;
@@ -1852,10 +1853,6 @@ ul.comment-links {
 
 .field-name-body {
   margin-top: 1.7em;
-
-  .node-event & {
-    clear: both;
-  }
 }
 
 .field-name-field-date {
@@ -3740,16 +3737,6 @@ tr {
   margin: 0;
 }
 
-form.commons-events-form-float {
-  background-color:none;
-  padding:0;
-  border:none;
-  border-radius:0;
-  input {
-    margin:0;
-  }
-}
-
 #edit-field-topics-und {
   border-top: 2px groove #8A8A8A;
   border-left: 2px groove #8A8A8A;
@@ -3759,27 +3746,28 @@ form.commons-events-form-float {
   background: none;
   padding: 0;
   border: none;
-  max-width: 10em;
+  width: 10em;
   margin-right: -10em;
-  text-align: center;
+  padding-left: $gutter_width;
+  text-align: left;
+  @include box-sizing(border-box);
 
   .commons-event-status {
     font-size: .88em;
-    line-height: 1.2em;
+    line-height: 1.4em;
     margin-top: .3em;
-    text-align: center;
+  }
 
-    @include respond(only-medium) {
-      display: inline-block;
-      margin-left: 1em;
-    }
+  .form-text {
+    width: auto;
+    text-align: right;
   }
 
   @include respond(small-medium) {
     float: none;
     margin: 1em 0;
-    max-width: inherit;
-    text-align: left;
+    padding-left: 0;
+    width: auto;
   }
 }
 
@@ -4633,6 +4621,89 @@ body.front.logged-in .view-commons-homepage-content .article.node {
     width: 20em;
     max-width: 100%;
   }
+}
+
+/**
+ * Profile listings
+ */
+.profile-badges {
+  &,
+  .block-content & {
+    padding: 0;
+  }
+
+  margin: 0 0 0 (-$gutter_width);
+
+  [dir="rtl"] & {
+    margin-right: -$gutter_width;
+    margin-left: 0;
+  }
+}
+
+.profile-badge {
+  float: left;
+  display: block;
+  width: 33%;
+  list-style-type: none;
+  text-align: center;
+  @include box-sizing(border-box);
+
+  [dir="rtl"] & {
+    float: right;
+  }
+
+  &,
+  .block-content & {
+    margin: 0 0 $gutter_width 0;
+    padding-left: $gutter_width;
+
+    [dir="rtl"] & {
+      padding-right: $gutter_width;
+      padding-left: 0;
+    }
+  }
+
+  &:nth-child(3n+1) {
+    clear: left;
+
+    [dir="rtl"] & {
+      clear: right;
+    }
+  }
+
+  @include respond(large) {
+    width: 25%;
+
+    &:nth-child(3n+1) {
+      clear: none;
+
+      [dir="rtl"] & {
+        clear: none;
+      }
+    }
+
+    &:nth-child(4n+1) {
+      clear: left;
+
+      [dir="rtl"] & {
+        clear: right;
+      }
+    }
+  }
+}
+
+.profile-badge-picture .user-picture {
+  background: none;
+  padding: 0;
+  @include border-radius(0);
+  @include box-shadow(none);
+}
+
+.profile-badge-name {
+  display: block;
+  line-height: 1.2em;
+  font-size: .88em;
+  margin-top: .6em;
 }
 
 /**

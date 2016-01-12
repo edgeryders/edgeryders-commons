@@ -1,0 +1,6 @@
+name = "Send by email"
+description = "Provides the capability to send the web page by email"
+core = 7.x
+package = "Printer, email and PDF versions"
+dependencies[] = print
+configure = admin/config/user-interface/print/email

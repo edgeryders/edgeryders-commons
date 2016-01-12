@@ -1,14 +1,4 @@
 <?php
-// $Id$
-/*
- * Copyright © 2012 New Signature
- *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * You can contact New Signature by electronic mail at labs@newsignature.com -or- by U.S. Postal Service at 1100 H St. NW, Suite 940, Washington, DC 20005.
- */
-
 /**
  * @file Provides token replacements for address fields.
 */
@@ -40,8 +30,6 @@ function addressfield_tokens_token_info_alter(&$info) {
   
   foreach ($props as $field => $data) {
     $fieldtoken = str_replace('_', '-', $field);
-    $name = '';
-    $descr = '';
     
     if (!empty($names[$field])) {
       $name = $names[$field];
@@ -58,7 +46,7 @@ function addressfield_tokens_token_info_alter(&$info) {
       }
     }
     $info['tokens']['addressfield'][$fieldtoken] = array(
-  		'name' => $name,
+      'name' => $name,
       'description' => $descr,
       'type' => 'text',
     );
@@ -139,6 +127,7 @@ function addressfield_tokens_token_info_alter(&$info) {
  */
 function addressfield_tokens_tokens($type, $tokens, array $data = array(), array $options = array()) {
   $url_options = array();
+  // @todo: why are we setting $language_code and not using it?
   if (isset($options['language'])) {
     $url_options['language'] = $options['language'];
     $language_code = $options['language']->language;
@@ -146,18 +135,21 @@ function addressfield_tokens_tokens($type, $tokens, array $data = array(), array
   else {
     $language_code = LANGUAGE_NONE;
   }
+
   $sanitize = !empty($options['sanitize']);
   $replacements = array();
-  
+  $last_original = NULL;
+
   // Process address field tokens
   if ($type == 'addressfield' && !empty($data['addressfield'])) {
     foreach ($tokens as $name => $original) {
+      $last_original = $original;
       $name = str_replace('-', '_', $name);
       $address = $data['addressfield'];
       
       // If the address field exists, use it.
       if (isset($address[$name])) {
-        $replacements[$original] = $address[$name];
+        $replacements[$original] = $sanitize ? filter_xss($address[$name]) : $address[$name];
       }
       else {
         // Otherwise, it's a special token
@@ -166,7 +158,7 @@ function addressfield_tokens_tokens($type, $tokens, array $data = array(), array
             $render = addressfield_generate($address, array('address'), array(
               'mode' => 'render', 
             ));
-            $replacements[$original] = drupal_render($render);
+            $replacements[$original] = $sanitize ? filter_xss(drupal_render($render)) : drupal_render($render);
             break;
             
           case 'text':
@@ -188,7 +180,7 @@ function addressfield_tokens_tokens($type, $tokens, array $data = array(), array
             if (!empty($address['country']) && $address['country'] != addressfield_tokens_default_country()) {
               $out[2] = _addressfield_tokens_country($address['country']);
             }
-            $replacements[$original] = implode("\n", $out);
+            $replacements[$original] = $sanitize ? filter_xss(implode("\n", $out)) : implode("\n", $out);
             break;
             
           case 'city_state':
@@ -202,18 +194,28 @@ function addressfield_tokens_tokens($type, $tokens, array $data = array(), array
             if (!empty($address['country']) && $address['country'] != addressfield_tokens_default_country()) {
               $out[] = _addressfield_tokens_country($address['country']);
             }
-            $replacements[$original] = implode(", ", $out);
+            $replacements[$original] = $sanitize ? filter_xss(implode(", ", $out)) : implode(", ", $out); 
             break;
             
           case 'state_name':
             if (!empty($address['administrative_area']) && !empty($address['country'])) {
-              $replacements[$original] = _addressfield_tokens_state($address['country'], $address['administrative_area']);
+              if ($sanitize) {
+                $replacements[$original] = filter_xss(_addressfield_tokens_state($address['country'], $address['administrative_area']));
+              }
+              else {
+                $replacements[$original] = _addressfield_tokens_state($address['country'], $address['administrative_area']);
+              }
             }
             break;
             
           case 'country_name':
             if (!empty($address['country'])) {
-              $replacements[$original] = _addressfield_tokens_country($address['country']);
+              if ($sanitize) {
+                $replacements[$original] = filter_xss(_addressfield_tokens_country($address['country']));
+              }
+              else {
+                $replacements[$original] = _addressfield_tokens_country($address['country']);
+              }
             }
             break;
           
@@ -232,8 +234,8 @@ function addressfield_tokens_tokens($type, $tokens, array $data = array(), array
         }
       }
     }
-    if (!isset($replacements[$original])) {
-      $replacements[$original] = '';
+    if (!isset($replacements[$last_original])) {
+      $replacements[$last_original] = '';
     }
   }
   else {
@@ -252,7 +254,7 @@ function addressfield_tokens_tokens($type, $tokens, array $data = array(), array
             }
             catch (EntityMetadataWrapperException $e) {
               // The property doesn't exist, so skip it.
-              $replacements[$original] = '';
+              $replacements[$last_original] = '';
             }
           }
         }

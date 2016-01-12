@@ -38,6 +38,7 @@
  * Implementation of hook_features_export_options()
  */
 function ckeditor_profile_features_export_options() {
+  module_load_include('module', 'ckeditor');
   $options = array();
   $profiles = (array) ckeditor_profile_load();
   foreach ($profiles as $name => $profile) {
@@ -50,6 +51,7 @@ function ckeditor_profile_features_export_options() {
  * Implementation of hook_features_export()
  */
 function ckeditor_profile_features_export($data, &$export, $module_name = '') {
+  module_load_include('module', 'ckeditor');
   $pipe = array();
   foreach ((array) $data as $name) {
     $profile = ckeditor_profile_load($name);
@@ -70,6 +72,7 @@ function ckeditor_profile_features_export($data, &$export, $module_name = '') {
  * Implementation of hook_features_export_render()
  */
 function ckeditor_profile_features_export_render($module_name, $data) {
+  module_load_include('module', 'ckeditor');
   $profiles = array();
   $roles = user_roles();
   foreach ($data as $name) {
@@ -101,16 +104,16 @@ function ckeditor_profile_features_revert($module) {
       db_query("DELETE FROM {ckeditor_settings} WHERE name = :name", array(':name' => $name));
       db_query("INSERT INTO {ckeditor_settings} (name, settings) VALUES(:name, :settings)", array(':name' => $name, ':settings' => serialize($profile['settings'])));
 
-      // Restore the profile roles
-      foreach ($profile["input_formats"] as $input_format => $input_format_name) {
-        if (isset($input_formats[$input_format])) {
+      if (empty($profile["input_formats"])) {
+        // Remove input format if none is specified
+        db_query("DELETE FROM {ckeditor_input_format} WHERE name = :name", array(':name' => $name));
+      }
+      else {
+        // Restore the profile roles
+        foreach ($profile["input_formats"] as $input_format => $input_format_name) {
           if (!db_query("SELECT name FROM {ckeditor_input_format} WHERE format = :format AND name = :name", array(':name' => $name, ':format' => $input_format))->fetchField()) {
             db_query("INSERT INTO {ckeditor_input_format} (name, format) VALUES(:name, :format)", array(':name' => $name, ':format' => $input_format));
           }
-        }
-        else {
-          // Make sure they don't have access
-          db_query("DELETE FROM {ckeditor_input_format} WHERE format = :format AND name = :name", array(':name' => $name, ':format' => $input_format));
         }
       }
     }

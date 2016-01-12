@@ -462,6 +462,11 @@ function panels_update_7302() {
 
   $dids = array_unique(array_merge($display_dids, $pane_dids));
 
+  // If the Panels module is disabled we don't have access to
+  // panels_load_displays().
+  if (!function_exists('panels_load_displays')) {
+    module_load_include('module', 'panels');
+  }
   if ($displays = panels_load_displays($dids)) {
     foreach ($displays as $display) {
       // A display save also triggers pane saves.

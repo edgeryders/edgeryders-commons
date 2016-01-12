@@ -1,0 +1,152 @@
+<?php
+/**
+ * @file
+ * Tests for the ESI Block module.
+ */
+
+/**
+ * Test the node_load_multiple() function.
+ */
+class EsiBlockTest extends DrupalWebTestCase {
+
+  protected $admin_user;
+
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Block integration',
+      'description' => 'Test the ESI Block module.',
+      'group' => 'ESI',
+    );
+  }
+
+
+  function setUp() {
+    // Enable block, esi, and esi_block.
+    parent::setUp('block', 'esi', 'esi_block');
+
+    $this->admin_user = $this->drupalCreateUser(array(
+      'administer blocks',
+      'access administration pages',
+    ));
+    $this->drupalLogin($this->admin_user);
+  }
+
+
+
+  /**
+   * Test UI.
+   * The block-admin page should have 'ESI enabled' and 'ESI TTL' fields.
+   */
+  function testAdminBlockConfigureUI() {
+    // Get the block-configuration page for the system:help block.
+    $this->drupalGet('admin/structure/block/manage/system/help/configure');
+    $this->assertField('esi_enabled', t('The ESI-enabled field is displayed.'));
+    $this->assertField('esi_ttl', t('The ESI-TTL field is displayed.'));
+  }
+
+  /**
+   * Test that saving the page will correctly configure the block in the DB.
+   */
+  function testAdminBlockConfigureSubmit() {
+    // Get the block-configuration page for the system:help block.
+    $this->drupalGet('admin/structure/block/manage/system/help/configure');
+    $esi_config = array(
+      'esi_enabled' => 1,
+      'esi_ttl' => 86400,
+    );
+    $this->drupalPost('admin/structure/block/manage/system/help/configure', $esi_config, t('Save block'));
+
+    $esi_settings_in_db = db_query("SELECT esi_enabled, esi_ttl FROM {block} WHERE module = :module AND delta = :delta", array(':module' => 'system', ':delta' => 'help'))->fetchObject();
+    $this->assertEqual($esi_settings_in_db->esi_enabled, TRUE, t('ESI is correctly enabled in the database.'));
+    $this->assertEqual($esi_settings_in_db->esi_ttl, 86400,    t('ESI TTL is correctly set to 350 in the database.'));
+  }
+
+
+  /**
+   * Test that saving the page will correctly configure the block in the DB.
+   */
+  function testServeBlockByESI() {
+    // Enable the ESI block test module.
+    module_enable(array('esi_block_test'));
+
+    // Flushing all caches should call _block_rehash().
+    drupal_flush_all_caches();
+
+
+    // Add all 6 of the ESI test blocks to the sidebar.
+    $config = array();
+    $deltas = array('test1', 'test2', 'test3', 'test4', 'test5', 'test6');
+    foreach ($deltas as $i => $delta) {
+      $config["blocks[esi_block_test_{$delta}][region]"] = 'sidebar_second';
+      $config["blocks[esi_block_test_{$delta}][weight]"] = $i;
+      esi_block__set_esi_settings('esi_block_test', $delta, TRUE, 86400);
+    }
+    $this->drupalPost('admin/structure/block', $config, t('Save blocks'));
+
+    // Get the homepage.
+    $this->drupalGet('<front>');
+    
+    // Assert that there are 6 esi:include tags.
+    $esi_urls = array();
+    $tags = $this->xpath('//include/@src');
+    foreach ($tags as $tag) {
+      $esi_urls[] = (string) $tag;
+    }
+
+    $expected_urls = array(
+      'esi/block/bartik:sidebar_second:esi_block_test:test1/CACHE=USER',
+      'esi/block/bartik:sidebar_second:esi_block_test:test2/CACHE=ROLE',
+      'esi/block/bartik:sidebar_second:esi_block_test:test3/' . base64_encode('node'),
+      'esi/block/bartik:sidebar_second:esi_block_test:test4/' . base64_encode('node') . '/CACHE=USER',
+      'esi/block/bartik:sidebar_second:esi_block_test:test5',
+      'esi/block/bartik:sidebar_second:esi_block_test:test6/' . base64_encode('node'),
+    );
+    foreach ($expected_urls as &$url) {
+      $url = url($url, array('absolute' => TRUE));
+    }
+
+    $this->assertEqual($esi_urls, $expected_urls, t('The blocks are served with the correct URLs.'));
+    if ($expected_urls == $esi_urls) {
+      $message = t('ESI URLs found: !actual', array(
+        '!actual' => '<ul><li>' . implode('</li><li>', $esi_urls) . '</li></ul>',
+      ));
+    }
+    else {
+      $message = t('ESI URLs found: !actual<br />Expected URLs: !expected', array(
+        '!actual' => '<ul><li>' . implode('</li><li>', $esi_urls) . '</li></ul>',
+        '!expected' => '<ul><li>' . implode('</li><li>', $expected_urls) . '</li></ul>',
+      ));
+    }
+    $this->assert('debug', $message, 'Debug');
+
+
+    $i = 0;
+    // Expected contents of the ESI:
+    $this->drupalGet($esi_urls[$i++]);
+    $this->assertRaw('<h2>Test 1 - cache per user</h2>', t('The block header is correctly displayed.'));
+    $this->assertText('User ID: ' . $this->admin_user->uid, t('The block contains the correct user ID.'));
+
+    $this->drupalGet($esi_urls[$i++]);
+    $this->assertRaw('<h2>Test 2 - cache per role</h2>', t('The block header is correctly displayed.'));
+    $this->assertText('User roles: authenticated user', t('The block contains the correct user roles.'));
+
+    $this->drupalGet($esi_urls[$i++]);
+    $this->assertRaw('<h2>Test 3 - cache per page</h2>', t('The block header is correctly displayed.'));
+    $this->assertText('Page: /node', t('The block contains the correct page.'));
+
+    $this->drupalGet($esi_urls[$i++]);
+    $this->assertRaw('<h2>Test 4 - cache per user per page</h2>', t('The block header is correctly displayed.'));
+    $this->assertText('User ID: ' . $this->admin_user->uid, t('The block contains the correct user ID.'));
+    $this->assertText('Page: /node', t('The block contains the correct page.'));
+
+    $this->drupalGet($esi_urls[$i++]);
+    $this->assertRaw('<h2>Test 5 - cache global</h2>', t('The block header is correctly displayed.'));
+    $this->assertText('This cache is global', t('The block contains the expected text.'));
+
+    $this->drupalGet($esi_urls[$i++]);
+    $this->assertRaw('<h2>Test 6 - cache none</h2>', t('The block header is correctly displayed.'));
+    $this->assertText('Random number: ', t('The block contains the expected text.'));
+
+  }
+}

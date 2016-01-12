@@ -758,7 +758,10 @@ function commons_origins_preprocess_form_content(&$variables, $hook) {
   // theme hook suggestions for easy overriding.
   if (strpos($variables['form']['#form_id'], 'commons_bw_partial_node_form_') === 0) {
     $variables['form']['actions']['submit']['#attributes']['class'][] = 'action-item-primary';
-    $variables['form']['title']['#markup'] = str_replace('<h3>', '<h3 class="partial-node-form-title">', $variables['form']['title']['#markup']);
+
+    if (isset($variables['form']['title'])) {
+      $variables['form']['title']['#markup'] = '<h3 class="partial-node-form-title">' . $variables['form']['title']['#markup'] . '</h3>';
+    }
   }
 
   // Make the links and buttons on the private message forms have the
@@ -1086,7 +1089,7 @@ function _commons_origins_format_address(&$address) {
  */
 function commons_origins_preprocess_field(&$variables, $hook) {
   // Style the trusted contact link like a button.
-  if ($variables['element']['#formatter'] == 'trusted_contact') {
+  if (isset($variables['element']['#formatter']) && $variables['element']['#formatter'] == 'trusted_contact') {
     foreach ($variables['items'] as &$container) {
       foreach (element_children($container) as $index) {
         $item = &$container[$index];

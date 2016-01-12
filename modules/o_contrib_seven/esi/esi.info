@@ -1,0 +1,13 @@
+name = ESI - Edge Side Includes
+description = "Allow Drupal components to be delivered via ESI (Edge-Side Includes).  Requires an ESI-capable proxy."
+package = Caching
+recommends[] = varnish
+
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2015-11-05
+version = "7.x-3.0-alpha1+21-dev"
+core = "7.x"
+project = "esi"
+datestamp = "1446759851"
+

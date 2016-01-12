@@ -86,7 +86,7 @@ class MediaOEmbedStreamWrapper extends MediaReadOnlyStreamWrapper {
       // Attempt to get a URL to the file's original thumbnail.
       $url = $this->getOriginalThumbnailPath();
 
-      if (isset($url)) {
+      if (!empty($url)) {
         // Retrieve the original thumbnail.
         $result = drupal_http_request($url);
 

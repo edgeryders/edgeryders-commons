@@ -1,0 +1,65 @@
+<?php
+
+/**
+ * @file
+ * Improve the front end performance of your site.
+ *
+ * Copyright 2012 Hewlett-Packard Development Company, L.P.
+ */
+
+
+/**
+ * Implements hook_FORM_ID_alter().
+ *
+ * @param type $form
+ * @param type $form_state
+ */
+function speedy_form_system_performance_settings_alter(&$form, &$form_state) {
+  $form['bandwidth_optimization']['speedy_js_production'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use minified JS files created by Speedy'),
+    '#default_value' => variable_get('speedy_js_production', TRUE),
+    '#description' => t('Enabling this will replace non-minified Drupal core Javascript files with a minified version.'),
+  );
+}
+
+
+/**
+ * Implements hook_library_alter().
+ *
+ * If minified core JS exists for the current version of Drupal swap it out.
+ */
+function speedy_js_alter(&$javascript) {
+  // Ensure that Speedy is enabled
+  if (! variable_get('speedy_js_production', TRUE)) {
+    return;
+  }
+  // Manage the map of replacements. This is cached so we don't have to hit the
+  // file system on each pageload to do the swap.
+  static $replacement_map = NULL;
+  if (is_null($replacement_map)) {
+    if ($cache = cache_get('speedy_min_js_files')) {
+      $replacement_map = $cache->data;
+    }
+    else {
+      $directory = DRUPAL_ROOT . '/' . drupal_get_path('module', 'speedy') . '/js/' . VERSION;
+      $directory_strlen = strlen($directory . '/');
+
+      $all_files = file_scan_directory($directory, '/.js/');
+      $replacement_map = array();
+
+      foreach ($all_files as $file) {
+        $replacement_map[] = substr($file->uri, $directory_strlen);
+      }
+
+      cache_set('speedy_min_js_files', $replacement_map, 'cache', CACHE_TEMPORARY);
+    }
+  }
+
+  $new_path = drupal_get_path('module', 'speedy') . '/js/' . VERSION . '/';
+  foreach ($javascript as $name => $data) {
+    if ($data['type'] == 'file' && in_array($data['data'], $replacement_map)) {
+      $javascript[$name]['data'] = $new_path . $data['data'];
+    }
+  }
+}

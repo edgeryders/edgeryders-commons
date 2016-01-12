@@ -10,28 +10,14 @@
  * the theme active when this is displayed.
  */
 /* jQuery UI Resets */
-.ui-dialog.media-wrapper {
-  min-width: 100%;
-}
-@media (min-width: 22.85714em) {
-  .ui-dialog.media-wrapper {
-    min-width: 0;
-  }
-}
-@media (min-width: 28.57143em) {
-  .ui-dialog.media-wrapper .ui-dialog-titlebar {
-    padding-right: 2.25em;
-    padding-left: 2.25em;
-  }
-}
 .ui-dialog.media-wrapper .ui-dialog-buttonpane {
   display: none;
 }
 
 /* Media item display */
 .media-item {
-  background: #fff;
-  border: 1px solid #ccc;
+  background: #FFFFFF;
+  border: 1px solid #CCCCCC;
   padding: 5px;
   position: relative;
 }
@@ -69,15 +55,15 @@
   text-decoration: none;
 }
 .media-list-thumbnails .media-item.selected {
-  background: #f4ecc7;
-  border-color: #058ac5;
+  background: #F4ECC7;
+  border-color: #058AC5;
 }
 .media-list-thumbnails .media-item:hover {
-  border-color: #058ac5;
+  border-color: #058AC5;
   cursor: pointer;
 }
 .media-list-thumbnails .media-item .label-wrapper label {
-  color: #058ac5;
+  color: #058AC5;
 }
 .media-list-thumbnails .media-item .label-wrapper label:hover {
   cursor: pointer;
@@ -114,6 +100,7 @@
   margin-right: 10px;
 }
 .media-widget .preview .media-item:hover {
+  border-color: #058AC5;
   cursor: pointer;
 }
 .media-widget .preview .media-item .label-wrapper label {

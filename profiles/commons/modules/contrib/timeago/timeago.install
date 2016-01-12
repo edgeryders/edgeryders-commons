@@ -129,8 +129,34 @@ function timeago_get_version($path, $options = array()) {
  * Implements hook_uninstall().
  */
 function timeago_uninstall() {
-  variable_del('timeago_node');
-  variable_del('timeago_comment');
-  variable_del('timeago_elem');
-  variable_del('date_format_time_ago_dynamic');
+  $variables = array(
+    'timeago_node',
+    'timeago_comment',
+    'timeago_elem',
+    'timeago_js_refresh_millis',
+    'timeago_js_allow_future',
+    'timeago_js_locale_title',
+    'timeago_js_cutoff',
+    'timeago_js_strings_prefix_ago',
+    'timeago_js_strings_prefix_from_now',
+    'timeago_js_strings_suffix_ago',
+    'timeago_js_strings_suffix_from_now',
+    'timeago_js_strings_seconds',
+    'timeago_js_strings_minute',
+    'timeago_js_strings_minutes',
+    'timeago_js_strings_hour',
+    'timeago_js_strings_hours',
+    'timeago_js_strings_day',
+    'timeago_js_strings_days',
+    'timeago_js_strings_month',
+    'timeago_js_strings_months',
+    'timeago_js_strings_year',
+    'timeago_js_strings_years',
+    'timeago_js_strings_word_separator',
+    'date_format_time_ago_dynamic',
+  );
+
+  foreach ($variables as $variable) {
+    variable_del($variable);
+  }
 }

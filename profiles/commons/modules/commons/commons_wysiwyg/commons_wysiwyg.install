@@ -23,3 +23,32 @@ function commons_wysiwyg_update_3101() {
   features_revert($revert);
   return array();
 }
+
+/**
+ * Prefer a local copy of CKEditor by default.
+ */
+function commons_wysiwyg_update_3102() {
+  $revert = array(
+    'commons_wysiwyg' => array('ckeditor_profile'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/*
+ * This update has been removed and will not run.
+ */
+function commons_wysiwyg_update_3103() {
+  // This update function previously accommodated the switch to editor.module.
+}
+
+/**
+ * Add editor settings to text filters.
+ */
+function commons_wysiwyg_update_3104() {
+  $revert = array(
+    'commons_wysiwyg' => array('filter'),
+  );
+  features_revert($revert);
+  return array();
+}
