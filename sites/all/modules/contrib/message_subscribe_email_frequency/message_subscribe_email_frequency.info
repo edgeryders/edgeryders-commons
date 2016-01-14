@@ -1,0 +1,12 @@
+name = Message Subscribe Email Frequency
+description = "Allows the user to select the frequency of email notifications normally sent by Message Subscribe Email, including shutting them off completely."
+core = 7.x
+dependencies[] = message_subscribe
+dependencies[] = message_subscribe_email
+
+; Information added by  packaging script on 2013-11-11
+version = "7.x-1.0"
+core = "7.x"
+project = "message_subscribe_email_frequency"
+datestamp = "1384188222"
+

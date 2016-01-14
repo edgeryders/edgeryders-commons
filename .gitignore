@@ -7,4 +7,5 @@ sites/*/files
 sites/*/private
 
 # Ignore IDE
-.idea/
+.idea
+.idea/*
