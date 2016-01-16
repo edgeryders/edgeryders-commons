@@ -1,0 +1,12 @@
+diff --git a/message_digest.module b/message_digest.module
+index adef969..cb915fe 100644
+--- a/message_digest.module
++++ b/message_digest.module
+@@ -56,7 +56,6 @@ function message_digest_mail($key, &$message, $params) {
+       $group = node_load($params['gid']);
+       $title = $group->title;
+     }
+-    $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+     $message['subject'] = $title . t(' Message Digest');
+     $message['body'][] = $params['body'];
+   }
