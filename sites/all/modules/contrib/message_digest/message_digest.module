@@ -16,6 +16,7 @@ function message_digest_cron() {
     $notifier = new $class($plugin, new Message());
     $interval = $notifier->getInterval();
     $last_run = variable_get('message_digest_' . $interval . '_last_run', 0);
+    $enable_delivery = TRUE; // set to FALSE to prevent delivery
 
     if ($last_run > strtotime("-" . $interval)) {
       // Not time to run this again yet. Wait until the interval has elapsed.
@@ -30,7 +31,7 @@ function message_digest_cron() {
           'uid' => $uid, // reference only, cannot change
           'gid' => $gid,
           'view_modes' => $plugin['view_modes'],
-          'deliver' => TRUE,  // set to FALSE to prevent delivery
+          'deliver' => $enable_delivery,
           'plugin' => $plugin, // reference only
           'messages' => $messages,
         );
