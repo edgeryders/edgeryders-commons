@@ -4297,7 +4297,7 @@ function edgerrides_features_override_default_overrides() {
       [site:name]',
       'format' => 'plain_text',
       'safe_value' => '<p>Hi [message:user:name],</p>
-      <p>You have been mentioned by &quot;[message:field-target-nodes:0:author]&quot; on &quot;[message:field-target-nodes:0:title_field]&quot;.</p>
+      <p>You have been mentioned by[message:field-target-nodes:0:author] on [message:field-target-nodes:0:title_field].</p>
       <p>Permalink: [message:field-target-nodes:0:url]<br />
       Add a comment at [message:field-target-nodes:0:url]#comment-form</p>
       <p>Change email notifications at [site:url]user/[message:user:uid]/notification-settings</p>
@@ -4306,6 +4306,7 @@ function edgerrides_features_override_default_overrides() {
       ',
     ),
   );
+
   $overrides["message_type.edgeryders_mentions_node.message_text|de"] = array(
     0 => array(
       'value' => '[Edgeryders] You have been mentioned.
