@@ -4876,18 +4876,9 @@ function edgerrides_features_override_default_overrides() {
   $overrides["radioactivity_decay_profile.commons_ra_node.cut_off"] = 10;
   $overrides["radioactivity_decay_profile.commons_ra_node.half_life"] = 17280;
 
-  // Exported overrides for: rules_config
-  $overrides["rules_config.rules_og_member_active.0"] = Array;
-  $overrides["rules_config.rules_og_member_active.1"] = Array;
-  $overrides["rules_config.rules_og_member_active.2"] = Array;
-  $overrides["rules_config.rules_og_member_active.3"] = Array;
-  $overrides["rules_config.rules_og_member_pending.0"] = Array;
-  $overrides["rules_config.rules_og_member_pending.1"] = Array;
-  $overrides["rules_config.rules_og_member_pending.2"] = Array;
-  $overrides["rules_config.rules_og_member_pending.3"] = Array;
-  $overrides["rules_config.rules_og_new_content.0"] = Array;
-  $overrides["rules_config.rules_og_new_content.1"] = Array;
-  $overrides["rules_config.rules_og_new_content.2"] = Array;
+  /**
+   * REMOVED (broken): Exported overrides for: rules_config
+   */
 
   // Exported overrides for: taxonomy
   $overrides["taxonomy.topics.weight"] = -10;
