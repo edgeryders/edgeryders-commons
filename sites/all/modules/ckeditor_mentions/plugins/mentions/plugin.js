@@ -180,7 +180,7 @@ CKEDITOR_mentions.prototype.timeout_callback = function (args) {
     $('.mention-suggestions').remove();
 
     if (rsp) {
-      $('<div class="mention-suggestions">Click a username to mention a fellow Edgeryder:' + rsp.html + '</div>').insertAfter(par);
+      $('<div class="mention-suggestions">' + rsp.html + '</div>').insertAfter(par);
     }
 
     $('.mention-users').click(function(e) {
@@ -188,6 +188,9 @@ CKEDITOR_mentions.prototype.timeout_callback = function (args) {
 
       var mentions = CKEDITOR_mentions.get_instance(editor);
       mentions.stop_observing();
+
+      // Keep the text originally inserted after the new tag.
+      var after_text = element.textContent.substr(startOffset + str.length);
 
       // Shorten text node
       element.textContent = element.textContent.substr(0, startOffset);
@@ -205,6 +208,11 @@ CKEDITOR_mentions.prototype.timeout_callback = function (args) {
       // at the end of the editor text
       else {
         element.parentNode.appendChild(link);
+      }
+
+      // Add the text which was present after the tag.
+      if ($.trim(after_text).length) {
+        element.parentNode.appendChild(document.createTextNode(after_text));
       }
 
       if ( $.browser.msie ) {
