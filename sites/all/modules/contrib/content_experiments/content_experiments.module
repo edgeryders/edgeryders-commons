@@ -1,0 +1,278 @@
+<?php
+/**
+ * @file Google Content Experiments module. Allows inserting Google Content
+ * Experiments code into the header for any page view.
+ */
+
+/**
+ * Implementation of hook_permission().
+ *
+ * @return array
+ *   Array of available permissions
+ */
+function content_experiments_permission() {
+  return array(
+    'administer content_experiments' => array(
+      'title' => t('Administer Content Experiments module'),
+      'description' => t('Permission to change Content Experiments settings')
+    ),
+    'use PHP for content experiments visibility' => array(
+      'title' => t('Use PHP for content experiments visibility'),
+      'description' => t('Permission to set PHP conditions to customize content experiments visibility on various pages')
+    )
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ *
+ * @return array
+ *   structured associative array of menu items.
+ */
+function content_experiments_menu() {
+  $items['admin/config/system/content-experiments'] = array(
+    'title' => 'Google Content Experiments',
+    'description' => 'Configure the settings used to generate your Content Experiments code.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('content_experiments_admin_settings_form'),
+    'access arguments' => array('administer content experiments'),
+    'file' => 'content_experiments.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function content_experiments_form_alter(&$form, &$form_state, $form_id) {
+  if (substr($form_id, -9) == 'node_form') {
+    $node = $form['#node'];
+    $form['actions']['submit']['#submit'][] = 'content_experiments_node_form_submit';
+    $form['content_experiments'] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => 1,
+      '#collapsed' => 1,
+      '#group' => 'additional_settings',
+      '#access' => TRUE,
+      '#attributes' => array(
+        'class' => array(
+          'node-form-content-experiments',
+        ),
+      ),
+      '#title' => t('Content experiments'),
+      '#description' => t('If this page is a control page for an experiment in Google Content Experiments, set the experiment key ' .
+              'below. This will allow the control page to pass tests when you set it up with Google.'),
+      'code' => array(
+        '#type' => 'textfield',
+        '#title' => t('Experiment Key'),
+        '#default_value' => property_exists($node, 'content_experiments') ? $node->content_experiments : '',
+        '#description' => t('The experiment key comes from Google Analytics. It should appear under the code that Google Analytics instructs you to paste immediately after the opening of the &lt;head&gt; tag.'),
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_html_head_alter().
+ */
+function content_experiments_html_head_alter(&$head_elements) {
+  global $user;
+  if (!_content_experiments_visibility_pages() || !_content_experiments_visibility_user_test($user)) {
+    return;
+  }
+  if (!$k = content_experiments_code()) {
+    return;
+  }
+
+  $inline_code[0] = 
+"\r\n<script>function utmx_section(){}function utmx(){}(function(){var\r\n" .
+"k='" . check_plain($k) . "',d=document,l=d.location,c=d.cookie;\r\n" .
+"if(l.search.indexOf('utm_expid='+k)>0)return;\r\n" .
+"function f(n){if(c){var i=c.indexOf(n+'=');if(i>-1){var j=c.\r\n" .
+"indexOf(';',i);return escape(c.substring(i+n.length+1,j<0?c.\r\n" .
+"length:j))}}}var x=f('__utmx'),xx=f('__utmxx'),h=l.hash;d.write(\r\n" .
+"'<sc'+'ript src=\"'+'http'+(l.protocol=='https:'?'s://ssl':\r\n" .
+"'://www')+'.google-analytics.com/ga_exp.js?'+'utmxkey='+k+\r\n" .
+"'&utmx='+(x?x:'')+'&utmxx='+(xx?xx:'')+'&utmxtime='+new Date().\r\n" .
+"valueOf()+(h?'&utmxhash='+escape(h.substr(1)):'')+\r\n" .
+"'\" type=\"text/javascript\" charset=\"utf-8\"><\/sc'+'ript>')})();\r\n" .
+"</script><script>utmx('url','A/B');</script>\r\n";
+
+  foreach ($inline_code as $key => $block) {
+    $head_elements['content_experiments_add_code_block_' . $key] = array(
+      '#type' => 'html_tag',
+      '#tag' => '!--Google Analytics Content Experiments code--',
+      '#value' => $block
+    );
+  }
+
+}
+
+function content_experiments_code() {
+  $code = "";
+
+  $q = check_plain($_GET['q']);
+  $q = explode('/', $q);
+  if (count($q) != 2) {
+    return '';
+  }
+
+  if (array_shift($q) == 'node') {
+    $nid = intval(array_shift($q));
+  
+    $node = node_load($nid);
+    if ($node) {
+      $code = $node->content_experiments;
+    }
+  }
+
+  return $code;
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function content_experiments_node_load($nodes, $types) {
+  foreach ($nodes as $nid => $node) {
+    $code = _content_experiments_get_code($node->nid);
+    $node->content_experiments = $code;
+  }
+}
+
+/**
+ * Helper function for setting experiment code on node submission.
+ */
+function content_experiments_node_form_submit($form, &$form_state) {
+  $experiment_id = $form_state['build_info']['args'][0]->code;
+  $nid = $form_state['build_info']['args'][0]->nid;
+
+  if (!_content_experiments_experiment_exists($nid)) {
+    db_insert('content_experiments')
+      ->fields(array(
+        'nid' => $nid,
+        'code' => $experiment_id,
+    ))
+    ->execute();
+  }
+  else {
+    db_update('content_experiments')
+      ->fields(array('code' => $experiment_id))
+      ->condition('nid', $nid, '=')
+      ->execute();
+  }
+}
+
+/**
+ * Check to see if a content experiment exists.
+ */
+function _content_experiments_experiment_exists($nid) {
+  return _content_experiments_get_experiment($nid) != array();
+}
+
+/**
+ * Get content experiment.
+ */
+function _content_experiments_get_experiment($nid) {
+  $result = db_select('content_experiments', 'ce')
+    ->fields('ce', array('code'))
+    ->condition('nid', $nid, '=')
+    ->execute()
+    ->fetchAssoc();
+  return $result;
+}
+
+/**
+ * Helper function to get the content experiment code.
+ */
+function _content_experiments_get_code($nid) {
+  $code = '';
+  $result = _content_experiments_get_experiment($nid);
+  $code = $result['code'];
+  return $code;
+}
+
+/**
+ * Utility function to determing visibility.
+ * Based on visibility setting this function returns TRUE if Zopim code should
+ * be added to the current page and otherwise FALSE.
+ *
+ * @staticvar boolean $page_match
+ *   whether page is visible (true) or not (false).
+ * @return boolean
+ *   a decision on visibility, true/false
+ */
+function _content_experiments_visibility_pages() {
+  static $page_match;
+  // Cache visibility setting in hook_init for hook_footer.
+  if (!isset($page_match)) {
+    $visibility = variable_get('content_experiments_visibility', 0);
+    $pages = variable_get('content_experiments_pages', '');
+    // Match path if necessary.
+    if (!empty($pages)) {
+      if ($visibility < 2) {
+        $path = drupal_get_path_alias($_GET['q']);
+        // Compare with the internal and path alias (if any).
+        $page_match = drupal_match_path($path, $pages);
+        if ($path != $_GET['q']) {
+          $page_match = $page_match || drupal_match_path($_GET['q'], $pages);
+        }
+        // When $visibility has a value of 0, the block is displayed on
+        // all pages except those listed in $pages. When set to 1, it
+        // is displayed only on those pages listed in $pages.
+        $page_match = !($visibility xor $page_match);
+      }
+      elseif (module_exists('php')) {
+        $page_match = php_eval($pages);
+      }
+    }
+    else {
+      $page_match = TRUE;
+    }
+  }
+  return $page_match;
+}
+
+/**
+ * Utility function to perform tracking visibility check for an user object.
+ *
+ * @param object $account
+ *   a user object containing an array of roles to check.
+ * @return boolean
+ *   a decision on if the current user is being tracked by Zopim.
+ */
+function _content_experiments_visibility_user_test($account) {
+  $enabled = FALSE;
+  // Is current user a member of a role that should be tracked?
+  if (_content_experiments_visibility_roles($account)) {
+    $enabled = TRUE;
+  }
+  return $enabled;
+}
+
+/**
+ * Based on visibility setting this function returns TRUE if Zopim code should
+ * be added for the current role and otherwise FALSE.
+ *
+ * @param object $account
+ *   a full user object.
+ * @return boolean
+ *   a decision on visibility, true/false
+ */
+function _content_experiments_visibility_roles($account) {
+  $enabled = TRUE;
+  $roles = variable_get('content_experiments_roles', array());
+  if (array_sum($roles) > 0) {
+    // One or more roles are selected for tracking.
+    foreach (array_keys($account->roles) as $rid) {
+      // Is the current user a member of one role selected in admin settings?
+      if (isset($roles[$rid]) && $rid == $roles[$rid]) {
+        // Current user is a member of a role that is selected in admin settings.
+        $enabled = FALSE;
+        break;
+      }
+    }
+  }
+  return $enabled;
+}

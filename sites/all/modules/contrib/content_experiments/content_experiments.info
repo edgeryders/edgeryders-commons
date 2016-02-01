@@ -1,0 +1,13 @@
+name = Google Content Experiments
+description = Allows inserting Google Content Experiments code in the header of any node page view.
+core = 7.x
+configure = admin/config/system/content-experiments
+files[] = content_experiments.module
+files[] = content_experiments.admin.inc
+files[] = content_experiments.install
+; Information added by drupal.org packaging script on 2013-07-26
+version = "7.x-1.4"
+core = "7.x"
+project = "content_experiments"
+datestamp = "1374871571"
+
