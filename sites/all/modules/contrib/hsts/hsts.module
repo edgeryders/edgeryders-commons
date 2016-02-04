@@ -1,0 +1,74 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Main module file for the HSTS (HTTP Strict Transport Security) module.
+ *
+ * This modules allows you to add the HSTS header tags to trigger
+ * Strict Transport Security on compatible clients
+ */
+
+/**
+ * Implements hook_init().
+ *
+ * Sets the header in all requests to include the HSTS max-age value
+ */
+function hsts_init() {
+  // Set the header to include the HSTS data
+  if (variable_get('hsts_enabled', FALSE) == 1) {
+
+    // Add the max age header
+    $hsts_header = 'max-age=' . check_plain(variable_get('hsts_max_age', 500));
+    if (variable_get('hsts_subdomains', FALSE)) {
+
+      // Include subdomains
+      $hsts_header .= ';includeSubDomains';
+    }
+
+    // Add the header
+    drupal_add_http_header('Strict-Transport-Security', $hsts_header);
+  }
+}
+
+/**
+ * Implements hook_perm().
+ */
+function hsts_permission() {
+  return array(
+    'administer strict transport security' => array(
+      'title' => t('Administer Strict Transport Security Settings'),
+      'description' => t('Allow a user to enable/disable the HSTS header as well as the header values.'),
+    )
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function hsts_menu() {
+  $items = array();
+
+  $items['admin/config/security'] = array(
+    'title' => 'Security',
+    'description' => 'Configure the security modules on this site.',
+    'page callback' => 'system_admin_menu_block_page',
+    'page arguments' => array('form_id'),
+    'position' => 'right',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
+  $items['admin/config/security/hsts'] = array(
+    'title' => 'HTTP Strict Transport Security Settings',
+    'description' => 'Set header configuration for Strict Transport Security',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hsts_admin_settings_form'),
+    'access arguments' => array('administer strict transport security'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'hsts.admin.inc',
+  );
+
+  return $items;
+}
