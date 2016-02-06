@@ -3,3 +3,18 @@ description = A sub-theme of Commons Origins, used by the edgeryders.
 core = 7.x
 base theme = commons_origins
 
+; list of all of the regions defined in the theme, enables Drupal Commons to validate the subtheme
+regions[sidebar_first] = Sidebar first
+regions[sidebar_second] = Sidebar second
+regions[content] = Main Content
+regions[highlighted] = Highlighted
+regions[content_aside] = Aside
+regions[secondary_content] = Secondary
+regions[tertiary_content] = Tertiary
+regions[footer] = Footer
+regions[leaderboard] = Leaderboard
+regions[header] = Header
+regions[menu_bar] = Menu Bar
+regions[help] = Help
+regions[page_top] = Page top
+regions[page_bottom] = Page bottom
