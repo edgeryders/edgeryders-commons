@@ -1,0 +1,5 @@
+name = Commons Edge
+description = A sub-theme of Commons Origins, used by the edgeryders.
+core = 7.x
+base theme = commons_origins
+
