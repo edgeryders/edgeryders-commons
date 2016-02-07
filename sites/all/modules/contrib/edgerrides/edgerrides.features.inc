@@ -6560,4 +6560,13 @@ function edgerrides_views_default_views_alter(&$data) {
     unset($data['tracker']->display['default']->display_options['fields']['timestamp']['link_to_node']);
     unset($data['tracker']->display['default']->display_options['style_options']['override']);
   }
+
+  /**
+   * Remove group search function
+   * https://edgeryders.eu/en/edgeryders-dev/task-5800
+   */
+  if (isset($data['commons_groups_directory'])) {
+    unset($data['commons_groups_directory']->display['default']->display_options['filters']['keys']['exposed']);
+  }
 }
+
