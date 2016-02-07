@@ -1,0 +1,208 @@
+<?php
+/**
+ * @file
+ * Tests for mentions.module.
+ */
+
+/**
+ * Class MentionsTestCase
+ */
+class MentionsTestCase extends DrupalWebTestCase {
+  protected $adminUser = array();
+  protected $authUser = array();
+
+  /**
+   * {@inheritdoc}
+   */
+  function setUp() {
+    parent::setUp('mentions');
+
+    // Create administrative user.
+    $this->adminUser = $this->drupalCreateUser(array(
+      'access content',
+      'administer filters',
+      'create article content',
+      'delete own article content',
+      'edit own article content',
+      'use text format filtered_html',
+    ));
+
+    // Create authenticated user.
+    $this->authUser = $this->drupalCreateUser(array(
+      'access content',
+      'create article content',
+      'edit own article content',
+      'use text format filtered_html',
+    ));
+  }
+
+  /**
+   * Pass if a link with the specified href and label is found, and optional
+   * with the specified index.
+   *
+   * @param $href
+   *   The full or partial value of the 'href' attribute of the anchor tag.
+   * @param $label
+   *   Text between the anchor tags.
+   * @param $index
+   *   Link position counting from zero.
+   * @param $message
+   *   Message to display.
+   * @param $group
+   *   The group this message belongs to, defaults to 'Other'.
+   *
+   * @return
+   *   TRUE if the assertion succeeded, FALSE otherwise.
+   */
+  function assertLinkByHrefAndLabel($href, $label, $index = 0, $message = '', $group = 'Other') {
+    $links   = $this->xpath('//a[contains(@href, :href)][normalize-space(text())=:label]', array(
+      ':href'  => $href,
+      ':label' => $label,
+    ));
+    $message = ($message ? $message : t('Link with href %href and label %label found.', array(
+      '%href'  => $href,
+      '%label' => $label,
+    )));
+
+    return $this->assert(isset($links[$index]), $message, $group);
+  }
+
+  /**
+   * @param array  $conditions
+   *   A keyed array of 'db_select' conditions.
+   * @param string $message
+   *   Message to display.
+   *
+   * @return bool
+   *   TRUE if the assertion succeeded, FALSE otherwise.
+   */
+  function assertNoMentionExists($conditions = array(), $message = '') {
+    $query = db_select('mentions', 'm')->fields('m');
+    foreach ($conditions as $field => $value) {
+      $query->condition($field, $value);
+    }
+    $result = $query->execute()->fetchAllAssoc('mid');
+
+    return $this->assertFalse(!empty($result), $message);
+  }
+
+
+  /**
+   * @param array  $conditions
+   *   A keyed array of 'db_select' conditions.
+   * @param string $message
+   *   Message to display.
+   *
+   * @return bool
+   *   TRUE if the assertion succeeded, FALSE otherwise.
+   */
+  function assertMentionExists($conditions = array(), $message = '') {
+    $query = db_select('mentions', 'm')->fields('m');
+    foreach ($conditions as $field => $value) {
+      $query->condition($field, $value);
+    }
+    $result = $query->execute()->fetchAllAssoc('mid');
+
+    return $this->assertTrue(!empty($result), $message);
+  }
+}
+
+/**
+ * Class MentionsCoreTestCase
+ */
+class MentionsCoreTestCase extends MentionsTestCase {
+  public static function getInfo() {
+    return array(
+      'name'        => 'Mentions core functionality',
+      'description' => 'Tests core Mentions functionality.',
+      'group'       => 'Mentions',
+    );
+  }
+
+  /**
+   * Test core Mentions functionality.
+   */
+  function testMentionsCore() {
+    $this->drupalLogin($this->adminUser);
+
+    // Ensure Mentions filter is available.
+    $this->drupalGet('admin/config/content/formats/filtered_html');
+    $this->assertFieldByName('filters[filter_mentions][status]', NULL, 'Mentions filter is available.');
+
+    // Enable Mentions filter.
+    $edit = array('filters[filter_mentions][status]' => TRUE);
+    $this->drupalPost('admin/config/content/formats/filtered_html', $edit, t('Save configuration'));
+
+    // Ensure Mentions filter is enabled.
+    $filters = filter_list_format('filtered_html');
+    $this->assertTrue($filters['filter_mentions']->status, 'Mentions filter is enabled on Filtered HTML text format.');
+
+    // Ensure Mentions filter tip is in place.
+    $this->drupalGet('node/add/article');
+    $this->assertText(t("Converts !username and !uid into a link the user's profile page.", array(
+      '!username' => '[@username]',
+      '!uid'      => '[@#uid]',
+    )));
+
+    // Create content with a mention to admin user by username.
+    $settings = array(
+      'type'  => 'article',
+      'title' => $this->randomString(),
+      'body'  => array(LANGUAGE_NONE => array(array('value' => "[@{$this->adminUser->name}]"))),
+    );
+    $node     = $this->drupalCreateNode($settings);
+
+    // Ensure Mention was correctly created and is linked to user profile.
+    $this->drupalGet("node/{$node->nid}");
+    $this->assertLinkByHrefAndLabel("user/{$this->adminUser->uid}", "@{$this->adminUser->name}");
+    $this->assertMentionExists(array(
+      'entity_type' => 'node',
+      'entity_id'   => $node->nid,
+      'uid'         => $this->adminUser->uid,
+      'auid'        => $this->adminUser->uid
+    ), 'Mention by username created successfully.');
+
+    // Create content with a mention to admin user by #uid.
+    $settings = array(
+      'type'  => 'article',
+      'title' => $this->randomString(),
+      'body'  => array(LANGUAGE_NONE => array(array('value' => "[@#{$this->adminUser->uid}]")))
+    );
+    $node     = $this->drupalCreateNode($settings);
+
+    // Ensure Mention was correctly created and is linked to user profile.
+    $this->drupalGet("node/{$node->nid}");
+    $this->assertLinkByHrefAndLabel("user/{$this->adminUser->uid}", "@{$this->adminUser->name}");
+    $this->assertMentionExists(array(
+      'entity_type' => 'node',
+      'entity_id'   => $node->nid,
+      'uid'         => $this->adminUser->uid,
+      'auid'        => $this->adminUser->uid
+    ), 'Mention by UID created successfully.');
+
+    // Update Mention from admin user to auth user.
+    $edit = array('body[und][0][value]' => "[@{$this->authUser->name}]");
+    $this->drupalPost("node/$node->nid/edit", $edit, t('Save'));
+
+    // Ensure old mention removed and new mention created.
+    $this->assertNoMentionExists(array(
+      'entity_type' => 'node',
+      'entity_id'   => $node->nid,
+      'uid'         => $this->adminUser->uid,
+      'auid'        => $this->adminUser->uid
+    ), 'Old mention no longer exists.');
+    $this->assertMentionExists(array(
+      'entity_type' => 'node',
+      'entity_id'   => $node->nid,
+      'uid'         => $this->authUser->uid,
+      'auid'        => $this->adminUser->uid
+    ), 'New mention created.');
+
+    // Ensure mentions removed when node deleted.
+    $this->drupalPost("node/{$node->nid}/delete", array(), t('Delete'));
+    $this->assertNoMentionExists(array(
+      'entity_type' => 'node',
+      'entity_id'   => $node->nid,
+    ), 'Mentions on deleted node removed successfully.');
+  }
+}
