@@ -44,8 +44,7 @@ if(typeof(CKEDITOR) !== 'undefined') {
             { name : 'Superscript'		, element : 'sup' },
             */
 
-
-            { name : 'Citation'         , element : 'blockquote', attributes : { 'class' : 'content-citation' } },
+            { name : 'Citation'         , element : 'cite', attributes : { 'class' : 'content-citation' } },
             { name : 'Computer Command'	, element : 'code', attributes : { 'class' : 'content-command' } },
             { name : 'Computer Output'  , element : 'code', attributes : { 'class' : 'content-output'} },
             { name : 'Fineprint'        , element : 'small'},
