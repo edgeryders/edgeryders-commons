@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * @file
+ * Control email frequency for message subscribe. 
+ */
+
+define('MESSAGE_SUBSCRIBE_EMAIL_FREQUENCY_NEVER', 'never');
+define('MESSAGE_SUBSCRIBE_EMAIL_FREQUENCY_IMMEDIATE', 'email');
+
+/**
+ * List of valid select options used for custom user profile field.
+ */
+function message_subscribe_email_frequency_allowed_values() {
+  $allowed_values = array();
+  $allowed_values = array(
+    MESSAGE_SUBSCRIBE_EMAIL_FREQUENCY_NEVER => t('Never'),
+    MESSAGE_SUBSCRIBE_EMAIL_FREQUENCY_IMMEDIATE => t('Immediately as they are triggered'),
+  );
+  // Add options for the daily and weekly digests if the message_digest
+  // module is enabled.
+  if (module_exists('message_digest')) {
+    $allowed_values['digest_day'] = t('Once a day in an email digest');
+    $allowed_values['digest_week'] = t('Once a week in an email digest');
+  }
+  return $allowed_values;
+}
+
+
+/**
+ * Implements hook_message_subscribe_get_subscribers_alter().
+ *
+ * Sets the notifier based on the frequency set by the user, defaulting to
+ * immediately sending when triggered.
+ */
+function message_subscribe_email_frequency_message_subscribe_get_subscribers_alter(&$uids, $values) {
+  if (empty($uids)) {
+    // Nobody is subscribed to the content.
+    return;
+  }
+
+  // Get the frequency setting for any users subscribed to the content.
+  // We don't use the Field API to get these values as we want to get the
+  // settings for all the users with a single query.
+  $query = "
+    SELECT
+      entity_id, message_subscribe_email_freq_value
+    FROM
+      {field_data_message_subscribe_email_freq}
+    WHERE
+      deleted != 1
+    AND
+      entity_id IN (:entity_ids)
+  ";
+
+  $result = db_query($query, array(':entity_ids' => array_keys($uids)))->fetchAll();
+
+  foreach ($result as $row) {
+    // Add notifier based on frequency selected by user.
+    $frequency = $row->message_subscribe_email_freq_value;
+    // Unset the notifier if the user has chosen to never receive email
+    // notifications for subscribed content.
+    if ($frequency == MESSAGE_SUBSCRIBE_EMAIL_FREQUENCY_NEVER) {
+      unset($uids[$row->entity_id]['notifiers']['email']);
+    }
+    // We only change the frequency if the user should have been emailed in the
+    // first place but does not want to receive the email immediately.
+    if (isset($uids[$row->entity_id]['notifiers']['email']) && $frequency != 'email') {
+      unset($uids[$row->entity_id]['notifiers']['email']);
+      $uids[$row->entity_id]['notifiers'][$frequency] = $frequency;
+    }
+  }
+}

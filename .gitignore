@@ -19,4 +19,5 @@ robots.txt-development
 stats
 
 # Ignore IDE
-.idea/
+.idea
+.idea/*

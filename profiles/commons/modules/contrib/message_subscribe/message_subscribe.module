@@ -225,7 +225,10 @@ function message_subscribe_get_subscribers($entity_type, $entity, Message $messa
   foreach (module_implements('message_subscribe_get_subscribers') as $module) {
     $function = $module . '_message_subscribe_get_subscribers';
     $result = $function($message, $subscribe_options, $context);
-    $uids += $result;
+    if(!$result) {
+      $result = array();
+    }
+      $uids += $result;
   }
 
   // If we're not notifying blocked users, exclude those users from the result

@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the 
+ * message_subscribe_email_frequency module.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Add "message_subscribe_email_frequency" field to the user profile.
+ */
+function message_subscribe_email_frequency_install() {
+  $t = get_t();
+  $field_name = 'message_subscribe_email_freq';
+  if (!field_info_field($field_name)) {
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'list_text',
+      'entity_types' => array('user'),
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values_function' => 'message_subscribe_email_frequency_allowed_values',
+      ),
+    );
+    $field = field_create_field($field);
+  }
+  if (!field_info_instance('user', $field_name, 'user')) {
+    $instance = array(
+      'field_name' => $field_name,
+      'bundle' => 'user',
+      'entity_type' => 'user',
+      'label' => $t('How often would you like to receive email notifications?'),
+      'description' => $t('Control how often you are notified by email of new content and activity you are subscribed to.'),
+      'required' => FALSE,
+      'display_label' => 1,
+      'default_value' => array(0 => array('value' => MESSAGE_SUBSCRIBE_EMAIL_FREQUENCY_IMMEDIATE)),
+      'widget' => array(
+        'settings' => array(),
+        'weight' => 0,
+      ),
+    );
+    field_create_instance($instance);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ * 
+ * Remove "message_subscribe_email_frequency" field from the user profile.
+ */
+function message_subscribe_email_frequency_uninstall() {
+  $field = field_info_instance('user', 'message_subscribe_email_freq', 'user');
+  field_delete_instance($field);
+}
