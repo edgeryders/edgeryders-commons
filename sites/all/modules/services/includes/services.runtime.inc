@@ -94,7 +94,7 @@ class ServicesArgumentException extends ServicesException {
  */
 function services_controller_execute($controller, $args = array(), $options = array()) {
   $server_info =  services_server_info_object();
-  if ($server_info->debug) {
+  if (!empty($server_info->debug)) {
     watchdog('services', 'Controller: <pre>@controller</pre>', array('@controller' => print_r($controller, TRUE)), WATCHDOG_DEBUG);
     watchdog('services', 'Passed arguments: <pre>@arguments</pre>', array('@arguments' => print_r($args, TRUE)), WATCHDOG_DEBUG);
   }
@@ -112,7 +112,7 @@ function services_controller_execute($controller, $args = array(), $options = ar
 
   _services_controller_execute_restore_user();
 
-  if ($server_info->debug) {
+  if (!empty($server_info->debug)) {
     watchdog('services', 'results: <pre>@results</pre>', array('@results' => print_r($result, TRUE)), WATCHDOG_DEBUG);
   }
   return $result;
@@ -127,7 +127,7 @@ function _services_controller_execute_preserve_user_switch_anonymous($controller
   global $user;
   services_set_server_info('original_user', $user);
 
-  $preserve_session = strpos($controller['callback'], 'login') === FALSE && strpos($controller['callback'], 'logout') === FALSE;
+  $preserve_session = !is_string($controller['callback']) || (strpos($controller['callback'], 'login') === FALSE && strpos($controller['callback'], 'logout') === FALSE);
   services_set_server_info('preserve_session', $preserve_session);
   if ($preserve_session) {
     $original_session_state = drupal_save_session();
@@ -177,18 +177,25 @@ function _services_controller_execute_internals($controller, $args, $options) {
   $resource_name = array_shift($path);
   $options['version'] = _services_version_header_options() ? _services_version_header_options() : NULL;
   $options['resource'] = $resource_name;
+  //because index is never filled, we have to add this on an else, $remove_index is just a paranoid variable to make sure that futher code flow is not altered.
+  $remove_index = FALSE;
+
   if (isset($path[0])) {
     $options['method'] = $path[0];
+  } else{
+    $options['method'] = 'index';
+    $remove_index = TRUE;
   }
-
   if (!empty($options['version'])) {
     services_request_apply_version($controller, $options);
   }
-
+  if($remove_index){
+    unset($options['method']);
+  }
   drupal_alter('services_request_preprocess', $controller, $args, $options);
 
   // Log the arguments.
-  if ($server_info->debug) {
+  if (!empty($server_info->debug)) {
     watchdog('services', 'Called arguments: <pre>@arguments</pre>', array('@arguments' => print_r($args, TRUE)), WATCHDOG_DEBUG);
   }
 
@@ -409,6 +416,9 @@ function _services_access_value($data, $fields) {
  * Plugin that authenticate user will change global $user.
  */
 function _services_authenticate_user($controller, $endpoint, $args, $options) {
+  if (empty($endpoint->authentication)) {
+    return NULL;
+  }
   if (!isset($options['skip_authentication']) || !$options['skip_authentication']) {
     foreach ($endpoint->authentication as $auth_module => $auth_settings) {
       if (!empty($auth_settings)) {
