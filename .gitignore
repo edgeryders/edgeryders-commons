@@ -6,5 +6,17 @@ sites/*/drushrc.php
 sites/*/files
 sites/*/private
 
+# Ignore robots.txt and .htaccess, which will be symlinks different for staging and development.
+robots.txt
+.htaccess
+
+# Ignore files which have been renamed from a standard Drupal installation.
+htaccess
+htaccess-development
+robots.txt-development
+
+# Ignore the stats directory, where some server admin panels (like ISPConfig) store web access statistics.
+stats
+
 # Ignore IDE
 .idea/

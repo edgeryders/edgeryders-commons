@@ -1,0 +1,32 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Install file for hsts.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function hsts_install() {
+  // Set the module weight to ensure it is the first module loaded
+  db_query("UPDATE {system} SET weight = -999 WHERE name = 'hsts'");
+  
+  variable_set('hsts_max_age', 400);
+  variable_set('hsts_enabled', FALSE);
+  variable_set('hsts_subdomains', FALSE);
+  
+  // Notify the user that extra configuraiton is required.
+  drupal_set_message(t('HSTS module enabled.'));
+  drupal_set_message(t('HSTS headers are not enabled by default. To do so please use the !link page.', array('!link' => l(t('HSTS Configuration'), 'admin/config/security/hsts'))), 'info');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function hsts_uninstall() {
+  variable_del('hsts_max_age');
+  variable_del('hsts_enabled');
+  variable_del('hsts_subdomains');
+}
