@@ -1,0 +1,35 @@
+<?php
+/**
+ * @file
+ */
+
+class TaxonomyEdgeTreeUnitTestCase extends DrupalUnitTestCase {
+  function setUp() {
+    parent::setUp(array('taxonomy_edge'));
+    module_load_include('module', 'taxonomy_edge');
+  }
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Parents',
+      'description' => 'Unit test for Taxonomy Edge.',
+      'group' => 'Taxonomy Edge',
+    );
+  }
+
+  function testParents() {
+    $parents = array(0, 1, 2);
+    $result = _taxonomy_edge_unify_parents($parents);
+    $expect = array(0, 1, 2);
+    $match = $expect == $result;
+    $message = "Unify parents" . ($match ? "" : "\n<pre>Assumed:\n" . print_r($expect, TRUE) . "\nGot:\n" . print_r($result, TRUE));
+    $this->assertTRUE($match, $message);
+
+    $parents = array(0, array(1, 2));
+    $result = _taxonomy_edge_unify_parents($parents);
+    $expect = array(0, 1, 2);
+    $match = $expect == $result;
+    $message = "Unify parents" . ($match ? "" : "\n<pre>Assumed:\n" . print_r($expect, TRUE) . "\nGot:\n" . print_r($result, TRUE));
+    $this->assertTRUE($match, $message);
+  }
+}

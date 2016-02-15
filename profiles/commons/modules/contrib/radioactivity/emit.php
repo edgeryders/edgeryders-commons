@@ -43,6 +43,7 @@ try {
 
     $energy = $incident['energy'];
     $energy = $energy / $incident['accuracy'] * 100;
+    $cid = 'field:' . $incident['entity_type'] . ':' . $incident['entity_id'];
 
     $incident = new RadioactivityIncident(
       $incident['entity_type'],
@@ -51,17 +52,19 @@ try {
       $incident['language'],
       $incident['entity_id'],
       $energy,
-      time()
+      time(),
+      TRUE
     );
 
     $cache[$class]->addIncident($incident);
-  }
 
-  if (defined('DRUPAL_ROOT')) {
-    // Clear field cache to reflect changes
-    db_delete("cache_field")->execute();
+    if (defined('DRUPAL_ROOT')) {
+      // Clear field cache to reflect changes
+      db_delete("cache_field")
+        ->condition('cid', $cid)
+        ->execute();
+    }
   }
-
 
 } catch (Exception $e) {
 

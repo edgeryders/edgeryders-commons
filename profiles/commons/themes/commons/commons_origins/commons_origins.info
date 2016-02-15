@@ -429,9 +429,9 @@
 
   ;
 
-; Information added by Drupal.org packaging script on 2014-05-08
-version = "7.x-3.12"
+; Information added by Drupal.org packaging script on 2015-10-28
+version = "7.x-3.32"
 core = "7.x"
 project = "commons"
-datestamp = "1399579131"
+datestamp = "1446047047"
 

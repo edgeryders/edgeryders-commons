@@ -1,0 +1,7 @@
+name = "Printer-friendly pages"
+description = "Generates a printer-friendly version of Drupal pages."
+core = 7.x
+package = "Printer, email and PDF versions"
+files[] = print_join_page_counter.inc
+dependencies[] = node
+configure = admin/config/user-interface/print

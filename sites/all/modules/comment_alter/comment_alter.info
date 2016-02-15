@@ -5,9 +5,9 @@ dependencies[] = comment
 dependencies[] = diff (3.x)
 files[] = comment_alter.test
 
-; Information added by Drupal.org packaging script on 2014-03-24
-version = "7.x-1.0-rc4+23-dev"
+; Information added by  packaging script on 2013-11-09
+version = "7.x-1.0-rc4"
 core = "7.x"
 project = "comment_alter"
-datestamp = "1395681268"
+datestamp = "1384035507"
 

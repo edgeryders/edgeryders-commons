@@ -1,0 +1,35 @@
+<?php
+/**
+ * @file
+ * Install and uninstall hooks for Views Accelerator module.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function views_accelerator_enable() {
+  drupal_set_message(st("Thank you for installing Views Accellerator. Installation is complete. <br/>For additional configuration options, visit the <a href='@url_config'>configuration page</a>.", array(
+    '@url_config' => url('admin/config/system/views-accelerator'))
+  ));
+}
+
+/**
+ * Implements hook_install().
+ */
+function views_accelerator_install() {
+  // Make sure that post_executed() results are available to other modules
+  // implementing hook_views_post_execute().
+  db_update('system')
+    ->fields(array('weight' => -10))
+    ->condition('name', 'views_accelerator')
+    ->execute();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function views_accelerator_uninstall() {
+  // Delete views_accelerator_* variables at once.
+  db_query("DELETE FROM {variable} WHERE name LIKE 'views_accelerator_%%'");
+}
+

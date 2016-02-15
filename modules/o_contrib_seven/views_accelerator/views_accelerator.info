@@ -1,0 +1,14 @@
+name = Views Accelerator
+description = Performance booster for views that are receptive to render optimisations.
+core = 7.x
+configure = admin/config/system/views-accelerator
+package = Views
+dependencies[] = views
+files[] = views/plugins/views_plugin_cache_none_accelerated.inc
+files[] = views/plugins/views_plugin_cache_none_debug.inc
+; Information added by Drupal.org packaging script on 2014-11-04
+version = "7.x-1.0-beta1"
+core = "7.x"
+project = "views_accelerator"
+datestamp = "1415076828"
+

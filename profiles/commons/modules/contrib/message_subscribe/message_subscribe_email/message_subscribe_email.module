@@ -117,28 +117,36 @@ function message_subscribe_email_message_subscribe_get_subscribers_alter(&$uids,
     return;
   }
 
-  $flag_ids = array();
-  foreach ($flags as $flag) {
-    $flag_ids[] = $flag->fid;
-  }
+  foreach($values['context'] as $entity_type => $entity_ids) {
+    if (!$entity_ids) {
+      continue;
+    }
 
-  if (FLAG_API_VERSION == 2) {
-    $query = db_select('flag_content', 'f');
-  }
-  else {
-    $query = db_select('flagging', 'f');
-  }
+    $fids = array();
+    foreach ($flags as $flag) {
+      $fids[$flag->fid] = $flag->name;
+    }
 
-  $result = $query->fields('f', array('uid'))
-    ->condition('fid', $flag_ids, 'IN')
-    ->condition('uid', array_keys($uids), 'IN')
-    ->groupBy('uid')
-    ->execute()
-    ->fetchAll();
+    if (FLAG_API_VERSION == 2) {
+      $query = db_select('flag_content', 'f');
+    }
+    else {
+      $query = db_select('flagging', 'f');
+    }
 
-  foreach ($result as $row) {
-    // Add 'email' to the list of notifiers.
-    $uids[$row->uid]['notifiers']['email'] = 'email';
+    $result = $query->fields('f', array('uid'))
+      ->condition('content_type', $entity_type)
+      ->condition('content_id', $entity_ids, 'IN')
+      ->condition('fid', array_keys($fids), 'IN')
+      ->condition('uid', array_keys($uids), 'IN')
+      ->groupBy('uid')
+      ->execute()
+      ->fetchAll();
+
+    foreach ($result as $row) {
+      // Add 'email' to the list of notifiers.
+      $uids[$row->uid]['notifiers']['email'] = 'email';
+    }
   }
 }
 

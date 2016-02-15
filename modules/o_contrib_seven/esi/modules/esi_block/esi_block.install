@@ -1,0 +1,68 @@
+<?php
+/**
+ * @file
+ * Install/Uninstall/Schema hooks for ESI Block.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function esi_block_schema_alter(&$schema = array()) {
+  // Add columns to the block schema, to record if a block should be processed
+  // by ESI, and its TTL.
+  // Adding to the schema is the most performant way to integrate, because the
+  // data is immediately available with no extra lookups.
+  $schema['block']['fields']['esi_enabled'] = array(
+    'type' => 'int',
+    'size' => 'tiny',
+    'not null' => FALSE,
+    'default' => 0,
+    'description' => 'Should block be served via ESI.',
+  );
+  $schema['block']['fields']['esi_ttl'] = array(
+    'type' => 'int',
+    'not null' => FALSE,
+    'default' => NULL,
+    'description' => 'Time-to-live (in seconds) for the block contents when served via ESI.',
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function esi_block_install() {
+  $schema = esi_block_schema_alter();
+  foreach ($schema['block']['fields'] as $field_name => $spec) {
+    db_add_field('block', $field_name, $spec);
+  }
+
+  // @TODO: iterate through the variable "esi_block_config" and push to the
+  // block table.
+  if ($old_configuration = variable_get('esi_block_config', array())) {
+    foreach ($old_configuration as $key => $config) {
+      // The key is $module_$delta...which unfortunately makes things slightly
+      // trickier...Is "esi_block_foo_bar" "esi":"block_foo_bar" or
+      // "esi_block":"foo_bar"? Hard to say!
+
+      // Remove the old variable once it's migrated.
+      variable_del('esi_block_config');
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function esi_block_uninstall() {
+  // Remove the columns that were added to the 'block' table in hook_install().
+  $schema = esi_block_schema_alter();
+  foreach ($schema['block']['fields'] as $field_name => $spec) {
+    db_drop_field('block', $field_name);
+  }
+
+  // Remove obsolete variables.
+  variable_del('esi_block_default_ttl');
+}
+

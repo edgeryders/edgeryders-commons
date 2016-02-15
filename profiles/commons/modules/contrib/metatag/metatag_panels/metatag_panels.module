@@ -56,10 +56,41 @@ function metatag_panels_form($form, $form_state) {
   // Don't set any metatag instance name as the configuration data is managed locally within panels.
   $instance = '';
   $options = array('token types' => $token_types);
-  $conf = empty($handler->conf['metatag_panels']) ? array() : $handler->conf['metatag_panels']['metatags'];
+  $metatags = empty($handler->conf['metatag_panels']) ? array() : $handler->conf['metatag_panels']['metatags'];
+
+  // This leaves some possibility for future versions to support translation.
+  if (!isset($metatags[LANGUAGE_NONE])) {
+    $metatags = array(LANGUAGE_NONE => $metatags);
+  }
 
   // Load the metatag form (passed by reference).
-  metatag_metatags_form($form, $instance, $conf, $options);
+  metatag_metatags_form($form, $instance, $metatags[LANGUAGE_NONE], $options);
+
+  // Add CTools substitutions list to the form.
+  $rows = array();
+  foreach ($contexts as $context) {
+    foreach (ctools_context_get_converters('%' . check_plain($context->keyword) . ':', $context) as $keyword => $title) {
+      $rows[] = array(
+        check_plain($keyword),
+        t('@identifier: @title', array('@title' => $title, '@identifier' => $context->identifier)),
+      );
+    }
+  }
+  if (!empty($rows)) {
+    $form['contexts'] = array(
+      '#title' => t('Substitutions'),
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $header = array(t('Keyword'), t('Value'));
+    $form['contexts']['context'] = array('#markup' => theme('table', array('header' => $header, 'rows' => $rows)));
+    $form['contexts']['#states'] = array(
+      'visible' => array(
+        ':input[name="metatags_enabled"]' => array('checked' => TRUE),
+      ),
+    );
+  }
 
   // Modify metatag form defaults.
   $form['metatags']['#collapsible'] = FALSE;
@@ -81,7 +112,7 @@ function metatag_panels_form($form, $form_state) {
 function metatag_panels_form_submit($form, $form_state) {
   $conf = array(
     'enabled' => $form_state['values']['metatags_enabled'],
-    'metatags' => $form_state['values']['metatags'],
+    'metatags' => $form_state['values']['metatags'][LANGUAGE_NONE],
   );
 
   $form_state['handler']->conf['metatag_panels'] = $conf;
@@ -100,10 +131,34 @@ function metatag_panels_ctools_render_alter($info, $page, $context) {
   }
 
   $metatags = $handler->conf['metatag_panels']['metatags'];
-  $metatags += metatag_config_load_with_defaults('');
+  if (!is_array($metatags) || empty($metatags)) {
+    $metatags = array();
+  }
+
+  // If meta tags were found but they're not nested for the language, fix it.
+  // This leaves some possibility for future versions to support translation.
+  if (!empty($metatags) && !isset($metatags[LANGUAGE_NONE])) {
+    $metatags = array(LANGUAGE_NONE => $metatags);
+  }
+
+  // Append global defaults.
+  $all_metatags = array();
+  foreach ($metatags as $langcode => $values) {
+    if (!empty($values)) {
+      $all_metatags = $values + metatag_config_load_with_defaults('');
+    }
+  }
+  $metatags = $all_metatags;
 
   if (empty($metatags)) {
     return;
+  }
+
+  // Substitute Panels context variables.
+  foreach ($metatags as $metatag => &$data) {
+    if (is_string($data['value']) && strpos($data['value'], '%') !== FALSE) {
+      $data['value'] = ctools_context_keyword_substitute($data['value'], array(), $context['handler']->conf['display']->context);
+    }
   }
 
   // Get the contexts that exist within this panel.
@@ -117,12 +172,24 @@ function metatag_panels_ctools_render_alter($info, $page, $context) {
     $tokens[$task_context->keyword] = $task_context->data;
   }
 
+  // Because of page execution order, sometimes the page title does not get set
+  // by Panels in time for metatags to use it, so we'll explicitly set it here
+  // if we need to.
+  if (!empty($info['title'])) {
+    drupal_set_title($info['title'], PASS_THROUGH);
+  }
+
   // Build the Metatag.
   $options = array(
     'instance' => 'panels:' . $handler->name,
     'token data' => $tokens,
   );
   foreach ($metatags as $metatag => $data) {
+    // Render CTools context substitution values prior to rendering the meta
+    // tag.
+    if (is_string($data['value'])) {
+      $data['value'] = ctools_context_keyword_substitute(trim($data['value']), array(), $task_contexts);
+    }
     $metatag_instance = metatag_get_instance($metatag, $data);
 
     if ($metatag_instance) {
@@ -130,7 +197,8 @@ function metatag_panels_ctools_render_alter($info, $page, $context) {
     }
   }
 
-  // Give third-parties the opportunity to alter the metatag for a given instance.
+  // Give third-parties the opportunity to alter the metatag for a given
+  // instance.
   drupal_alter('metatag_metatags_view', $output, $options['instance']);
 }
 
@@ -143,6 +211,8 @@ function metatag_panels_page_build(&$page) {
   $metatags = drupal_static('metatag_panels');
 
   if (!empty($metatags)) {
-    $page['content']['metatags']['global'] = $metatags;
+    // The page region can be changed.
+    $region = variable_get('metatag_page_region', 'content');
+    $page[$region]['metatags']['global'] = $metatags;
   }
 }

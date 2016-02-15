@@ -105,45 +105,49 @@ function custom_search_form_alter(&$form, &$form_state, $form_id) {
 
     case 'search_form':
 
-      if (isset($form['module']) && $form['module']['#value'] == 'node' && isset($form['advanced'])) {
+      if (isset($form['module']) && $form['module']['#value'] == 'node') {
 
-        // Criteria.
-        if (!variable_get('custom_search_advanced_or_display', TRUE)) {
-          $form['advanced']['keywords']['or']['#type'] = 'hidden';
-        }
-        if (!variable_get('custom_search_advanced_phrase_display', TRUE)) {
-          $form['advanced']['keywords']['phrase']['#type'] = 'hidden';
-        }
-        if (!variable_get('custom_search_advanced_negative_display', TRUE)) {
-          $form['advanced']['keywords']['negative']['#type'] = 'hidden';
-        }
+        if (isset($form['advanced'])) {
 
-        // Content types.
-        $names = array_keys(node_type_get_names());
-        foreach ($names as $name) {
-          if (!variable_get('custom_search_advanced_type_' . $name . '_display', TRUE)) {
-            unset($form['advanced']['type']['#options'][$name]);
+          // Criteria.
+          if (!variable_get('custom_search_advanced_or_display', TRUE)) {
+            $form['advanced']['keywords']['or']['#type'] = 'hidden';
           }
-        }
-        if (!count($form['advanced']['type']['#options'])) {
-          unset($form['advanced']['type']['#type']);
-        }
+          if (!variable_get('custom_search_advanced_phrase_display', TRUE)) {
+            $form['advanced']['keywords']['phrase']['#type'] = 'hidden';
+          }
+          if (!variable_get('custom_search_advanced_negative_display', TRUE)) {
+            $form['advanced']['keywords']['negative']['#type'] = 'hidden';
+          }
 
-        // Languages.
-        foreach (language_list('language') as $key => $entity) {
-          if ($entity->enabled) {
-            $language_options[$key] = $entity->name;
+          // Content types.
+          $names = array_keys(node_type_get_names());
+          foreach ($names as $name) {
+            if (!variable_get('custom_search_advanced_type_' . $name . '_display', TRUE)) {
+              unset($form['advanced']['type']['#options'][$name]);
+            }
           }
-        }
-        if (count($language_options) > 1) {
-          foreach ($language_options as $key => $name) {
-            if (!variable_get('custom_search_advanced_language_' . $key . '_display', TRUE)) {
-              unset($form['advanced']['language']['#options'][$key]);
-            } 
+          if (!count($form['advanced']['type']['#options'])) {
+            unset($form['advanced']['type']['#type']);
           }
-          if (!count($form['advanced']['language']['#options'])) {
-            unset($form['advanced']['language']['#type']);
+
+          // Languages.
+          foreach (language_list('language') as $key => $entity) {
+            if ($entity->enabled) {
+              $language_options[$key] = $entity->name;
+            }
           }
+          if (count($language_options) > 1) {
+            foreach ($language_options as $key => $name) {
+              if (!variable_get('custom_search_advanced_language_' . $key . '_display', TRUE)) {
+                unset($form['advanced']['language']['#options'][$key]);
+              } 
+            }
+            if (!count($form['advanced']['language']['#options'])) {
+              unset($form['advanced']['language']['#type']);
+            }
+          }
+
         }
 
         if (!variable_get('custom_search_results_search', TRUE)) {
@@ -364,6 +368,7 @@ function custom_search_form_alter(&$form, &$form_state, $form_id) {
 
         // Form attributes.
         $form['#attributes']['class'] = array('search-form');
+        $form['#attributes']['role'] = 'search';
         if (!in_array('custom_search_submit', $form['#submit'])) {
           $form['#submit'][] = 'custom_search_submit';
         }
@@ -383,7 +388,6 @@ function custom_search_submit($form, &$form_state) {
   variable_set('custom_search_delta', $delta);
   $type = 'node';
   $keys = $form_state['values'][$form_state['values']['form_id']];
-  $keys = str_replace('/', '%2f', $keys);
   $original_keywords = $keys;
 
   $types = (isset($form_state['values']['custom_search_types'])) ? $form_state['values']['custom_search_types'] : array();
@@ -410,6 +414,16 @@ function custom_search_submit($form, &$form_state) {
       array_splice($terms, $index, 1);
     }
   }
+
+  // Invoke other modules hooks.
+  $other = array();
+  foreach (module_implements('custom_search_filter') as $module) {
+    $function = $module . '_custom_search_filter';
+    if (function_exists($function)) {
+      $other = call_user_func_array($function, array($form, $form_state, $other));
+    }   
+  }
+
 
   $search_types = module_implements('search_info');
   if (in_array(current($types), $search_types)) {
@@ -462,6 +476,7 @@ function custom_search_submit($form, &$form_state) {
 
   // Integrates other search modules.
   if (module_exists('apachesolr_search')) {
+    $fields = field_info_fields();
     for ($i = 0; $i < count($types); $i++) {
       // Remove the item from the array if it's not a content type.
       if (!in_array($types[$i], array_keys(node_type_get_types()))) {
@@ -472,7 +487,8 @@ function custom_search_submit($form, &$form_state) {
       'keywords'  => $original_keywords,
       'types'     => $types,
       'terms'     => (!empty($terms)) ? $terms : array(),
-    ));
+      'other'     => (!empty($other)) ? $other : array(),
+    ), $keys, $fields);
   }
   elseif (module_exists('google_appliance')) {
     $search_path = _custom_search_google_appliance_search(array(
@@ -535,7 +551,7 @@ function custom_search_submit($form, &$form_state) {
  * Rewrite the sql query to exclude content types.
  */
 function custom_search_query_alter(QueryAlterableInterface $query) {
-  if ($query->hasTag('node_access') && $query->hasTag('pager')) {
+  if (!$query->hasTag('custom_search_ignore') && $query->hasTag('node_access') && $query->hasTag('pager')) {
     $excluded_types = array_filter(variable_get('custom_search_' . variable_get('custom_search_delta', '') . 'node_types_excluded', array()));
     if (!empty($excluded_types)) {
       $tables = $query->getTables();
@@ -543,6 +559,24 @@ function custom_search_query_alter(QueryAlterableInterface $query) {
         if ($table['table'] == 'search_index') {
           $query->condition('n.type', $excluded_types, 'NOT IN');
         }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_block_view_alter().
+ * Used to exclude Facet API searching for excluded types.
+ */
+function custom_search_block_view_alter(&$data, $block) {
+  if ($block->module == 'facetapi') {
+    $excluded_types = array_filter(variable_get('custom_search_' . variable_get('custom_search_delta', '') . 'node_types_excluded', array()));
+    if (!empty($excluded_types) && isset($data['content']['bundle']) && is_array($data['content']['bundle']["#items"])) {
+      foreach ($data['content']['bundle']["#items"] as $key => $item) {
+        // Find the type in the link.
+        preg_match('/<a(.*)href="(.*)bundle%3A(.*?)(&|")(.*)/', $item['data'], $matches);
+        // Exclude it if not needed.
+        if (!empty($matches) && in_array($matches[3], $excluded_types)) unset($data['content']['bundle']["#items"][$key]);
       }
     }
   }
@@ -557,7 +591,7 @@ function custom_search_init() {
     drupal_add_js(array(
       'custom_search' => array(
         'form_target' => variable_get('custom_search_target', '_self'),
-        'solr'        => module_exists('apachesolr_search') ? 1 : 0,
+        'solr'        => (module_exists('apachesolr_search') || module_exists('search_api_solr')) ? 1 : 0,
       ),
     ), array('type' => 'setting'));
   }

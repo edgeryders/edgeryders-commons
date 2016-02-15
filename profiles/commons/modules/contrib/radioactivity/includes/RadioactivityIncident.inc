@@ -14,8 +14,9 @@ class RadioactivityIncident {
   public $entityId;
   public $time;
   public $source;
+  private static $source_cache;
 
-  private static $source_cache; function __construct($entity_type, $bundle, $field_name, $language, $entity_id, $energy, $time) {
+  function __construct($entity_type, $bundle, $field_name, $language, $entity_id, $energy, $time, $floodProtected) {
     $this->entityType = $entity_type;
     $this->bundle     = $bundle;
     $this->fieldName  = $field_name;
@@ -24,6 +25,7 @@ class RadioactivityIncident {
     $this->energy     = $energy;
     $this->time       = $time;
     $this->source     = $this->getSource();
+    $this->floodProtected = $floodProtected;
   }
 
   /**
@@ -52,10 +54,9 @@ class RadioactivityIncident {
   public function updateEnergy() {
     _radioactivity_update_energy(
       $this->entityType,
-      $this->bundle,
+      $this->entityId,
       $this->fieldName,
       $this->language,
-      $this->entityId,
       $this->energy,
       $this->time
     );
@@ -68,6 +69,10 @@ class RadioactivityIncident {
   public function floodCheck() {
     static $enabled;
     static $timeout;
+
+    // Check flood protection
+    if (!$this->floodProtected)
+      return TRUE;
 
     if (!isset($enabled)) {
       $enabled = variable_get('radioactivity_flood_protection', FALSE);

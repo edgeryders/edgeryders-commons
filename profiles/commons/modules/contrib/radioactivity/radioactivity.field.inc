@@ -121,6 +121,16 @@ function _radioactivity_register_emitter($storage = NULL, $entity_type = NULL, $
     'language'    => $language,
     'entity_id'   => $entity_id,
   );
+
+  // Remove trash which may be injected by another module.
+
+  $keep = array('accuracy', 'bundle', 'energy', 'entity_id', 'entity_type', 'field_name', 'language', 'storage', 'type');
+  foreach ($incident as $key => $val) {
+    if (!in_array($key, $keep)) {
+      unset($incident[$key]);
+    }
+  }
+
   @$cache['emitDefault'][] = _radioactivity_prepare_incident($incident);
 }
 
@@ -327,18 +337,14 @@ function radioactivity_field_formatter_settings_summary($field, $instance, $view
 }
 
 /**
- * Implements hook_page_alter()
- */
-function radioactivity_page_alter($page) {
-  radioactivity_update_emitters();
-}
-
-/**
  * Update emitters on page
+ * @param $ajax boolean
+ * @return false|array
  */
-function radioactivity_update_emitters() {
+function radioactivity_update_emitters($ajax = FALSE) {
 
-  // foreach emitters emitter->emit();
+  $data = FALSE;
+
   $register = _radioactivity_register_emitter();
   module_load_include("inc", "radioactivity", "radioactivity-bootstrap");
   $path = base_path() . drupal_get_path('module', 'radioactivity') . '/emit.php';
@@ -350,12 +356,24 @@ function radioactivity_update_emitters() {
   );
 
   if (count($register) > 0) {
-    drupal_add_library('system', 'jquery.cookie');
-    drupal_add_js(drupal_get_path('module', 'radioactivity') . '/js/radioactivity.js');
-    drupal_add_js(array('radioactivity' => array('emitters' => $register)), 'setting');
-    drupal_add_js(array('radioactivity' => array('config' => $config)), 'setting');
+    if ($ajax) {
+      $data = array(
+        'emitters' => $register,
+        'config' => $config,
+      );
+    } else {
+      drupal_add_library('system', 'jquery.cookie');
+      drupal_add_js(drupal_get_path('module', 'radioactivity') . '/js/radioactivity.js');
+      drupal_add_js(array('radioactivity' => array('emitters' => $register)), 'setting');
+      drupal_add_js(array('radioactivity' => array('config' => $config)), 'setting');
+    }
   }
+
   _radioactivity_register_emitter('RESET');
+
+  if ($data) {
+    return $data;
+  }
 }
 
 /**

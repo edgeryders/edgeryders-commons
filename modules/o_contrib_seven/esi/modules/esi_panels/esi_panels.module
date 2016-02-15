@@ -1,0 +1,385 @@
+<?php
+/**
+ * @file
+ * ESI handler for panel panes.
+ *
+ * Architectural philosophy:
+ * - Assuming the "standard" panel renderer is used:
+ *   - panels_renderer_standard::render_pane() takes rendered content generated
+ *     by panels_renderer_standard::render_pane_content() and adds panel
+ *     styles, controls pane-titles, etc.
+ *   - panels_renderer_standard::render_pane_content() is where the ctools
+ *     content-type renderer is invoked. This is also where panels checks for
+ *     cached content, before invoking the ctools renderer if it's absent.
+ *     After the content is rendered, hook_panels_pane_content_alter() is
+ *     called, followed by $cache->set_cache().
+ *   - panels_renderer_standard::render_layout() invokes render_panes() and
+ *     render_regions() immediately afterwards.  The ideal place to substitute
+ *     an ESI tag is between these two calls.
+ *   - render_pane() must be invoked on the original pane, if features such as
+ *     title-bubbling (where a pane title is promoted to be the title of the
+ *     panel) are to succeed.
+ * - The "esi" display-renderer (a render pipeline) is used to override the
+ *   "standard" renderer, and replace the panes in between render_panes() and
+ *   render_regions().
+ * - The "panel_context" task handler is altered, replacing the standard save()
+ *   implementation with a custom handler, which checks for ESI panes, and
+ *   overrides the render pipeline if necessary.
+ * - The rendered-pane of an ESI pane is replaced with a plain ESI tag; no
+ *   theme furniture is provided around the tag. The ESI callback provides any
+ *   necessary theme furniture.
+ * - It's possible for themes to provide custom region-renderers, which are
+ *   aware of the contents of individual panes, and overrides them. This
+ *   functionality is not supported with ESI: panes *must* be capable of
+ *   independent rendering.
+ * - Cacheing controls and contexts are dictated by:
+ *   - Block configuration (in the case of panes which are implementations of a
+ *     standard Drupal block).
+ *   - Context (where the ctools content_type declares a context as required or
+ *     optional, and the panel has provided the context to the pane).
+ *   - Pane visibility (where access to panes is controlled by roles or
+ *     permissions).
+ *   - User-defined overrides in the ESI cacheing configuration.
+ */
+
+// Tested against 1.7.2.
+define('ESI_PANELS_REQUIRED_CTOOLS_API', '1.7.2');
+
+/**
+ * Implements hook_hook_info().
+ */
+function esi_panels_hook_info() {
+  // Look for hook_esi_panels_context_arguments() in xxx.esi_panels.inc.
+  $hooks['esi_panels_context_arguments'] = array(
+    'group' => 'esi_panels',
+  );
+  return $hooks;
+}
+
+/**
+ * Implements hook_esi_component().
+ *
+ * @see esi_block_prepare()
+ * @see esi_block_render()
+ */
+function esi_panels_esi_component_info() {
+  return array(
+    'panels_pane' => array(
+      'preprocess' => 'esi_panels__esi_pane_prepare',
+      'render' => 'esi_panels__esi_pane_render',
+      'flush' => 'esi_panels__esi_pane_flush',
+      'file' => 'esi_panels.esi.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @see panelizer_settings_form().
+ */
+function esi_panels_form_panelizer_settings_form_alter(&$form, &$form_state) {
+  // The 'ESI' panels renderer should automatically replace the 'standard'
+  // panels renderer when there are panes on a panel which are handled by ESI.
+  // It should not be selectable in its own right.
+  unset ($form['pipeline']['#options']['esi']);
+
+  // Attempt to discover the original pipeline, in order to assign the radio
+  // button to the original value.
+  if (isset($form_state['entity'])) {
+    $handler = &$form_state['entity']->panelizer['page_manager'];
+  }
+  elseif (isset($form_state['panelizer'])) {
+    $handler = &$form_state['panelizer'];
+  }
+  else {
+    $handler = NULL;
+  }
+
+  if (isset($handler->extra['original_pipeline'])) {
+    $form['pipeline']['#default_value'] = $handler->extra['original_pipeline'];
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @see panels_panel_context_edit_settings().
+ */
+function esi_panels_form_panels_panel_context_edit_settings_alter(&$form, &$form_state) {
+  // The 'ESI' panels renderer should automatically replace the 'standard'
+  // panels renderer when there are panes on a panel which are handled by ESI.
+  // It should not be selectable in its own right.
+  unset($form['conf']['pipeline']['#options']['esi']);
+
+  if (isset($form_state['handler']) && isset($form_state['handler']->conf['original_pipeline'])) {
+    $candidate = $form_state['handler']->conf['original_pipeline'];
+    if (isset($form['conf']['pipeline']['#options'][$candidate])) {
+      $form['conf']['pipeline']['#default_value'] = $candidate;
+    }
+  }
+}
+
+/**
+ * Implementation of hook_ctools_plugin_directory().
+ */
+function esi_panels_ctools_plugin_directory($module, $plugin) {
+  // Safety: go away if CTools is not at an appropriate version.
+  if (!module_invoke('ctools', 'api_version', ESI_PANELS_REQUIRED_CTOOLS_API)) {
+    return;
+  }
+
+  // We don't support the 'ctools' 'cache' plugin and pretending to causes
+  // errors when they're in use.
+  if ($module == 'ctools' && $plugin == 'cache') {
+    return;
+    // if we did we'd make a plugin/ctools_cache or something.
+  }
+
+  if ($module == 'page_manager' || $module == 'panels' || $module == 'ctools') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ *
+ * Register display_renderer plugin types.
+ */
+function esi_panels_ctools_plugin_type() {
+  return array(
+    'display_renderers' => array(
+      'classes' => array('renderer'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_ctools_plugin_api().
+ *
+ * Inform CTools about version information for various plugins implemented by
+ * Panels.
+ *
+ * @param string $owner
+ *   The system name of the module owning the API about which information is
+ *   being requested.
+ * @param string $api
+ *   The name of the API about which information is being requested.
+ *
+ * @return array
+ */
+function esi_panels_ctools_plugin_api($owner, $api) {
+  if ($owner == 'panels' && $api == 'pipelines') {
+    return array(
+      'version' => 1,
+    );
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_post_alter().
+ */
+function esi_panels_ctools_plugin_post_alter(&$plugin, &$info) {
+  // Every time the configuration of a panel is saved, the default hook on the
+  // panel-context is invoked.  Replace that hook, in order to check for the
+  // presence of ESI panes, and switch the rendering pipeline if necessary.
+  if ($plugin['name'] == 'panel_context') {
+    // @see panels_panel_context_save().
+    $plugin['save'] = 'esi_panels__panel_context_save';
+  }
+}
+
+/**
+ * Build the URL to use for this ESI component.
+ *
+ * @return string
+ *   The internal URL. Generate a fully-qualified path by running through url().
+ */
+function esi_panels_url($pane, $display) {
+  // ESI 6.x-1.x and 6.x-2.x used the URL patterns:
+  // Default:                esi/panels_pane/theme:display_id:pane_id
+  // With context:           esi/panels_pane/theme:display_id:pane_id/[base64($_GET['q'])]/task_name/context
+
+  // ESI 7.x-3.x uses the URL prefixes:
+  // Default:                esi/panels_pane/theme:display_id:pane_id
+  // With context:           esi/panels_pane/theme:display_id:pane_id/task_name
+  //
+  // All display arguments, and the original page URL (Base64-encoded) are
+  // appended to the URL prefix.
+  //
+  // Examples:
+  // - esi/panels_pane/bartik%3A4%3A9/page-page_user_test/1/dXNlci8xL215X3Rlc3Q%3D
+  // - esi/panels_pane/bartik%3A3%3A8/user_view/2/dXNlci8y
+  // - esi/panels_pane/bartik%3A3%3A8/user_view/1/dXNlci8x
+
+  $url = "esi/panels_pane/";
+
+  global $theme;
+  $url .= implode(':', array(
+    $theme,
+    $pane->did,
+    $pane->pid,
+  ));
+
+  // The did and pid are used to identify which pane content_type to load.
+
+  // Other available data to pass into the URL:
+  // - $display->args       Are *always* passed.
+  // - $display->context    A pane can only accept a single context.
+  // - $display->cache_key  The cache key provides the name of the task/subtask.
+
+  if (!empty($pane->configuration['context'])) {
+    // If the context originates from the *TASK* plugin (which is typical), the
+    // task name is required in order to generate the task contexts
+    // ($base_context in panels_panel_context_render()).
+    // Additional contexts may be supplied directly by the display.
+    $task_name = _esi_panels__get_taskname($display->cache_key);
+
+    $url .= "/{$task_name}";
+  }
+
+  // Add all the display arguments to the end of the URL.
+  $url .= '/' . implode('/', $display->args);
+
+  // Always add the current page URL.
+  $url .= '/' . base64_encode($_GET['q']);
+
+  // Allow other modules to alter the ESI URL (or respond to it).
+  // @see hook_esi_block_url_alter().
+  drupal_alter('esi_panels_url', $url);
+
+  return $url;
+}
+
+/**
+ * Save the configuration of a panel page.
+ *
+ * @see panels_panel_context_save().
+ */
+function esi_panels__panel_context_save(&$handler, $update) {
+  // Override the rendering pipeline if any pane uses ESI.
+  // Only the standard rendering pipeline is supported; alternative/IPE/legacy
+  // pipelines cannot be used with ESI.
+  // @TODO: inform the user of this on the display, if a non-standard renderer
+  // is selected.
+  if (isset($handler->conf['display']) && is_a($handler->conf['display'], 'panels_display')) {
+    $display = $handler->conf['display'];
+  }
+  else {
+    // Attempt to load the display using the DID.
+    $display = panels_load_display($handler->did);
+  }
+
+  if (_esi_panels__display_uses_esi($display)) {
+    if ($handler->conf['pipeline'] == 'standard' || $handler->conf['pipeline'] == 'ipe') {
+      $handler->conf['original_pipeline'] = $handler->conf['pipeline'];
+      $handler->conf['pipeline'] = "esi";
+    }
+  }
+
+  panels_panel_context_save($handler, $update);
+}
+
+/**
+ * Save the configuration of a panelizer panel page.
+ *
+ * @see panelizer_export_save_callback().
+ */
+function esi_panels__panelizer_export_save_callback(&$object) {
+  // Check if the handler has any panes using ESI as a cache.
+  $display = $object->display;
+  if (_esi_panels__display_uses_esi($display)) {
+    $pipeline = $object->pipeline;
+    if ($pipeline == 'standard' || $pipeline == 'ipe') {
+      $object->extra['original_pipeline'] = $pipeline;
+      $object->pipeline = 'esi';
+    }
+  }
+
+  return panelizer_export_save_callback($object);
+}
+
+/**
+ * Load the arguments which are used to populate the base context of a ctools
+ * task plugin.
+ *
+ * @example
+ *   $args = esi_panels__get_base_context_arguments('node_view', array(1));
+ *   Returns array(node_load(1));
+ *
+ * @param string $task
+ *   The ctools task.
+ * @param string $subtask
+ *   The subtask of the ctools task (if applicable).
+ * @param Array $args
+ *   Arguments to pass to the argument constructor (if applicable).
+ *
+ * @return array
+ *   Array of arguments to pass to the ctools context constructor.
+ */
+function esi_panels__get_base_context_arguments($task, $subtask = '', $args = array()) {
+  // A core bug is preventing module_invoke_all() from lazy-loading according
+  // to the hook_hook_info() definitions.
+  foreach (module_list(FALSE, FALSE, TRUE) as $module) {
+    module_load_include('inc', $module, $module . '.esi_panels');
+  }
+
+  return module_invoke_all('esi_panels_context_arguments', $task, $subtask, $args);
+}
+
+/**
+ * Check if any panes are configured to use ESI.
+ *
+ * @param object|panels_display $display
+ *   A panels_display object.
+ *
+ * @return bool
+ */
+function _esi_panels__display_uses_esi(panels_display $display) {
+  // Iterate each pane.
+  foreach ($display->content as $pid => $pane) {
+    // Any single pane implementing ESI is enough to return TRUE.
+    if (!empty($pane->cache) && $pane->cache['method'] == 'esi') {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Reverse the $display->cache_key encoding to get the task name.
+ *
+ * @param string $cache_key
+ *   The cache key used on a display.
+ *
+ * @return string
+ *   The task name of the task handler.
+ */
+function _esi_panels__get_taskname($cache_key) {
+  // $display->cache_key = 'panel_context:' . $task_name . ':' . $handler->name;
+  if (preg_match('/^panel_context:([^:]+):.*$/', $cache_key, $matches)) {
+    return $matches[1];
+  }
+}
+
+/**
+ * Reverse the $display->cache_key encoding to get the task name (and sub-task
+ * if used).
+ *
+ * @param string $task_name
+ *   The task key, as used by a display cache_key.
+ *
+ * @return array
+ *   - 0 => Name of the task.
+ *   - 1 => Name of the subtask (or '' if not set).
+ */
+function _esi_panels__get_task_identifier($task_name) {
+  if (strpos('-', $task_name)) {
+    list ($task, $subtask) = explode('-', $task_name, 2);
+    return array($task, $subtask);
+  }
+  else {
+    return array($task_name, '');
+  }
+}

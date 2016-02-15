@@ -7,7 +7,6 @@
 namespace('Drupal.media.browser');
 
 Drupal.media.browser.selectedMedia = [];
-Drupal.media.browser.activeTab = 0;
 Drupal.media.browser.mediaAdded = function () {};
 Drupal.media.browser.selectionFinalized = function (selectedMedia) {
   // This is intended to be overridden if a callee wants to be triggered
@@ -24,19 +23,42 @@ Drupal.behaviors.MediaBrowser = {
     }
 
     // Instantiate the tabs.
-    $('#media-browser-tabset').tabs();
-
-    $('.ui-tabs-nav li').mouseup(function() {
-      Drupal.media.browser.activeTab = $(this).index();
+    var showFunc = function(event, ui) {
+      // Store index of the tab being activated.
+      if (parent_iframe = Drupal.media.browser.getParentIframe(window)) {
+        $(parent_iframe).attr('current_tab', $('#media-tabs-wrapper > ul > li.ui-state-active').index());
+      }
+    };
+    var activeTab = Drupal.media.browser.tabFromHash();
+    $('#media-browser-tabset').once('MediaBrowser').tabs({
+      selected: activeTab, // jquery < 1.9
+      active: activeTab, // jquery >= 1.9
+      show: showFunc, // jquery ui < 1.8
+      activate: showFunc // jquery ui >= 1.8
     });
 
     $('.media-browser-tab').each( Drupal.media.browser.validateButtons );
-
-    Drupal.media.browser.selectActiveTab();
-    Drupal.media.browser.selectErrorTab();
-
   }
   // Wait for additional params to be passed in.
+};
+
+Drupal.media.browser.getParentIframe = function (window) {
+  var arrFrames = parent.document.getElementsByTagName("IFRAME");
+  for (var i = 0; i < arrFrames.length; i++) {
+    if (arrFrames[i].contentWindow === window) {
+      return arrFrames[i];
+    }
+  }
+}
+
+/**
+ * Get index of the active tab from window.location.hash
+ */
+Drupal.media.browser.tabFromHash = function () {
+  if (parent_iframe = Drupal.media.browser.getParentIframe(window)) {
+    return $(parent_iframe).attr('current_tab');
+  }
+  return 0;
 };
 
 Drupal.media.browser.launch = function () {
@@ -85,6 +107,11 @@ Drupal.media.browser.selectMedia = function (selectedMedia) {
   Drupal.media.browser.selectedMedia = selectedMedia;
 };
 
+Drupal.media.browser.selectMediaAndSubmit = function (selectedMedia) {
+  Drupal.media.browser.selectedMedia = selectedMedia;
+  Drupal.media.browser.submit();
+};
+
 Drupal.media.browser.finalizeSelection = function () {
   if (!Drupal.media.browser.selectedMedia) {
     throw new exception(Drupal.t('Cannot continue, nothing selected'));
@@ -92,51 +119,6 @@ Drupal.media.browser.finalizeSelection = function () {
   else {
     Drupal.media.browser.selectionFinalized(Drupal.media.browser.selectedMedia);
   }
-};
-
-Drupal.media.browser.selectErrorTab = function() {
-  // Find the ID of a tab with an error in it
-  var errorTabID = $('#media-browser-tabset')
-    .find('.error')
-    .parents('.media-browser-tab')
-    .attr('id');
-
-  if (errorTabID !== undefined) {
-    // Find the Tab Link with errorTabID
-    var tab = $('a[href="#' + errorTabID + '"]');
-    // Find the index of the tab
-    var index = $('#media-browser-tabset a').index(tab);
-    // Select the tab
-    Drupal.media.browser.selectTab(index);
-  }
-}
-
-Drupal.media.browser.selectActiveTab = function() {
-  // Find the index of the last active tab.
-  setTimeout(function() {
-    Drupal.media.browser.selectTab(Drupal.media.browser.activeTab);
-  }, 10);
-};
-
-/**
- * Helper function to change the media browser jQuery UI tabs
- * since it requires two different methods dependingon the version.
- */
-Drupal.media.browser.selectTab = function(index) {
-  var ver = jQuery.ui.version.split('.');
-  if (ver[0] == '1' && parseInt(ver[1]) <= 8) {
-    // jQuery UI <= 1.8
-    $('#media-browser-tabset').tabs('select', index);
-  }
-  else {
-    // jQuery UI 1.9+
-    $('#media-browser-tabset').tabs('option', 'active', index);
-  }
-
-  $('.media-modal-frame').width('100%');
-
-  // Update the active tab variable.
-  Drupal.media.browser.activeTab = index;
 };
 
 }(jQuery));

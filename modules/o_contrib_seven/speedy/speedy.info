@@ -1,0 +1,12 @@
+name = Speedy
+description = "Tools to improve the front end performance of your site."
+core = 7.x
+
+configure = admin/config/development/performance
+
+; Information added by Drupal.org packaging script on 2015-10-23
+version = "7.x-1.21"
+core = "7.x"
+project = "speedy"
+datestamp = "1445615341"
+

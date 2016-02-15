@@ -4,7 +4,7 @@ Custom search 7.x-1.x
 Install
 -------
 * Enable the module
-* Go to Administer > Settings > Custom search to change settings
+* Go to Configuration > Search And Metadata > Custom Search (admin/config/search/custom_search) to change settings
 * Don't forget to set permissions, otherwise nobody will see the changes
 
 Description

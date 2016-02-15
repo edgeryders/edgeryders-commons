@@ -2,17 +2,25 @@
 Drupal.behaviors.radioactivity = {
 
   config: '',
-  activeIncidents: Array(),
+  attached: false,
+  activeIncidents: [],
 
   attach: function (context, settings) {
 
-    // Do an ajax callback to the given callback address {
-    var data = settings.radioactivity.emitters;
+    // Skip if radioactivity is not set
+    if (typeof settings.radioactivity == 'undefined') {
+      return;
+    }
+
     var config = settings.radioactivity.config;
+    var emitters = settings.radioactivity.emitters;
+    
+    // Clear used emitters
+    settings.radioactivity.emitters = []; 
 
     this.config = config;
 
-    $.each(data, function(callback, incidents) {
+    $.each(emitters, function(callback, incidents) {
 
       // Accuracy and  flood filtering
       $.each(incidents, function(index, incident) {
@@ -48,20 +56,26 @@ Drupal.behaviors.radioactivity = {
       // Call the emitter callback
       if (Drupal.behaviors.radioactivity.activeIncidents.length > 0) {
         Drupal.behaviors.radioactivity[callback](Drupal.behaviors.radioactivity.activeIncidents);
+        // Clear incidents
+        Drupal.behaviors.radioactivity.activeIncidents = [];
       }
     });
   },
 
   hardStore: function (key, value, exp) {
-    if (typeof(Storage) !== "undefined") {
-      localStorage.setItem(key, JSON.stringify({
-        value: value,
-        expire: exp.getTime()
-      }));
-      sessionStorage.setItem(key, JSON.stringify({
-        value: value,
-        expire: exp.getTime()
-      }));      
+    try {
+      if (typeof(Storage) !== "undefined") {
+        localStorage.setItem(key, JSON.stringify({
+          value: value,
+          expire: exp.getTime()
+        }));
+        sessionStorage.setItem(key, JSON.stringify({
+          value: value,
+          expire: exp.getTime()
+        }));      
+      }
+    } catch(e){
+      $.cookie(key, value, { expires: exp });
     }
     $.cookie(key, value, { expires: exp });
   },
@@ -69,9 +83,13 @@ Drupal.behaviors.radioactivity = {
   hardFetch: function (key) {
     var data = null;
     if (typeof(Storage) !== "undefined") {
-      data = localStorage.getItem(key)
-      if (!data) {
-        data = sessionStorage.getItem(key);
+      try{
+        data = localStorage.getItem(key)
+        if (!data) {
+          data = sessionStorage.getItem(key);
+        }
+      } catch(e){
+        
       }
     }
     if (!data) {
@@ -83,27 +101,36 @@ Drupal.behaviors.radioactivity = {
   store: function (key, value, exp) {
     //return this.hardStore(key, value, exp);
     if (typeof(Storage) !== "undefined") {
-      localStorage.setItem(key, JSON.stringify({
-        value: value,
-        expire: exp.getTime()
-      }));
+      // Fall back to using cookies if this fails
+      try {
+        localStorage.setItem(key, JSON.stringify({
+          value: value,
+          expire: exp.getTime()
+        }));
+      } catch(e) {
+        $.cookie(key, value, { expires: exp });
+      }
     } else {
       $.cookie(key, value, { expires: exp });
     }
   },
 
   fetch: function (key) {
-    //return this.hardFetch(key);
     var now = new Date();
     if (typeof(Storage) !== "undefined") {
-      var data = localStorage.getItem(key);
-      if (data) {
-        data = JSON.parse(data);
-        if (now.getTime() < data.expire) {
-          return data.value;
+      // Fall back to using cookies if this fails
+      try {
+        var data = localStorage.getItem(key);
+        if (data) {
+          data = JSON.parse(data);
+          if (now.getTime() < data.expire) {
+            return data.value;
+          }
         }
+        return null;
+      } catch(e) {
+        return $.cookie(key);
       }
-      return null;
     }
     return $.cookie(key);
   },

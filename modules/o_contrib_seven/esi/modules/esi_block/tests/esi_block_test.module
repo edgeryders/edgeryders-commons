@@ -1,0 +1,83 @@
+<?php
+/**
+ * @file
+ *   Provide test esi_block_tests.
+ */
+
+/**
+ * Implements hook_block_info().
+ */
+function esi_block_test_block_info() {
+  $blocks['test1'] = array(
+    'info' => t('Test 1 - cache per user'),
+    'cache' => DRUPAL_CACHE_PER_USER,
+  );
+  $blocks['test2'] = array(
+    'info' => t('Test 2 - cache per role'),
+    'cache' => DRUPAL_CACHE_PER_ROLE,
+  );
+  $blocks['test3'] = array(
+    'info' => t('Test 3 - cache per page'),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['test4'] = array(
+    'info' => t('Test 4 - cache per user per page'),
+    'cache' => DRUPAL_CACHE_PER_USER | DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['test5'] = array(
+    'info' => t('Test 5 - cache global'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $blocks['test6'] = array(
+    'info' => t('Test 6 - no cache'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function esi_block_test_block_view($delta = '') {
+  switch ($delta) {
+    case 'test1':
+      global $user;
+      return array(
+        'subject' => t('Test 1 - cache per user'),
+        'content' => t('User ID: @uid', array('@uid' => $user->uid)),
+      );
+
+    case 'test2':
+      global $user;
+      return array(
+        'subject' => t('Test 2 - cache per role'),
+        'content' => t('User roles: ' . implode(', ', $user->roles)),
+      );
+
+    case 'test3':
+      return array(
+        'subject' => t('Test 3 - cache per page'),
+        'content' => t('Page: @page', array('@page' => request_uri())),
+      );
+
+    case 'test4':
+      global $user;
+      return array(
+        'subject' => t('Test 4 - cache per user per page'),
+        'content' => t('User ID: @uid', array('@uid' => $user->uid)) . '<br />' . t('Page: @page', array('@page' => request_uri())),
+      );
+
+    case 'test5':
+      return array(
+        'subject' => t('Test 5 - cache global'),
+        'content' => t('This cache is global.'),
+      );
+
+    case 'test6':
+      return array(
+        'subject' => t('Test 6 - cache none'),
+        'content' => t('Random number: ' . rand(0, 100)),
+      );
+  }
+}

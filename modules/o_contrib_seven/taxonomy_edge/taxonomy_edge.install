@@ -1,0 +1,283 @@
+<?php
+/**
+ * @file
+ * Installation file for Taxonomy Edge
+ */
+
+/**
+ * Implements hook_install().
+ */
+function taxonomy_edge_install() {
+  $t = get_t();
+  _taxonomy_edge_add_new_indexes(TRUE);
+  drupal_set_message($t('Taxonomy Edge is now installed. Add the provided patch to the core module Taxonomy module for better performance.'));
+  drupal_set_message($t('Taxonomy Edge settings are available under !link',
+    array('!link' => l($t('Administer > Structure > Taxonomy'), 'admin/structure/taxonomy/edge'))
+  ));
+  drupal_set_message($t('Remember to build trees: !link',
+    array('!link' => l($t('Administer > Structure > Taxonomy'), 'admin/structure/taxonomy'))
+  ));
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function taxonomy_edge_uninstall() {
+  drupal_set_message(st('Taxonomy Edge is now uninstalled. You may remove the provided patch to the core module Taxonomy module if applicable.'));
+}
+
+/**
+ * Implements hook_schema().
+ */
+function taxonomy_edge_schema() {
+  $schema['taxonomy_term_edge'] = array(
+    'description' => 'Stores edge list for taxonomies.',
+    'fields' => array(
+      'eid' => array(
+        'description' => 'Edge ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'vid' => array(
+        'description' => 'Vocabulary ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'tid' => array(
+        'description' => 'Term ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'parent' => array(
+        'description' => 'Parent Term ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'distance' => array(
+        'description' => 'Distance to parent (depth)',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('eid'),
+    'indexes' => array(
+      'idx_update' => array('vid', 'distance', 'parent'),
+      'idx_depth' => array('parent', 'distance', 'vid'),
+      'idx_term' => array('tid', 'distance'),
+      'idx_tree' => array('parent', 'vid', 'distance'),
+    ),
+  );
+
+  $schema['taxonomy_term_edge_order'] = array(
+    'description' => 'Sequencing table for sorting taxonomies.',
+    'fields' => array(
+      'oid' => array(
+        'description' => 'Order ID',
+        'type' => 'serial',
+      ),
+      'vid' => array(
+        'description' => 'Vocabulary ID',
+        'type' => 'int',
+        'unsigned' => FALSE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'parent' => array(
+        'description' => 'Parent term ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'eid' => array(
+        'description' => 'Edge ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('oid'),
+    'indexes' => array(
+      'idx_order' => array('vid', 'parent'),
+      'idx_edge' => array('eid'),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_schema_alter().
+ *
+ * Add extra index to {node} and {taxonomy_index} tables.
+ */
+function taxonomy_edge_schema_alter(&$schema) {
+  $schema['node']['indexes']['idx_taxonomy_edge'] = array('sticky', 'created', 'nid');
+  $schema['taxonomy_index']['indexes']['nid'] = array('nid', 'tid');
+  $schema['taxonomy_index']['indexes']['idx_taxonomy_edge'] = array('tid', 'nid');
+}
+
+/**
+ * Fixup schema version and broken upgrade paths.
+ */
+function taxonomy_edge_update_7101(&$sandbox) {
+  if (!isset($sandbox['vocabularies'])) {
+    $schema_version = db_query("SELECT schema_version FROM {system} WHERE name = 'taxonomy_edge'")->fetchField();
+    if ($schema_version == '6102') {
+      return t('Nothing to do ... already up to date');
+    }
+
+    $schema = array();
+    $schema['taxonomy_term_edge'] = array(
+      'description' => 'Stores edge list for taxonomies.',
+      'fields' => array(
+        'eid' => array(
+          'description' => 'Edge ID',
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'vid' => array(
+          'description' => 'Vocabulary ID',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0
+        ),
+        'tid' => array(
+          'description' => 'Term ID',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0
+        ),
+        'parent' => array(
+          'description' => 'Parent Term ID',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0
+        ),
+        'distance' => array(
+          'description' => 'Distance to parent (depth)',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0
+        ),
+      ),
+      'primary key' => array('eid'),
+      'indexes' => array(
+        'idx_update' => array('vid', 'distance', 'parent'),
+        'idx_depth' => array('parent', 'distance', 'vid'),
+        'idx_term' => array('tid', 'distance'),
+        'idx_tree' => array('parent', 'vid', 'distance'),
+      ),
+    );
+
+    $schema['taxonomy_term_edge_order'] = array(
+      'description' => 'Sequencing table for sorting taxonomies.',
+      'fields' => array(
+        'oid' => array(
+          'description' => 'Order ID',
+          'type' => 'serial',
+        ),
+        'vid' => array(
+          'description' => 'Vocabulary ID',
+          'type' => 'int',
+          'unsigned' => FALSE,
+          'not null' => TRUE,
+          'default' => 0
+        ),
+        'parent' => array(
+          'description' => 'Parent term ID',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0
+        ),
+        'eid' => array(
+          'description' => 'Edge ID',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0
+        ),
+      ),
+      'primary key' => array('oid'),
+      'indexes' => array(
+        'idx_order' => array('vid', 'parent'),
+        'idx_edge' => array('eid'),
+      ),
+    );
+
+    db_drop_table('taxonomy_term_edge');
+    db_drop_table('taxonomy_term_edge_order');
+    db_create_table('taxonomy_term_edge', $schema['taxonomy_term_edge']);
+    db_create_table('taxonomy_term_edge_order', $schema['taxonomy_term_edge_order']);
+
+    // Initialize vocabularies to rebuild.
+    $sandbox['vocabularies'] = array_values(taxonomy_get_vocabularies());
+    $sandbox['number_of_vocabularies'] = count($sandbox['vocabularies']);
+    $sandbox['current'] = 0;
+    $sandbox['#finished'] = 1 / ($sandbox['number_of_vocabularies'] + 1);
+    $sandbox['message'] = array();
+
+    return t('Table created and indexes updated.');
+  }
+
+  // Grab next vocabulary to be processed.
+  $vocabularies = $sandbox['vocabularies'];
+  $number_of_vocabularies = $sandbox['number_of_vocabularies'];
+  $current = &$sandbox['current'];
+  $vocabulary = $vocabularies[$current++];
+
+  // Process that vocabulary.
+  module_load_include('rebuild.inc', 'taxonomy_edge');
+  $sub_context = array();
+  taxonomy_edge_rebuild_edges($vocabulary->vid, $sub_context);
+  $sandbox['message'] = array_merge($sandbox['message'], $sub_context['results']);
+  $sub_context = array();
+  taxonomy_edge_rebuild_order($vocabulary->vid, $sub_context);
+  $sandbox['message'] = array_merge($sandbox['message'], $sub_context['results']);
+
+  // Next step or finish.
+  $sandbox['#finished'] = (2 + $current) / ($number_of_vocabularies + 1);
+  return implode('<br/>', $sandbox['message']);
+}
+
+/**
+ * Update and add indexes.
+ */
+function taxonomy_edge_update_7102() {
+  _taxonomy_edge_add_new_indexes(array('taxonomy_index:nid'));
+  menu_rebuild();
+}
+
+/**
+ * Add extra indexes to tables.
+ */
+function _taxonomy_edge_add_new_indexes($force = FALSE) {
+  $schema = array();
+  taxonomy_edge_schema_alter($schema);
+  foreach ($schema as $table => $table_def) {
+    foreach ($table_def['indexes'] as $index_name => $fields) {
+      if (!db_index_exists($table, $index_name)) {
+        db_add_index($table, $index_name, $fields);
+      }
+      elseif ($force === TRUE || (is_array($force) && in_array("$table:$index_name", $force))) {
+        db_drop_index($table, $index_name);
+        db_add_index($table, $index_name, $fields);
+      }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+<?php
+/**
+ * @file
+ * Module file for views_cache_bully.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function views_cache_bully_menu() {
+  $items = array();
+
+  $items['admin/config/system/views-cache-bully'] = array(
+    'title' => 'Views Cache Bully settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('views_cache_bully_admin_form'),
+    'access arguments' => array('administer views cache bully'),
+    'file' => 'views_cache_bully.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function views_cache_bully_views_api() {
+  return array('api' => 3);
+}
+
+
+/**
+ * Implements hook_permission().
+ */
+function views_cache_bully_permission() {
+  return array(
+    'administer views cache bully' => array(
+      'title' => t('Administer Views Cache Bully'),
+      'description' => t('Perform administration tasks for Views Cache Bully.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_form_id_alter().
+ */
+function views_cache_bully_form_views_ui_admin_settings_advanced_alter(&$form, &$form_state, $form_id) {
+  unset($form['cache']['clear_cache']);
+  unset($form['cache']['views_skip_cache']);
+  $form['cache']['views_cache_bully'] = array(
+    '#markup' => t('Views Cache Bully has disabled these settings.'),
+  );
+}
+
+/**
+ * Implements hook_form_form_id_alter().
+ */
+function views_cache_bully_form_views_ui_edit_display_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form_state['section']) && $form_state['section'] == 'cache') {
+    module_load_include('inc', 'views_cache_bully');
+    $view = $form_state['view'];
+    if (!views_cache_bully_view_is_exempt($view)) {
+      $form['options']['cache']['type']['#options']['none'] = t('Time-based (from Views Cache Bully)');
+    }
+    else {
+      $form['options']['cache']['type']['#options']['none'] = t('None (exempt from Views Cache Bully)');
+    }
+  }
+}
+
+/**
+ * Implements hook_views_pre_view().
+ */
+function views_cache_bully_views_pre_build(&$view) {
+  if ($view->display_handler->get_plugin('cache')->plugin_name == 'none') {
+    module_load_include('inc', 'views_cache_bully');
+    if (!views_cache_bully_view_is_exempt($view)) {
+      $view->display_handler->override_option('cache', array(
+        'type' => 'time',
+        'results_lifespan' => variable_get('views_cache_bully_results_lifespan', 3600),
+        'output_lifespan' => variable_get('views_cache_bully_output_lifespan', 3600),
+      ));
+    }
+  }
+}

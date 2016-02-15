@@ -263,10 +263,10 @@ function _forum_node_check_node_type($node) {
  * Implements hook_node_view().
  */
 function forum_node_view($node, $view_mode) {
-  $vid = variable_get('forum_nav_vocabulary', 0);
-  $vocabulary = taxonomy_vocabulary_load($vid);
   if (_forum_node_check_node_type($node)) {
     if ($view_mode == 'full' && node_is_page($node)) {
+      $vid = variable_get('forum_nav_vocabulary', 0);
+      $vocabulary = taxonomy_vocabulary_load($vid);
       // Breadcrumb navigation
       $breadcrumb[] = l(t('Home'), NULL);
       $breadcrumb[] = l($vocabulary->name, 'forum');
@@ -491,20 +491,6 @@ function forum_taxonomy_term_delete($term) {
  */
 function forum_comment_publish($comment) {
   _forum_update_forum_index($comment->nid);
-}
-
-/**
- * Implements hook_comment_update().
- *
- * The Comment module doesn't call hook_comment_unpublish() when saving
- * individual comments, so we need to check for those here.
- */
-function forum_comment_update($comment) {
-  // comment_save() calls hook_comment_publish() for all published comments,
-  // so we need to handle all other values here.
-  if (!$comment->status) {
-    _forum_update_forum_index($comment->nid);
-  }
 }
 
 /**

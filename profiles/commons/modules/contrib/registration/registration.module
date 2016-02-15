@@ -9,6 +9,7 @@ module_load_include('inc', 'registration', 'includes/registration.field');
 module_load_include('inc', 'registration', 'includes/registration.forms');
 
 define('REGISTRATION_STATE_ONE', 1);
+define('REGISTRATION_INSUFFICIENT_SPACES_MESSAGE', 'Insufficient spaces remaining.');
 
 /**
  * If user has access to create registrations for his account.
@@ -68,7 +69,7 @@ function registration_entity_info() {
     'registration_type' => array(
       'label' => t('Registration type'),
       'entity class' => 'RegistrationType',
-      'controller class' => 'EntityAPIControllerExportable',
+      'controller class' => 'RegistrationTypeController',
       'base table' => 'registration_type',
       'fieldable' => FALSE,
       'bundle of' => 'registration',
@@ -132,16 +133,20 @@ function registration_entity_info_alter(&$entity_info) {
   if (drupal_get_schema('registration')) {
     // We are adding the info about the registration types via a hook to avoid a
     // recursion issue as loading the model types requires the entity info as well.
-    foreach (registration_get_types() as $type => $info) {
-      $entity_info['registration']['bundles'][$type] = array(
-        'label' => $info->label,
-        'admin' => array(
-          'path' => 'admin/structure/registration/registration_types/manage/%registration_type',
-          'real path' => 'admin/structure/registration/registration_types/manage/' . $type,
-          'bundle argument' => 5,
-          'access arguments' => array('administer registration types'),
-        ),
-      );
+    // Need to do a class_exists check for updates from earlier versions
+    // of registration module.
+    if (class_exists('RegistrationTypeController')) {
+      foreach (registration_get_types() as $type => $info) {
+        $entity_info['registration']['bundles'][$type] = array(
+          'label' => $info->label,
+          'admin' => array(
+            'path' => 'admin/structure/registration/registration_types/manage/%registration_type',
+            'real path' => 'admin/structure/registration/registration_types/manage/' . $type,
+            'bundle argument' => 5,
+            'access arguments' => array('administer registration types'),
+          ),
+        );
+      }
     }
   }
 }
@@ -194,10 +199,11 @@ function registration_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  // entity local tasks
+  // Entity local tasks.
   foreach (registration_get_registration_instances() as $instance) {
     $type = $instance['entity_type'];
     if (!in_array($type, array('registration', 'registration_type'))) {
+      $hide_register_tab = isset($instance['settings']['hide_register_tab']) && $instance['settings']['hide_register_tab'];
       $items[$type . '/%entity_object/register'] = array(
         'load arguments' => array($type),
         'title' => 'Register',
@@ -205,7 +211,7 @@ function registration_menu() {
         'page arguments' => array(0, 1),
         'access callback' => 'registration_register_page_access',
         'access arguments' => array(0, 1),
-        'type' => MENU_LOCAL_TASK,
+        'type' => $hide_register_tab ? MENU_CALLBACK : MENU_LOCAL_TASK,
       );
       $items[$type . '/%entity_object/registrations'] = array(
         'load arguments' => array($type),
@@ -270,6 +276,25 @@ function registration_menu() {
   }
 
   return $items;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function registration_admin_paths() {
+  $paths = array();
+  if (variable_get('registration_paths_administrative', FALSE)) {
+    foreach (registration_get_registration_instances() as $instance) {
+      $type = $instance['entity_type'];
+      if (!in_array($type, array('registration', 'registration_type'))) {
+        $paths[$type . '/*/registrations'] = TRUE;
+        $paths[$type . '/*/registrations/list'] = TRUE;
+        $paths[$type . '/*/registrations/settings'] = TRUE;
+        $paths[$type . '/*/registrations/broadcast'] = TRUE;
+      }
+    }
+  }
+  return $paths;
 }
 
 /**
@@ -344,8 +369,12 @@ function registration_permission_list($info) {
     "delete any $type registration" => array(
       'title' => t('%type_name: Delete any registrations', array('%type_name' => $label)),
     ),
+    "create $type registration self" => array(
+      'title' => t('%type_name: Register self', array('%type_name' => $label)),
+    ),
     "create $type registration other users" => array(
       'title' => t('%type_name: Register other accounts', array('%type_name' => $label)),
+      'description' => t("Register other users by username. Note that giving this permission to Anonymous is not recommended, as it can expose a user's registration status to a site visitor who knows their username."),
     ),
     "create $type registration other anonymous" => array(
       'title' => t('%type_name: Register other people', array('%type_name' => $label)),
@@ -478,6 +507,9 @@ function registration_register_page_access($entity_type, $entity) {
  *   The host entity type.
  * @param object $entity
  *   The host entity.
+ * @param object $account = NULL
+ *   An account for which to check access. If NULL is provided the current
+ *   user is used.
  *
  * @return bool
  *   Whether a user can view registrations for a host entity.
@@ -485,13 +517,13 @@ function registration_register_page_access($entity_type, $entity) {
  * @see registration_registrations_page()
  * @see registration_menu()
  */
-function registration_administer_registrations_access($entity_type, $entity) {
+function registration_administer_registrations_access($entity_type, $entity, $account = NULL) {
   $registration_type = registration_get_entity_registration_type($entity_type, $entity);
   if ($registration_type) {
-    if (user_access("administer $registration_type registration")) {
+    if (user_access("administer $registration_type registration", $account)) {
       return TRUE;
     }
-    elseif (user_access("administer own $registration_type registration") && entity_access('update', $entity_type, $entity)) {
+    elseif (user_access("update own $registration_type registration", $account) && entity_access('update', $entity_type, $entity, $account)) {
       return TRUE;
     }
   }
@@ -549,7 +581,7 @@ function registration_registrations_page($entity_type, $entity) {
       'data' => t('id'),
       'field' => 'registration_id',
       'type' => 'property',
-      'specifier' => 'registration_id'
+      'specifier' => 'registration_id',
     ),
     array(
       'data' => t('Email'),
@@ -558,32 +590,32 @@ function registration_registrations_page($entity_type, $entity) {
       'data' => t('User'),
       'field' => 'user_uid',
       'type' => 'property',
-      'specifier' => 'user_uid'
+      'specifier' => 'user_uid',
     ),
     array(
       'data' => t('Created By'),
       'field' => 'author_uid',
       'type' => 'property',
-      'specifier' => 'author_uid'
+      'specifier' => 'author_uid',
     ),
     array(
       'data' => t('Count'),
       'field' => 'count',
       'type' => 'property',
-      'specifier' => 'count'
+      'specifier' => 'count',
     ),
     array(
       'data' => t('Created'),
       'field' => 'created',
       'sort' => 'desc',
       'type' => 'property',
-      'specifier' => 'created'
+      'specifier' => 'created',
     ),
     array(
       'data' => t('State'),
       'field' => 'state',
       'type' => 'property',
-      'specifier' => 'state'
+      'specifier' => 'state',
     ),
     array('data' => t('Actions')),
   );
@@ -591,7 +623,7 @@ function registration_registrations_page($entity_type, $entity) {
   list($entity_id) = entity_extract_ids($entity_type, $entity);
   $label = entity_label($entity_type, $entity);
 
-  $query = new EntityFieldQuery;
+  $query = new EntityFieldQuery();
   $result = $query
     ->entityCondition('entity_type', 'registration')
     ->propertyCondition('entity_id', $entity_id)
@@ -743,7 +775,10 @@ function registration_event_count($entity_type, $entity_id, $registration_id = N
     if ($registration_id != NULL) {
       $query->condition('registration_id', $registration_id, '<>');
     }
-    $query->condition('state', registration_get_active_states(), 'IN');
+    $active_held_states = array_merge(registration_get_active_states(), registration_get_held_states());
+    if (!empty($active_held_states)) {
+      $query->condition('state', $active_held_states, 'IN');
+    }
     $result = $query->execute();
     $count = $result->fetchField();
     $count = ($count == '') ? 0 : $count;
@@ -886,7 +921,29 @@ function registration_theme() {
       'file' => 'includes/registration.forms.inc',
       'render element' => 'form',
     ),
+    'registration_property_field' => array(
+      'variables' => array(
+        'label_hidden' => FALSE,
+        'title_attributes' => NULL,
+        'label' => '',
+        'content_attributes' => NULL,
+        'items' => array(),
+        'item_attributes' => array(0 => ''),
+        'classes' => '',
+        'attributes' => '',
+      ),
+    ),
   );
+}
+
+/**
+ * Theme function for registration properties.
+ *
+ * Simple wrapper around theme_field that sets default values and ensures
+ * properties render consistently with fields.
+ */
+function theme_registration_property_field($variables) {
+  return theme_field($variables);
 }
 
 /**
@@ -930,6 +987,15 @@ function registration_mail($key, &$message, $params) {
 function registration_send_broadcast($entity_type, $entity_id, $subject, $message) {
   global $language;
 
+  // Return early if there are no active registration states configured.
+  $active_states = registration_get_active_states();
+  if (empty($active_states)) {
+    $error_message = t('There are no active registration states configured. For email to be sent to registrants, an active registration state must be specified at "admin/structure/registration/registration_states".');
+    drupal_set_message($error_message, 'error');
+    watchdog('registration', $error_message, WATCHDOG_ERROR);
+    return;
+  }
+
   // grab registration entity settings
   $settings = registration_entity_settings($entity_type, $entity_id);
   $from = $settings['settings']['from_address'];
@@ -940,7 +1006,7 @@ function registration_send_broadcast($entity_type, $entity_id, $subject, $messag
     ->entityCondition('entity_type', 'registration')
     ->propertyCondition('entity_id', $entity_id)
     ->propertyCondition('entity_type', $entity_type)
-    ->propertyCondition('state', registration_get_active_states(), 'IN')
+    ->propertyCondition('state', $active_states, 'IN')
     ->execute();
 
   if (!empty($entities)) {
@@ -957,6 +1023,20 @@ function registration_send_broadcast($entity_type, $entity_id, $subject, $messag
     $registrations = registration_load_multiple(
       array_keys($entities['registration'])
     );
+
+    // Give other modules a chance to alter registrations (for example, did
+    // someone opt-out of the reminder?
+    // Invoke hook_registration_send_broadcast_alter(),
+    // hook_registration_send_broadcast_ENTITY_TYPE_alter() and
+    // hook_registration_send_broadcast_ENTITY_TYPE_ENTITY_ID_alter()
+    $hooks = array('registration_send_broadcast');
+    $hooks[] = 'registration_send_broadcast_' . $entity_type;
+    $hooks[] = 'registration_send_broadcast_' . $entity_type . '_' . $entity_id;
+    $context = array(
+      'entity_type' => $entity_type,
+      'entity_id' => $entity_id,
+    );
+    drupal_alter($hooks, $registrations, $context);
 
     // send the email to each registrant and communicate results
     $success_count = 0;
@@ -1035,11 +1115,15 @@ function registration_update_entity_settings($entity_type, $entity_id, $settings
 function registration_cron() {
   //@TODO: need to have a sensible batch limit, passed in as a limit param
 
-  // grab all registrations that have reminders set for this day
+  // Send reminder emails.
+  // Grab all registrations that have reminders set for this day.
   $results = db_select('registration_entity', 're')
     ->fields('re')
     ->condition('send_reminder', 1)
     ->condition('reminder_date', date('Y-m-d G:i:s'), '<=')
+    // Omit any registrations whose reminder dates are too far in the past.
+    // If two days have past, it's too late, so ignore them.
+    ->condition('reminder_date', date('Y-m-d G:i:s', strtotime('-2 days')), '>')
     ->range(0, 10)
     ->addTag('registration_cron_select')
     ->execute()
@@ -1048,15 +1132,41 @@ function registration_cron() {
   foreach ($results as $result) {
     $entity = entity_load_single($result->entity_type, $result->entity_id);
     $message = $result->reminder_template;
-    $subject = 'Reminder for ' . entity_label($result->entity_type, $entity);
+    $subject = t('Reminder for !label', array('!label' => entity_label($result->entity_type, $entity)));
     registration_send_broadcast($result->entity_type, $result->entity_id, $subject, $message);
 
-    // set reminder flag to off
+    // Set reminder flag to off.
     db_update('registration_entity')
       ->fields(array('send_reminder' => 0))
       ->condition('entity_id', $result->entity_id)
       ->condition('entity_type', $result->entity_type)
       ->execute();
+  }
+
+  // Remove any registrations from held state that qualify.
+  $held_states = registration_get_held_states();
+  if (!empty($held_states)) {
+    $results = db_select('registration', 'r')
+      ->fields('r')
+      ->condition('state', $held_states, 'IN')
+      ->execute()
+      ->fetchAllAssoc('registration_id');
+
+    $registrations = registration_load_multiple(array_keys($results));
+    foreach ($registrations as $registration) {
+      $registration_wrapper = entity_metadata_wrapper('registration', $registration);
+
+      // Determine whether hold expire minimum time time has elapsed.
+      // Setting for how long the hold lasts is stored on the registration type entity.
+      $registration_type = entity_load_single('registration_type', $registration_wrapper->entity_id->value());
+      // Change registration state if hold has expired.
+      // Expiration time is in hours - hence the multiplication.
+      if ((time() - ($registration_type->held_expire * 60 * 60)) > $result->updated) {
+        // Set registration state to what is configured for its registration type.
+        $registration_wrapper->state->set($registration_type->held_expire_state);
+        $registration_wrapper->save();
+      }
+    }
   }
 }
 
@@ -1086,6 +1196,9 @@ function registration_status($entity_type, $entity_id, $reset = FALSE, $spaces =
   $checked = &drupal_static(__FUNCTION__, array());
 
   if (!$reset && isset($checked[$entity_type][$entity_id])) {
+    if (!is_array($checked[$entity_type][$entity_id]['errors'])) {
+      $checked[$entity_type][$entity_id]['errors'] = array();
+    }
     $errors = is_array($errors) ? array_merge($errors, $checked[$entity_type][$entity_id]['errors']) : $checked[$entity_type][$entity_id]['errors'];
     return $checked[$entity_type][$entity_id]['status'];
   }
@@ -1106,27 +1219,32 @@ function registration_status($entity_type, $entity_id, $reset = FALSE, $spaces =
 
   // only explore other settings if main status is enabled
   if ($status) {
+    // check max allowed spaces per registration
+    if ((isset($settings['settings']['maximum_spaces']) && $settings['settings']['maximum_spaces']) && $spaces > $settings['settings']['maximum_spaces']) {
+      $status = FALSE;
+      $errors[] = t('You may not register for more than @count spaces.', array('@count' => $settings['settings']['maximum_spaces']));
+    }
     // check capacity
     if (!registration_has_room($entity_type, $entity_id, $spaces, $registration_id, $reset)) {
       $status = FALSE;
-      $errors[] = t('insufficient spaces remaining');
+      $errors[] = t(REGISTRATION_INSUFFICIENT_SPACES_MESSAGE);
     }
     // check open date range
     if (isset($open) && ($now < $open)) {
       $status = FALSE;
-      $errors[] = t('registration is not yet open');
+      $errors[] = t('Registration is not yet open.');
     }
     // check close date range
     if (isset($close) && ($now >= $close)) {
       $status = FALSE;
-      $errors[] = t('registration is closed');
+      $errors[] = t('Registration is closed.');
     }
   }
   else {
-    $errors[] = t('registration is disabled');
+    $errors[] = t('Registration is disabled.');
   }
 
-  // allow other mods to override status
+  // Allow other mods to override status.
   $context = array(
     'entity_type' => $entity_type,
     'entity_id' => $entity_id,
@@ -1279,6 +1397,11 @@ function registration_is_registered(Registration $registration, $anon_mail = NUL
     $states = registration_get_active_states();
   }
 
+  // Ensure we have active states before querying against them.
+  if (empty($states)) {
+    return FALSE;
+  }
+
   $query = db_select('registration', 'r')
     ->condition('entity_id', $registration->entity_id)
     ->condition('entity_type', $registration->entity_type)
@@ -1325,21 +1448,27 @@ function registration_access_people(Registration $registration, $account = NULL)
   $account = isset($account) ? $account : $GLOBALS['user'];
   $people = array();
 
-  // Me
+  // Me:
   $settings = registration_entity_settings($registration->entity_type, $registration->entity_id);
   $allow_multiple = !empty($settings['settings']['multiple_registrations']) && $settings['settings']['multiple_registrations'];
-  if ($account->uid && ($account->uid === $registration->user_uid || (!registration_is_registered($registration, NULL, $account->uid) || $allow_multiple))) {
+  if ($account->uid && (user_access("create $registration->type registration self", $account)) && ($account->uid === $registration->user_uid || (!registration_is_registered($registration, NULL, $account->uid) || $allow_multiple))) {
     $people[REGISTRATION_REGISTRANT_TYPE_ME] = t('Myself');
   }
 
-  // Other users
+  // Other users:
   if (user_access("create $registration->type registration other users", $account)) {
     $people[REGISTRATION_REGISTRANT_TYPE_USER] = t('Other account');
   }
 
-  // Anonymous people
-  if (user_access("create $registration->type registration other anonymous", $account)) {
-    $people[REGISTRATION_REGISTRANT_TYPE_ANON] = (empty($account->uid) && $account->uid != 0) ? t('Myself') : t('Other person');
+  $user_is_anonymous = (empty($account->uid) || $account->uid == 0);
+  // Other anonymous people:
+  if (user_access("create $registration->type registration other anonymous", $account) && !$user_is_anonymous) {
+    $people[REGISTRATION_REGISTRANT_TYPE_ANON] = t('Other person');
+  }
+
+  // Anonymous self-registration:
+  if ($user_is_anonymous && user_access("create $registration->type registration")) {
+    $people[REGISTRATION_REGISTRANT_TYPE_ANON] = t('Myself');
   }
 
   return $people;
@@ -1460,12 +1589,34 @@ function registration_get_active_states() {
 }
 
 /**
+ * Return an array of all held state machine names.
+ *
+ * @return array
+ */
+function registration_get_held_states() {
+  $held = array();
+  $states = registration_states(array('held' => TRUE));
+  foreach ($states as $state) {
+    $held[] = $state->identifier();
+  }
+  return $held;
+}
+
+/**
  * Return default state
  *
  * @return array
  */
-function registration_get_default_state() {
-  $states = registration_states(array('default_state' => 1));
+function registration_get_default_state($type = NULL) {
+  // If a type of registration is specified, look for its default registration
+  // state before using the global default.
+  $states_query = array('default_state' => 1);
+  if (isset($type)) {
+    $reg_type = registration_get_types($type);
+    $states_query = isset($reg_type->default_state) ? array('name' => $reg_type->default_state) : $states_query;
+  }
+  $states = registration_states($states_query);
+
   return !empty($states) ? reset($states) : NULL;
 }
 
@@ -1699,6 +1850,7 @@ function registration_access($op, Registration $registration = NULL, $account = 
       if (!isset($registrant_type) && !isset($people[$registrant_type])) {
         return FALSE;
       }
+      break;
     case 'create':
       if (!count(registration_access_people($registration))) {
         return FALSE;
@@ -1798,4 +1950,66 @@ function registration_type_delete(RegistrationType $type) {
  */
 function registration_state_access($op, $entity = NULL, $account = NULL, $entity_type = NULL) {
   return user_access('administer registration states', $account);
+}
+
+/**
+ * Implements hook_i18n_string_info().
+ */
+function registration_i18n_string_info() {
+  $groups = array();
+
+  $groups['registration'] = array(
+    'title' => t('Entity registration'),
+    'description' => t('Translatable registration settings.'),
+    'format' => FALSE,
+    'list' => TRUE,
+  );
+
+  return $groups;
+}
+
+/**
+ * Translates a config string to the current language or to a given language.
+ *
+ * @param $name string
+ *   A key *without* a textgroup (this module's textgroup will be prefixed
+ *   automatically).
+ * @param $string string
+ *   A user-entered configuration string in the default language. The default
+ *   language may or may not be English.
+ * @param $langcode string
+ *   The language code. Defaults to NULL.
+ *
+ * @return string
+ *   The translated string, if i18n_string() is available. Otherwise, returns
+ *   $string.
+ *
+ * @see https://drupal.org/node/1114010
+ * @see i18n_string()
+ */
+function _registration_translate($name, $string, $langcode = NULL) {
+  return function_exists('i18n_string') ? i18n_string('registration:' . $name, $string, array('langcode' => $langcode)) : $string;
+}
+
+/**
+ * Registers a config string so it can later be translated.
+ *
+ * @param $name string
+ *   A key *without* a textgroup (this module's textgroup will be prefixed
+ *   automatically).
+ * @param $string string
+ *   A user-entered configuration string in the default language. The default
+ *   language may or may not be English.
+ * @param $langcode string
+ *   The language code. Defaults to NULL.
+ *
+ * @return string
+ *   The translated string, if i18n_string() is available. Otherwise, returns
+ *   $string.
+ *
+ * @see https://drupal.org/node/1114010
+ * @see i18n_string()
+ */
+function _registration_translate_update($name, $string, $langcode = NULL) {
+  return function_exists('i18n_string') ? i18n_string('registration:' . $name, $string, array('update' => TRUE, 'langcode' => $langcode)) : FALSE;
 }

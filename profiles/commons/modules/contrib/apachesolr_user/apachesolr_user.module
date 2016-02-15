@@ -2,6 +2,22 @@
 // $Id$
 
 /**
+ * Implements hook_entity_info_alter().
+ */
+function apachesolr_user_entity_info_alter(&$entity_info) {
+  $entity_info['user']['view modes'] += array(
+      'search_index' => array(
+        'label' => t('Search index'),
+        'custom settings' => FALSE,
+      ),
+      'search_result' => array(
+        'label' => t('Search result'),
+        'custom settings' => FALSE,
+      ),
+    );
+}
+
+/**
  * @file
  *   Indexer for the user entities for the Apachesolr module.
  */
@@ -56,7 +72,7 @@ function apachesolr_index_user_solr_document(ApacheSolrDocument $document, $acco
     $field_values = field_view_field('user', $account, $key, $value, array(''));
     $field_index = array();
     foreach ($field_values as $delta => $field_value) {
-      if (is_numeric($delta) && strlen($field_value['#markup']) > 0) {
+      if (is_numeric($delta) && isset($field_value['#markup']) && strlen($field_value['#markup']) > 0) {
         $field_index[] =  apachesolr_clean_text($field_value['#markup']);
       }
     }

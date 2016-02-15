@@ -1,0 +1,12 @@
+; $Id$
+name = Auto-Index
+description = Automatically updates the search index after a node has been added/updated.
+dependencies[] = search
+package = Search
+core = 7.x
+; Information added by Drupal.org packaging script on 2015-06-09
+version = "7.x-1.2"
+core = "7.x"
+project = "auto_indexer"
+datestamp = "1433858882"
+

@@ -1,0 +1,12 @@
+name = Variable Cleanup
+description = Allows you to remove variables not currently used.
+core = 7.x
+files[] = variable_clean.module
+files[] = variable_clean.test
+
+; Information added by drupal.org packaging script on 2013-10-19
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "variable_clean"
+datestamp = "1382151358"
+

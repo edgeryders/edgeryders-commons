@@ -70,7 +70,7 @@ class ServicesParserXML implements ServicesParserInterface {
             if (count($item_keys) == 1 && current($item_keys) === 0) {
               $new_array[] = (string) $item[0];
             }
-            elseif (is_object($item)) {
+            elseif (is_object($item)&& ($item->count() == 0)) {
               $new_array[] = (string) $item;
             }
             else {
@@ -80,6 +80,7 @@ class ServicesParserXML implements ServicesParserInterface {
         }
         else {
           // else, simply create an array where the key is name of the element
+		  $array[$child->getName()] = array();
           $new_array = $this->unmarshalXML($child, $array[$child->getName()]);
         }
         // add $new_array to $array
@@ -111,7 +112,15 @@ class ServicesParserXML implements ServicesParserInterface {
 
 class ServicesParserJSON implements ServicesParserInterface {
   public function parse(ServicesContextInterface $context) {
-    return json_decode($context->getRequestBody(), TRUE);
+    $requestBody = $context->getRequestBody();
+    if ($requestBody) {
+      $data = json_decode($requestBody, TRUE);
+      if ($data === NULL) {
+        return services_error(t('Invalid JSON.'), 400);
+      }
+      return $data;
+    }
+    return $requestBody;
   }
 }
 

@@ -93,13 +93,12 @@ function media_query_media_browser_alter($query) {
         if (count($mimetypes)) {
           $local_and->condition($alias . '.filemime', $mimetypes, 'IN');
         }
+        $local_or->condition($local_and);
+        $local_and = db_and();
       }
       else {
         $local_or->condition($alias . '.uri', db_like($scheme . '://') . '%', 'LIKE');
       }
-    }
-    if ($local_and->count()) {
-      $local_or->condition($local_and);
     }
 
     $or->condition($local_or);

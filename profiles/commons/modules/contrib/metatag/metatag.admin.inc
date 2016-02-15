@@ -188,6 +188,7 @@ function metatag_config_overview() {
         drupal_get_path('module', 'metatag') . '/metatag.admin.css',
       ),
     ),
+    '#suffix' => '<p>' . t('Any items marked "Unknown" are configurations in the system for entity types or bundles which have been disabled via the API or the <a href="@url">Settings page</a>; they will not be used.', array('@url' => url('admin/config/search/metatags/settings'))) . '</p>',
   );
 
   return $build;
@@ -308,6 +309,10 @@ function metatag_config_edit_form($form, &$form_state, $config) {
   metatag_metatags_form($form, $config->instance, $config->config, $options);
   $form['metatags']['#type'] = 'container';
 
+  // Make the token browser available.
+  $form['metatags']['#prefix'] = $form['metatags']['#description'];
+  unset($form['metatags']['#description']);
+
   $form['actions']['#type'] = 'actions';
   $form['actions']['save'] = array(
     '#type' => 'submit',
@@ -328,8 +333,8 @@ function metatag_config_edit_form_submit($form, &$form_state) {
   form_state_values_clean($form_state);
   $config = (object) $form_state['values'];
   // @todo Consider renaming the config field from 'config' to 'metatags'
-  $config->config = $config->metatags;
-  unset($config->metatags);
+  $config->config = $config->metatags[LANGUAGE_NONE];
+  unset($config->metatags[LANGUAGE_NONE]);
   metatag_config_save($config);
 
   $label = metatag_config_instance_label($config->instance);
@@ -471,7 +476,7 @@ function metatag_bulk_revert_batch_operation($entity_type, $bundle, &$context) {
   if ($entity_type != 'user') {
     /**
      * Entities which do not define a bundle such as User fail returning no results.
-     * @see http://drupal.org/node/1054168#comment-5266208
+     * @see https://www.drupal.org/node/1054168#comment-5266208
      */
     $query->entityCondition('bundle', $bundle);
   }
@@ -531,4 +536,142 @@ function metatag_bulk_revert_batch_finished($success, $results, $operations) {
     drupal_set_message(t('An error occurred while processing @operation with arguments : @args',
       array('@operation' => $error_operation[0], '@args' => print_r($error_operation[0], TRUE))));
   }
+}
+
+/**
+ * Misc settings page.
+ */
+function metatag_admin_settings_form() {
+  $form = array();
+
+  $form['#attached'] = array(
+    'js' => array(
+      drupal_get_path('module', 'metatag') . '/metatag.admin.js',
+    ),
+    'css' => array(
+      drupal_get_path('module', 'metatag') . '/metatag.admin.css',
+    ),
+  );
+
+  $form['entities'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Master controls for all entities'),
+    '#description' => t('By enabling and disabling items here, it is possible to control which entities (e.g. nodes, taxonomy terms) and bundles (e.g. content types, vocabularies) will have the meta tag form available on their respective edit pages. If an entity type is disabled it also disables it for <em>all</em> of that entity type\'s bundles.<br />Technical note: Entity types must not be configuration entities and must have view modes in order to be compatible.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  foreach (entity_get_info() as $entity_type => $entity_info) {
+    // Only show entities that are capable of using meta tags.
+    if (metatag_entity_type_is_suitable($entity_type, $entity_info)) {
+      $entity_enabled = metatag_entity_supports_metatags($entity_type);
+      $form['entities']['metatag_enable_' . $entity_type] = array(
+        '#type' => 'checkbox',
+        '#title' => t($entity_info['label']),
+        '#default_value' => $entity_enabled,
+        // '#description' => t('Enable meta tags for all pages of this entity type.'),
+      );
+
+      // Some entities, e.g. User, (core) File, have a single bundle with the
+      // same name as the entity, so only show the bundles list if there is
+      // more than one of them and the bundle's name isn't the same as the
+      // entity type's.
+      if (!empty($entity_info['bundles'])) {
+        foreach ($entity_info['bundles'] as $bundle_name => $bundle_info) {
+          if (count($entity_info['bundles']) > 1 || $entity_type != $bundle_name) {
+            // If the entity type was disabled, automatically enable the bundle.
+            // This will have the effect that if the entity type is enabled in
+            // the form then all of the bundles will then also be enabled. This
+            // is safe to do because in the rest of the module the bundle will
+            // be ignored if the entity is disabled.
+            $form['entities']['metatag_enable_' . $entity_type . '__' . $bundle_name] = array(
+              '#type' => 'checkbox',
+              '#title' => t($bundle_info['label']),
+              '#default_value' => !$entity_enabled || metatag_entity_supports_metatags($entity_type, $bundle_name),
+              '#attributes' => array(
+                // Add some theming that'll indent this bundle.
+                'class' => array('metatag-bundle-checkbox'),
+              ),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="metatag_enable_' . $entity_type . '"]' => array('checked' => TRUE),
+                ),
+              ),
+            );
+          }
+        }
+      }
+    }
+  }
+
+  $form['advanced'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $form['advanced']['metatag_load_all_pages'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Output meta tags even if only global settings apply'),
+    '#description' => t('By default Metatag will load the global default values for all pages that do not have meta tags assigned via the normal entity display or via Metatag Context. This may be disabled so that meta tags will only be output on pages that specifically have meta tags configured for them.'),
+    '#default_value' => variable_get('metatag_load_all_pages', TRUE),
+  );
+
+  $form['advanced']['metatag_tag_admin_pages'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Output meta tags on admin pages'),
+    '#description' => t('By default meta tags will not be output on admin pages, but it may be beneficial for some sites to do so.'),
+    '#default_value' => variable_get('metatag_tag_admin_pages', FALSE),
+  );
+
+  $form['advanced']['metatag_extended_permissions'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Advanced permissions'),
+    '#description' => t('Optionally add a permission for each individual meta tag. This provides tremendous flexibility for the editorial process, at the expense of making the permissions configuration more tedious.'),
+    '#default_value' => variable_get('metatag_extended_permissions', FALSE),
+  );
+
+  $form['advanced']['metatag_entity_no_lang_default'] = array(
+    '#type' => 'checkbox',
+    '#title' => t("Don't load entity's default language values if no languages match"),
+    '#description' => t("On a site with multiple languages it is possible for an entity to not have meta tag values assigned for the language of the current page. By default the meta tags for an entity's default language value will be used in this scenario, with the canonical URL pointing to the URL. This option may be disabled, i.e. to only load meta tags for languages that specifically have them assigned, otherwise using defaults."),
+    '#default_value' => variable_get('metatag_entity_no_lang_default', FALSE),
+  );
+
+  $form['advanced']['metatag_load_defaults'] = array(
+    '#type' => 'checkbox',
+    '#title' => t("Load the module's default configurations"),
+    '#description' => t("Control whether the module's default configuration is used. This will not affect configurations exported via Features."),
+    '#default_value' => variable_get('metatag_load_defaults', TRUE),
+  );
+
+  $form['advanced']['metatag_cache_output'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Cache meta tag output'),
+    '#description' => t('Disabling this will cause all meta tag output to be generated uniquely for each page load. Currently only affects entities. Note: the entity configuration and output for other types of pages will still be cached, but this can stop the {cache_metatag} table from growing out of control in some scenarios.'),
+    '#default_value' => variable_get('metatag_cache_output', TRUE),
+  );
+
+  $form['advanced']['metatag_page_region'] = array(
+    '#type' => 'select',
+    '#title' => t("Page region to use"),
+    '#description' => t("By default Metatag uses the 'Content' region to trigger output of the meta tags. Some themes do not have this region, so it can be necessary to pick another."),
+    '#options' => system_region_list(variable_get('theme_default', 'bartik')),
+    '#default_value' => variable_get('metatag_page_region', 'content'),
+  );
+
+  // Extra submission logic.
+  $form['#submit'][] = 'metatag_admin_settings_form_submit';
+
+  return system_settings_form($form);
+}
+
+/**
+ * Form API submission callback for metatag_admin_settings_form().
+ */
+function metatag_admin_settings_form_submit() {
+  cache_clear_all('entity_info:', 'cache', TRUE);
+  cache_clear_all('*', 'cache_metatag', TRUE);
+  drupal_set_message(t('The Metatag cache has been cleared, so all meta tags can be reloaded.'));
 }

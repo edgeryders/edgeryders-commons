@@ -1,0 +1,24 @@
+<?php
+/**
+ * @file
+ * Install/Uninstall/Schema hooks for ESI Panels.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function esi_panels_uninstall() {
+  // Remove obsolete variables.
+  variable_del('esi_panels_esi_default_ttl');
+}
+
+/**
+ * Implements hook_schema_alter().
+ */
+function esi_panels_schema_alter(&$schema) {
+  // Replace the standard save-callback for the Panelizer module, to control
+  // the choice of pipeline on save.
+  if (isset($schema['panelizer_defaults'])) {
+    $schema['panelizer_defaults']['export']['save callback'] = 'esi_panels__panelizer_export_save_callback';
+  }
+}

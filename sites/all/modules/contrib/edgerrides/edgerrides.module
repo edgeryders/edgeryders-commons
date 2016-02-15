@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the edgerrides feature.
+ */
+
+include_once 'edgerrides.features.inc';

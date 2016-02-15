@@ -118,6 +118,20 @@ function _taxonomy_resource_definition() {
               'default value' => variable_get('services_taxonomy_term_index_page_size', 20),
               'source' => array('param' => 'pagesize'),
             ),
+            array(
+              'name' => 'options',
+              'optional' => TRUE,
+              'type' => 'array',
+              'description' => 'Additional query options.',
+              'default value' => array(
+                'orderby' => array(
+                  'vid' => 'DESC',
+                  'weight' => 'DESC',
+                  'name' => 'DESC'
+                )
+              ),
+              'source' => array('param' => 'options'),
+            ),
           ),
           'access arguments' => array('access content'),
         ),
@@ -270,11 +284,39 @@ function _taxonomy_resource_definition() {
               'default value' => variable_get('services_taxonomy_vocabulary_index_page_size', 20),
               'source' => array('param' => 'pagesize'),
             ),
+            array(
+              'name' => 'options',
+              'optional' => TRUE,
+              'type' => 'array',
+              'description' => 'Additional query options.',
+              'default value' => array(
+                'orderby' => array(
+                  'weight' => 'DESC',
+                  'name' => 'DESC'
+                )
+              ),
+              'source' => array('param' => 'options'),
+            ),
           ),
           'access arguments' => array('access content'),
         ),
       ),
       'actions' => array(
+        'retrieveByMachineName' => array(
+          'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/taxonomy_resource'),
+          'help'   => t('Returns a vocabulary based on machine name.'),
+          'access arguments' => array('access content'),
+          'callback' => 'taxonomy_service_get_by_machine_name',
+          'args'     => array(
+            array(
+              'name'         => 'machine_name',
+              'type'         => 'string',
+              'description'  => t('The vocabulary id to retrieve.'),
+              'source'       => array('data' => 'machine_name'),
+              'optional'     => FALSE,
+            ),
+          ),
+        ),
         'getTree' => array(
           'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/taxonomy_resource'),
           'help'   => t('Returns a full list of taxonomy terms.'),
@@ -330,7 +372,10 @@ function _taxonomy_resource_definition() {
  * @see taxonomy_get_term()
  */
 function _taxonomy_term_resource_retrieve($tid) {
-  return taxonomy_term_load($tid);
+  $term = taxonomy_term_load($tid);
+  //Lets check field_permissions
+  $term = services_field_permissions_clean('view', 'taxonomy_term', $term);
+  return $term;
 }
 
 /**
@@ -489,6 +534,23 @@ function taxonomy_service_get_tree($vid, $parent = 0, $max_depth = NULL, $load_e
 }
 
 /**
+ * Services interface to taxonomy_vocabulary_machine_name_load().
+ *
+ * @param string $machine_name
+ *   Vocabulary machine name.
+ *
+ * @return object
+ *   Vocabulary.
+ */
+function taxonomy_service_get_by_machine_name($machine_name) {
+  $vocabulary = taxonomy_vocabulary_machine_name_load($machine_name);
+  if (empty($vocabulary)) {
+    return services_error(t('No vocabulary with machine name @name found.', array('@name' => $machine_name)), 404);
+  }
+  return $vocabulary;
+}
+
+/**
  * Services interface to taxonomy_select_nodes().
  *
  * Note that where taxonomy_select_nodes() returns the results
@@ -583,18 +645,19 @@ function _taxonomy_resource_delete_access($tid) {
  *   indicating items to retrieve.
  * @param $page_size
  *   Integer number of items to be returned.
+ * @param $options
+ *   Additional query options.
  * @return
  *   An array of term objects.
  *
  * @see _node_resource_index() for more notes
  **/
-function _taxonomy_term_resource_index($page, $fields, $parameters, $page_size) {
-  $taxonomy_select = db_select('taxonomy_term_data', 't')
-    ->orderBy('vid', 'DESC')
-    ->orderBy('weight', 'DESC')
-    ->orderBy('name', 'DESC');
-
-  services_resource_build_index_query($taxonomy_select, $page, $fields, $parameters, $page_size, 'taxonomy_term');
+function _taxonomy_term_resource_index($page, $fields, $parameters, $page_size, $options = array()) {
+  $taxonomy_select = db_select('taxonomy_term_data', 't');
+  $taxonomy_select->join('taxonomy_term_hierarchy', 'tth', 't.tid = tth.tid');
+  $taxonomy_select->fields('tth');
+  
+  services_resource_build_index_query($taxonomy_select, $page, $fields, $parameters, $page_size, 'taxonomy_term', $options);
 
   $results = services_resource_execute_index_query($taxonomy_select);
 
@@ -620,6 +683,8 @@ function _taxonomy_term_resource_index($page, $fields, $parameters, $page_size) 
  *   indicating items to retrieve.
  * @param $page_size
  *   Integer number of items to be returned.
+ * @param $options
+ *   Additional query options.
  * @return
  *   An array of vocabulary objects.
  *
@@ -628,12 +693,10 @@ function _taxonomy_term_resource_index($page, $fields, $parameters, $page_size) 
  *
  * @see _node_resource_index() for more notes
  **/
-function _taxonomy_vocabulary_resource_index($page, $fields, $parameters, $page_size) {
-  $taxonomy_select = db_select('taxonomy_vocabulary', 't')
-    ->orderBy('weight', 'DESC')
-    ->orderBy('name', 'DESC');
+function _taxonomy_vocabulary_resource_index($page, $fields, $parameters, $page_size, $options = array()) {
+  $taxonomy_select = db_select('taxonomy_vocabulary', 't');
 
-  services_resource_build_index_query($taxonomy_select, $page, $fields, $parameters, $page_size, 'taxonomy_vocabulary');
+  services_resource_build_index_query($taxonomy_select, $page, $fields, $parameters, $page_size, 'taxonomy_vocabulary', $options);
 
   $results = $taxonomy_select->execute();
 

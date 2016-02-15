@@ -36,6 +36,10 @@ function entityreference_prepopulate_field_create_instance($instance) {
   if (empty($instance['settings']['behaviors']['prepopulate']['status'])) {
     return;
   }
+  // If a default value function has already been set, don't overwrite it.
+  if (!empty($instance['default_value_function'])) {
+    return;
+  }
 
   $instance['default_value_function'] = 'entityreference_prepopulate_field_default_value';
   field_update_instance($instance);
@@ -46,6 +50,10 @@ function entityreference_prepopulate_field_create_instance($instance) {
  */
 function entityreference_prepopulate_field_update_instance($instance, $prior_instance) {
   if (empty($instance['settings']['behaviors']['prepopulate'])) {
+    return;
+  }
+  // If a default value function has already been set, don't overwrite it.
+  if (!empty($instance['default_value_function'])) {
     return;
   }
   if (isset($prior_instance['settings']['behaviors']['prepopulate']['status']) && $instance['settings']['behaviors']['prepopulate']['status'] == $prior_instance['settings']['behaviors']['prepopulate']['status']) {

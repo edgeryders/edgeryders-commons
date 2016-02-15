@@ -5,9 +5,9 @@ package     = User interface
 configure   = admin/config/content/ckeditor
 
 
-; Information added by drush on 2014-05-08
-version = "7.x-1.13+11-dev"
+; Information added by drush on 2015-10-28
+version = "7.x-1.16+9-dev"
 core = "7.x"
 project = "ckeditor"
-datestamp = "1399579147"
+datestamp = "1446047087"
 

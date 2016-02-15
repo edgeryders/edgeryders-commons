@@ -1,0 +1,15 @@
+name = ESI - Context integration
+description = "Deliver context-controlled blocks via ESI."
+core = 7.x
+package = Caching
+dependencies[] = context
+dependencies[] = esi
+dependencies[] = esi_block
+
+
+; Information added by Drupal.org packaging script on 2015-11-05
+version = "7.x-3.0-alpha1+21-dev"
+core = "7.x"
+project = "esi"
+datestamp = "1446759851"
+

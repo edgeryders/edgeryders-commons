@@ -119,7 +119,10 @@ function rich_snippets_apachesolr_query_alter($query) {
 
   // Load the Apache Solr Search Integration API functions if they don't exist.
   if (!function_exists('apachesolr_get_field_mappings')) {
-    module_load_include('inc', 'rich_snippets', 'rich_snippets.apachesolr_legacy');
+    module_load_include('inc', 'rich_snippets', 'rich_snippets.legacy_apachesolr_get_field_mappings');
+  }
+  if (!function_exists('apachesolr_get_index_key_map')) {
+    module_load_include('inc', 'rich_snippets', 'rich_snippets.legacy_apachesolr_get_index_key_map');
   }
 
   // Load the environment associated with this query.
@@ -277,10 +280,12 @@ function rich_snippets_extract_bundle($entity_type, $entity) {
   if ($entity_info = entity_get_info($entity_type)) {
     // Attempt to extract the bundle from the entity keys. Make sure that the
     // entity we extracted is valid just in case.
-    foreach ($entity_info['bundle keys'] as $key) {
-      if (isset($entity->$key) && isset($entity_info['bundles'][$entity->$key])) {
-        $bundle = $entity->$key;
-        break;
+    if (isset($entity_info['bundle keys'])) {
+      foreach ($entity_info['bundle keys'] as $key) {
+        if (isset($entity->$key) && isset($entity_info['bundles'][$entity->$key])) {
+          $bundle = $entity->$key;
+          break;
+        }
       }
     }
   }

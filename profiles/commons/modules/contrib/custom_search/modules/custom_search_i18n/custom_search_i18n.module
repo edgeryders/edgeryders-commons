@@ -49,9 +49,14 @@ function custom_search_i18n_custom_search_box(&$form, $form_id, $delta = '') {
   $form[$form_id]['#attributes']['title'] = i18n_string_translate('custom_search:common:1:' . $delta . 'hint_text', variable_get('custom_search_' . $delta . 'hint_text', CUSTOM_SEARCH_HINT_TEXT_DEFAULT));
 
   // Submit button.
-  $form['actions']['submit']['#value'] = i18n_string_translate('custom_search:common:1:' . $delta . 'submit_text', variable_get('custom_search_' . $delta . 'submit_text', CUSTOM_SEARCH_SUBMIT_TEXT_DEFAULT));
-  if ($form['actions']['submit']['#value'] == '') {
-    $form['actions']['submit']['#attributes'] = array('style' => 'display:none;');
+  $submit_text = i18n_string_translate('custom_search:common:1:' . $delta . 'submit_text', variable_get('custom_search_' . $delta . 'submit_text', CUSTOM_SEARCH_SUBMIT_TEXT_DEFAULT));
+  if ($form['actions']['submit']['#type'] == 'image_button') {
+    $form['actions']['submit']['#attributes']['alt'] = array($submit_text);
+  } else {
+    $form['actions']['submit']['#value'] = $submit_text; 
+    if ($form['actions']['submit']['#value'] == '') {
+      $form['actions']['submit']['#attributes'] = array('style' => 'display:none;');
+    }
   }
 
   // Type selector.

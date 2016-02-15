@@ -10,15 +10,15 @@ function schemaorg_contrib_field_preprocess_fivestar(&$variables) {
 
   foreach ($element['#items'] as $delta => $item) {
     // Add typeof attribute to the field item wrapper.
-    $variables['item_attributes_array'][$delta]['typeof'] = 'schema:AggregateReview';
+    $variables['item_attributes_array'][$delta]['typeof'] = 'schema:AggregateRating';
     // Generate RDFa markup for the vote average and count.
     $metadata_markup = '';
     if (!empty($element['#items'][$delta]['average'])) {
       $average = round(($element['#items'][$delta]['average']/100) * 5, 1);
-      $metadata_markup .= '<meta property="schema:average" content="' . $average . '"/>';
+      $metadata_markup .= '<meta property="schema:ratingValue" content="' . $average . '"/>';
     }
     if (!empty($element['#items'][$delta]['count'])) {
-      $metadata_markup .= '<meta property="schema:count" content="' . $element['#items'][$delta]['count'] . '"/>';
+      $metadata_markup .= '<meta property="schema:ratingCount" content="' . $element['#items'][$delta]['count'] . '"/>';
     }
     // Insert markup after fivestar summary.
     if ($metadata_markup) {

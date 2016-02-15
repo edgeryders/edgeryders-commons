@@ -7,9 +7,9 @@ dependencies[] = realname
 dependencies[] = views
 
 
-; Information added by drupal.org packaging script on 2013-08-18
-version = "7.x-1.2"
+; Information added by Drupal.org packaging script on 2015-11-06
+version = "7.x-1.3"
 core = "7.x"
 project = "ckeditor_mentions"
-datestamp = "1376829400"
+datestamp = "1446822540"
 

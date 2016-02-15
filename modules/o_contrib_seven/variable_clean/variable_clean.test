@@ -1,0 +1,143 @@
+<?php
+
+/**
+ * @file
+ * Simpletests for the variable_clean module.
+ */
+
+class variableCleanWebTestCase extends DrupalUnitTestCase {
+
+  /**
+   * Implementation of getInfo() for information
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Variable Clean tests'),
+      'description' => t('Test proper handling of various ways to use a variable.'),
+      'group' => 'Variable Clean',
+    );
+  }
+
+  /**
+   * Test our variations.
+   */
+  function testVariableClean() {
+
+    // Static variables.
+    $variations[] = array(
+      'code' => 'variable_set("foo", TRUE)',
+      'expected_type_array' => 'static_variables',
+      'variable' => 'foo',
+    );
+    $variations[] = array(
+      'code' => "variable_set('foo', TRUE)",
+      'expected_type_array' => 'static_variables',
+      'variable' => 'foo',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo", TRUE)',
+      'expected_type_array' => 'static_variables',
+      'variable' => 'foo',
+    );
+
+    // Dynamic variables.
+    $variations[] = array(
+      'code' => 'variable_get("foo_$bar", TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo_{$bar}", TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo_{$bar}_baz", TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo_". $bar, TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo_". $bar["baz"], TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => "variable_get('foo_'. \$bar['baz'], TRUE)",
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo_". $bar ."_baz", TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo_$bar[baz]", TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo_$bar[baz]_bop", TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo_$bar->bop", TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("foo_{$bar->bop}_baz", TRUE)',
+      'expected_type_array' => 'dynamic_variables',
+      'variable' => 'foo_',
+    );
+
+    // Non-processable variables.
+    $variations[] = array(
+      'code' => 'variable_get("foo_{$bar[\'baz\'][\'bip\']}_variable_clean_test", TRUE)',
+      'expected_type_array' => 'non_processable_variables',
+    );
+    $variations[] = array(
+      'code' => "variable_get('foo_{\$bar[\"baz\"]}_variable_clean_test', TRUE)",
+      'expected_type_array' => 'non_processable_variables',
+    );
+    $variations[] = array(
+      'code' => 'variable_get("$bar[baz]_variable_clean_test", TRUE)',
+      'expected_type_array' => 'non_processable_variables',
+    );
+    $variations[] = array(
+      'code' => 'variable_get($bar["baz"] ."_variable_clean_test", TRUE)',
+      'expected_type_array' => 'non_processable_variables',
+    );
+
+    foreach ($variations as $variation) {
+      $variables = _variable_clean_code_get_variables(array($variation['code']));
+
+      // Output message.
+      $t_variables = array();
+      foreach ($variation as $key => $parameter) {
+        $t_variables["%$key"] = $parameter;
+      }
+
+      // Logging.
+      $this->verbose('<pre>' . var_export($variables, TRUE) . '</pre>');
+      if ($variation['expected_type_array'] == 'non_processable_variables') {
+        $message = t('%expected_type_array for %code', $t_variables);
+        $this->assertEqual($variation['code'], reset($variables[$variation['expected_type_array']]), $message);
+      }
+      else {
+        $message = t('%variable found in %expected_type_array for %code', $t_variables);
+        $this->assertEqual($variation['variable'], reset($variables[$variation['expected_type_array']]), $message);
+      }
+
+    }
+
+  }
+
+
+}

@@ -9,36 +9,6 @@
  * Implements hook_install().
  */
 function media_install() {
-  // Create initial display settings.
-  module_load_include('inc', 'file_entity', 'file_entity.file_api');
-  $default_image_styles = array(
-    'preview' => 'media_thumbnail',
-    'teaser' => 'medium',
-    'full' => 'large',
-  );
-  // Only needed by sites that updated from Media 1.x.
-  // @see media_entity_info_alter()
-  if (variable_get('media_show_deprecated_view_modes')) {
-    $default_image_styles['media_original'] = '';
-  }
-
-  foreach ($default_image_styles as $view_mode => $image_style) {
-    $existing_display = file_displays_load('image', $view_mode);
-
-    if (empty($existing_display)) {
-      $display_name = 'image__' . $view_mode . '__file_image';
-      $display = array(
-        'api_version' => 1,
-        'name' => $display_name,
-        'status' => 1,
-        'weight' => 5,
-        'settings' => array('image_style' => $image_style),
-        'export_type' => NULL,
-      );
-      file_display_save((object) $display);
-    }
-  }
-
   // Make sure that we set the icon base directory variable if it is not
   // already set.
   $base = variable_get('media_icon_base_directory', NULL);
@@ -54,7 +24,7 @@ function media_install() {
   }
 
   // Fix File Entity default displays issue with exports.
-  _media_default_displays();
+  _media_default_displays();  
 }
 
 /**
@@ -81,9 +51,33 @@ function _media_install_copy_icons() {
  */
 function media_uninstall() {
   // Remove variables.
+  variable_del('media_dialog_theme');
   variable_del('media_icon_base_directory');
   variable_del('media_icon_set');
   variable_del('media_show_deprecated_view_modes');
+
+  // Dialog options.
+  variable_del('media_dialogclass');
+  variable_del('media_modal');
+  variable_del('media_draggable');
+  variable_del('media_resizable');
+  variable_del('media_minwidth');
+  variable_del('media_width');
+  variable_del('media_height');
+  variable_del('media_position');
+  variable_del('media_zindex');
+  variable_del('media_backgroundcolor');
+  variable_del('media_opacity');
+
+  // Revert to preview's default image_style.
+  $file_displays = file_displays_load('image', 'preview');
+  if (isset($file_displays['image__preview__file_field_image'])) {
+    // Only revert if the style is configured to use media's.
+    if ($file_displays['image__preview__file_field_image']->settings['image_style'] == 'media_thumbnail') {
+      $file_displays['image__preview__file_field_image']->settings['image_style'] = 'thumbnail';
+      file_display_save((object) $file_displays['image__preview__file_field_image']);
+    }
+  }  
 }
 
 /**
@@ -123,7 +117,7 @@ function media_update_dependencies() {
 function media_requirements($phase) {
   $t = get_t();
   // Make sure that file_entity module is 2.x version.
-  // We can't add this check in .info file because drupal.org testbot cant
+  // We can't add this check in .info file because drupal.org testbot can't
   // handle it. See #1734648.
   $requirements = array();
 
@@ -158,6 +152,10 @@ function media_update_7001() {
  * Create the media_type table from the media_types variable.
  */
 function media_update_7002() {
+  if (db_table_exists('media_type')) {
+    return;
+  }
+
   $schema['media_type'] = array(
     'description' => 'Stores the settings for media types.',
     'fields' => array(
@@ -209,7 +207,7 @@ function media_update_7002() {
   db_create_table('media_type', $schema['media_type']);
 
   drupal_load('module', 'media');
-  $old_types = variable_get('media_types');
+  $old_types = variable_get('media_types', array());
   foreach ($old_types as $type) {
     // Was an error in the original creation.
     if (isset($type->callbacks)) {
@@ -513,6 +511,13 @@ function media_update_7020() {
   if (variable_get('media__wysiwyg_allowed_types') == array('image', 'video')) {
     variable_del('media__wysiwyg_allowed_types');
   }
+}
+
+/**
+ * Rerun media_update_7002() due to a typo that would prevent table creation.
+ */
+function media_update_7021() {
+  media_update_7002();
 }
 
 /**
@@ -920,33 +925,43 @@ function media_update_7210() {
 }
 
 /**
- * Flush old version of the image style to make the thumbnails appear correctly.
+ * Save a square_thumbnail image style in the database for legacy support if one
+ * does not already exist.
  */
 function media_update_7211() {
-  $style = image_style_load('square_thumbnail');
+  $default_style = array(
+    'name' => 'square_thumbnail'
+  );
 
-  if ($style) {
-    $style['name'] = 'media_thumbnail';
-    image_style_save($style);
+  // Clear the image cache to remove any old image styles that only exist in
+  // code.
+  cache_clear_all('*', 'cache_image', TRUE);
+
+  // Check if the square_thumbnail image style exists.
+  // The style will only exist if the user has customized it, otherwise it would
+  // have been removed by clearing the image style cache.
+  $existing_style = image_style_load('square_thumbnail');
+
+  // Save a square_thumbnail image style in the database for legacy support.
+  // This is only necessary if a square_thumbnail image style doesn't already
+  // exist.
+  if (empty($existing_style)) {
+    $style = image_style_save($default_style);
+
+    $effect = array(
+      'name' => 'image_scale_and_crop',
+      'data' => array(
+        'width' => 180,
+        'height' => 180,
+        'weight' => 0,
+      ),
+      'isid' => $style['isid'],
+    );
+
+    image_effect_save($effect);
   }
 
-  // Replace any instances in display settings
-  module_load_include('inc', 'file_entity', 'file_entity.file_api');
-  $entity_info = entity_get_info('file');
-  $view_modes = array('default' => array('label' => t('Default'))) + $entity_info['view modes'];
-  foreach ($view_modes as $view_mode => $view_mode_info) {
-    $displays = file_displays_load('image', $view_mode);
-    foreach ($displays as $display) {
-      if (isset($display->settings['image_style'])) {
-        if ($display->settings['image_style'] == 'square_thumbnail') {
-          $display->settings['image_style'] = 'media_thumbnail';
-          file_display_save($display);
-        }
-      }
-    }
-  }
-
-  return t('Flushed image style and updated display styles.');
+  return t('Saved a square_thumbnail image style in the database for legacy support if one did not already exist.');
 }
 
 /**
@@ -1169,9 +1184,7 @@ function media_update_7225() {
 }
 
 /**
- * Accommodate the introduction of a new permission which restricts access to
- * the media browser by granting it to existing users who were able to access
- * it.
+ * Grant existing user access to new media browser permission.
  */
 function media_update_7226() {
   $roles = user_roles(FALSE, 'create files');
@@ -1195,7 +1208,7 @@ function _media_default_displays() {
   // Create initial display settings.
   module_load_include('inc', 'file_entity', 'file_entity.file_api');
   $default_image_styles = array(
-    'preview' => 'media_thumbnail',
+    'preview' => 'preview',
   );
   $default_types = array(
     'audio' => 'audio',
@@ -1203,20 +1216,27 @@ function _media_default_displays() {
     'video' => 'video',
   );
   foreach ($default_types as $types) {
-    foreach ($default_image_styles as $view_mode => $image_style) {
+    foreach ($default_image_styles as $view_mode) {
+      $display_name = $types . '__' . $view_mode . '__file_field_media_large_icon';
       $existing_display = file_displays_load($types, $view_mode);
-      if (empty($existing_display)) {
-        $display_name = $types . '__' . $view_mode . '__file_field_media_large_icon';
+      if (empty($existing_display[$display_name])) {
         $display = array(
           'api_version' => 1,
           'name' => $display_name,
           'status' => 1,
           'weight' => 50,
-          'settings' => array('image_style' => $image_style),
+          'settings' => NULL,
           'export_type' => NULL,
         );
         file_display_save((object) $display);
       }
     }
+  }
+
+  // Switch to use media's preview rather than the default.
+  $file_displays = file_displays_load('image', 'preview');
+  if (isset($file_displays['image__preview__file_field_image'])) {
+    $file_displays['image__preview__file_field_image']->settings['image_style'] = 'media_thumbnail';
+    file_display_save((object) $file_displays['image__preview__file_field_image']);
   }
 }

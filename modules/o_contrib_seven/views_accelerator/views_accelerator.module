@@ -1,0 +1,590 @@
+<?php
+/**
+ * @file
+ * Views Accelerator module.
+ *
+ * Performance boost for views that are receptive to render optimisations.
+ */
+
+/**
+ * Implements hook_views_pre_execute().
+ */
+function views_accelerator_views_pre_execute(&$view) {
+  $view->post_execute_time = microtime(TRUE);
+}
+
+/**
+ * Implements hook_views_post_execute().
+ */
+function views_accelerator_views_post_execute(&$view) {
+
+  $cache = $view->display_handler->get_plugin('cache');
+  // Refer to view:execute($display), views/includes//view.inc, line 1152
+  $is_not_executed_yet = ($cache->plugin_name == 'none-accelerated' || $cache->plugin_name == 'none-debug');
+
+  if ($is_not_executed_yet) {
+    // Re-initialise the pager (could be the none-pager).
+    unset($view->query->pager);
+    $view->init_pager();
+
+    $view->query->execute($view);
+    $view->result = array_values($view->result);
+
+    // If requested, execute our special version of $view->_post_execute().
+    $view->accelerated = ($cache->plugin_name == 'none-accelerated');
+    $analysis_level = variable_get('views_accelerator_analysis_level', 0);
+    _views_accelerator_post_execute($view, $view->accelerated, $analysis_level);
+  }
+  // Post-exec time is the time elapsed from hook_views_pre_execute() to this
+  // point minus the query execute time, as recorded by Views itself.
+  $view->post_execute_time = microtime(TRUE) - $view->post_execute_time - $view->execute_time;
+}
+
+/**
+ * Drop-in optimised replacement for views::_post_execute().
+ *
+ * @param object $view
+ *   The View.
+ * @param $is_accelerated
+ *   Whether to use the accelerated version of each field's post_execute().
+ * @param $analysis_level
+ *   To what detail execution times should be recorded. Levels are 1, 2, 3.
+ */
+function _views_accelerator_post_execute($view, $is_accelerated, $analysis_level) {
+  foreach (views_object_types() as $key => $info) {
+    $handlers = &$view->$key;
+    foreach ($handlers as $handler) {
+      $start = microtime(TRUE);
+      // Only Fields implement post_execute(), filters and sorts do not.
+      // Views PHP does, but is not a views_handler_field_field.
+      if (is_a($handler, 'views_handler_field_field') && is_callable(array($handler, 'post_execute'))) {
+        views_accelerator_field_post_execute($handler, $view->result, $is_accelerated);
+      }
+      else {
+        // Identical to the original code.
+        $handler->post_execute($view->result);
+      }
+      $handler->post_execute_time = microtime(TRUE) - $start;
+      if ($analysis_level > 2 || ($analysis_level == 2 && $key == 'field')) {
+        views_accelerator_record($view, $handler);
+      }
+    }
+  }
+}
+
+/**
+ * Fast alternative to views_handler_field_field::post_execute().
+ *
+ * @param object $handler
+ *  The field handler.
+ * @param array $values
+ *  The view results.
+ * @param bool $is_accelerated
+ *  Whether to use the accelerated version or not.
+ *
+ * Entity revisions are not supported in this version.
+ */
+function views_accelerator_field_post_execute(&$handler, &$values, $is_accelerated) {
+  if (empty($handler->field_alias) || empty($values)) {
+    return;
+  }
+  $alias = $handler->field_alias;
+  $id = $handler->options['id'];
+
+  // Divide the entity ids by entity type, so they can be loaded in bulk.
+  $entities_by_type = array();
+  foreach ($values as $key => $object) {
+    if (isset($handler->aliases['entity_type']) && isset($object->{$handler->aliases['entity_type']}) && isset($object->{$alias}) && !isset($values[$key]->_field_data[$alias])) {
+      $entity_type = $object->{$handler->aliases['entity_type']};
+      $entity_id = $object->{$alias};
+      $entities_by_type[$entity_type][$key] = $entity_id;
+    }
+  }
+  // Load the entities.
+  foreach ($entities_by_type as $entity_type => $entity_ids) {
+    $entities = entity_load($entity_type, $entity_ids);
+    $keys = $entity_ids;
+    foreach ($keys as $key => $entity_id) {
+      if (isset($entities[$entity_id])) {
+        $values[$key]->_field_data[$alias] = array(
+          'entity_type' => $entity_type,
+          'entity' => $entities[$entity_id],
+        );
+      }
+    }
+  }
+  // Now, transfer the data back into the result set so it can be easily used.
+  $field_id = "field_$id";
+  $delta_name = isset($handler->aliases['delta']) ? $handler->aliases['delta'] : NULL;
+  foreach ($values as $row_id => &$value) {
+    if ($is_accelerated && isset($values[$row_id]->_field_data[$alias])) {
+      $handler->accelerated = TRUE;
+      $entity = $values[$row_id]->_field_data[$alias]['entity'];
+      if (isset($entity->{$id})) {
+        // Skip the language...
+        $val = reset($entity->{$id});
+        if (is_array($val)) {
+          // For multi-values support row-grouping, delta_offset, delta_limit.
+          if ($handler->options['group_rows']) {
+            $offset = intval($handler->options['delta_offset']);
+            $count = ($handler->options['delta_limit'] == 'all') ? count($val) : $handler->options['delta_limit'];
+          }
+          else {
+            $offset = isset($value->$delta_name) ? $value->$delta_name : 0;
+            $count = 1;
+          }
+          foreach ($val as $i => $v) {
+            if (($i >= $offset) && ($i < $offset + $count)) {
+              if (isset($value->nid)) {
+                $v['nid'] = $value->nid;
+              }
+              $formatted = views_accelerator_poor_mans_formatter($v, $handler);
+              $value->{$field_id}[] = $formatted;
+            }
+          }
+          if (!empty($value->{$field_id})) {
+            continue;
+          }
+        }
+      }
+      $value->{$field_id} = array();
+    }
+    else {
+      // Original, time-consuming code.
+      $value->$field_id = $handler->set_items($value, $row_id);
+      $handler->accelerated = FALSE;
+    }
+  }
+}
+
+/**
+ * Functionally poor but high-performant replacement for set_items().
+ *
+ * @param array $val
+ *   Value array, taken from loaded entity.
+ * @param object $handler
+ *   The field handler
+ *
+ * @return array with 'raw' and 'rendered' entries.
+ */
+function views_accelerator_poor_mans_formatter($val, $handler = NULL) {
+  $markup = '';
+  if (isset($val)) {
+    if (!is_array($val)) {
+      $markup = check_plain($val);
+    }
+    elseif (isset($val['geom'])) {
+      // Geofield. Does not need check_plain().
+      $markup = $val['geom'];
+    }
+    elseif (isset($val['locality'])) {
+      return views_accelerator_render_address_field($val, $handler);
+    }
+    elseif (isset($val['tid'])) {
+      return views_accelerator_render_taxonomy_term($val, $handler);
+    }
+    elseif (isset($val['fid'])) {
+      return views_accelerator_render_file($val, $handler);
+    }
+    else {
+      // Probably a general 'value'. Includes Dates. EntityReferences will
+      // render as their target_ids, i.e. as integers.
+      // Note, the fitlering is overkill for fields that are natively plain
+      // already, like the target_ids in EntityReferences.
+      $markup = filter_xss_admin(isset($val['value']) ? $val['value'] : reset($val));
+    }
+  }
+  return array(
+    'raw' => $val,
+    'rendered' => array('#markup' => $markup, '#access' => 1),
+  );
+}
+
+/**
+ * Renders a value as an Address Field.
+ *
+ * @param array $value
+ *   Must have $value['locality'] set.
+ * @param object $handler
+ *   The field handler. Possible future extension, not used yet.
+ *
+ * @return array with 'raw' and 'rendered' entries.
+ */
+function views_accelerator_render_address_field($value, $handler = NULL) {
+  $markup = '?';
+  if (isset($value['thoroughfare']) && isset($value['administrative_area'])) {
+    $markup = $value['thoroughfare'] . ', ' . $value['locality'] . ', ' . $value['administrative_area'];
+  }
+  elseif (isset($value['administrative_area'])) {
+    $markup = $value['locality'] . ', ' . $value['administrative_area'];
+  }
+  else {
+    $markup = $value['locality'];
+  }
+  return array(
+    'raw' => $value,
+    'rendered' => array('#markup' => check_plain($markup), '#access' => 1),
+  );
+}
+
+/**
+ * Renders a value as a taxonomy term name, given its term id.
+ *
+ * @param array $value
+ *   Must have $value['tid'] set with the taxonomy term id.
+ * @param object $handler
+ *   The field handler. The term will be rendered as plain text, if the handler
+ *   formatter is set that way. All other formats result in hyperlinks.
+ *
+ * @return array with 'raw' and 'rendered' entries.
+ */
+function views_accelerator_render_taxonomy_term($value, $handler) {
+  $tid = $value['tid'];
+  $term = taxonomy_term_load($tid);
+  $markup = check_plain($term->name);
+  $formatter = $handler->options['type'];
+  $is_plain = ($formatter == 'taxonomy_term_reference_plain') || ($formatter == 'i18n_taxonomy_term_reference_plain');
+  $rendered = $is_plain
+    ? array('#markup' => $markup, '#access' => 1)
+    : array('#type' => 'link', '#title' => $markup, '#href' => "taxonomy/term/$tid", '#access' => 1);
+  return array(
+    'raw' => $value,
+    'rendered' => $rendered,
+  );
+}
+
+/**
+ * Renders a value as an image file or general file.
+ *
+ * @param array $value
+ *   Must have at least $value['type']=='image' or $value['filename'] set.
+ * @param $object $handler
+ *   The field handler. If an image handler, all image styles are supported.
+ *
+ * @return array with 'raw' and 'rendered' entries.
+ */
+function views_accelerator_render_file($value, $handler) {
+  $file_type = isset($value['type']) ? $value['type'] : '';
+  $format = $handler->options['type'];
+  $settings = $handler->options['settings'];
+  $path = variable_get('file_public_path', conf_path() . '/files');
+
+  if (($format == 'file_rendered' || $format == 'image') && (empty($file_type) || $file_type == 'image')) {
+    $image_style = NULL;
+    if (isset($settings['image_style'])) {
+      $image_style = $settings['image_style'];
+    }
+    elseif (isset($settings['file_view_mode'])) {
+      // Normally, using a complicated process invovling the likes of
+      // image_file_default_displays_alter() the view mode gets converted into a
+      // an image_style. Here, we keep things ultra-simple.
+      // Typcial image_styles are thumbnail', 'medium', 'large', with the
+      // associated images sourced from subdirs by those names, e.g.,
+      // /default/files/styles/thumbnail, default/files/styles/medium.
+      // A 'default' view mode displays the original images, unprocessed, from
+      // /default/files
+      switch ($settings['file_view_mode']) {
+        case 'preview':
+          $image_style = 'thumbnail';
+          break;
+        case 'teaser':
+          $image_style = 'medium';
+          break;
+      }
+    }
+    $rendered = array(
+      '#theme' => 'image_formatter',
+      '#image_style' => $image_style,
+      '#item' => $value,
+      '#access' => 1,
+    );
+    if ($format == 'file_rendered') {
+      $rendered['#path'] = array('path' => empty($value['nid']) ? 'file/' . $value['fid'] : 'node/' . $value['nid']);
+    }
+    elseif ($settings['image_link'] == 'file') {
+      $rendered['#path'] = array('path' => $path . '/' . $value['filename']);
+    }
+    elseif ($settings['image_link'] == 'content' && isset($value['nid'])) {
+      $rendered['#path'] = array('path' => 'node/' . $value['nid']);
+    }
+  }
+  else {
+    // Covers $format == 'file_url_plain', 'file_default' ("Generic file")
+    // Also handles 'file_download_link' and 'file_rendered' for PDF etc.
+    $rendered = array(
+      '#theme' => 'link',
+      // Make sure check_plain() is called in theme_link() by using 'html'=>FALSE
+      '#options' => array('html' => FALSE, 'attributes' => array()),
+      '#path' => $path . '/' . $value['filename'],
+      '#text' => $value['filename'],
+      '#html' => FALSE,
+      '#access' => 1,
+    );
+    if ($format == 'file_download_link') {
+      $rendered['#theme'] = 'file_entity_download_link';
+      $rendered['#text'] = $settings['text'];
+      $rendered['#file'] = (object) $value;
+    }
+  }
+  return array('raw' => $value, 'rendered' => $rendered);
+}
+
+/**
+ * Implements hook_views_post_render().
+ */
+function views_accelerator_views_post_render($view, $output, $cache) {
+  if ($analysis_level = views_accelerator_analyse()) {
+    views_accelerator_record($view);
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function views_accelerator_menu() {
+  $items = array();
+  // Put the administrative settings under System on the Configuration page.
+  $items['admin/config/system/views-accelerator'] = array(
+    'title' => 'Views Accelerator',
+    'description' => 'Advanced settings for Views Accelerator.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('views_accelerator_admin_configure'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'views_accelerator.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_help().
+ */
+function views_accelerator_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#views_accelerator':
+      $t = t('Configuration and instructions for use are in this <a target="readme" href="@url_readme">README</a> file.<br/>Known issues and solutions may be found on the <a taget="project" href="@url_views_accelerator">Views Accelerator</a> project page.', array(
+        '@url_readme' => url(drupal_get_path('module', 'views_accelerator') . '/README.txt'),
+        '@url_views_accelerator' => url('http://drupal.org/project/views_accelerator'),
+      ));
+      break;
+  }
+  return empty($t) ? '' : '<p>' . $t . '</p>';
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function views_accelerator_views_api() {
+  return array(
+    'api' => views_api_version(),
+    'path' => drupal_get_path('module', 'views_accelerator') . '/views',
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function views_accelerator_permission() {
+  return array(
+    'views accelerator view analyse mode' => array(
+      'title' => t('View performance statistics'),
+      'description' => t('Superadmin needs to untick the Administrator box, if they do not wish to see any performance stats.<br/>Note that individual users may also be granted access to the peformance stats by name. See the <a href="@url_config">configuration page</a>.', array(
+        '@url_config' => url('admin/config/system/views-accelerator'))
+      ),
+    ),
+  );
+}
+
+/**
+ * Special message display function. Messages to selected user names only.
+ *
+ * @param string $message
+ *   The message string to be output as a message. Use NULL to test if messages
+ *   are on for the current user.
+ * @param string $type
+ *   Message type. Defaults to 'status'.
+ * @param string $repeat
+ *   Whether to repeat identical messages. Defaults to TRUE.
+ *
+ * @return bool|array
+ *   FALSE if messages are disabled for the current user.
+ *   TRUE if enabled for the current user without a message argument, otherwise
+ *   a multi-dimensional array with keys corresponding to the set message types.
+ *   The array contains the set messages for each message type.
+ *
+ * @see drupal_set_message()
+ */
+function views_accelerator_analyse($message = NULL, $type = 'status', $repeat = TRUE) {
+  $analysis_level = (int) variable_get('views_accelerator_analysis_level', 0);
+  if (!$analysis_level) {
+    return FALSE;
+  }
+  global $user;
+  // Check if the current user qualifies based on their role.
+  // Cannot use user_access() as it will always return TRUE for uid==1
+  foreach (user_role_permissions($user->roles) as $role_permissions) {
+    if (in_array('views accelerator view analyse mode', array_keys($role_permissions))) {
+      // Yes, user qualifies. Set msg if there is one, otherwise return level.
+      return $message ? drupal_set_message($message, $type, $repeat) : $analysis_level;
+    }
+  }
+  // If user does not qualify by role, see if their name is white-listed.
+  $user_names = explode(',', check_plain(variable_get('views_accelerator_priv_users')));
+  foreach ($user_names as $user_name) {
+    $user_name = drupal_strtolower(trim($user_name));
+    $match = $user->uid ? $user_name == drupal_strtolower(trim($user->name)) : ($user_name == 'anon' || $user_name == 'anonymous');
+    if ($match) {
+      return $message ? drupal_set_message($message, $type, $repeat) : $analysis_level;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Record performance stats for the view and optionally the field passed in.
+ *
+ * @param object $view
+ *   The view whose stats are to be set. Or empty to return existing records.
+ * @param object $handler
+ *   The handler, typically field handler, on the current display in the
+ *   supplied view.
+ *
+ * @return array $records
+ *   All peformance records accumulated so far during this request.
+ */
+function views_accelerator_record($view = NULL, $handler = NULL) {
+  $records = &drupal_static(__FUNCTION__, array());
+  if (isset($view)) {
+    $view_id = $view->name;
+    $display_id = $view->current_display;
+    if (isset($handler)) {
+      // View (field) handler summary stats.
+      $records[$view_id][$display_id]['fields'][$handler->handler_type . ':' . $handler->field] = array(
+        'display_name' => $handler->definition['title'],
+        'type' => $handler->handler_type,
+        'exec_post' => $handler->post_execute_time,
+        // accelerated may be TRUE, FALSE, or 0 (n/a) for non-FieldAPI fields.
+        'accelerated' => isset($handler->accelerated) ? $handler->accelerated : 0,
+      );
+    }
+    else {
+      // View (display) summary stats.
+      if (!isset($records[$view_id][$display_id])) {
+        $records[$view_id][$display_id] = array();
+      }
+      $display_record = &$records[$view_id][$display_id];
+      $display_record['display_name'] = $view->get_human_name() . ' (' . $view->display_handler->display->display_title . ')';
+      $display_record['exec_db'] = $view->execute_time;
+      $display_record['exec_post'] = $view->post_execute_time;
+      $display_record['exec_render'] = $view->render_time;
+      $display_record['accelerated'] = !empty($view->accelerated);
+    }
+  }
+  drupal_alter('views_accelerator_record', $view, $handler, $records);
+  return $records;
+}
+
+/**
+ * Outputs as a status msg performance stats for the views on the current page.
+ *
+ * @param $analysis_level
+ *   The level of detail (verbosity) of the output. Supported levels are 1
+ *   (summary), 2 (summary and fields) and 3 (everything that's there).
+ * @param $view
+ *   The view to display performance stats for, or all views if omitted.
+ */
+function views_accelerator_output_performance_stats($analysis_level = 1, $view = NULL) {
+  $all_records = views_accelerator_record();
+  if (empty($all_records)) {
+    return;
+  }
+  $decimals = variable_get('views_accelerator_decimals', 2);
+  $total_digits = $decimals + 3;
+  $f = "%' $total_digits.$decimals" . 'f';
+  $header = array(
+    t('View %view_name', array('%view_name' => $view ? $view->get_human_name() : '')),
+    t('accelerated?'),
+    t('db [s]'),
+    t('post-exec [s]'),
+    t('render [s]'),
+    t('total [s]')
+  );
+  $rows = array();
+  $totals = array(
+    'totals' => $view ? t('Totals for this view') : t('Totals for this page'),
+    'acc' => '',
+    'exec_db' => 0.0,
+    'exec_post' => 0.0,
+    'exec_render' => 0.0,
+    'exec_total' => 0.0,
+  );
+  foreach ($all_records as $view_name => $view_records) {
+    if ($view && $view->name != $view_name) {
+      continue;
+    }
+    foreach ($view_records as $display_id => $display_record) {
+      if ($view && $view->current_display != $display_id) {
+        continue;
+      }
+      $view_display_total = $display_record['exec_db'] + $display_record['exec_post'] + $display_record['exec_render'];
+      $row['data'] = array(
+        'name' => '<em>' . $display_record['display_name'] . '</em>',
+        'accelerated' => $display_record['accelerated'] ? '<strong>' . t('yes') . '</strong>' : "&nbsp;" . t('no'),
+        'exec_db' => sprintf($f, $display_record['exec_db']),
+        'exec_post' => sprintf("<strong>$f</strong>", $display_record['exec_post']),
+        'exec_render' => sprintf($f, $display_record['exec_render']),
+        'exec_total' => sprintf($f, $view_display_total),
+      );
+      $rows[] = $row;
+      $totals['exec_db'] += $display_record['exec_db'];
+      $totals['exec_post'] += $display_record['exec_post'];
+      $totals['exec_render'] += $display_record['exec_render'];
+      $totals['exec_total'] += $view_display_total;
+      if ($analysis_level > 1 && isset($display_record['fields'])) {
+        foreach ($display_record['fields'] as $field_record) {
+          if ($analysis_level > 2 || $field_record['type'] == 'field') {
+            $row['data'] = array(
+              'name' => '&nbsp;-&nbsp;' . $field_record['type'] . ' ' . $field_record['display_name'],
+              'accelerated' => $field_record['accelerated']
+                ? '<strong>' . t('yes') . '</strong>'
+                : ($field_record['accelerated'] === FALSE ? "&nbsp;" . t('no') : ''),
+              'exec_db' => '',
+              'exec_post' => sprintf($f, $field_record['exec_post']),
+              'exec_render' => '',
+              'exec_total' => '',
+            );
+            $rows[] = $row;
+          }
+        }
+      }
+    }
+  }
+  // Only add a totals row if there are 2 or more rows.
+  if (count($rows) > 1) {
+    foreach ($totals as &$total) {
+      if (is_numeric($total)) {
+        $total = sprintf($f, $total);
+      }
+    }
+    $totals['exec_post'] = '<strong>' . $totals['exec_post'] . '</strong>';
+    $rows[] = $totals;
+  }
+  $table = theme('table', array(
+    'caption' => t('Items that have "no" in the <strong>accelerated?</strong> column are subject to acceleration.'),
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array(),
+  ));
+  drupal_set_message($table);
+}
+
+/**
+ * Implements hook_page_alter().
+ *
+ * This should kick in AFTER any blocks containing view displays have been
+ * rendered.
+ */
+function views_accelerator_page_alter(&$page) {
+  if ($analysis_level = views_accelerator_analyse()) {
+    views_accelerator_output_performance_stats($analysis_level);
+  }
+}

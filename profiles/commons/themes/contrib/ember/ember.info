@@ -13,6 +13,7 @@ stylesheets[screen][] = styles/system.messages.css
 
 ; Settings
 settings[shortcut_module_link] = 1
+settings[views_ui_override] = 1
 
 ; Regions
 regions[content] = Content
@@ -23,10 +24,9 @@ regions[page_bottom] = Page bottom
 regions[sidebar_first] = First sidebar
 regions_hidden[] = sidebar_first
 
-
-; Information added by drush on 2014-05-08
-version = "7.x-2.0-alpha2+4-dev"
+; Information added by Drupal.org packaging script on 2015-10-02
+version = "7.x-2.0-alpha4"
 core = "7.x"
 project = "ember"
-datestamp = "1399579136"
+datestamp = "1443810540"
 

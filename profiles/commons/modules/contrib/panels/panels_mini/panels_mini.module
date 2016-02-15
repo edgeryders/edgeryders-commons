@@ -112,6 +112,7 @@ function panels_mini_block_view($delta = 0) {
       $contexts = ctools_context_match_required_contexts($panel_mini->requiredcontexts, $current_page['contexts']);
     }
   }
+  drupal_alter('panels_mini_block_contexts', $contexts, $panel_mini);
 
   $panel_mini->context = $panel_mini->display->context =  ctools_context_load_contexts($panel_mini, FALSE, $contexts);
   $panel_mini->display->css_id = panels_mini_get_id($panel_mini->name);
@@ -517,4 +518,15 @@ function panels_mini_panels_dashboard_blocks(&$vars) {
     'section' => 'left',
   );
 
+}
+
+/**
+ * Implements template_preprocess_ctools_wizard_trail().
+ *
+ * Customize the divider used in the CTools wizard to build the edit pages for
+ * Mini Panels as a stop-gap measure until the UX can be completely re-done.
+ */
+function panels_mini_preprocess_ctools_wizard_trail(&$variables) {
+  $variables['divider'] = ' | ';
+  drupal_add_css(drupal_get_path('module', 'panels_mini') . '/panels_mini.css');
 }

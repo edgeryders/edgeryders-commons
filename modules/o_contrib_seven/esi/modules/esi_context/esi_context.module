@@ -1,0 +1,74 @@
+<?php
+/**
+ * @file
+ * ESI integration for the context module.
+ */
+
+/**
+ * Implements hook_module_implements_alter().
+ * The hook_page_alter implementation in esi_context must run before the hook
+ * in esi_block.
+ */
+function esi_context_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'page_alter') {
+    $index_context = array_search('esi_context', array_keys($implementations));
+    unset($implementations[$index_context]);
+
+    $index_block = array_search('esi_block', array_keys($implementations));
+    $implementations = array_slice($implementations, 0, $index_block) + array('esi_context' => FALSE) + array_slice($implementations, $index_block);
+  }
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function esi_context_page_alter(&$page) {
+  // Look for blocks exposed by the context module; add ESI information.
+  foreach (element_children($page) as $region_key) {
+    foreach (element_children($page[$region_key]) as $block_key) {
+      if (isset($page[$region_key][$block_key]['context'])) {
+        $element = $page[$region_key][$block_key];
+
+        // Look for the module/delta.
+        if (!empty($element['#block']) && is_object($element['#block'])) {
+          $module = $element['#block']->module;
+          if ($module == 'esi_block') {
+            list($module, $delta) = esi_block__new_delta($element['#block']->delta);
+          }
+          else {
+            $delta = $element['#block']->delta;
+          }
+
+          // Get the full block data from the DB.
+          $block = block_load($module, $delta);
+
+          $page[$region_key][$block_key]['#block']->esi_enabled = $block->esi_enabled;
+          $page[$region_key][$block_key]['#block']->esi_ttl     = $block->esi_ttl;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_context_load().
+ */
+function esi_context_context_load_alter(&$context) {
+  // Iterate all the blocks displayed in a context reaction.
+  if (!empty($context->reactions) && !empty($context->reactions['block']) && !empty($context->reactions['block']['blocks'])) {
+    foreach ($context->reactions['block']['blocks'] as $key => $block_info) {
+
+      $block = block_load($block_info['module'], $block_info['delta']);
+
+      // If this block should be served by ESI, replace the module and delta,
+      // so that when block_view is invoked, the block contents are populated
+      // correctly.
+      if (!empty($block->esi_enabled)) {
+        global $theme;
+        $context->reactions['block']['blocks'][$key]['theme'] = $theme;
+        $context->reactions['block']['blocks'][$key]['module'] = 'esi_block';
+        $context->reactions['block']['blocks'][$key]['delta'] = esi_block__new_delta($block->module, $block->delta);
+      }
+    }
+  }
+}

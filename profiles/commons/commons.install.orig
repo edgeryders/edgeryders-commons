@@ -1,0 +1,913 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Commons install profile.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function commons_requirements($phase) {
+  $requirements = array();
+
+  // Ensure translations don't break during installation.
+  $t = get_t();
+
+  if ($phase == 'install') {
+    // Test PHP minimum execution time.
+    $requirements['php_max_execution_time'] = array(
+      'title' => $t('PHP Max Execution Time'),
+      'value' => ini_get('max_execution_time'),
+    );
+
+    $max_execution_time = (int)ini_get('max_execution_time');
+
+    // Don't set the error when max_execution_time is 0 (Infinite).
+    if ($max_execution_time && $max_execution_time < DRUPAL_MINIMUM_MAX_EXECUTION_TIME) {
+      $requirements['php_max_execution_time']['description'] = $t('Your PHP execution time is too low, please set it greater than or equal to %time seconds.', array('%time' => DRUPAL_MINIMUM_MAX_EXECUTION_TIME));
+      $requirements['php_max_execution_time']['severity'] = REQUIREMENT_ERROR;
+    }
+
+    // APC or OpCache size check.
+    if (ini_get('apc.shm_size') != NULL || ini_get('opcache.enable')) {
+      // If OpCache is enabled, assume we're using it over APC.
+      if (ini_get('opcache.enable')) {
+        $mechanism = 'OpCache';
+        $title = $t('OpCache memory');
+        $value = ini_get('opcache.memory_consumption');
+      }
+      else {
+        $mechanism = 'APC';
+        $title = $t('APC shim size');
+
+        $shm_size = preg_split('/[a-zA-Z]/', ini_get('apc.shm_size'));
+        $shm_size = $shm_size[0];
+        $value = $shm_size;
+      }
+
+      $requirements['apc_opcache_size'] = array(
+        'title' => $title,
+        'value' => $value,
+      );
+
+      // Check for sufficient APC or OpCache space.
+      // Throw error if there is less than 96MB available.
+      if ($value < COMMONS_MINIMUM_APC_CACHE) {
+        $requirements['apc_opcache_size']['description'] = $t('%mechanism is installed but %allocated_size is not enough space to successfully install Drupal Commons. Change the capacity to at least %min_shm_size.', array('%mechanism' => $mechanism, '%allocated_size' => $requirements['value'], '%min_shm_size' => COMMONS_MINIMUM_APC_CACHE ));
+        $requirements['apc_opcache_size']['severity'] = REQUIREMENT_ERROR;
+      }
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_install_tasks().
+ */
+function commons_install_tasks() {
+  //make sure we have more memory than 196M. if not lets try to increase it.
+  if (ini_get('memory_limit') != '-1' && ini_get('memory_limit') <= '196M' && ini_get('memory_limit') >= '128M') {
+    ini_set('memory_limit', '196M');
+  }
+
+  $selected_extras = variable_get('commons_selected_extras', array());
+
+  return array(
+    'commons_installer_palette' => array(
+      'display_name' => st('Choose site color palette'),
+      'display' => TRUE,
+      'type' => 'form',
+      'function' => 'commons_installer_palette',
+    ),
+    'commons_anonymous_message_homepage' => array(
+      'display_name' => st('Enter Homepage welcome text'),
+      'display' => TRUE,
+      'type' => 'form',
+      'function' => 'commons_anonymous_welcome_text_form'
+    ),
+    'commons_revert_features' => array(
+      'display' => FALSE,
+    ),
+    'commons_install_additional_modules' => array(
+      'display_name' => !empty($selected_extras['example_content']) ? st('Install example content') : st('Install additional functionality'),
+      'display' => FALSE,
+      'type' => 'batch',
+    ),
+    'commons_create_first_group' => array(
+      'display_name' => st('Create the first group'),
+      'display' => TRUE,
+      'type' => 'form',
+    ),
+    'commons_rebuild_node_access' => array(
+      'display' => FALSE,
+      'type' => 'batch',
+      'run' => !empty($selected_extras['og_access']) ? INSTALL_TASK_RUN_IF_NOT_COMPLETED : INSTALL_TASK_SKIP,
+    ),
+    'commons_admin_permissions' => array(
+      'display' => FALSE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_install_tasks_alter().
+ */
+function commons_install_tasks_alter(&$tasks, $install_state) {
+  global $install_state;
+  $tasks['install_profile_modules']['display_name'] = st('Install Drupal Commons');
+
+  // Skip profile selection step.
+  $tasks['install_select_profile']['display'] = FALSE;
+
+  // Skip language selection install step and default language to English.
+  $tasks['install_select_locale']['display'] = FALSE;
+  $tasks['install_select_locale']['run'] = INSTALL_TASK_SKIP;
+  $install_state['parameters']['locale'] = 'en';
+
+  // Override "install_finished" task to redirect people to home page.
+  $tasks['install_finished']['function'] = 'commons_install_finished';
+}
+
+/**
+ * Override of install_finished() without the useless text.
+ */
+function commons_install_finished(&$install_state) {
+  drupal_set_title(st('@drupal installation complete', array('@drupal' => drupal_install_profile_distribution_name())), PASS_THROUGH);
+  $messages = drupal_set_message();
+
+  // Remember the profile which was used.
+  variable_set('install_profile', drupal_get_profile());
+  variable_set('install_task', 'done');
+
+  // BEGIN copy/paste from install_finished().
+  // Remove the bookmarks flag
+  $flag = flag_get_flag('bookmarks');
+  if($flag) {
+    $flag->delete();
+    $flag->disable();
+    _flag_clear_cache();
+  }
+
+  // Flush all caches to ensure that any full bootstraps during the installer
+  // do not leave stale cached data, and that any content types or other items
+  // registered by the installation profile are registered correctly.
+  drupal_flush_all_caches();
+
+  // We make custom code for the footer here because we want people to be able to freely edit it if they wish.
+  $footer_body = '<p>'. st('A Commons Community, powered by <a href="@acquia">Acquia</a>', array('@acquia' => url('https://www.acquia.com/products-services/drupal-commons-social-business-software'))) . '</p>';
+
+  $footer_block_text = array(
+    'body' => st($footer_body),
+    'info' => st('Default Footer'),
+    'format' => 'full_html',
+  );
+
+  if (drupal_write_record('block_custom', $footer_block_text)) {
+    $footer_block = array(
+      'module' => 'block',
+      'delta' => $footer_block_text['bid'],
+      'theme' => 'commons_origins',
+      'visibility' => 0,
+      'region' => 'footer',
+      'status' => 1,
+      'pages' => 0,
+      'weight' => 1,
+      'title' => variable_get('site_name', 'Drupal Commons'),
+    );
+    drupal_write_record('block', $footer_block);
+  }
+
+  // Installation profiles are always loaded last
+  db_update('system')
+    ->fields(array('weight' => 1000))
+    ->condition('type', 'module')
+    ->condition('name', drupal_get_profile())
+    ->execute();
+
+  // Cache a fully-built schema.
+  drupal_get_schema(NULL, TRUE);
+
+  // Run cron to populate update status tables (if available) so that users
+  // will be warned if they've installed an out of date Drupal version.
+  // Will also trigger indexing of profile-supplied content or feeds.
+  drupal_cron_run();
+
+  variable_set('title_node', array(
+    'auto_attach' => array('title' => 'title'),
+    'hide_label' => array('page' => 0, 'entity' => 0),
+  ));
+
+  if (isset($messages['error'])) {
+    $output = '<p>' . (isset($messages['error']) ? st('Review the messages above before visiting <a href="@url">your new site</a>.', array('@url' => url(''))) : st('<a href="@url">Visit your new site</a>.', array('@url' => url('')))) . '</p>';
+    return $output;
+  }
+  else {
+    // Since any module can add a drupal_set_message, this can bug the user
+    // when we redirect him to the front page. For a better user experience,
+    // remove all the message that are only "notifications" message.
+    drupal_get_messages('status', TRUE);
+    drupal_get_messages('completed', TRUE);
+    // Migrate adds its messages under the wrong type, see #1659150.
+    drupal_get_messages('ok', TRUE);
+
+    // If we don't install drupal using Drush, redirect the user to the front
+    // page.
+    if (!drupal_is_cli()) {
+      drupal_goto('');
+    }
+  }
+}
+
+/**
+ * Allow users to select from a predefined list of color palettes during the
+ * commons installation.
+ */
+function commons_installer_palette() {
+  $form = array();
+  require_once(drupal_get_path('theme', 'commons_origins') . '/commons_origins.palettes.inc');
+
+  commons_origins_palettes_form($form);
+  $form['commons_origins_palette_fieldset']['#collapsible'] = FALSE;
+  $form['commons_origins_palette_fieldset']['#collapsed'] = FALSE;
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => st('Save color palette'),
+  );
+  drupal_add_css('profiles/commons/commons_installer.css');
+
+  return $form;
+}
+
+/**
+ * Configuration form to set welcome text for the anonymous site homepage.
+ */
+function commons_anonymous_welcome_text_form() {
+  $form['commons_anonymous_welcome_explanation'] = array(
+    '#markup' => '<h2>' . st('Homepage welcome text') . '</h2>' . st("Below, enter text that will be shown on your community's homepage to help new visitors understand what your community is about and why they should join. The image below shows an example of how this text will appear. You can always change this text later."),
+    '#weight' => -1,
+  );
+  $form['commons_anonymous_welcome_example'] = array(
+    '#markup' => theme('image', array('path' => 'profiles/commons/images/commons_homepage_text_example.png', 'alt' => 'Home page example', 'alt' => 'Home page example')),
+    '#weight' => 0,
+  );
+
+  $form['commons_anonymous_welcome_title'] = array(
+    '#type' => 'textfield',
+    '#title' => st('Welcome headline'),
+    '#description' => st('A short description of the community that visitors can understand at a glance.'),
+    '#required' => TRUE,
+    '#default_value' => st('Welcome to our community'),
+  );
+
+  $form['commons_anonymous_welcome_body'] = array(
+    '#type' => 'textarea',
+    '#title' => st('Welcome body text'),
+    '#description' => st('Enter a couple of sentences elaborating about your community.'),
+    '#required' => TRUE,
+    '#default_value' => st('Share your thoughts, find answers to your questions.'),
+  );
+
+  $form['commons_install_example_content'] = array(
+    '#type' => 'checkbox',
+    '#title' => st('Install example content'),
+    '#description' => st('Install Commons with example content so that you can get a sense of what your site will look like once it becomes more active. Example content includes a group, a few users and content for that group. Example content can be modified or deleted like normal content.'),
+    '#default_value' => TRUE
+  );
+
+  $form['commons_enable_og_access'] = array(
+    '#type' => 'checkbox',
+    '#title' => st('Enable private group support'),
+    '#description' => st('Add the ability to create private groups. Content in private groups can only be accessed by group members. <strong>Warning: Enable only if you require the ability to create private groups; this setting has performance implications.</strong>'),
+    '#default_value' => FALSE,
+  );
+
+  $form['commons_anonymous_welcome_submit'] = array(
+    '#type'  => 'submit',
+    '#value' => st('Save and continue')
+  );
+
+  return $form;
+}
+
+/**
+ * Save the configuration form for set welcome text for anonymous users.
+ * @see commons_anonymous_welcome_text_form()
+ */
+function commons_anonymous_welcome_text_form_submit($form_id, &$form_state) {
+  $selected_extras = variable_get('commons_selected_extras', array());
+
+  if ($form_state['values']['commons_enable_og_access']) {
+    $selected_extras['og_access'] = TRUE;
+  }
+
+  if ($form_state['values']['commons_install_example_content']) {
+    $selected_extras['example_content'] = TRUE;
+  }
+
+  variable_set('commons_selected_extras', $selected_extras);
+  variable_set('commons_anonymous_welcome_title', $form_state['values']['commons_anonymous_welcome_title']);
+  variable_set('commons_anonymous_welcome_body', $form_state['values']['commons_anonymous_welcome_body']);
+}
+
+/*
+ * Revert Features after the installation.
+ */
+function commons_revert_features() {
+  // Revert Features components to ensure that they are in their default states.
+  $revert = array(
+    'commons_follow' => array('field_base'),
+    'commons_groups' => array('field_instance', 'field_base'),
+    'commons_trusted_contacts' => array('field_instance', 'field_base'),
+    'commons_wikis' => array('og_features_permission'),
+    'commons_wysiwyg' => array('user_permission', 'ckeditor_profile'),
+    'commons_events' => array('og_features_permission' , 'field_base'),
+    'commons_polls' => array('og_features_permission'),
+    'commons_q_a' => array('og_features_permission', 'field_base'),
+    'commons_posts' => array('og_features_permission'),
+    'commons_misc' => array('variable'),
+  );
+
+  features_revert($revert);
+}
+
+/**
+ * Task callback: uses Batch API to enable modules based on user selection.
+ *
+ * Creates all demo content if requested and installs optional modules that
+ * providing additional functionality to the base install.
+ */
+function commons_install_additional_modules() {
+  $selected_extras = variable_get('commons_selected_extras', array());
+
+  $modules = array();
+
+  if (!empty($selected_extras['acquia_agent'])) {
+    $modules[] = 'acquia_agent';
+  }
+
+  if (!empty($selected_extras['acquia_search'])) {
+    $modules[] = 'acquia_search';
+  }
+
+  if (!empty($selected_extras['acquia_spi'])) {
+    $modules[] = 'acquia_spi';
+  }
+
+  if (!empty($selected_extras['og_access'])) {
+    $modules[] = 'og_access';
+  }
+
+  // Resolve the dependencies now, so that module_enable() doesn't need
+  // to do it later for each individual module (which kills performance).
+  $files = system_rebuild_module_data();
+  $modules_sorted = array();
+  foreach ($modules as $module) {
+    if ($files[$module]->requires) {
+      // Create a list of dependencies that haven't been installed yet.
+      $dependencies = array_keys($files[$module]->requires);
+      $dependencies = array_filter($dependencies, '_commons_filter_dependencies');
+      // Add them to the module list.
+      $modules = array_merge($modules, $dependencies);
+    }
+  }
+  $modules = array_unique($modules);
+  foreach ($modules as $module) {
+    $modules_sorted[$module] = $files[$module]->sort;
+  }
+  arsort($modules_sorted);
+
+  $operations = array();
+
+  // Enable the selected modules.
+  foreach ($modules_sorted as $module => $weight) {
+    $operations[] = array('_commons_enable_module', array($module, $files[$module]->info['name']));
+  }
+
+  // Create the example content.
+  if (!empty($selected_extras['example_content'])) {
+    // Create the demo users.
+    $operations[] = array('_commons_create_demo_users', array(t('Created demo users.')));
+
+    // Create the demo taxonomy terms.
+    $operations[] = array('_commons_create_demo_taxonomy_terms', array(t('Created taxonomy terms.')));
+
+    // Create the demo groups.
+    $operations[] = array('_commons_create_demo_groups', array(t('Created demo groups.')));
+
+    // Create the demo content.
+    $operations[] = array('_commons_create_demo_content', array(t('Created demo content.')));
+  }
+
+  // Convert the administrator into a group.
+  $operations[] = array('_commons_convert_administrator_to_group', array(t('Converted administrator into a group.')));
+
+  $batch = array(
+    'title' => !empty($selected_extras['example_content']) ? st('Installing example content') : st('Installing additional functionality'),
+    'operations' => $operations,
+    'file' => drupal_get_path('profile', 'commons') . '/commons.install_callbacks.inc',
+  );
+
+  return $batch;
+}
+
+/**
+ * array_filter() callback used to filter out already installed dependencies.
+ */
+function _commons_filter_dependencies($dependency) {
+  return !module_exists($dependency);
+}
+
+/**
+ * Let the admin user create the first group as part of the installation process.
+ */
+function commons_create_first_group() {
+  $form['commons_first_group_explanation'] = array(
+    '#markup' => '<h2>' . st('Create the first group in your new community.') . '</h2>' . st("Commons uses groups to collect community members and content related to a particular interest, working goal or geographic area."),
+    '#weight' => -1,
+  );
+
+  $form['commons_fist_group_example'] = array(
+    '#markup' => theme('image', array('path' => 'profiles/commons/images/commons_group_description_sample.png', 'alt' => 'Group description page example', 'alt' => 'Group description example')),
+    '#weight' => 0,
+  );
+
+  $form['commons_first_group_title'] = array(
+    '#type' => 'textfield',
+    '#title' => st("Group name"),
+    '#description' => st('For example: "Boston food lovers" or "Engineering team."'),
+    '#required' => TRUE,
+    '#default_value' => st('Engineering team'),
+  );
+
+  $form['commons_first_group_body'] = array(
+    '#type' => 'textarea',
+    '#title' => st('Group description'),
+    '#description' => st("This text will appear on the group's homepage and helps new contributors to become familiar with the purpose of the group. You can always change this text or add another group later."),
+    '#required' => TRUE,
+    '#default_value' => st('The online home for our Engineering team'),
+  );
+
+  $form['commons_first_group_submit'] = array(
+    '#type'  => 'submit',
+    '#value' => st('Save and continue')
+  );
+
+  return $form;
+}
+
+/**
+ * Save the first group form.
+ *
+ * @see commons_create_first_group().
+ */
+function commons_create_first_group_submit($form_id, &$form_state) {
+  $values = $form_state['values'];
+
+  $first_group = new stdClass();
+  $first_group->type = 'group';
+  node_object_prepare($first_group);
+
+  $first_group->title = $values['commons_first_group_title'];
+  $first_group->body[LANGUAGE_NONE][0]['value'] = $values['commons_first_group_body'];
+  $first_group->uid = 1;
+  $first_group->language = LANGUAGE_NONE;
+  $first_group->status = 1;
+  node_save($first_group);
+}
+
+function commons_admin_permissions() {
+  //get the administrator role, we set this in the install file
+  $admin_role = user_role_load_by_name('administrator');
+  user_role_grant_permissions($admin_role->rid, array_keys(module_invoke_all('permission')));
+}
+
+function commons_add_user_avatar($account) {
+  global $base_url;
+
+  if ($account->uid) {
+    $picture_directory =  file_default_scheme() . '://' . variable_get('user_picture_path', 'pictures');
+    if(file_prepare_directory($picture_directory, FILE_CREATE_DIRECTORY)){
+      $picture_result = drupal_http_request($base_url . '/profiles/commons/images/avatars/avatar-' . commons_normalize_name($account->name) . '.png');
+      $picture_path = file_stream_wrapper_uri_normalize($picture_directory . '/picture-' . $account->uid . '-' . REQUEST_TIME . '.jpg');
+      $picture_file = file_save_data($picture_result->data, $picture_path, FILE_EXISTS_REPLACE);
+
+      // Check to make sure the picture isn't too large for the site settings.
+      $validators = array(
+        'file_validate_is_image' => array(),
+        'file_validate_image_resolution' => array(variable_get('user_picture_dimensions', '85x85')),
+        'file_validate_size' => array(variable_get('user_picture_file_size', '30') * 1024),
+      );
+
+      // attach photo to user's account.
+      $errors = file_validate($picture_file, $validators);
+
+      if (empty($errors)) {
+        // Update the user record.
+        $picture_file->uid = $account->uid;
+        $picture_file = file_save($picture_file);
+        file_usage_add($picture_file, 'user', 'user', $account->uid);
+        db_update('users')
+          ->fields(array(
+            'picture' => $picture_file->fid,
+          ))
+          ->condition('uid', $account->uid)
+          ->execute();
+        $account->picture = $picture_file->fid;
+      }
+    }
+  }
+}
+
+/**
+ * This function rebuild node access.
+ */
+function commons_rebuild_node_access() {
+  // Copied from node_access_rebuild() which sets its own batch while we need to
+  // return a batch which will be automatically run by the installer.
+  $batch = array(
+    'title' => t('Rebuilding content access permissions'),
+    'operations' => array(
+      array('_node_access_rebuild_batch_operation', array()),
+    ),
+    'finished' => '_node_access_rebuild_batch_finished',
+  );
+
+  return $batch;
+}
+
+/**
+ * Helper function to generate a machine name similar to the user's full name.
+ */
+function commons_normalize_name($name) {
+  return drupal_strtolower(str_replace(' ','_', $name));
+}
+
+/**
+ * Generate some filler content.
+ */
+function commons_veggie_ipsum() {
+  $content = "Veggies sunt bona vobis, proinde vos postulo esse magis spinach kale scallion lettuce cucumber black-eyed pea onion.
+
+Bamboo shoot green bean wattle seed okra kakadu plum peanut ricebean celtuce. Azuki bean desert raisin bush tomato turnip peanut sweet pepper courgette horseradish. Garlic kombu beet greens celery courgette carrot mung bean.";
+  return $content;
+}
+
+/**
+ * Implements hook_install().
+ */
+function commons_install() {
+  // Enable the Origins theme and set it as the default.
+  theme_enable(array('commons_origins'));
+
+  // The Bartik theme is automatically enabled during installation. Disable it.
+  db_update('system')
+    ->fields(array('status' => 0))
+    ->condition('type', 'theme')
+    ->condition('name', 'bartik')
+    ->execute();
+
+  // Set Commons Origins as the default theme.
+  variable_set('theme_default', 'commons_origins');
+
+  // Set Ember as the administration theme.
+  variable_set('admin_theme', 'ember');
+
+  // Do not use the administration theme when editing or creating content.
+  variable_set('node_admin_theme', FALSE);
+
+  // Set jQuery version to 1.7
+  variable_set('jquery_update_jquery_version', '1.7');
+
+  // Set a default user avatar.
+  commons_set_default_avatar();
+
+  // Place site blocks in the menu_bar and header regions.
+  $menu_block = array(
+    'module' => 'system',
+    'delta' => 'main-menu',
+    'theme' => 'commons_origins',
+    'visibility' => 0,
+    'region' => 'menu_bar',
+    'status' => 1,
+    'pages' => '',
+    'title' => '<none>',
+  );
+  drupal_write_record('block', $menu_block);
+
+  $search_block = array(
+    'module' => 'search',
+    'delta' => 'form',
+    'theme' => 'commons_origins',
+    'visibility' => 0,
+    'region' => 'header',
+    'status' => 1,
+    'pages' => '',
+    'weight' => 2,
+    'title' => '<none>',
+  );
+  drupal_write_record('block', $search_block);
+
+  // AdaptiveTheme requires that the system theme settings form
+  // be submitted in order for its themes' settings to be properly set
+  // and the resulting css files generated.
+  // For more background, see http://drupal.org/node/1776730.
+  module_load_include('inc', 'system', 'system.admin');
+  $form_state = form_state_defaults();
+  $form_state['build_info']['args'][0] = 'commons_origins';
+  $form_state['values'] = array();
+  drupal_form_submit('system_theme_settings', $form_state);
+}
+
+/**
+ * Set a default user avatar as a managed file object.
+ */
+function commons_set_default_avatar() {
+  global $base_url;
+  $picture_directory =  file_default_scheme() . '://' . variable_get('user_picture_path', 'pictures');
+  if(file_prepare_directory($picture_directory, FILE_CREATE_DIRECTORY)){
+    $picture_result = drupal_http_request($base_url . '/profiles/commons/images/avatars/user-avatar.png');
+    $picture_path = file_stream_wrapper_uri_normalize($picture_directory . '/picture-default.jpg');
+    $picture_file = file_save_data($picture_result->data, $picture_path, FILE_EXISTS_REPLACE);
+
+    // Check to make sure the picture isn't too large for the site settings.
+    $validators = array(
+      'file_validate_is_image' => array(),
+      'file_validate_image_resolution' => array(variable_get('user_picture_dimensions', '85x85')),
+      'file_validate_size' => array(variable_get('user_picture_file_size', '30') * 1024),
+    );
+
+    // attach photo to user's account.
+    $errors = file_validate($picture_file, $validators);
+
+    if (empty($errors)) {
+      // Update the user record.
+      $picture_file = file_save($picture_file);
+      variable_set('user_picture_default', $picture_path);
+    }
+  }
+}
+
+/**
+ * Enable the Origins theme and set it as the default. *
+ */
+function commons_update_3101() {
+  theme_enable(array('adaptivetheme_admin'));
+  variable_set('theme_default', 'commons_origins');
+  variable_set('node_admin_theme', FALSE);
+  return array();
+}
+
+/**
+ * Reset the default avatar if the associated file doesn't exist in the file_managed table.
+ */
+function commons_update_3102() {
+  $reset_avatar = FALSE;
+  $file = variable_get('user_picture_default', '');
+  if(!$file) {
+    $reset_avatar = TRUE;
+  }
+  if(!$reset_avatar) {
+    $results = db_select('file_managed', 'f')
+      ->fields('f', array('fid'))
+      ->condition('filename', $file,'=')
+      ->execute()
+      ->fetchAll();
+    if(count($results) === 0) {
+      $reset_avatar = TRUE;
+    }
+  }
+  if($reset_avatar) {
+    commons_set_default_avatar();
+  }
+  return array();
+}
+
+/**
+ * Replace the Toolbar module with the Navbar module.
+ */
+function commons_update_3103() {
+  // Enable the Navbar module and its dependencies.
+  $module_list = array('breakpoints', 'navbar');
+  module_enable($module_list);
+
+  // Migrate permissions.
+  if (module_exists('toolbar')) {
+    $roles = user_roles(FALSE, 'access toolbar');
+    if (!empty($roles)) {
+      // Set permissions.
+      foreach ($roles as $rid => $role) {
+        user_role_grant_permissions($rid, array('access navbar'));
+      }
+    }
+  }
+
+  // Disable the Toolbar module.
+  $module_list = array('toolbar');
+  module_disable($module_list);
+
+  return array();
+}
+
+/**
+ * Enable the Paranoia module.
+ */
+function commons_update_3104() {
+  $module_list = array('paranoia');
+  module_enable($module_list);
+  return array();
+}
+
+/**
+ * Enable the Placeholder module.
+ */
+function commons_update_3105() {
+  $module_list = array('placeholder');
+  module_enable($module_list);
+  return array();
+}
+
+/**
+ * Enable the Addressfield and Addressfield tokens module.
+ */
+function commons_update_3106() {
+  $module_list = array('addressfield', 'addressfield_tokens');
+  module_enable($module_list);
+  return array();
+}
+
+/**
+ * Rebuild the registry to accommodate Commons modules merging into the profile.
+ */
+function commons_update_3107() {
+  registry_rebuild();
+}
+
+/**
+ * Make the OG relationship required so that browsing widget
+ * tabs on the site homepage show an accurate count of content in each tab.
+ */
+function commons_update_3108() {
+    $revert = array(
+    'commons_posts' => array('views_view'),
+    'commons_documents' => array('views_view'),
+    'commons_polls' => array('views_view'),
+    'commons_wikis' => array('views_view'),
+    'commons_q_a' => array('views_view')
+  );
+  features_revert($revert);
+  return array();
+}
+
+/**
+ * Replace the Placeholder module with the Elements module.
+ */
+function commons_update_3109() {
+  if (module_exists('placeholder')) {
+    module_disable(array('placeholder'));
+  }
+  module_enable(array('elements'));
+  return array();
+}
+
+/**
+ * Change the administration theme to Ember.
+ */
+function commons_update_3111() {
+  variable_set('admin_theme', 'ember');
+  return array();
+}
+
+/*
+ * Revert Message types to use the correct title field token.
+ */
+function commons_update_3112() {
+  $revert = array(
+    'commons_wikis' => array('message_type'),
+    'commons_q_a' => array('message_type'),
+    'commons_posts' => array('message_type'),
+    'commons_notify' => array('message_type'),
+    'commons_like' => array('message_type'),
+    'commons_activity_streams' => array('message_type'),
+  );
+  features_revert($revert);
+  return array();
+}
+
+/*
+ * Delete the AdvancedQueue class variable for sites that did not uninstall AdvancedQueue.
+ */
+function commons_update_3113() {
+  if (variable_get('queue_default_class', '') == 'AdvancedQueue') {
+    variable_del('queue_default_class');
+  }
+  return array();
+}
+
+/*
+ * Automatically use field_title for all nodes instead of the node base title.
+ */
+function commons_update_3114() {
+  variable_set('title_node', array(
+    'auto_attach' => array('title' => 'title'),
+    'hide_label' => array('page' => 0, 'entity' => 0),
+  ));
+
+  foreach (node_type_get_types() as $node_type) {
+    // Set the title as "Replaced by title_field".
+    if (!title_field_replacement_enabled('node', $node_type->type, 'title')) {
+      title_field_replacement_toggle('node', $node_type->type, 'title');
+    }
+
+    // Migrate the titles to the title field.
+    title_field_replacement_batch_set('node', $node_type->type, 'title');
+  }
+
+  drupal_flush_all_caches();
+}
+
+/*
+ * Replace the oEmbed module with the Media: oEmbed module.
+ */
+function commons_update_3115() {
+  if (module_exists('oembed')) {
+    module_disable(array('oembed'));
+  }
+  module_enable(array('media_oembed'));
+  return array();
+}
+
+/*
+ * Enable the Commons: Media and Media: WYSIWYG modules.
+ */
+function commons_update_3116() {
+  module_enable(array('commons_media', 'media_wysiwyg'));
+  return array();
+}
+
+/*
+ * Flush all caches to accommodate moved files and new hooks.
+ */
+function commons_update_3117() {
+  drupal_flush_all_caches();
+  return array();
+}
+
+/*
+ * Ensure commons radioactivity is enabled upon install.
+ */
+function commons_update_3118() {
+  module_enable(array('commons_radioactivity', 'commons_radioactivity_groups'));
+  return array();
+}
+
+/**
+ * Ensure install task is set to completed.
+ */
+function commons_update_3119() {
+  variable_set('install_task', 'done');
+  return array();
+}
+
+/*
+ * Begin to use the Entity Embed module for embedded media handling if
+ * Media: WYSIWYG integration is currently enabled.
+ */
+function commons_update_3120() {
+  if (module_exists('media_wysiwyg')) {
+    module_enable(array('entity_embed'));
+
+    // Set jQuery version to 1.7
+    variable_set('jquery_update_jquery_version', '1.7');
+
+    $revert = array(
+      'commons_wysiwyg' => array('ckeditor_profile', 'filter'),
+    );
+    features_revert($revert);
+  }
+
+  return array();
+}
+
+/*
+ * Enable the Dialog module which is a requirement for Entity Embed 2.x.
+ */
+function commons_update_3121() {
+  if (module_exists('entity_embed')) {
+    module_enable(array('dialog'));
+  }
+
+  return array();
+}
+
+/*
+ * Replace the CKEditor module with the Editor CKEditor module.
+ */
+function commons_update_3122() {
+  if (module_exists('ckeditor')) {
+    module_disable(array('ckeditor'));
+  }
+  module_enable(array('editor_ckeditor'));
+  return array();
+}

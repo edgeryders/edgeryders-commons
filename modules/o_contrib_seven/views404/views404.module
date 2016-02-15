@@ -1,0 +1,84 @@
+<?php
+
+/**
+ * @file
+ * Return 404 if internal path doesn't match the view path
+ */
+
+/**
+ * Implements hook_views_pre_view().
+ */
+function views404_views_pre_view(&$view) {
+  $path = $view->display_handler->get_option('path');
+
+  if (!empty($path)) {
+    // Init variables.
+    $path_array = explode('/', $path);
+    $wild_array = explode('/%', $path);
+    $path_array_no_wild = explode('/', array_shift($wild_array));
+    $args = array_filter(arg());
+
+    $argpath = implode('/', arg());
+    if (strpos($argpath, 'admin/structure/views/') === 0 && strpos($argpath, '/preview/')) {
+      return;
+    }
+
+    $matched = array_intersect($path_array, $args);
+    $conflicting_in_view = array_diff($path_array, $matched);
+    $conflicting_in_args = array_diff_assoc($args, $matched);
+
+    // Get view arguments if path doesn't contain a %.
+    $view_arguments = $view->display_handler->get_option('arguments');
+    if (count($view_arguments) == 0 && count($path_array) == count($path_array_no_wild)) {
+      foreach ($view->display_handler->view->display as $value) {
+        if (!empty($value->display_options['path']) && $value->display_options['path'] == $path) {
+          $view_arguments = $value->handler->default_display->get_option('arguments');
+          break;
+        }
+      }
+    }
+
+    // Return if view is embedded.
+    foreach ($path_array_no_wild as $key => $value) {
+      $args[$key] = isset($args[$key]) ? $args[$key] : NULL;
+      if ($value != $args[$key]) {
+        return;
+      }
+    }
+
+    // Add in % for each argument, as needed.
+    if (count($view_arguments) > 0) {
+      foreach ($view_arguments as $type => $data) {
+        if (count($conflicting_in_view) < count($conflicting_in_args)) {
+          $path_array[] = '%';
+          // Re-init variables to take into account the % in the path.
+          $path = implode('/', $path_array);
+          $matched = array_intersect($path_array, $args);
+          $conflicting_in_view = array_diff($path_array, $matched);
+          $conflicting_in_args = array_diff_assoc($args, $matched);
+        }
+        else {
+          break;
+        }
+      }
+    }
+
+    // Return if parameter count matches.
+    if (count($conflicting_in_view) == count($conflicting_in_args)) {
+      return;
+    }
+
+    // If we got this far, odds are this is a 404.
+    watchdog('views404', 'View path: !path <br />Path given: !args <br />Matched: !match<br />Was Looking for: !looking<br />Got this instead: !got<br />Number of view arguments: !viewarg', array(
+        '!path' => $path,
+        '!args' => implode('/', $args),
+        '!match' => implode('/', $matched),
+        '!looking' => implode('/', $conflicting_in_view),
+        '!got' => implode('<strong>/</strong>', $conflicting_in_args),
+        '!viewarg' => count($view_arguments),
+      )
+    );
+    drupal_not_found();
+    drupal_exit();
+  }
+}

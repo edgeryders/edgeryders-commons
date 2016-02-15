@@ -17,7 +17,7 @@ function metatag_token_info() {
 
   $metatag_info = metatag_get_info();
 
-  foreach($metatag_info['tags'] as $value) {
+  foreach ($metatag_info['tags'] as $value) {
     $info['tokens']['metatag'][$value['name']] = array(
       'name' => $value['label'],
       'description' => $value['description']
@@ -85,67 +85,6 @@ function metatag_tokens($type, $tokens, array $data = array(), array $options = 
 }
 
 /**
- * Implements hook_tokens_alter().
- *
- * Fix [node:summary] until http://drupal.org/node/1295524 is committed, this
- * code is retrofitted from the patches in that issue.
- */
-function metatag_tokens_alter(array &$replacements, array $context) {
-  // Only proceed if this is working on a node.
-  if ($context['type'] == 'node' && !empty($context['data']['node'])) {
-    // Loop through each of the tokens.
-    foreach ($context['tokens'] as $name => $original) {
-      // Only deal with the 'node:summary' token, that's the one being fixed.
-      if ($name == 'summary') {
-        // A shortcut to the node being processed.
-        $node = $context['data']['node'];
-
-        // Work out the langcode being used.
-        if (isset($context['options']['language'])) {
-          $langcode = $context['options']['language']->language;
-        }
-        else {
-          $langcode = NULL;
-        }
-
-        // Decide whether the string needs to be sanitized.
-        $sanitize = !empty($context['options']['sanitize']);
-
-        if ($items = field_get_items('node', $node, 'body', $langcode)) {
-          $instance = field_info_instance('node', 'body', $node->type);
-          $field_langcode = field_language('node', $node, 'body', $langcode);
-
-          // If the summary is not empty, use it.
-          if (!empty($items[0]['summary'])) {
-            $output = $sanitize ? _text_sanitize($instance, $field_langcode, $items[0], 'summary') : $items[0]['summary'];
-          }
-
-          // Attempt to provide a suitable version of the 'body' field.
-          else {
-            $output = $sanitize ? _text_sanitize($instance, $field_langcode, $items[0], 'value') : $items[0]['value'];
-            // A summary was requested.
-            if ($name == 'summary') {
-              if (isset($instance['display']['teaser']['settings']['trim_length'])) {
-                $trim_length = $instance['display']['teaser']['settings']['trim_length'];
-              }
-              else {
-                // Use default value.
-                $trim_length = NULL;
-              }
-              // Generate an optionally trimmed summary of the body field.
-              $output = text_summary($output, $instance['settings']['text_processing'] ? $items[0]['format'] : NULL, $trim_length);
-            }
-          }
-
-          // Override the original value.
-          $replacements[$original] = $output;
-        }
-      }
-    }
-  }
-}
-
-/**
  * Generate an array of meta tags for a given entity.
  */
 function metatag_token_generate_array($entity, $entity_type, $bundle) {
@@ -157,8 +96,16 @@ function metatag_token_generate_array($entity, $entity_type, $bundle) {
     $options['token data'][$token_type] = $entity;
     $options['entity'] = $entity;
 
-    $metatags = isset($entity->metatags) ? $entity->metatags : array();
+    $metatags = array();
+    if (!empty($entity->metatags)) {
+      $language = metatag_entity_get_language($entity_type, $entity);
+      if (!empty($entity->metatags[$language])) {
+        $metatags = $entity->metatags[$language];
+      }
+    }
     $metatags += metatag_config_load_with_defaults($instance);
+    // Process it for entity metatag replacement to avoid infinite recursion.
+    $metatags = _metatag_token_process_metatag($metatags, $token_type);
 
     $result = array();
     foreach ($metatags as $metatag => $data) {
@@ -170,4 +117,88 @@ function metatag_token_generate_array($entity, $entity_type, $bundle) {
   }
 
   return NULL;
+}
+
+/**
+ * Loop through metatags to avoid recursion on entity tokens. It will replace
+ * entity metatag token to its actual entity metatag field value.
+ *
+ * @param array $metatags
+ *   An array of entity metatag tokens.
+ * @param string $token_type
+ *   The entity token type, such as 'node' or 'term'.
+ *
+ * @return array
+ *   Return metatags array with entity metatag tokens replaced.
+ */
+function _metatag_token_process_metatag($metatags, $token_type) {
+  foreach ($metatags as $metatag => $data) {
+    // Skip values that are not strings.
+    if (!is_string($data['value'])) {
+      continue;
+    }
+
+    // Explode all metatag token in field.
+    $data_tokens = token_scan($data['value']);
+    if (isset($data_tokens[$token_type])) {
+      foreach ($data_tokens[$token_type] as $key => $value) {
+        $metatag_parts = explode(':', $key);
+        // Check entity metatag token. Like [<entity_token_type>:metatag:<xyz>].
+        if ($metatag_parts[0] == 'metatag') {
+          $entity_field = implode(':', array_slice($metatag_parts, 1));
+          // If a value is not set here it will trigger an infinite loop.
+          $metatags[$metatag]['value'] = '';
+
+          // If the meta tag was defined then try parsing it.
+          if (!empty($metatags[$entity_field]['value'])) {
+            // Entity metatag field may contain other entity metatag token
+            // that need to be replaced too.
+            $replaced_value = metatag_token_entitymetatagtoken_replace($metatags, $metatags[$entity_field]['value'], $token_type);
+            $metatags[$metatag]['value'] = str_replace($value, $replaced_value, $metatags[$metatag]['value']);
+          }
+        }
+      }
+    }
+  }
+
+  return $metatags;
+}
+
+/**
+ * Replace entity metatag token with actual entity metatag field value.
+ *
+ * @param array $metatags
+ *   An array entity metatag tokens.
+ * @param string $token
+ *   A token to be replaced.
+ * @param string $token_type
+ *   The entity token type, such as 'node' or 'term'.
+ * @param array $search_tokens
+ *   An array of tokens to search for.
+ * @param array $replace_tokens
+ *   An array of tokens to be replaced.
+ *
+ * @return string
+ *   The replaced value of $token.
+ */
+function metatag_token_entitymetatagtoken_replace($metatags, $token, $token_type, $search_tokens = array(), $replace_tokens = array()) {
+  $data_tokens = token_scan($token);
+  // Check field has tokens.
+  if (isset($data_tokens[$token_type])) {
+    // Go through each token in field and find entity metatag tokens.
+    foreach ($data_tokens[$token_type] as $key => $value) {
+      $metatag_parts = explode(':', $key);
+      if ($metatag_parts[0] == 'metatag' && !in_array($value, $search_tokens)) {
+        // Entity metatag field value.
+        $entity_field = implode(':', array_slice($metatag_parts, 1));
+        $replaced_value = metatag_token_entitymetatagtoken_replace($metatags, $metatags[$entity_field]['value'], $token_type, $replace_tokens, $search_tokens);
+        $replace_tokens[] = $replaced_value;
+        $search_tokens[] = $value;
+      }
+    }
+    return str_replace($search_tokens, $replace_tokens, $token);
+  }
+  else {
+    return $token;
+  }
 }
