@@ -34,6 +34,11 @@ function media_wysiwyg_update_dependencies() {
  * Grant existing user access to new media wysiwyg permission.
  */
 function media_wysiwyg_update_7201() {
+  // Flush cached data for hook_permission to ensure user_role_grant_permissions
+  // detects the new 'use media wysiwyg' permission since it was introduced in
+  // 2.0-beta1.
+  module_implements('permission', FALSE, TRUE);
+
   $roles = user_roles(TRUE, 'access media browser');
   foreach ($roles as $rid => $role) {
     user_role_grant_permissions($rid, array('use media wysiwyg'));
