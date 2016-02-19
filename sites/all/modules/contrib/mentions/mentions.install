@@ -9,64 +9,151 @@
  */
 function mentions_schema() {
   $schema['mentions'] = array(
-    'fields'      => array(
-      'mid'         => array(
+    'description'  => 'The base table for mentions.',
+    'fields'       => array(
+      'mid'          => array(
         'description' => 'The primary identifier for a mention.',
         'type'        => 'serial',
         'unsigned'    => TRUE,
         'not null'    => TRUE,
       ),
-      'entity_type' => array(
-        'type'     => 'varchar',
-        'length'   => 32,
-        'not null' => TRUE,
-        'default'  => '',
+      'type'         => array(
+        'description' => 'The {mentions_type}.type of this mention.',
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+        'default'     => '',
       ),
-      'entity_id'   => array(
-        'type'     => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default'  => 0,
+      'source'       => array(
+        'description' => 'The source id of this mention.',
+        'type'        => 'varchar',
+        'length'      => 64,
+        'not null'    => TRUE,
+        'default'     => '',
       ),
-      'uid'         => array(
-        'type'     => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default'  => 0,
+      'source_title' => array(
+        'description' => 'The source title of this mention.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
       ),
-      'auid'        => array(
-        'type'     => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default'  => 0,
+      'source_path'  => array(
+        'description' => 'The source path of this mention.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
       ),
-      'created'     => array(
-        'type'     => 'int',
-        'not null' => TRUE,
-        'default'  => 0,
+      'target'       => array(
+        'description' => 'The target id of this mention.',
+        'type'        => 'varchar',
+        'length'      => 128,
+        'not null'    => TRUE,
+        'default'     => '',
       ),
-      'changed'     => array(
-        'type'     => 'int',
-        'not null' => TRUE,
-        'default'  => 0,
+      'uid'          => array(
+        'description' => 'The {users}.uid that created this mention.',
+        'type'        => 'int',
+        'not null'    => TRUE,
+        'default'     => 0,
+      ),
+      'created'      => array(
+        'description' => 'The Unix timestamp when the mention was created.',
+        'type'        => 'int',
+        'not null'    => TRUE,
+        'default'     => 0,
+      ),
+      'changed'      => array(
+        'description' => 'The Unix timestamp when the mention was most recently changed.',
+        'type'        => 'int',
+        'not null'    => TRUE,
+        'default'     => 0,
+      ),
+      'data'         => array(
+        'type'      => 'blob',
+        'serialize' => TRUE,
       ),
     ),
-    'indexes'     => array(
-      'mid' => array(
-        'mid',
+    'indexes'      => array(
+      'mention_changed' => array('changed'),
+      'mention_created' => array('created'),
+      'mention_type'    => array(array('type', 4)),
+      'uid'             => array('uid'),
+    ),
+    'unique keys'  => array(
+      'mention' => array('source', 'target'),
+    ),
+    'foreign keys' => array(
+      'mention_author' => array(
+        'table'   => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+      'mention_type'   => array(
+        'table'   => 'mentions_type',
+        'columns' => array('type' => 'type')
       ),
     ),
-    'primary key' => array('mid'),
+    'primary key'  => array('mid'),
+  );
+
+  $schema['mentions_type'] = array(
+    'fields'      => array(
+      'id'          => array(
+        'type'     => 'serial',
+        'not null' => TRUE,
+      ),
+      'type'        => array(
+        'description' => 'The machine-readable name of this type.',
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+      ),
+      'name'        => array(
+        'description' => 'The human-readable name of this type.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'plugin'      => array(
+        'description' => 'The Mention type plugin of this type.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'input'       => array(
+        'type'      => 'blob',
+        'serialize' => TRUE,
+      ),
+      'output'      => array(
+        'type'      => 'blob',
+        'serialize' => TRUE,
+      ),
+      'status'      => array(
+        'description' => 'The exportable status of the entity.',
+        'type'        => 'int',
+        'not null'    => TRUE,
+        // Set the default to ENTITY_CUSTOM without using the constant as it is
+        // not safe to use it at this point.
+        'default'     => 0x01,
+        'size'        => 'tiny',
+      ),
+      'module'      => array(
+        'description' => 'The name of the providing module if the entity has been defined in code.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => FALSE,
+      ),
+    ),
+    'unique keys' => array(
+      'type' => array('type'),
+    ),
+    'primary key' => array('id'),
   );
 
   return $schema;
-}
-
-/**
- * Implements hook_uninstall().
- */
-function mentions_uninstall() {
-  variable_del('mentions');
 }
 
 /**
@@ -131,4 +218,221 @@ function mentions_update_7100() {
   variable_del('mentions_output_prefix');
   variable_del('mentions_output_prefix');
   variable_del('mentions_output_content');
+}
+
+/**
+ * Add mentions type table.
+ */
+function mentions_update_7200() {
+  db_create_table('mentions_type', array(
+    'fields'      => array(
+      'id'          => array(
+        'type'     => 'serial',
+        'not null' => TRUE,
+      ),
+      'type'        => array(
+        'description' => 'The machine-readable name of this type.',
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+      ),
+      'name'        => array(
+        'description' => 'The human-readable name of this type.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'plugin'      => array(
+        'description' => 'The Mention type plugin of this type.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'description' => array(
+        'description' => 'A brief description of this type.',
+        'type'        => 'text',
+        'not null'    => TRUE,
+        'size'        => 'medium',
+      ),
+      'input'       => array(
+        'type'      => 'blob',
+        'serialize' => TRUE,
+      ),
+      'output'      => array(
+        'type'      => 'blob',
+        'serialize' => TRUE,
+      ),
+      'status'      => array(
+        'description' => 'The exportable status of the entity.',
+        'type'        => 'int',
+        'not null'    => TRUE,
+        // Set the default to ENTITY_CUSTOM without using the constant as it is
+        // not safe to use it at this point.
+        'default'     => 0x01,
+        'size'        => 'tiny',
+      ),
+      'module'      => array(
+        'description' => 'The name of the providing module if the entity has been defined in code.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => FALSE,
+      ),
+    ),
+    'unique keys' => array(
+      'type' => array('type'),
+    ),
+    'primary key' => array('id'),
+  ));
+}
+
+/**
+ * Update to entity based mentions.
+ */
+function mentions_update_7201() {
+  if (!module_exists('entityreference')) {
+    module_enable(array('entityreference'));
+    if (!module_exists('entityreference')) {
+      // ERROR.
+      return FALSE;
+    }
+  }
+
+  $mentions = db_select('mentions', 'm')
+    ->fields('m')
+    ->execute()
+    ->fetchAllAssoc('mid');
+
+  // Modify mentions table.
+  db_drop_field('mentions', 'entity_type');
+  db_drop_field('mentions', 'entity_id');
+  db_drop_field('mentions', 'uid');
+  db_change_field('mentions', 'auid', 'uid', array(
+    'description' => 'The {users}.uid that created this mention.',
+    'type'        => 'int',
+    'not null'    => TRUE,
+    'default'     => 0,
+  ));
+  db_add_field('mentions', 'type', array(
+    'description' => 'The {mentions_type}.type of this mention.',
+    'type'        => 'varchar',
+    'length'      => 32,
+    'not null'    => TRUE,
+    'default'     => '',
+  ));
+  db_add_field('mentions', 'source', array(
+    'description' => 'The source id of this mention.',
+    'type'        => 'varchar',
+    'length'      => 64,
+    'not null'    => TRUE,
+    'default'     => '',
+  ));
+  db_add_field('mentions', 'source_title', array(
+    'description' => 'The source title of this mention.',
+    'type'        => 'varchar',
+    'length'      => 255,
+    'not null'    => TRUE,
+    'default'     => '',
+  ));
+  db_add_field('mentions', 'source_path', array(
+    'description' => 'The source path of this mention.',
+    'type'        => 'varchar',
+    'length'      => 255,
+    'not null'    => TRUE,
+    'default'     => '',
+  ));
+  db_add_field('mentions', 'target', array(
+    'description' => 'The target id of this mention.',
+    'type'        => 'varchar',
+    'length'      => 128,
+    'not null'    => TRUE,
+    'default'     => '',
+  ));
+  db_add_field('mentions', 'data', array(
+    'type'      => 'blob',
+    'serialize' => TRUE,
+  ));
+  db_add_index('mentions', 'mention_changed', array('changed'));
+  db_add_index('mentions', 'mention_created', array('created'));
+  db_add_index('mentions', 'mention_type', array(array('type', 4)));
+  db_add_index('mentions', 'uid', array('uid'));
+  db_add_unique_key('mentions', 'mention', array('source', 'target'));
+
+  // Add User mention type with 7.x-1.x settings.
+  $mentions_settings = variable_get('mentions', array(
+    'input'  => array(
+      'prefix' => '[@',
+      'suffix' => ']',
+      'source' => 'property:name',
+    ),
+    'output' => array(
+      'prefix' => '@',
+      'suffix' => '',
+      'text'   => '[user:name]',
+      'link'   => 'user/[user:uid]',
+    ),
+  ));
+  $parts = explode(':', $mentions_settings['input']['source']);
+  $value = "{$parts[0]}::{$parts[1]}::varchar";
+  if (count($parts) == 3) {
+    $value .= "::{$parts[2]}";
+  }
+
+  module_load_include('admin.inc', 'mentions');
+  $form_state['mentions_type'] = mentions_type_set_defaults();
+  $form_state['values']        = array(
+    'name'   => t('User'),
+    'type'   => 'user',
+    'plugin' => 'entity',
+    'input'  => array(
+      'prefix' => $mentions_settings['input']['prefix'],
+      'type'   => 'user',
+      'value'  => $value,
+      'suffix' => $mentions_settings['input']['suffix'],
+    ),
+    'output' => array(
+      'value'       => $mentions_settings['output']['prefix'] . $mentions_settings['output']['text'] . $mentions_settings['output']['suffix'],
+      'render_link' => TRUE,
+      'link'        => $mentions_settings['output']['link'],
+    ),
+  );
+  mentions_type_form_submit(array(), $form_state);
+  variable_del('mentions');
+
+  // Adjust filters.
+  db_update('filter')->condition('name', 'filter_mentions')->fields(array(
+    'settings' => serialize(array('mention_types' => array('user' => 'user')))
+  ))->execute();
+
+  // Modify previously stored mentions.
+  foreach ($mentions as $mid => $mention) {
+    $source = entity_load_single($mention->entity_type, $mention->entity_id);
+    $uri    = entity_uri($mention->entity_type, $source);
+    if (empty($mention->changed)) {
+      $mention->changed = $mention->created;
+    }
+    db_update('mentions')->condition('mid', $mid)->fields(array(
+      'type'         => 'user',
+      'source'       => "entity::{$mention->entity_type}::{$mention->entity_id}",
+      'source_title' => entity_label($mention->entity_type, $source),
+      'source_path'  => isset($uri['path']) ? $uri['path'] : '',
+      'target'       => "entity::user::{$mention->uid}",
+      'changed'      => $mention->changed,
+      'data'         => serialize(array(
+        'source' => array(
+          'string' => '',
+          'item'   => array(),
+        ),
+        'target' => array(
+          'entity_type' => 'user',
+          'entity_id'   => $mention->uid,
+          'id'          => "entity::user::{$mention->uid}",
+        ),
+      )),
+    ))->execute();
+    $mention = entity_load_single('mention', $mid);
+    $wrapper = entity_metadata_wrapper('mention', $mention);
+    $wrapper->save();
+  }
 }
