@@ -1,3 +1,6 @@
 [submodule "sites/all/libraries/textcomplete"]
 	path = sites/all/libraries/textcomplete
 	url = https://github.com/Decipher/jquery-textcomplete.git
+[submodule "sites/all/modules/openethnographer"]
+	path = sites/all/modules/openethnographer
+	url = git@github.com:edgeryders/openethnographer.git
