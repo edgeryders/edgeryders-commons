@@ -1,0 +1,28 @@
+name = Mentions
+description = Adds Twitter like @username linking and tracking features.
+core = 7.x
+package = Filters
+configure = admin/config/content/mentions
+dependencies[] = filter
+
+
+
+; Files - Tests
+
+files[] = mentions.test
+
+
+
+; Files - Views handlers
+
+files[] = includes/views/handlers/mentions_views_handler_field_content.inc
+files[] = includes/views/handlers/mentions_views_handler_field_link.inc
+files[] = includes/views/handlers/mentions_views_handler_field_title.inc
+files[] = includes/views/handlers/mentions_views_handler_field_auid.inc
+
+; Information added by Drupal.org packaging script on 2015-01-15
+version = "7.x-1.0-beta2"
+core = "7.x"
+project = "mentions"
+datestamp = "1421362713"
+

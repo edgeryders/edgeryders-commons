@@ -21,3 +21,6 @@ stats
 # Ignore IDE
 .idea
 .idea/*
+
+# Ignore vagrant
+.vagrant
