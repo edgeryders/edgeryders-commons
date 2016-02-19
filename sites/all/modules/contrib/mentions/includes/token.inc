@@ -10,10 +10,10 @@
 function token_form_mentions_form_alter(&$form, $form_state) {
   $form['mentions']['output']['tokens'] = array(
     '#markup' => theme('token_tree', array(
-      'token_types' => array('user'),
+      'token_types'  => array('user'),
       'global_types' => TRUE,
       'click_insert' => TRUE,
-      'dialog' => TRUE,
+      'dialog'       => TRUE,
     )),
   );
 }
