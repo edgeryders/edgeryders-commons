@@ -157,6 +157,9 @@ function message_subscribe_send_message($entity_type, $entity, Message $message,
       );
 
       message_notify_send_message($cloned_message, $options, $notifier_name);
+      if($subscribe_options['uids']) {
+        unset($subscribe_options['uids'][$uid]);
+      }
 
       // Check we didn't timeout.
       if ($use_queue && $subscribe_options['queue']['end time'] && time() < $subscribe_options['queue']['end time']) {
