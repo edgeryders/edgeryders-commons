@@ -29,7 +29,6 @@ function webform_results_submissions($node, $user_filter, $pager_count) {
       drupal_set_title(t('Your submissions'));
       webform_disable_page_cache();
     }
-    webform_set_breadcrumb($node);
     $submissions = webform_get_submissions(array('nid' => $node->nid, 'uid' => $user->uid), $header, $pager_count);
     $count = webform_get_submission_count($node->nid, $user->uid);
   }
@@ -730,12 +729,13 @@ function webform_results_export($node, $format = 'delimited', $options = array()
       // Let each component determine its headers.
       if (webform_component_feature($component['type'], 'csv')) {
         $component_header = (array) webform_component_invoke($component['type'], 'csv_headers', $component, $options);
+        // Allow modules to modify the component CSV header.
+        drupal_alter('webform_csv_header', $component_header, $component);
+
+        // Merge component CSV header to overall CSV header
         $header[0] = array_merge($header[0], (array) $component_header[0]);
         $header[1] = array_merge($header[1], (array) $component_header[1]);
         $header[2] = array_merge($header[2], (array) $component_header[2]);
-
-        // Allow modules to modify the CSV header.
-        drupal_alter('webform_csv_header', $component_header, $component);
       }
     }
   }
