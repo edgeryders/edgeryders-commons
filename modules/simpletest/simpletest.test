@@ -322,6 +322,16 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
  * Test internal testing framework browser.
  */
 class SimpleTestBrowserTestCase extends DrupalWebTestCase {
+  /**
+   * Stores the value of $GLOBALS['base_root'] before the test modifies it.
+   */
+  protected $base_root;
+
+  /**
+   * Stores the value of $GLOBALS['base_url'] before the test modifies it.
+   */
+  protected $base_url;
+
   public static function getInfo() {
     return array(
       'name' => 'SimpleTest browser',
@@ -333,30 +343,62 @@ class SimpleTestBrowserTestCase extends DrupalWebTestCase {
   function setUp() {
     parent::setUp();
     variable_set('user_register', USER_REGISTER_VISITORS);
+    // Store the original values of the global $base_root and $base_url
+    // variables so we can restore them after they are modified by the test.
+    $this->base_root = $GLOBALS['base_root'];
+    $this->base_url = $GLOBALS['base_url'];
+  }
+
+  function tearDown() {
+    // Restore the original values of the global $base_root and $base_url
+    // variables.
+    $GLOBALS['base_root'] = $this->base_root;
+    $GLOBALS['base_url'] = $this->base_url;
+    parent::tearDown();
   }
 
   /**
    * Test DrupalWebTestCase::getAbsoluteUrl().
    */
   function testGetAbsoluteUrl() {
-    // Testbed runs with Clean URLs disabled, so disable it here.
-    variable_set('clean_url', 0);
-    $url = 'user/login';
+    // Store the URLs of the pages we will direct the internal browser to visit
+    // during this test. Force them to be http:// URLs regardless of the
+    // environment the test is running in.
+    variable_set('https', TRUE);
+    $user_login_absolute_url = url('user/login', array('absolute' => TRUE, 'https' => FALSE));
+    $user_register_absolute_url = url('user/register', array('absolute' => TRUE, 'https' => FALSE));
 
-    $this->drupalGet($url);
-    $absolute = url($url, array('absolute' => TRUE));
-    $this->assertEqual($absolute, $this->url, 'Passed and requested URL are equal.');
-    $this->assertEqual($this->url, $this->getAbsoluteUrl($this->url), 'Requested and returned absolute URL are equal.');
+    // Test that the internal browser always stores the correct URLs for the
+    // location it is pointed at. For example, the URLs should use http:// if
+    // the internal browser is visiting an http:// version of the site,
+    // regardless of whether the parent site (that is running the tests) is on
+    // http:// or https://. This behavior is tested here by modifying the
+    // global $base_root and $base_url variables on the parent site and
+    // verifying that this does not affect the URLs seen by the internal
+    // browser.
+    foreach (array(TRUE, FALSE) as $https_on) {
+      // Simulate the parent site as either http:// or https://.
+      $scheme = $https_on ? 'https' : 'http';
+      $GLOBALS['base_root'] = preg_replace('@^https?://@', "$scheme://", $GLOBALS['base_root']);
+      $GLOBALS['base_url'] = preg_replace('@^https?://@', "$scheme://", $GLOBALS['base_url']);
 
-    $this->drupalPost(NULL, array(), t('Log in'));
-    $this->assertEqual($absolute, $this->url, 'Passed and requested URL are equal.');
-    $this->assertEqual($this->url, $this->getAbsoluteUrl($this->url), 'Requested and returned absolute URL are equal.');
+      // Visit the http:// version of the user/login page and verify that's
+      // where the browser thinks it's at.
+      $this->drupalGet('user/login', array('https' => FALSE));
+      $this->assertEqual($user_login_absolute_url, $this->url, t('Passed and requested URL are equal.'));
+      $this->assertEqual($this->url, $this->getAbsoluteUrl($this->url), t('Requested and returned absolute URL are equal.'));
 
-    $this->clickLink('Create new account');
-    $url = 'user/register';
-    $absolute = url($url, array('absolute' => TRUE));
-    $this->assertEqual($absolute, $this->url, 'Passed and requested URL are equal.');
-    $this->assertEqual($this->url, $this->getAbsoluteUrl($this->url), 'Requested and returned absolute URL are equal.');
+      // Submit a form and verify that we remain on the correct http:// URL.
+      $this->drupalPost(NULL, array(), t('Log in'));
+      $this->assertEqual($user_login_absolute_url, $this->url, t('Passed and requested URL are equal.'));
+      $this->assertEqual($this->url, $this->getAbsoluteUrl($this->url), t('Requested and returned absolute URL are equal.'));
+
+      // Click a link to go to user/register, and verify that we are on the
+      // correct http:// URL there too.
+      $this->clickLink('Create new account');
+      $this->assertEqual($user_register_absolute_url, $this->url, t('Passed and requested URL are equal.'));
+      $this->assertEqual($this->url, $this->getAbsoluteUrl($this->url), t('Requested and returned absolute URL are equal.'));
+    }
   }
 
   /**
