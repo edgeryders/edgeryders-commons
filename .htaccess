@@ -230,5 +230,5 @@ DirectoryIndex index.php index.html index.htm
   </IfModule>
 </IfModule>
 
-# Redirect fix for default language
-Redirect /en/ /
+# Rewrite rule to fix issues with home page link due to default language being set to use /en 
+RewriteRule ^(.*)en/$ / [R=301,L]
