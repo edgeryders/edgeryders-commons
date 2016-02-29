@@ -229,3 +229,6 @@ DirectoryIndex index.php index.html index.htm
     </FilesMatch>
   </IfModule>
 </IfModule>
+
+# Redirect fix for default language
+Redirect /en/ /
