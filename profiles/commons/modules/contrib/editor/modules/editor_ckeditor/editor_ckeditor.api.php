@@ -51,6 +51,7 @@
  *     group indicators.
  *   - required_html: If this button requires certain HTML tags to be allowed,
  *     specify an array of tags.
+ *
  * @return array
  *   An array of plugin definitions, keyed by the plugin name.
  *
@@ -74,7 +75,7 @@ function hook_editor_ckeditor_plugins() {
  * This hook may be used to modify plugin properties after they have been
  * specified by other modules.
  *
- * @param $plugins
+ * @param array $plugins
  *   An array of all the existing plugin definitions, passed by reference.
  *
  * @see hook_editor_ckeditor_plugins()
@@ -100,10 +101,10 @@ function hook_editor_ckeditor_plugins_alter(array &$plugins) {
  * ckeditor_stylesheets[] = css/ckeditor-iframe.css
  * @endcode
  *
- * @param $css
+ * @param array $css
  *   An array of CSS files, passed by reference. This is a flat list of file
  *   paths relative to the Drupal root.
- * @param $format
+ * @param object $format
  *   The corresponding text format object as returned by filter_format_load()
  *   for which the current text editor is being displayed.
  *
@@ -133,7 +134,7 @@ function hook_editor_ckeditor_css_alter(array &$css, $format) {
  * @param string $plugin_name
  *   String name of the plugin that is being checked.
  *
- * @return boolean
+ * @return bool
  *   Boolean TRUE if the plugin should be enabled, FALSE otherwise.
  *
  * @see hook_editor_ckeditor_plugins()

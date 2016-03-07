@@ -5,7 +5,7 @@
  * Adds CKEditor as a supported editor.
  */
 
-define('CKEDITOR_VERSION', '4.4.7');
+define('CKEDITOR_VERSION', '4.5.5');
 
 /**
  * Implements hook_init().
@@ -38,7 +38,7 @@ function editor_ckeditor_menu() {
   $items['editor-ckeditor/dialog/link/%filter_format'] = array(
     'title' => 'Edit image',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('editor_ckeditor_editor_dialog_link_form', 3),
+    'page arguments' => array('editor_ckeditor_link_dialog_form', 3),
     'access callback' => 'editor_format_access',
     'access arguments' => array(3),
     'theme callback' => 'ajax_base_page_theme',
@@ -48,7 +48,7 @@ function editor_ckeditor_menu() {
   $items['editor-ckeditor/dialog/image/%filter_format'] = array(
     'title' => 'Edit image',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('editor_ckeditor_editor_dialog_image_form', 3),
+    'page arguments' => array('editor_ckeditor_image_dialog_form', 3),
     'access callback' => 'editor_format_access',
     'access arguments' => array(3),
     'theme callback' => 'ajax_base_page_theme',
@@ -76,14 +76,6 @@ function editor_ckeditor_theme() {
  */
 function editor_ckeditor_library() {
   $path = drupal_get_path('module', 'editor_ckeditor');
-
-  $libraries['drupal.editor_ckeditor.image.admin'] = array(
-    'title' => 'Administrative library for CKEditor image plugin.',
-    'version' => VERSION,
-    'css' => array(
-      $path . '/css/editor_ckeditor.image.admin.css' => array(),
-    ),
-  );
 
   $libraries['drupal.editor_ckeditor.admin'] = array(
     'title' => 'Administrative library for configuring CKEditor.',
@@ -220,7 +212,7 @@ function editor_ckeditor_form_filter_format_editor_image_form_alter(&$form, $for
  * Checks if the Caption plugin should be enabled based on the configuration of
  * a text format and editor.
  *
- * @param $format
+ * @param object $format
  *   The filter format object for which to check the settings of.
  *
  * @return bool
@@ -242,7 +234,7 @@ function editor_ckeditor_image_plugin_check($format) {
 /**
  * Editor JS settings callback; Add CKEditor settings to the page for a format.
  *
- * @param $format
+ * @param object $format
  *   The filter format object for which CKEditor is adding its settings.
  * @param $existing_settings
  *   Settings that have already been added to the page by filters.
@@ -255,9 +247,6 @@ function editor_ckeditor_get_settings($format, $existing_settings) {
   global $language;
 
   editor_format_ensure_additional_properties($format);
-
-  // Retrieve available filters and load all configured filters.
-  $filters = !empty($format->format) ? filter_list_format($format->format) : array();
 
   // Loop through all available plugins and check to see if it has been
   // explicitly enabled. At the same time, associate each plugin with its
@@ -409,8 +398,8 @@ function editor_ckeditor_get_settings($format, $existing_settings) {
   }
 
   if (isset($external_plugins['drupalimagecaption'])) {
-    $settings['drupal']['captionFilterEnabled'] = !empty($filters['editor_caption']->status);
-    $settings['drupal']['alignFilterEnabled'] = !empty($filters['editor_align']->status);
+    $settings['drupal']['captionFilterEnabled'] = !empty($format->filters['editor_caption']->status);
+    $settings['drupal']['alignFilterEnabled'] = !empty($format->filters['editor_align']->status);
     $settings['drupal']['imageCaptionPlaceholderText'] = t('Enter caption text here.');
     $settings['image2_captionedClass'] = 'caption caption-img';
     $settings['image2_alignClasses'] = array('align-left', 'align-center', 'align-right');
@@ -428,7 +417,7 @@ function editor_ckeditor_get_settings($format, $existing_settings) {
  * filter system, by enabling CKEditor's Advanced Content Filter (ACF)
  * functionality: http://ckeditor.com/blog/CKEditor-4.1-RC-Released.
  *
- * @param $format
+ * @param object $format
  *   The text format object.
  *
  * @return array
@@ -447,9 +436,7 @@ function editor_ckeditor_get_acf_settings($format) {
     return array(TRUE, FALSE);
   }
 
-  /**
-   * Converts Drupal-stored attribute values to CKEditor attribute lists.
-   */
+  // Converts Drupal-stored attribute values to CKEditor attribute lists.
   $get_attribute_values = function($attribute_values, $allowed_values) {
     $values = array_keys(array_filter($attribute_values, function($value) use ($allowed_values) {
       if ($allowed_values) {
@@ -502,8 +489,8 @@ function editor_ckeditor_get_acf_settings($format) {
       // attributes is allowed. However, that may not be the case: the "*"
       // tag may still apply restrictions.
       // Since CKEditor's ACF follows the following principle:
-      //     Once validated, an element or its property cannot be
-      //     invalidated by another rule.
+      // "Once validated, an element or its property cannot be invalidated by
+      // another rule."
       // That means that the most permissive setting wins. Which means that
       // it will still be allowed by CKEditor to e.g. define any style, no
       // matter what the "*" tag's restrictions may be. If there's a setting

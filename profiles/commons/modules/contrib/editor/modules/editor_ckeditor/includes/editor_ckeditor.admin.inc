@@ -17,7 +17,7 @@ function editor_ckeditor_settings_form(&$form, $form_state, $format) {
         array('editor_ckeditor', 'drupal.editor_ckeditor.admin'),
       ),
       'js' => array(
-        array('data' => array('ckeditor' => array('toolbarAdmin' => $toolbar_element)), 'type' => 'setting')
+        array('data' => array('ckeditor' => array('toolbarAdmin' => $toolbar_element)), 'type' => 'setting'),
       ),
     ),
     '#attributes' => array('class' => array('ckeditor-toolbar-configuration')),
@@ -61,7 +61,7 @@ function editor_ckeditor_settings_form(&$form, $form_state, $format) {
     '#type' => 'textarea',
     '#rows' => 4,
     '#default_value' => $style_list,
-    '#description' => t('A list of classes that will be provided in the "Styles" dropdown. Enter one class on each line in the format: element.class|Label. Example: h1.title|Title.') . '<br />' . t('Each style should be in your theme\'s main CSS as well as in your theme\'s ckeditor-iframe.css file.'),
+    '#description' => t('A list of classes that will be provided in the "Styles" dropdown. Enter one or more classes on each line in the format: element.classA.classB|Label. Example: h1.title|Title. Advanced example: h1.fancy.title|Fancy title.<br />These styles should be available in your theme\'s CSS file.'),
   );
 
   array_unshift($form['#validate'], 'editor_ckeditor_settings_form_validate');
@@ -141,7 +141,8 @@ function _editor_ckeditor_settings_parse_style_list($style_list_string) {
  * Convert the stored array of styles into a string for editing.
  *
  * @param array $style_list
- *   The style list as returned by _ckeditor_ckeditor_settings_parse_style_list().
+ *   The style list as returned by
+ *   _ckeditor_ckeditor_settings_parse_style_list().
  *
  * @return string
  *   The string representation of the style list.

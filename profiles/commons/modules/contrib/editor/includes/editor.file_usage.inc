@@ -29,7 +29,7 @@ function editor_field_attach_delete_revision($entity_type, $entity) {
 
   foreach ($files as $fid => $count) {
     if ($file = file_load($fid)) {
-      file_usage_delete($file, 'editor', $entity_type , $id, $count);
+      file_usage_delete($file, 'editor', $entity_type, $id, $count);
     }
   }
 }
@@ -62,8 +62,8 @@ function _editor_filter_add_file_usage_from_fields($entity_type, $entity) {
   // so that a correct file count can be created for that (the current) version
   // ID. This code may assume some things about entities that are only true for
   // node objects and should be reviewed.
-  // @TODO this conditional can probably be condensed
-  if (empty($entity->revision) && empty($entity->old_vid) && empty($entity->is_new) && ! empty($entity->original)) {
+  // @TODO this conditional can probably be condensed.
+  if (empty($entity->revision) && empty($entity->old_vid) && empty($entity->is_new) && !empty($entity->original)) {
     $old_files = editor_entity_field_count_files($entity_type, $entity->original);
 
     foreach ($old_files as $fid => $old_file_count) {
@@ -75,7 +75,7 @@ function _editor_filter_add_file_usage_from_fields($entity_type, $entity) {
       if ($old_file_count > $entity_files[$fid]) {
         $deprecate = $old_file_count - $entity_files[$fid];
 
-        // Now deprecate this usage
+        // Now deprecate this usage.
         $file = file_load($fid);
 
         if ($file) {
@@ -86,7 +86,7 @@ function _editor_filter_add_file_usage_from_fields($entity_type, $entity) {
         unset($entity_files[$fid]);
       }
       // There are the same number of files, nothing to do.
-      elseif ($entity_files[$fid] ==  $old_file_count) {
+      elseif ($entity_files[$fid] == $old_file_count) {
         unset($entity_files[$fid]);
       }
       // There are more files now, adjust the difference for the greater number.
@@ -113,12 +113,12 @@ function _editor_filter_add_file_usage_from_fields($entity_type, $entity) {
 /**
  * Retrieve a count of all of the files referenced by an entity.
  *
- * @param $entity
- *   The entity whose files are being counted.
- * @param $entity_type
+ * @param string $entity_type
  *   The type of the entity whose files are being counted.
+ * @param object $entity
+ *   The entity whose files are being counted.
  *
- * @return
+ * @return array
  *   An array of file counts keyed by file ID.
  */
 function editor_entity_field_count_files($entity_type, $entity) {
@@ -141,12 +141,12 @@ function editor_entity_field_count_files($entity_type, $entity) {
 /**
  * Parse file references from an entity's text fields.
  *
- * @param $entity
- *   The entity whose fields are being parsed.
- * @param $entity_type
+ * @param string $entity_type
  *   The type of the entity whose fields are being parsed.
+ * @param object $entity
+ *   The entity whose fields are being parsed.
  *
- * @return
+ * @return array
  *   An array of file IDs corresponding to the files referenced in the fields.
  */
 function editor_filter_parse_from_fields($entity_type, $entity) {
@@ -189,12 +189,12 @@ function editor_filter_parse_from_fields($entity_type, $entity) {
 /**
  * Retrieve a list of fields attached to an entity with text processing support.
  *
- * @param $entity
- *   The entity whose fields are being examined.
- * @param $entity_type
+ * @param string $entity_type
  *   The type of the entity whose fields are being examined.
+ * @param object $entity
+ *   The entity whose fields are being examined.
  *
- * @return
+ * @return array
  *   An array of the field names which support text processing.
  */
 function editor_filter_fields_with_text_filtering($entity_type, $entity) {
