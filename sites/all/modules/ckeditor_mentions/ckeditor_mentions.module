@@ -29,6 +29,8 @@ function ckeditor_mentions_menu() {
 }
 
 /**
+ * Provides a CKEditor plugin for use with the Drupal ckeditor module.
+ *
  * Implementation of hook_ckeditor_plugin().
  */
 function ckeditor_mentions_ckeditor_plugin() {
@@ -37,6 +39,24 @@ function ckeditor_mentions_ckeditor_plugin() {
     'desc' => t('Plugin for user mentioning and inserting'),
     'path' => drupal_get_path('module', 'ckeditor_mentions') . '/plugins/mentions/',
   ));
+}
+
+/**
+ * Provides a CKEditor plugin for use with the Drupal editor_ckeditor module.
+ *
+ * Implementation of hook_editor_ckeditor_plugins().
+ *
+ * Documentation: http://cgit.drupalcode.org/editor/tree/modules/editor_ckeditor/editor_ckeditor.api.php#n62
+ * (But note, instead of the "location" key, "path" has to be used.)
+ */
+function ckeditor_mentions_editor_ckeditor_plugins() {
+  $plugins['mentions'] = array(
+    'path' => drupal_get_path('module', 'ckeditor_mentions') . '/plugins/mentions',
+    'file' => 'plugin.js',
+    'enabled callback' => TRUE, // Works but undocumented. Normally provide a function name.
+  );
+
+  return $plugins;
 }
 
 /**
