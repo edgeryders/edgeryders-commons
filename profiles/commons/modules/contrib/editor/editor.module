@@ -47,8 +47,8 @@ function editor_css_alter(&$css) {
   }
 }
 
-/** 
- * Implements hook_module_implements_alter(). 
+/**
+ * Implements hook_module_implements_alter().
  */
 function editor_module_implements_alter(&$implementations, $hook) {
   if ($hook == 'element_info_alter') {
@@ -65,6 +65,23 @@ function editor_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
+ * Implements hook_menu_alter().
+ */
+function editor_menu_alter(&$items) {
+  // Modify the formats page title and description to reflect the addition of
+  // WYSIWYG editors.
+  if (!empty($items['admin/config/content/formats'])) {
+    $items['admin/config/content/formats']['title'] = 'Text editors and formats';
+    $items['admin/config/content/formats']['description'] = 'Configure WYSIWYG and text editors on the site. Restrict or allow certain HTML tags to be used in content.';
+  }
+
+  // Disable tips for individual filter formats.
+  if (!empty($items['filter/tips/%filter_format'])) {
+    $items['filter/tips/%filter_format']['access callback'] = FALSE;
+  }
+}
+
+/**
  * Implements hook_theme_registry_alter().
  */
 function editor_theme_registry_alter(&$theme_registry) {
@@ -73,40 +90,26 @@ function editor_theme_registry_alter(&$theme_registry) {
   if (isset($theme_registry['textarea'])) {
     $path = drupal_get_path('module', 'editor');
 
-    $theme_registry['textarea']['theme path'] = $path;
+    $theme_registry['textarea']['file'] = 'editor.theme.inc';
+    $theme_registry['textarea']['theme path'] = $path . '/includes';
     $theme_registry['textarea']['function'] = 'editor_textarea';
-  }
-}
-
-/**
- * Returns HTML for a textarea form element.
- *
- * @param $variables
- *   An associative array containing:
- *   - element: An associative array containing the properties of the element.
- *     Properties used: #title, #value, #description, #rows, #cols, #required,
- *     #attributes, #resizable
- *
- * @ingroup themeable
- */
-function editor_textarea($variables) {
-  $element = $variables['element'];
-  element_set_attributes($element, array('id', 'name', 'cols', 'rows'));
-  _form_set_class($element, array('form-textarea'));
-
-  $wrapper_attributes = array(
-    'class' => array('form-textarea-wrapper'),
-  );
-
-  // Add resizable behavior.
-  if (!empty($element['#resizable'])) {
-    $element['#attributes']['class'][] = 'resize-' . $element['#resizable'];
+    $theme_registry['textarea']['includes'][] = $theme_registry['textarea']['theme path'] . '/' . $theme_registry['textarea']['file'];
   }
 
-  $output = '<div' . drupal_attributes($wrapper_attributes) . '>';
-  $output .= '<textarea' . drupal_attributes($element['#attributes']) . '>' . check_plain($element['#value']) . '</textarea>';
-  $output .= '</div>';
-  return $output;
+  // Add an 'editor' column to the text format overview form.
+  if (isset($theme_registry['filter_admin_overview'])) {
+    $path = drupal_get_path('module', 'editor');
+
+    $theme_registry['filter_admin_overview']['file'] = 'editor.theme.inc';
+    $theme_registry['filter_admin_overview']['theme path'] = $path . '/includes';
+    $theme_registry['filter_admin_overview']['function'] = 'editor_admin_overview';
+
+    // Locate the default filter.module include.
+    $filter_include = array_search('modules/filter/filter.admin.inc', $theme_registry['filter_admin_overview']['includes']);
+
+    // Replace it with the editor.module include.
+    array_splice($theme_registry['filter_admin_overview']['includes'], $filter_include, 1, $theme_registry['filter_admin_overview']['theme path'] . '/' . $theme_registry['filter_admin_overview']['file']);
+  }
 }
 
 /**
@@ -256,14 +259,14 @@ function editor_element_info_alter(&$type) {
  *   $form_state['values']['body']['format'] = 'foo';
  * @endcode
  *
- * @param $element
+ * @param array $element
  *   The form element to process. Properties used:
  *   - #base_type: The form element #type to use for the 'value' element.
  *     'textarea' by default.
  *   - #format: (optional) The text format ID to preselect. If NULL or not set,
  *     the default format for the current user will be used.
  *
- * @return
+ * @return array
  *   The expanded element.
  *
  * @see filter_process_format()
@@ -437,6 +440,7 @@ function editor_process_format($element) {
  * @param array $formats
  *   An array of formats as returned by filter_formats(), whose settings should
  *   be added to the page.
+ *
  * @return array
  *   An array of attached libraries, CSS, and JS that can be set to an element's
  *   #attached property.
@@ -475,7 +479,7 @@ function editor_get_attached($formats) {
 /**
  * Get a complete list of allowed and forbidden tags for a text format.
  *
- * @param $format
+ * @param object $format
  *   The text format object for which the list will be generated.
  *
  * @return array|TRUE
@@ -575,8 +579,8 @@ function editor_format_allowed_html($format) {
       }
       // Both list an array of attribute values; do an intersection,
       // where we take into account that a value of:
-      //  - TRUE means the attribute value is allowed;
-      //  - FALSE means the attribute value is forbidden;
+      // - TRUE means the attribute value is allowed;
+      // - FALSE means the attribute value is forbidden;
       // hence we keep the ANDed result.
       else {
         $intersection = array_intersect_key($current_attributes, $new_attributes);
@@ -626,10 +630,10 @@ function editor_format_allowed_html($format) {
 /**
  * Checks a user's access to a particular text format.
  *
- * @param $format
+ * @param object $format
  *   A text format object.
  *
- * @return
+ * @return bool
  *   TRUE if the text format can be used by the current user, FALSE otherwise.
  */
 function editor_format_access($format) {
@@ -641,7 +645,7 @@ function editor_format_access($format) {
 /**
  * Loads an individual editor's information.
  *
- * @param $editor_name
+ * @param string|FALSE $editor_name
  *   The internal editor name of the editor to load.
  */
 function editor_load($editor_name) {
@@ -653,7 +657,7 @@ function editor_load($editor_name) {
 /**
  * Returns a list of text editors that are used with 'text_format' elements.
  *
- * @return
+ * @return array
  *   An associative array of editors keyed by the internal name of the editor.
  *   Each editor may contain the following elements (all are optional except as
  *   noted):
@@ -711,8 +715,6 @@ function editor_get_js_settings($formats) {
   foreach ($formats as $format_name => $format) {
     editor_format_ensure_additional_properties($format);
 
-    $filters = filter_list_format($format_name);
-
     // Don't add settings for formats that don't have associated editors.
     if (!$format->editor) {
       continue;
@@ -720,7 +722,7 @@ function editor_get_js_settings($formats) {
 
     $filter_settings = array();
 
-    foreach ($filters as $filter_name => $filter) {
+    foreach ($format->filters as $filter_name => $filter) {
       if ($filter->status && isset($filter_info[$filter_name]['js settings callback'])) {
         $function = $filter_info[$filter_name]['js settings callback'];
         $filter_settings += $function($filter, $format);
@@ -752,7 +754,7 @@ function editor_get_js_settings($formats) {
  * filter_format_load() because filter.module does not provide a way to load
  * additional data when a format is retrieved from the database.
  *
- * @param $format
+ * @param object $format
  *   An object representing the text format.
  *
  * @todo Remove this when we can alter filter_format_load() or filter_formats().
@@ -776,5 +778,11 @@ function editor_format_ensure_additional_properties($format) {
 
   if (empty($format->filters)) {
     $format->filters = array();
+
+    $filters = filter_list_format($format->format);
+
+    foreach($filters as $name => $filter) {
+      $format->filters[$name] = $filter;
+    }
   }
 }

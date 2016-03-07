@@ -12,7 +12,7 @@ module_load_include('php', 'quickedit', 'includes/QuickEditInPlaceEditorInterfac
 /**
  * Defines the CKEditor in-place editor.
  */
-class CKEditor implements QuickEditInPlaceEditorInterface{
+class CKEditor implements QuickEditInPlaceEditorInterface {
 
   /**
    * Implements QuickEditInPlaceEditorInterface::isCompatible().
@@ -77,7 +77,7 @@ class CKEditor implements QuickEditInPlaceEditorInterface{
       'data' => array(
         'quickedit' => array(
           'ckeditor' => array(
-            'basePath' =>  base_path() . drupal_get_path('module', 'editor_ckeditor') . '/lib/ckeditor/',
+            'basePath' => base_path() . drupal_get_path('module', 'editor_ckeditor') . '/lib/ckeditor/',
           ),
         ),
       ),

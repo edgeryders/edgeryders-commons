@@ -164,7 +164,7 @@ function editor_ckeditor_editor_ckeditor_plugins() {
         'required_html' => array(
           array(
             'tags' => array('img'),
-            'attributes' => array('src', 'alt', 'data-file-id', 'data-align'),
+            'attributes' => array('src', 'alt', 'data-entity-type', 'data-entity-id', 'data-align'),
           ),
         ),
         'image' => $image_prefix . '/image.png',
@@ -186,7 +186,7 @@ function editor_ckeditor_editor_ckeditor_plugins() {
         'tags' => array('figure', 'figcaption'),
         'attributes' => array('src', 'alt', 'class', 'data-placeholder'),
       ),
-    )
+    ),
   );
 
   // The drupallink plugin replaces normal link functionality.
@@ -220,20 +220,17 @@ function editor_ckeditor_editor_ckeditor_plugins() {
  * Implements hook_editor_ckeditor_css_alter().
  */
 function editor_ckeditor_editor_ckeditor_css_alter(array &$css, $format) {
-  // Retrieve available filters for the text format.
-  $filters = !empty($format->format) ? filter_list_format($format->format) : array();
-
   // Add the editor caption CSS if the text format associated with this text
   // editor uses the editor_caption filter. This is used by the included
   // CKEditor DrupalImageCaption plugin.
-  if (isset($filters['editor_caption']) && $filters['editor_caption']->status) {
+  if (isset($format->filters['editor_caption']) && $format->filters['editor_caption']->status) {
     $css[] = drupal_get_path('module', 'editor') . '/css/filter/filter.caption.css';
   }
 
   // Add the editor align CSS if the text format associated with this text
   // editor uses the editor_align filter. This is used by the included
   // CKEditor DrupalImage plugin.
-  if (isset($filters['editor_align']) && $filters['editor_align']->status) {
+  if (isset($format->filters['editor_align']) && $format->filters['editor_align']->status) {
     $css[] = drupal_get_path('module', 'editor_ckeditor') . '/css/plugins/drupalimagecaption/editor_ckeditor.drupalimagecaption.css';
   }
 }
@@ -246,7 +243,7 @@ function editor_ckeditor_editor_ckeditor_css_alter(array &$css, $format) {
  * the text editor's configuration so that EditorImageDialog knows whether it
  * should allow the user to upload images.
  *
- * @param $format
+ * @param object $format
  *   The text format that is being edited.
  *
  * @return array
