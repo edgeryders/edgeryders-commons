@@ -22,7 +22,7 @@ function editor_filter_format_update($format) {
 /**
  * Helper function to save editor information on text format insert/update.
  *
- * @param $format
+ * @param object $format
  *   An object representing the text format.
  */
 function _editor_format_save($format) {
@@ -114,6 +114,7 @@ function _editor_caption($text) {
       // bubble up the value of the class attribute of the captioned element,
       // this allows it to collaborate with e.g. the filter_align filter.
       $attributes = array();
+      $tag = $node->tagName;
       $classes = $node->getAttribute('class');
 
       if ($classes) {
@@ -123,10 +124,11 @@ function _editor_caption($text) {
       $attributes['class'][] = 'caption';
       $attributes['class'][] = 'caption-' . $node->tagName;
       $node->removeAttribute('class');
+      $node = ($node->parentNode->tagName === 'a') ? $node->parentNode : $node;
 
       $theme_parameters = array(
         'item' => $node->ownerDocument->saveHTML($node),
-        'tag' => $node->tagName,
+        'tag' => $tag,
         'caption' => $caption,
         'attributes' => $attributes,
       );
@@ -141,7 +143,7 @@ function _editor_caption($text) {
       // Import the updated node from the new DOMDocument into the original
       // one, importing also the child nodes of the updated node.
       $updated_node = $dom->importNode($updated_node, TRUE);
-      // Finally, replace the original image node with the new image node.
+      // Finally, replace the original node with the new node.
       $node->parentNode->replaceChild($updated_node, $node);
     }
 

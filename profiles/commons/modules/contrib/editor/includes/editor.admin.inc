@@ -141,7 +141,7 @@ function editor_form_filter_admin_format_form_alter(&$form, &$form_state, $form_
 
   if (!empty($format->format)) {
     // If editing an existing text format, pre-select its current permissions.
-    $form['roles']['#default_value'] = filter_get_roles_by_format($format);
+    $form['roles']['#default_value'] = array_keys(filter_get_roles_by_format($format));
   }
   elseif ($admin_role = variable_get('user_admin_role', 0)) {
     // If adding a new text format and the site has an administrative role,
@@ -268,12 +268,9 @@ function editor_admin_format_form_validate($form, &$form_state) {
   form_set_value($form['format'], $format_format, $form_state);
   form_set_value($form['name'], $format_name, $form_state);
 
-  $formats = filter_formats();
-
-  foreach ($formats as $format) {
-    if ($format->format !== $format_format && $format->name === $format_name) {
-      form_set_error('name', t('Text format names must be unique. A format named %name already exists.', array('%name' => $format_name)));
-    }
+  $result = db_query("SELECT format FROM {filter_format} WHERE name = :name AND format <> :format", array(':name' => $format_name, ':format' => $format_format))->fetchField();
+  if ($result) {
+    form_set_error('name', t('Text format names must be unique. A format named %name already exists.', array('%name' => $format_name)));
   }
 }
 

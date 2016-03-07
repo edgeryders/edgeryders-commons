@@ -73,7 +73,7 @@ function template_preprocess_editor_ckeditor_settings_toolbar(&$variables) {
       $value = filter_xss_admin($button['image_alternative']);
     }
     elseif (isset($button['image'])) {
-      $value = '<img src="'. file_create_url($button['image' . $rtl]) . '" title="' . check_plain($button['label']) . '" />';
+      $value = '<img src="' . file_create_url($button['image' . $rtl]) . '" title="' . check_plain($button['label']) . '" />';
       $value = '<a href="#" role="button" title="' . $button['label'] . '" aria-label="' . $button['label'] . '"><span class="cke_button_icon">' . $value . '</span></a>';
     }
     else {

@@ -17,7 +17,7 @@
  * activated in a 'text_format' element, the text editor associated with the
  * format should be activated on the text area.
  *
- * @return
+ * @return array
  *   An associative array of editors, whose keys are internal editor names,
  *   which should be unique and therefore prefixed with the name of the module.
  *   Each value is an associative array describing the editor, with the
@@ -53,7 +53,7 @@ function hook_editor_info() {
 /**
  * Perform alterations on editor definitions.
  *
- * @param $editors
+ * @param array $editors
  *   Array of information on editors exposed by hook_editor_info()
  *   implementations.
  */
