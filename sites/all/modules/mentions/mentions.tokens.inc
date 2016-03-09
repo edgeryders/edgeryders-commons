@@ -19,6 +19,18 @@ function mentions_token_info() {
     'name'        => t('Mention ID'),
     'description' => t('The unique ID of the mention'),
   );
+  $mentions['source-type'] = array(
+    'name'        => t('Type of the mention source content'),
+    'description' => t('Human-readable name for the type of the content containing the mention. This can be an entity type name ("comment"), or if available a bundle name ("post", "article" etc.)'),
+  );
+  $mentions['source-path'] = array(
+    'name'        => t('URL path of the mention source content'),
+    'description' => t('URL path (not a full URL) to the content containing the mention.'),
+  );
+  $mentions['source-title'] = array(
+    'name'        => t('Title of the mention source content'),
+    'description' => t('Title of the content containing the mention. Usually the value of a title field, subject field or similar.'),
+  );
 
   // Chained tokens for mentions.
   $mentions['author'] = array(
@@ -69,6 +81,25 @@ function mentions_tokens($type, $tokens, array $data = array(), array $options =
         // Simple key values on the metnion.
         case 'mid':
           $replacements[$original] = $mention->mid;
+          break;
+
+        case 'source-type':
+          // $mention->source is sth. like "entity::comment::12345".
+          $source_id = explode('::', $mention->source);
+          dpm($source_id);
+          $source_entity_type = isset($source_id[1]) ? $source_id[1] : null;
+
+          $replacements[$original] = isset($source_entity_type) ? $source_entity_type : '';
+          dpm($replacements);
+          // TODO If $source_entity_type is "node", better return the human-readable bundle name.
+          break;
+
+        case 'source-path':
+          $replacements[$original] = $mention->source_path;
+          break;
+
+        case 'source-title':
+          $replacements[$original] = $mention->source_title;
           break;
 
         // Default values for the chained tokens handled below.
