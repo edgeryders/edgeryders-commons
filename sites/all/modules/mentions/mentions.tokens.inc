@@ -21,15 +21,9 @@ function mentions_token_info() {
   );
 
   // Chained tokens for mentions.
-  $mentions['uid'] = array(
-    'name'        => t('User'),
-    'description' => t('The mentioned user.'),
-    'type'        => 'user',
-  );
-
-  $mentions['auid'] = array(
+  $mentions['author'] = array(
     'name'        => t('Author'),
-    'description' => t('The author of the mention.'),
+    'description' => t('The mention\'s author.'),
     'type'        => 'user',
   );
 
@@ -78,15 +72,9 @@ function mentions_tokens($type, $tokens, array $data = array(), array $options =
           break;
 
         // Default values for the chained tokens handled below.
-        case 'uid':
+        case 'author':
           $user                    = user_load($mention->uid);
           $name                    = ($mention->uid == 0) ? variable_get('anonymous', t('Anonymous')) : $user->name;
-          $replacements[$original] = $sanitize ? filter_xss($name) : $name;
-          break;
-
-        case 'auid':
-          $author                  = user_load($mention->auid);
-          $name                    = ($mention->auid == 0) ? variable_get('anonymous', t('Anonymous')) : $author->name;
           $replacements[$original] = $sanitize ? filter_xss($name) : $name;
           break;
 
@@ -101,15 +89,9 @@ function mentions_tokens($type, $tokens, array $data = array(), array $options =
       }
     }
 
-    $user_tokens = token_find_with_prefix($tokens, 'uid');
-    if ($user_tokens) {
-      $user = user_load($mention->uid);
-      $replacements += token_generate('user', $user_tokens, array('user' => $user), $options);
-    }
-
-    $author_tokens = token_find_with_prefix($tokens, 'auid');
+    $author_tokens = token_find_with_prefix($tokens, 'author');
     if ($author_tokens) {
-      $author = user_load($mention->auid);
+      $author = user_load($mention->uid);
       $replacements += token_generate('user', $author_tokens, array('user' => $author), $options);
     }
 
@@ -132,3 +114,4 @@ function mentions_tokens($type, $tokens, array $data = array(), array $options =
 
   return $replacements;
 }
+
