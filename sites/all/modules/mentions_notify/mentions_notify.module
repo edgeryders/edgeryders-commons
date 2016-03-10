@@ -1,0 +1,88 @@
+<?php
+
+/**
+ * Send an e-mail notification if a new mentions record has been created.
+ * 
+ * Implements hook_entity_insert().
+ * 
+ * @param $entity A Drupalentity. If of type "mention" (the only one processed here), it 
+ *   has to be an entity object derived from EntityDrupalWrapper with these properties:
+ *   type:           Machine name of the mention type.
+ *   mid:            Mention ID.
+ *   source:         Where the mention occured. String with entity type and ID 
+ *                   in format "entity::{$type}::{$id}".
+ *   source_title:   Label / title of the content where the mention occurred.
+ *   source_path:    URL parth of the content where the mention occurred, or empty string if there is none.
+ *   target:         Identifies the mentioned entity. String with entity type and ID 
+ *                   in format "entity::{$type}::{$id}". For example, "entity::user::36".
+ *   uid:            User ID of the user who created the content containing the mention. Due to admin 
+ *                   masquerading priviledges etc., this can be different from the user noted in the content's
+ *                   author field.
+ *   created:        UNIX timestamp for when the mention was created.
+ *   changed:        UNIX timestamp for when the mention was last updated.
+ *   is_new:         Boolean indicating whether the mention record was just created or only update.
+ *   mention_text:   Drupal field value array containing the field's value with the mention text.
+ *   mention_target: Drupal field value array containing the target entity ID somewhere.
+ *   data:           The full mention as returned by mentions_get_mentions(). Partially redundant 
+ *                   to the above but potentially containing more data provided via mention type plugins. 
+ *                   It is an array with at least the following properties:
+ *     type:         Machine name of the mention type.
+ *     source:       Again an array, elements being:
+ *       string:     The actual text of the mention, plus padding spaces, such as " @username ").
+ *       match:      The actual text of the mention, such as "@username".
+ *       item:       The value of the whole field containing the mention match. An array as typical for 
+ *                   Drupal field representations, e.g. containing elements "summary", "value", "format".
+ *     target:       Identifies the mentioned entity. Again an array, elements being:
+ *       enity_type: Machine name of the target entity type, such as "user".
+ *       entity_id:  ID of the target entity.
+ *       id:         Same as "target" on the array's first level.
+ * @param $type
+ */
+function mentions_notify_entity_insert($mention, $type) {
+
+  // We're only interested in mention entities of certain mention types.
+  if ($type != 'mention' or $mention->type != 'at_mention') {
+    return;
+  }
+
+  $addressee = user_load($mention->data['target']['entity_id']);
+  $params['mention'] = $mention;
+
+  // Call our hook_mail() implementation to actually send the e-mail.
+  // Docs: https://api.drupal.org/api/drupal/includes!mail.inc/function/drupal_mail/7
+  drupal_mail(
+      'mentions_notify',       // Call the hook_mail() implementation in module mentions_notify.
+      'msg_mentioned',         // String identifying what mail to send in the target hook_mail() function.
+      $addressee->mail,        // "To:" e-mail address.
+      user_preferred_language($addressee), // Language to send the e-mail in.
+      $params                  // Array with additional, custom parameters fo the target hook_mail() function.
+  );
+}
+
+/**
+ * Sends an e-mail about the mention to a mentioned user.
+ *
+ * Implements hook_mail(), called via drupal_mail() within this module.
+ */
+function mentions_notify_mail($key, &$message, $params) {
+  if ($key != 'msg_mentioned') {
+    return;
+  }
+
+  $language = $message['language'];
+  $mention = $params['mention'];
+  $addressee = user_load($mention->data['target']['entity_id']);
+
+  // Get message template texts.
+  $subject_template = variable_get_value('mentions_notify_msg_subject');
+  $body_template = variable_get_value('mentions_notify_msg_body');
+
+  // Get message texts by replacing the template tokens.
+  $tokens = array(
+    'user'      => $addressee, // Username of user who has been mentioned.
+    'mentions'  => $mention,   // Mention object containing the mention.
+  );
+  $message['subject'] .= token_replace($subject_template, $tokens);
+  $message['body'][] = token_replace($body_template, $tokens);
+}
+
