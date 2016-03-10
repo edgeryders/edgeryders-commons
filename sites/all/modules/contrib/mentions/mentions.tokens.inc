@@ -86,20 +86,24 @@ function mentions_tokens($type, $tokens, array $data = array(), array $options =
         case 'source-type':
           // $mention->source is sth. like "entity::comment::12345".
           $source_id = explode('::', $mention->source);
-          dpm($source_id);
           $source_entity_type = isset($source_id[1]) ? $source_id[1] : null;
 
           $replacements[$original] = isset($source_entity_type) ? $source_entity_type : '';
-          dpm($replacements);
           // TODO If $source_entity_type is "node", better return the human-readable bundle name.
           break;
 
         case 'source-path':
           $replacements[$original] = $mention->source_path;
+          if ($sanitize) {
+            $replacements[$original] = filter_xss($replacements[$original]);
+          }
           break;
 
         case 'source-title':
           $replacements[$original] = $mention->source_title;
+          if ($sanitize) {
+            $replacements[$original] = filter_xss($replacements[$original]);
+          }
           break;
 
         // Default values for the chained tokens handled below.
