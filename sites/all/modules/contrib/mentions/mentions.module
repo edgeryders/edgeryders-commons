@@ -362,6 +362,19 @@ function mentions_get_mentions($text, $mention_type) {
     $plugin = mentions_get_plugin($mention_type->plugin);
     if (isset($plugin['callbacks']) && isset($plugin['callbacks']['target']) && function_exists($plugin['callbacks']['target'])) {
       foreach ($matches as $match) {
+
+        // Temporary hack to make usernames recognizable where "_" is supplied for " ", as done by 
+        // ckeditor_mentions via the edgeryders_users_overrides module.  (matthias@ansorgs.de, 2016-03-10)
+        // If a username with "_" does not correspond to a user, we try the version with " ". We test 
+        // if the username contains "_" before trying to create the user to avoid unnecessary load.
+        if ($mention_type->type == 'at_mention' and 
+          strpos($match[2], '_') !== FALSE and 
+          user_load_by_name($match[2]) === FALSE
+        ) {
+          $match[2] = str_replace('_', ' ', $match[2]);
+        }
+        // end of temporary hack
+
         if (($target = $plugin['callbacks']['target']($match[2], $mention_type)) !== FALSE) {
           $mentions[$match[0]] = array(
             'type'   => $mention_type,
