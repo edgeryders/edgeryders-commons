@@ -414,7 +414,7 @@ function mentions_get_input_pattern($mention_type, $regex = TRUE) {
   $pattern = '';
 
   // Append prefix to pattern.
-  if (isset($mention_type->input['suffix'])) {
+  if (isset($mention_type->input['prefix'])) {
     $pattern .= $regex ? preg_quote($mention_type->input['prefix'], '/') : $mention_type->input['prefix'];
   }
 
