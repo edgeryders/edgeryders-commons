@@ -7,12 +7,12 @@
 /**
  * Implements hook_field_default_field_instances().
  */
-function commons_notify_field_default_field_instances() {
+function edgeryders_notify_field_default_field_instances() {
   $field_instances = array();
 
-  // Exported field_instance: 'message-commons_notify_comment_created-field_message_rendered_body'
-  $field_instances['message-commons_notify_comment_created-field_message_rendered_body'] = array(
-    'bundle' => 'commons_notify_comment_created',
+  // Exported field_instance: 'message-edgeryders_notify_comment_created-field_message_rendered_body'
+  $field_instances['message-edgeryders_notify_comment_created-field_message_rendered_body'] = array(
+    'bundle' => 'edgeryders_notify_comment_created',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -56,9 +56,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_comment_created-field_message_rendered_subject'
-  $field_instances['message-commons_notify_comment_created-field_message_rendered_subject'] = array(
-    'bundle' => 'commons_notify_comment_created',
+  // Exported field_instance: 'message-edgeryders_notify_comment_created-field_message_rendered_subject'
+  $field_instances['message-edgeryders_notify_comment_created-field_message_rendered_subject'] = array(
+    'bundle' => 'edgeryders_notify_comment_created',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -101,9 +101,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_comment_created-field_target_comments'
-  $field_instances['message-commons_notify_comment_created-field_target_comments'] = array(
-    'bundle' => 'commons_notify_comment_created',
+  // Exported field_instance: 'message-edgeryders_notify_comment_created-field_target_comments'
+  $field_instances['message-edgeryders_notify_comment_created-field_target_comments'] = array(
+    'bundle' => 'edgeryders_notify_comment_created',
     'default_value' => NULL,
     'default_value_function' => '',
     'deleted' => 0,
@@ -156,9 +156,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_comment_created-field_target_nodes'
-  $field_instances['message-commons_notify_comment_created-field_target_nodes'] = array(
-    'bundle' => 'commons_notify_comment_created',
+  // Exported field_instance: 'message-edgeryders_notify_comment_created-field_target_nodes'
+  $field_instances['message-edgeryders_notify_comment_created-field_target_nodes'] = array(
+    'bundle' => 'edgeryders_notify_comment_created',
     'default_value' => NULL,
     'default_value_function' => '',
     'deleted' => 0,
@@ -211,9 +211,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_comment_created_no_groups-field_message_rendered_body'
-  $field_instances['message-commons_notify_comment_created_no_groups-field_message_rendered_body'] = array(
-    'bundle' => 'commons_notify_comment_created_no_groups',
+  // Exported field_instance: 'message-edgeryders_notify_comment_created_no_groups-field_message_rendered_body'
+  $field_instances['message-edgeryders_notify_comment_created_no_groups-field_message_rendered_body'] = array(
+    'bundle' => 'edgeryders_notify_comment_created_no_groups',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -257,9 +257,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_comment_created_no_groups-field_message_rendered_subject'
-  $field_instances['message-commons_notify_comment_created_no_groups-field_message_rendered_subject'] = array(
-    'bundle' => 'commons_notify_comment_created_no_groups',
+  // Exported field_instance: 'message-edgeryders_notify_comment_created_no_groups-field_message_rendered_subject'
+  $field_instances['message-edgeryders_notify_comment_created_no_groups-field_message_rendered_subject'] = array(
+    'bundle' => 'edgeryders_notify_comment_created_no_groups',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -303,9 +303,9 @@ function commons_notify_field_default_field_instances() {
   );
 
 
-  // Exported field_instance: 'message-commons_notify_comment_created_no_groups-field_target_comments'
-  $field_instances['message-commons_notify_comment_created_no_groups-field_target_comments'] = array(
-    'bundle' => 'commons_notify_comment_created_no_groups',
+  // Exported field_instance: 'message-edgeryders_notify_comment_created_no_groups-field_target_comments'
+  $field_instances['message-edgeryders_notify_comment_created_no_groups-field_target_comments'] = array(
+    'bundle' => 'edgeryders_notify_comment_created_no_groups',
     'default_value' => NULL,
     'default_value_function' => '',
     'deleted' => 0,
@@ -358,9 +358,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_comment_created_no_groups-field_target_nodes'
-  $field_instances['message-commons_notify_comment_created_no_groups-field_target_nodes'] = array(
-    'bundle' => 'commons_notify_comment_created_no_groups',
+  // Exported field_instance: 'message-edgeryders_notify_comment_created_no_groups-field_target_nodes'
+  $field_instances['message-edgeryders_notify_comment_created_no_groups-field_target_nodes'] = array(
+    'bundle' => 'edgeryders_notify_comment_created_no_groups',
     'default_value' => NULL,
     'default_value_function' => '',
     'deleted' => 0,
@@ -413,9 +413,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_node_created-field_message_rendered_body'
-  $field_instances['message-commons_notify_node_created-field_message_rendered_body'] = array(
-    'bundle' => 'commons_notify_node_created',
+  // Exported field_instance: 'message-edgeryders_notify_node_created-field_message_rendered_body'
+  $field_instances['message-edgeryders_notify_node_created-field_message_rendered_body'] = array(
+    'bundle' => 'edgeryders_notify_node_created',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -457,9 +457,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_node_created-field_message_rendered_subject'
-  $field_instances['message-commons_notify_node_created-field_message_rendered_subject'] = array(
-    'bundle' => 'commons_notify_node_created',
+  // Exported field_instance: 'message-edgeryders_notify_node_created-field_message_rendered_subject'
+  $field_instances['message-edgeryders_notify_node_created-field_message_rendered_subject'] = array(
+    'bundle' => 'edgeryders_notify_node_created',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -502,9 +502,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_node_created-field_target_nodes'
-  $field_instances['message-commons_notify_node_created-field_target_nodes'] = array(
-    'bundle' => 'commons_notify_node_created',
+  // Exported field_instance: 'message-edgeryders_notify_node_created-field_target_nodes'
+  $field_instances['message-edgeryders_notify_node_created-field_target_nodes'] = array(
+    'bundle' => 'edgeryders_notify_node_created',
     'default_value' => NULL,
     'default_value_function' => '',
     'deleted' => 0,
@@ -554,9 +554,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_node_created_no_groups-field_message_rendered_body'
-  $field_instances['message-commons_notify_node_created_no_groups-field_message_rendered_body'] = array(
-    'bundle' => 'commons_notify_node_created_no_groups',
+  // Exported field_instance: 'message-edgeryders_notify_node_created_no_groups-field_message_rendered_body'
+  $field_instances['message-edgeryders_notify_node_created_no_groups-field_message_rendered_body'] = array(
+    'bundle' => 'edgeryders_notify_node_created_no_groups',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -600,9 +600,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_node_created_no_groups-field_message_rendered_subject'
-  $field_instances['message-commons_notify_node_created_no_groups-field_message_rendered_subject'] = array(
-    'bundle' => 'commons_notify_node_created_no_groups',
+  // Exported field_instance: 'message-edgeryders_notify_node_created_no_groups-field_message_rendered_subject'
+  $field_instances['message-edgeryders_notify_node_created_no_groups-field_message_rendered_subject'] = array(
+    'bundle' => 'edgeryders_notify_node_created_no_groups',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -646,9 +646,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message-commons_notify_node_created_no_groups-field_target_nodes'
-  $field_instances['message-commons_notify_node_created_no_groups-field_target_nodes'] = array(
-    'bundle' => 'commons_notify_node_created_no_groups',
+  // Exported field_instance: 'message-edgeryders_notify_node_created_no_groups-field_target_nodes'
+  $field_instances['message-edgeryders_notify_node_created_no_groups-field_target_nodes'] = array(
+    'bundle' => 'edgeryders_notify_node_created_no_groups',
     'default_value' => NULL,
     'default_value_function' => '',
     'deleted' => 0,
@@ -701,9 +701,9 @@ function commons_notify_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'message_type-commons_notify-message_text'
-  $field_instances['message_type-commons_notify-message_text'] = array(
-    'bundle' => 'commons_notify',
+  // Exported field_instance: 'message_type-edgeryders_notify-message_text'
+  $field_instances['message_type-edgeryders_notify-message_text'] = array(
+    'bundle' => 'edgeryders_notify',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => 'This is the text of all messages of this type.',

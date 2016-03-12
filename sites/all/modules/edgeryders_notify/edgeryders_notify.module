@@ -4,7 +4,7 @@
  * Code for the Commons Notify feature.
  */
 
-include_once 'commons_notify.features.inc';
+include_once 'edgeryders_notify.features.inc';
 
 /**
  * Implements hook_node_insert().
@@ -40,12 +40,12 @@ function commons_notify_send_message_on_shutdown($node) {
   // the realm to the user, since if no realms are provided then the message
   // is automatically assigned to the user passed in the function, or if no
   // user object is provided, then to the acting user.
-  $message_type = 'commons_notify_node_created';
+  $message_type = 'digest_new_post';
   // We need to clear the static loading cache so that the node body will be
   // ready in time for token replacement for the  message.
   entity_get_controller('node')->resetCache(array($node->nid));
   if (!isset($node->og_group_ref[LANGUAGE_NONE][0]['target_id'])) {
-    $message_type = 'commons_notify_node_created_no_groups';
+    $message_type = 'digest_new_post';
   }
   // Allow other modules to specify an alternative message type to use.
   $hook = 'node_insert';

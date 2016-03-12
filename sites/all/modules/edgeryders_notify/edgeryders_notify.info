@@ -1,0 +1,57 @@
+name = Edgeryders Notify
+description = Implementing the automated notifications workflow for Edgeryders
+core = 7.x
+package = Edgeryders
+version = 7.x-1.0-dev
+project = edgeryders_notify
+
+
+dependencies[] = commons_follow
+dependencies[] = ctools
+dependencies[] = entity
+dependencies[] = entityreference
+dependencies[] = features
+dependencies[] = list
+dependencies[] = message
+dependencies[] = message_subscribe
+dependencies[] = message_subscribe_email
+dependencies[] = number
+dependencies[] = options
+dependencies[] = strongarm
+dependencies[] = text
+
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[field_base][] = field_message_rendered_body
+features[field_base][] = field_message_rendered_subject
+features[field_base][] = message_subscribe_email
+features[field_instance][] = message-edgeryders_notify_comment_created-field_message_rendered_body
+features[field_instance][] = message-edgeryders_notify_comment_created-field_message_rendered_subject
+features[field_instance][] = message-edgeryders_notify_comment_created-field_target_comments
+features[field_instance][] = message-edgeryders_notify_comment_created-field_target_nodes
+features[field_instance][] = message-edgeryders_notify_comment_created_no_groups-field_message_rendered_body
+features[field_instance][] = message-edgeryders_notify_comment_created_no_groups-field_message_rendered_subject
+features[field_instance][] = message-edgeryders_notify_comment_created_no_groups-field_target_comments
+features[field_instance][] = message-edgeryders_notify_comment_created_no_groups-field_target_nodes
+features[field_instance][] = message-edgeryders_notify_node_created-field_message_rendered_body
+features[field_instance][] = message-edgeryders_notify_node_created-field_message_rendered_subject
+features[field_instance][] = message-edgeryders_notify_node_created-field_target_nodes
+features[field_instance][] = message-edgeryders_notify_node_created_no_groups-field_message_rendered_body
+features[field_instance][] = message-edgeryders_notify_node_created_no_groups-field_message_rendered_subject
+features[field_instance][] = message-edgeryders_notify_node_created_no_groups-field_target_nodes
+features[field_instance][] = message_type-edgeryders_notify-message_text
+features[field_instance][] = user-user-message_subscribe_email
+features[message_type][] = edgeryders_notify_comment_created
+features[message_type][] = edgeryders_notify_comment_created_no_groups
+features[message_type][] = edgeryders_notify_node_created
+features[message_type][] = edgeryders_notify_node_created_no_groups
+features[message_type_category][] = edgeryders_notify
+features[variable][] = field_bundle_settings_message__edgeryders_notify_comment_created
+features[variable][] = field_bundle_settings_message__edgeryders_notify_comment_created_no_groups
+features[variable][] = field_bundle_settings_message__edgeryders_notify_node_created
+features[variable][] = field_bundle_settings_message__edgeryders_notify_node_created_no_groups
+features[variable][] = message_subscribe_default_notifiers
+
+features_exclude[field_base][message_text] = message_text
+features_exclude[field_base][field_target_nodes] = field_target_nodes
+features_exclude[field_base][field_target_comments] = field_target_comments
