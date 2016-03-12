@@ -14,21 +14,21 @@ include_once 'edgeryders_notify.features.inc';
  * see https://drupal.org/node/1918666.
  *
  */
-function commons_notify_node_insert($node) {
-  drupal_register_shutdown_function('commons_notify_send_message_on_shutdown', $node);
+function edgeryders_notify_node_insert($node) {
+  drupal_register_shutdown_function('edgeryders_notify_send_message_on_shutdown', $node);
 }
 
 /**
  * Send a notification for newly created nodes.
  *
  * This function is registered as a shutdown function
- * in commons_notify_node_insert.
+ * in edgeryders_notify_node_insert.
  *
  * Note that shutdown functions run after drupal_set_message() messages are
  * displayed, so you'll need to use another method such as watchdog() logging
  * if you wish to add debugging messages to this function.
  */
-function commons_notify_send_message_on_shutdown($node) {
+function edgeryders_notify_send_message_on_shutdown($node) {
   // Create a message when a user creates a new node.
   // Borrowed from message_example.module:
   // Save the message and assign it to the user realm. Since another user,
@@ -49,7 +49,7 @@ function commons_notify_send_message_on_shutdown($node) {
   }
   // Allow other modules to specify an alternative message type to use.
   $hook = 'node_insert';
-  drupal_alter('commons_notify_message_selection', $message_type, $hook, $node);
+  drupal_alter('edgeryders_notify_message_selection', $message_type, $hook, $node);
   $account = user_load($node->uid);
   $message = message_create($message_type, array('uid' => $account->uid, 'timestamp' => $node->created));
   // Save reference to the node in the node reference field.
@@ -71,15 +71,15 @@ function commons_notify_send_message_on_shutdown($node) {
 /**
  * Implements hook_comment_insert().
  */
-function commons_notify_comment_insert($comment) {
+function edgeryders_notify_comment_insert($comment) {
   $account = user_load($comment->uid);
   $node = node_load($comment->nid);
-  $message_type = 'commons_notify_comment_created';
+  $message_type = 'edgeryders_notify_comment_created';
   $hook = 'comment_insert';
   if (!isset($node->og_group_ref[LANGUAGE_NONE][0]['target_id'])) {
-    $message_type = 'commons_notify_comment_created_no_groups';
+    $message_type = 'edgeryders_notify_comment_created_no_groups';
   }
-  drupal_alter('commons_notify_message_selection', $message_type, $hook, $comment);
+  drupal_alter('edgeryders_notify_message_selection', $message_type, $hook, $comment);
   $message = message_create($message_type, array('uid' => $account->uid, 'timestamp' => $comment->created));
   // Save reference to the node in the node reference field, and the
   // "publish" state (i.e. if the node is published or unpublished).
