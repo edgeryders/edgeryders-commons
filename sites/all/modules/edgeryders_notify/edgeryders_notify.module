@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Code for the Commons Notify feature.
+ * Code for the Edgeryders Notify feature.
  */
 
 include_once 'edgeryders_notify.features.inc';

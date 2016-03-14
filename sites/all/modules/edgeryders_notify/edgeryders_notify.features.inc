@@ -20,7 +20,7 @@ function edgeryders_notify_default_message_type() {
   $items = array();
   $items['edgeryders_notify_comment_created'] = entity_import('message_type', '{
     "name" : "edgeryders_notify_comment_created",
-    "description" : "Commons Notify: Comment created",
+    "description" : "Edgeryders Notify: Comment created",
     "argument_keys" : [],
     "argument" : [],
     "category" : "edgeryders_notify",
@@ -51,7 +51,7 @@ function edgeryders_notify_default_message_type() {
   }');
   $items['edgeryders_notify_comment_created_no_groups'] = entity_import('message_type', '{
     "name" : "edgeryders_notify_comment_created_no_groups",
-    "description" : "Commons Notify: Comment created no groups",
+    "description" : "Edgeryders Notify: Comment created no groups",
     "argument_keys" : [],
     "argument" : [],
     "category" : "edgeryders_notify",
@@ -152,7 +152,7 @@ function edgeryders_notify_default_message_type_category() {
   $items = array();
   $items['edgeryders_notify'] = entity_import('message_type_category', '{
     "category" : "edgeryders_notify",
-    "description" : "Commons Notify",
+    "description" : "Edgeryders Notify",
     "language" : "und",
     "rdf_mapping" : []
   }');
