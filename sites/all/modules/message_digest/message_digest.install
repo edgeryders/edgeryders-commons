@@ -1,6 +1,78 @@
 <?php
 
 /**
+ * Implements hook_install().
+ */
+function message_digest_install() {
+  // Create the field holding the message header text.
+  $header_field = array(
+    'field_name' => 'message_header',
+    'type' => 'text_long',
+    'entity_types' => array('message_type'),
+    'translatable' => TRUE,
+    'locked' => TRUE,
+    'settings' => array(
+      // Mark that this field can be rendered using Message::getText().
+      'message_text' => TRUE,
+    ),
+  );
+  $header_field = field_create_field($header_field);
+  $header_field_instance = array(
+    'field_name' => 'message_header',
+    'bundle' => 'message_type',
+    'entity_type' => 'message_type',
+    'label' => t('Message digest header text'),
+    'description' => t('This is the header text for all messages of this type when sent in a digest.'),
+    'required' => FALSE,
+    'settings' => array(
+      'text_processing' => 1,
+    ),
+  );
+  field_create_instance($header_field_instance);
+
+  // Create the field holding the message footer text.
+  $footer_field = array(
+    'field_name' => 'message_footer',
+    'type' => 'text_long',
+    'entity_types' => array('message_type'),
+    'translatable' => TRUE,
+    'locked' => TRUE,
+    'settings' => array(
+      // Mark that this field can be rendered using Message::getText().
+      'message_text' => TRUE,
+    ),
+  );
+  $footer_field = field_create_field($footer_field);
+  $footer_field_instance = array(
+    'field_name' => 'message_footer',
+    'bundle' => 'message_type',
+    'entity_type' => 'message_type',
+    'label' => t('Message digest footer text'),
+    'description' => t('This is the footer text for all messages of this type when sent in a digest.'),
+    'required' => FALSE,
+    'settings' => array(
+      'text_processing' => 1,
+    ),
+  );
+  field_create_instance($footer_field_instance);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function message_digest_uninstall() {
+  // Delete message_header field
+  $header_instance = field_info_instance('message_type', 'message_header', 'message_type');
+  field_delete_instance($header_instance);
+  field_delete_field('message_header');
+
+  // Delete message_footer field
+  $footer_instance = field_info_instance('message_type', 'message_footer', 'message_type');
+  field_delete_instance($footer_instance);
+  field_delete_field('message_footer');
+}
+
+/**
  * Implementation of hook_schema().
  * Add the message_digest table.
  */
@@ -59,4 +131,61 @@ function message_digest_schema() {
     'primary key' => array('id'),
   );
   return $schema;
+}
+
+/**
+ * Add the header and footer fields.
+ */
+function message_digest_update_1() {
+  // Create the field holding the message header text.
+  $header_field = array(
+    'field_name' => 'message_header',
+    'type' => 'text_long',
+    'entity_types' => array('message_type'),
+    'translatable' => TRUE,
+    'locked' => TRUE,
+    'settings' => array(
+      // Mark that this field can be rendered using Message::getText().
+      'message_text' => TRUE,
+    ),
+  );
+  $header_field = field_create_field($header_field);
+  $header_field_instance = array(
+    'field_name' => 'message_header',
+    'bundle' => 'message_type',
+    'entity_type' => 'message_type',
+    'label' => t('Message digest header text'),
+    'description' => t('This is the header text for all messages of this type when sent in a digest.'),
+    'required' => FALSE,
+    'settings' => array(
+      'text_processing' => 1,
+    ),
+  );
+  field_create_instance($header_field_instance);
+
+  // Create the field holding the message footer text.
+  $footer_field = array(
+    'field_name' => 'message_footer',
+    'type' => 'text_long',
+    'entity_types' => array('message_type'),
+    'translatable' => TRUE,
+    'locked' => TRUE,
+    'settings' => array(
+      // Mark that this field can be rendered using Message::getText().
+      'message_text' => TRUE,
+    ),
+  );
+  $footer_field = field_create_field($footer_field);
+  $footer_field_instance = array(
+    'field_name' => 'message_footer',
+    'bundle' => 'message_type',
+    'entity_type' => 'message_type',
+    'label' => t('Message digest footer text'),
+    'description' => t('This is the footer text for all messages of this type when sent in a digest.'),
+    'required' => FALSE,
+    'settings' => array(
+      'text_processing' => 1,
+    ),
+  );
+  field_create_instance($footer_field_instance);
 }

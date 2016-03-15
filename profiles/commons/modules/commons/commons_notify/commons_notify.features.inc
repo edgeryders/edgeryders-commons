@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * commons_notify.features.inc
+ * edgeryders_notify.features.inc
  */
 
 /**

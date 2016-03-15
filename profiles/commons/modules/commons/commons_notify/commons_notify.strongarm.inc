@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * commons_notify.strongarm.inc
+ * edgeryders_notify.strongarm.inc
  */
 
 /**
