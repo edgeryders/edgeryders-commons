@@ -13,7 +13,7 @@ function mentions_filter_info() {
 
   $filters['filter_mentions'] = array(
     'title'             => t('Mentions filter'),
-    'description'       => t('Configure via the <a href="@url">Mention types</a> page.', array('@url' => url('admin/structure/mentions'))),
+    'description'       => t('To be sure, run this first in the filter processing order. Filtering would fail if any filter before it changes the search anchor characters (one character immediately before and after the mention). Configure via the <a href="@url">Mention types</a> page.', array('@url' => url('admin/structure/mentions'))),
     'settings callback' => 'mentions_filter_filter_mentions_settings',
     'process callback'  => 'mentions_filter_filter_mentions_process',
     'tips callback'     => 'mentions_filter_filter_mentions_tips',

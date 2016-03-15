@@ -362,6 +362,19 @@ function mentions_get_mentions($text, $mention_type) {
     $plugin = mentions_get_plugin($mention_type->plugin);
     if (isset($plugin['callbacks']) && isset($plugin['callbacks']['target']) && function_exists($plugin['callbacks']['target'])) {
       foreach ($matches as $match) {
+
+        // Temporary hack to make usernames recognizable where "_" is supplied for " ", as done by 
+        // ckeditor_mentions via the edgeryders_users_overrides module.  (matthias@ansorgs.de, 2016-03-10)
+        // If a username with "_" does not correspond to a user, we try the version with " ". We test 
+        // if the username contains "_" before trying to create the user to avoid unnecessary load.
+        if ($mention_type->type == 'at_mention' and 
+          strpos($match[2], '_') !== FALSE and 
+          user_load_by_name($match[2]) === FALSE
+        ) {
+          $match[2] = str_replace('_', ' ', $match[2]);
+        }
+        // end of temporary hack
+
         if (($target = $plugin['callbacks']['target']($match[2], $mention_type)) !== FALSE) {
           $mentions[$match[0]] = array(
             'type'   => $mention_type,
@@ -401,7 +414,7 @@ function mentions_get_input_pattern($mention_type, $regex = TRUE) {
   $pattern = '';
 
   // Append prefix to pattern.
-  if (isset($mention_type->input['suffix'])) {
+  if (isset($mention_type->input['prefix'])) {
     $pattern .= $regex ? preg_quote($mention_type->input['prefix'], '/') : $mention_type->input['prefix'];
   }
 
@@ -419,7 +432,15 @@ function mentions_get_input_pattern($mention_type, $regex = TRUE) {
     $pattern .= $regex ? preg_quote($mention_type->input['suffix'], '/') : $mention_type->input['suffix'];
   }
 
-  $pattern = $regex ? '/(?:^|\s)(' . $pattern . ')(?:$|\W)/m' : $pattern;
+  // The parts before and after $pattern in the regex pattern are non-capturing groups matching the 
+  // boundary conditions for mentions. These are:
+  // -- mentions can start at start of line, immediately after a tag, or after a whitespace character
+  // -- mentions can end at end of line, or with any character not allowed in mentions strings
+  // Characters allowed in mentions strings are all characters allowed in Drupal user names. See 
+  // user_validate_name() for these. This seems to be the most relaxed, reasonable assumption, as all 
+  // other entity identifiers will use more restrictive conditions (except URLs). The same assumption 
+  // has been implemented in plugins/mention_type/entity.inc, function mentions_mention_type_entity_pattern().
+  $pattern = $regex ? '/(?:^|>|\s)(' . $pattern . ')(?:$|[^\x{80}-\x{F7}a-zA-Z0-9@_.\'-])/m' : $pattern;
 
   return $pattern;
 }

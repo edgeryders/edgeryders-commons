@@ -19,17 +19,23 @@ function mentions_token_info() {
     'name'        => t('Mention ID'),
     'description' => t('The unique ID of the mention'),
   );
-
-  // Chained tokens for mentions.
-  $mentions['uid'] = array(
-    'name'        => t('User'),
-    'description' => t('The mentioned user.'),
-    'type'        => 'user',
+  $mentions['source-type'] = array(
+    'name'        => t('Type of the mention source content'),
+    'description' => t('Human-readable name for the type of the content containing the mention. This can be an entity type name ("comment"), or if available a bundle name ("post", "article" etc.)'),
+  );
+  $mentions['source-path'] = array(
+    'name'        => t('URL path of the mention source content'),
+    'description' => t('URL path (not a full URL) to the content containing the mention.'),
+  );
+  $mentions['source-title'] = array(
+    'name'        => t('Title of the mention source content'),
+    'description' => t('Title of the content containing the mention. Usually the value of a title field, subject field or similar.'),
   );
 
-  $mentions['auid'] = array(
+  // Chained tokens for mentions.
+  $mentions['author'] = array(
     'name'        => t('Author'),
-    'description' => t('The author of the mention.'),
+    'description' => t('The mention\'s author.'),
     'type'        => 'user',
   );
 
@@ -77,16 +83,33 @@ function mentions_tokens($type, $tokens, array $data = array(), array $options =
           $replacements[$original] = $mention->mid;
           break;
 
-        // Default values for the chained tokens handled below.
-        case 'uid':
-          $user                    = user_load($mention->uid);
-          $name                    = ($mention->uid == 0) ? variable_get('anonymous', t('Anonymous')) : $user->name;
-          $replacements[$original] = $sanitize ? filter_xss($name) : $name;
+        case 'source-type':
+          // $mention->source is sth. like "entity::comment::12345".
+          $source_id = explode('::', $mention->source);
+          $source_entity_type = isset($source_id[1]) ? $source_id[1] : null;
+
+          $replacements[$original] = isset($source_entity_type) ? $source_entity_type : '';
+          // TODO If $source_entity_type is "node", better return the human-readable bundle name.
           break;
 
-        case 'auid':
-          $author                  = user_load($mention->auid);
-          $name                    = ($mention->auid == 0) ? variable_get('anonymous', t('Anonymous')) : $author->name;
+        case 'source-path':
+          $replacements[$original] = $mention->source_path;
+          if ($sanitize) {
+            $replacements[$original] = filter_xss($replacements[$original]);
+          }
+          break;
+
+        case 'source-title':
+          $replacements[$original] = $mention->source_title;
+          if ($sanitize) {
+            $replacements[$original] = filter_xss($replacements[$original]);
+          }
+          break;
+
+        // Default values for the chained tokens handled below.
+        case 'author':
+          $user                    = user_load($mention->uid);
+          $name                    = ($mention->uid == 0) ? variable_get('anonymous', t('Anonymous')) : $user->name;
           $replacements[$original] = $sanitize ? filter_xss($name) : $name;
           break;
 
@@ -101,15 +124,9 @@ function mentions_tokens($type, $tokens, array $data = array(), array $options =
       }
     }
 
-    $user_tokens = token_find_with_prefix($tokens, 'uid');
-    if ($user_tokens) {
-      $user = user_load($mention->uid);
-      $replacements += token_generate('user', $user_tokens, array('user' => $user), $options);
-    }
-
-    $author_tokens = token_find_with_prefix($tokens, 'auid');
+    $author_tokens = token_find_with_prefix($tokens, 'author');
     if ($author_tokens) {
-      $author = user_load($mention->auid);
+      $author = user_load($mention->uid);
       $replacements += token_generate('user', $author_tokens, array('user' => $author), $options);
     }
 
@@ -132,3 +149,4 @@ function mentions_tokens($type, $tokens, array $data = array(), array $options =
 
   return $replacements;
 }
+

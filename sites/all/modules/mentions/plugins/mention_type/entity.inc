@@ -173,7 +173,14 @@ function mentions_mention_type_entity_pattern($settings, $regex = TRUE) {
         return '\d+';
 
       default:
-        return '[a-zA-Z0-9]+';
+        // Pattern for consecutive strings which can contain all characters 
+        // allowed in usernames except spaces, as per user_validate_name().
+        // Spaces are not allowed to make patterns with only prefix or only 
+        // suffix possible. Some characters within the ranges below are not allowed in usernames, 
+        // but this will have no adverse effects other than trying to load a non-existing user later 
+        // to determine if the mention is referring to any existing entity.
+        // TODO If both prefix and suffix are present, include the space character into the pattern.
+        return '[\x{80}-\x{F7}a-zA-Z0-9@_.\'-]+';
     }
   }
 

@@ -189,31 +189,11 @@ CKEDITOR_mentions.prototype.timeout_callback = function (args) {
       var mentions = CKEDITOR_mentions.get_instance(editor);
       mentions.stop_observing();
 
-      // Keep the text originally inserted after the new tag.
-      var after_text = element.textContent.substr(startOffset + str.length);
-
-      // Shorten text node
-      element.textContent = element.textContent.substr(0, startOffset);
-
-      // Create link
-      var link = document.createElement('a');
-      link.href = Drupal.settings.basePath + 'user/' + $(this).data('uid');
-      link.textContent = '@' + $(this).data('realname');
-
-      // Insert link after text node
-      // this is used when the link is inserted not at the end of the text
-      if ( element.nextSibling ) {
-        element.parentNode.insertBefore(link, element.nextSibling);
-      }
-      // at the end of the editor text
-      else {
-        element.parentNode.appendChild(link);
-      }
-
-      // Add the text which was present after the tag.
-      if ($.trim(after_text).length) {
-        element.parentNode.appendChild(document.createTextNode(after_text));
-      }
+      // Insert the @mention as pure text into the currently edited text element.
+      element.textContent = 
+          element.textContent.substr(0, startOffset) +
+          '@' + $(this).data('realname') + ' ' +
+          element.textContent.substr(startOffset + str.length);
 
       if ( $.browser.msie ) {
         // so basically, due to some weird behaviour by ckeditor IE triggers an error on focus,
@@ -221,10 +201,19 @@ CKEDITOR_mentions.prototype.timeout_callback = function (args) {
         // By turning this off, IE users will have to click manually on the editor to get back.
         // https://drupal.org/node/2033739
       } else {
+        // Set the caret position to the end of inserted text "@mention ".
+
         editor.focus();
-        var range = editor.createRange(),
-        el = new CKEDITOR.dom.element(link.parentNode);
-        range.moveToElementEditablePosition(el, link.parentNode.textContent.length);
+        var range = editor.createRange();
+        var afterMentionOffset = startOffset + $(this).data('realname').length + 2;
+        // element is a normal browser DOM object, but setStart() etc. need CKEDITOR specific DOM ones, so:
+        var el = new CKEDITOR.dom.node(element);
+
+        // Setting caret position is done by creating a zero-character range and selecting it, resulting 
+        // in zero highlighted / selected characters and a new caret position. Seems hackish, but that's 
+        // the "official" and only way. See http://stackoverflow.com/a/16859577
+        range.setStart(el, afterMentionOffset);
+        range.setEnd(el, afterMentionOffset);
         range.select();
       }
 
