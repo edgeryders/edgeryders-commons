@@ -24,3 +24,7 @@ stats
 
 # Ignore vagrant
 .vagrant
+
+# Ignore SSL keys for local development.
+scripts.local.x43762539hf2d/edgeryders.localdomain.crt
+scripts.local.x43762539hf2d/edgeryders.localdomain.key
