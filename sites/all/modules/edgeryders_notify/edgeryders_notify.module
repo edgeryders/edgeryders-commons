@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * Overrides the default message type when a new post or comment has been created.
+ *
+ * Implements hook_commons_notify_message_selection_alter().
+ */
+function edgeryders_notify_commons_notify_message_selection_alter(&$message_type, $hook, $node)
+{
+  // Provide a special message type for
+  // when a new post is created.
+  if ($hook == 'node_insert' && $node->type != 'event') {
+    $message_type = 'digest_new_post';
+  }
+
+  if ($hook == 'comment_insert') {
+    $message_type = 'digest_new_comment';
+  }
+}
