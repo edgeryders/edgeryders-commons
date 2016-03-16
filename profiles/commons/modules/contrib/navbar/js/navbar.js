@@ -705,4 +705,8 @@ Drupal.theme.navbarOrientationToggle = function () {
     '</div></div>';
 };
 
+if(localStorage){
+   localStorage.setItem('Drupal.navbar.trayVerticalLocked',true);
+}
+
 }(jQuery, Backbone, Drupal));
