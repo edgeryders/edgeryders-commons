@@ -513,7 +513,7 @@ function navbar_system_info_alter(&$info, $file, $type) {
  */
 function navbar_get_menu_tree() {
   $tree = array();
-  $admin_mlid = db_query('SELECT mlid FROM {menu_links} WHERE menu_name = :menu_name AND module = :module AND link_path = :path', array(':menu_name' => 'main-menu', ':module' => 'system', ':path' => 'admin'))->fetchField();
+  $admin_mlid = db_query('SELECT mlid FROM {menu_links} WHERE menu_name = :menu_name', array(':menu_name' => 'main-menu'))->fetchField();
   if ($admin_mlid) {
     // Only return top 3 menu levels.
     $tree = menu_tree_all_data('main-menu', NULL, 5);
