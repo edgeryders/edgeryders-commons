@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * @file edgeryders_nav.module
+ * Provides the navigation customizations used by Edgeryders
+ */
+
+/**
+ * Implements hook_navbar_alter().
+ */
+function edgeryders_nav_navbar_alter(&$items)
+{
+
+}

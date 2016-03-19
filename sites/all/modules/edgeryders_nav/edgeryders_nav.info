@@ -1,0 +1,4 @@
+name = Edgeryders Navigation 
+description = Provides the navigation customizations used by Edgeryders
+core = 7.x
+version = 7.x-1.0-dev
