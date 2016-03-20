@@ -49,10 +49,11 @@ function edgeryders_nav_navbar()
     // Add a custom Edgeryders menu to the navbar
     $items['main'] = array(
         '#type' => 'navbar_item',
-        'tab' => array(
-            '#type' => 'link',
-            '#attributes' => array(
-                'title' => t('Menu')
+        '#title' => t('Menu'),
+        '#href' => '<front>',
+        '#options' => array(
+            'attributes' => array(
+                'title' => t('Menu'),
             ),
         ),
     );
