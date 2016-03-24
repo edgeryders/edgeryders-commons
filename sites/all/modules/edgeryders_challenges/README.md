@@ -56,9 +56,9 @@ Basic usage is like this:
 
 The following settings are included in the feature, so no need to work through this for installation. However, these are non-obvious ways to break the Edgeryders Challenges functionality, so developers should be aware of these before starting to adapt settings.
 
+ - If you want to create a new version of the feature (or possibly only if you want to export to a feature with a different name), apply the changes from [issue #1670136 comment #3](https://www.drupal.org/node/1670136#comment-9434123) to your feature's code after exporting it and before importing it. Otherwise, the field groups in your exported feature will not be imported. Field groups are used on the multi-page Challenge Response node add form.
+
  - In content type "Challenge Response", the "Challenge" (`og_challenge_ref`) field must use the "Simple" or "Commons OG" selection handler in the "Entity Selection: Mode" field instance setting. (We use "Simple" to prevent a dependency on Organic Groups.) If you use the "Organic Groups" selection handler however, groups into which the user can post but is not member of (all relevant groups here!) can not be selected, neither manually nor view the `entityreference_prepopulate` functionality as we do in the Edgeryders Challenges module. Note that  the "Commons OG" selection handler is provided by Drupal Commons, so clone it or use "Simple" if you don't want to base your website on Commons. This behavior of Entity Reference fields is an intended (but not yet properly documented) behavior of Organic Groups. I added issues to properly document and partially fix this behavior here: [#2692525](https://www.drupal.org/node/2692525), [#2692509](https://www.drupal.org/node/2692509), [#2692481](https://www.drupal.org/node/2692481).
- 
- - If you want to create a new feature based on the edgeryders_challenges module, you need to patch your `field_group` module to fix issue [#1670136](https://www.drupal.org/node/1670136) ("Field Groups in Features not importing"). Otherwise, the field groups used for the multi-page Challenge Response node add form will not be properly exported, and will fail to import.
 
 
 # Licence
