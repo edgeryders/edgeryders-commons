@@ -365,19 +365,17 @@ function edgeryders_challenges_field_default_field_bases() {
     'module' => 'entityreference',
     'settings' => array(
       'entity_translation_sync' => FALSE,
-      'handler' => 'og_commons',
+      'handler' => 'base',
       'handler_settings' => array(
         'behaviors' => array(
-          'og_behavior' => array(
-            'status' => TRUE,
-          ),
           'views-select-list' => array(
             'status' => 0,
           ),
         ),
-        'membership_type' => 'og_membership_type_default',
         'sort' => array(
-          'type' => 'none',
+          'direction' => 'ASC',
+          'property' => 'title',
+          'type' => 'property',
         ),
         'target_bundles' => array(
           'challenge' => 'challenge',

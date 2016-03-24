@@ -10,48 +10,6 @@
 function edgeryders_challenges_menu_default_menu_links() {
   $menu_links = array();
 
-  // Exported menu link: management_:admin/config/group/permissions/node/challenge.
-  $menu_links['management_:admin/config/group/permissions/node/challenge'] = array(
-    'menu_name' => 'management',
-    'link_path' => 'admin/config/group/permissions/node/challenge',
-    'router_path' => 'admin/config/group/permissions/node/challenge',
-    'link_title' => '',
-    'options' => array(
-      'attributes' => array(
-        'title' => 'Configure Organic groups group type permissions.',
-      ),
-      'identifier' => 'management_:admin/config/group/permissions/node/challenge',
-    ),
-    'module' => 'system',
-    'hidden' => 0,
-    'external' => 0,
-    'has_children' => 0,
-    'expanded' => 0,
-    'weight' => 0,
-    'customized' => 0,
-    'parent_identifier' => 'management_og-permissions-overview:admin/config/group/permissions',
-  );
-  // Exported menu link: management_:admin/config/group/roles/node/challenge.
-  $menu_links['management_:admin/config/group/roles/node/challenge'] = array(
-    'menu_name' => 'management',
-    'link_path' => 'admin/config/group/roles/node/challenge',
-    'router_path' => 'admin/config/group/roles/node/challenge',
-    'link_title' => '',
-    'options' => array(
-      'attributes' => array(
-        'title' => 'Configure Organic groups group type roles.',
-      ),
-      'identifier' => 'management_:admin/config/group/roles/node/challenge',
-    ),
-    'module' => 'system',
-    'hidden' => 0,
-    'external' => 0,
-    'has_children' => 0,
-    'expanded' => 0,
-    'weight' => 0,
-    'customized' => 0,
-    'parent_identifier' => 'management_og-roles-overview:admin/config/group/roles',
-  );
   // Exported menu link: navigation_challenge-chain:node/add/challenge-chain.
   $menu_links['navigation_challenge-chain:node/add/challenge-chain'] = array(
     'menu_name' => 'navigation',

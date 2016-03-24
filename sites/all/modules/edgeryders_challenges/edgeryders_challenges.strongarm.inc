@@ -628,48 +628,6 @@ function edgeryders_challenges_strongarm() {
   $strongarm = new stdClass();
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'og_menu_single_group_content__node__challenge';
-  $strongarm->value = 0;
-  $export['og_menu_single_group_content__node__challenge'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'og_menu_single_group_content__node__challenge_chain';
-  $strongarm->value = 0;
-  $export['og_menu_single_group_content__node__challenge_chain'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'og_menu_single_group_content__node__challenge_response';
-  $strongarm->value = 1;
-  $export['og_menu_single_group_content__node__challenge_response'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'og_menu_single_group__node__challenge';
-  $strongarm->value = 0;
-  $export['og_menu_single_group__node__challenge'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'og_menu_single_group__node__challenge_chain';
-  $strongarm->value = 0;
-  $export['og_menu_single_group__node__challenge_chain'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'og_menu_single_group__node__challenge_response';
-  $strongarm->value = 0;
-  $export['og_menu_single_group__node__challenge_response'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
   $strongarm->name = 'panelizer_defaults_node_challenge';
   $strongarm->value = array(
     'status' => 0,

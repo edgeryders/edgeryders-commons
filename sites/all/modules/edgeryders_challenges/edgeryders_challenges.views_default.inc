@@ -94,7 +94,7 @@ function edgeryders_challenges_views_default_views() {
   $handler->display->display_options['sorts']['created']['order'] = 'DESC';
   /* Contextual filter: Content: Challenge (og_challenge_ref) */
   $handler->display->display_options['arguments']['og_challenge_ref_target_id']['id'] = 'og_challenge_ref_target_id';
-  $handler->display->display_options['arguments']['og_challenge_ref_target_id']['table'] = 'og_membership';
+  $handler->display->display_options['arguments']['og_challenge_ref_target_id']['table'] = 'field_data_og_challenge_ref';
   $handler->display->display_options['arguments']['og_challenge_ref_target_id']['field'] = 'og_challenge_ref_target_id';
   $handler->display->display_options['arguments']['og_challenge_ref_target_id']['default_action'] = 'empty';
   $handler->display->display_options['arguments']['og_challenge_ref_target_id']['default_argument_type'] = 'fixed';
