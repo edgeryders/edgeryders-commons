@@ -1,0 +1,294 @@
+
+/* Remove margins around main elements to give a starting position for a borderless layout. */
+
+.page-node-add-challenge-response #page #columns {
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+/* Left and right spacing for everything except the full-width header image on the first wizard page. */
+
+.page-node-add-challenge-response #messages, 
+.page-node-add-challenge-response #page-top, 
+.page-node-add-challenge-response .group-step-1 .multipage-pane-title,
+.page-node-add-challenge-response .group-step-1 .field-name-field-response-image-form label,
+.page-node-add-challenge-response .group-step-1 .field-name-field-response-image-form .description,
+.page-node-add-challenge-response .group-step-1 .field-name-field-response-image-form .image-widget-data,
+.page-node-add-challenge-response .group-step-1 .field-name-og-challenge-ref,
+.page-node-add-challenge-response .group-step-1 .field-name-title-field,
+.page-node-add-challenge-response .group-step-1 .field-name-body,
+.page-node-add-challenge-response .group-step-1 .multipage-controls-list,
+.page-node-add-challenge-response .group-step-2,
+/* .page-node-add-challenge-response .group-step-2 .field-name-field-channels-form .form-checkboxes, */
+.page-node-add-challenge-response .group-step-3 {
+  padding-left: 7%;
+  padding-right: 7%;
+}
+
+/* Remove unnecessary elements. */
+
+.page-node-add-challenge-response #breadcrumb {
+  display: none;
+}
+
+.page-node-add-challenge-response #main-content-header { /* The "Create Challenge Response" page title. */
+  display: none;
+}
+
+.page-node-add-challenge-response .text-format-wrapper .fieldset-outer-wrapper {
+  display: none;
+}
+
+.page-node-add-challenge-response .fieldset-outer-wrapper {
+  border-width: 0;
+}
+
+/* Base colors and UI element renderings (can be overwritten in field formatters). */
+
+.page-node-add-challenge-response #page {
+  background-color:#8195ca;
+}
+
+.page-node-add-challenge-response .field-name-field-response-image-form { /* Image upload field. */
+  background-color: #394a7b;
+}
+
+.page-node-add-challenge-response label, /* Field labels of any field. */
+.page-node-add-challenge-response .description, /* Label help messages above fields and help messages below. */
+.page-node-add-challenge-response .tips { /* Hint section below rich text editor. */ 
+  color: #ffffff;
+}
+
+.page-node-add-challenge-response .primary-fields .fieldset-legend { /* Fieldset titles, but not those in the admin fields sidebar. */
+  color: #ffffff;
+  font-size: 1.6em;
+  font-weight: 700;
+  line-height: 1.6em;
+  text-transform: uppercase;
+}
+
+.page-node-add-challenge-response input[type=checkbox] { /* Make checkboxes larger. */
+  transform: scale(2); /* All browsers except webkit*/
+  -webkit-transform: scale(2); /* Webkit browsers*/
+}
+
+/* Form title. */
+
+.page-node-add-challenge-response .multipage-pane-title { /* Form title. */
+  font-size: 3.4em;
+  font-weight: bold;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+/* Challenge field. */
+
+.page-node-add-challenge-response .field-name-og-challenge-ref {
+  /* We have to hide this field by CSS, because using the "Hide" action in Entity Reference Prepopulate settings is 
+   * blocked by issue https://www.drupal.org/node/1958800 (causing the value to go missing when uploading images). */
+  display: none;
+}
+
+/* Image upload field. */
+
+.page-node-add-challenge-response .field-name-field-response-image-form label {
+  display: none;
+}
+.page-node-add-challenge-response .field-name-field-response-image-form .droppable {
+  border-width: 0;
+  float: none;
+}
+.page-node-add-challenge-response .field-name-field-response-image-form .image-widget-data {
+  float: none;
+}
+.page-node-add-challenge-response .droppable .droppable-message span { /* The "drop file here" and "or Browse" messages. */
+  font-size: 3.4em;
+  font-weight: bold;
+  color: #5a6b97;
+}
+.page-node-add-challenge-response .field-name-field-response-image-form .description br {
+  display: none; /* Make the field requirements list render as a single line. */
+}
+.page-node-add-challenge-response .field-name-field-response-image-form .image-preview {
+  padding: 0 0 8px 0;
+  float: none;
+}
+.page-node-add-challenge-response .field-name-field-response-image-form .image-preview img {
+  width: 100%;
+}
+
+/* Title field. */
+
+.page-node-add-challenge-response .field-name-title-field {
+  margin-top: 2em;
+}
+
+.page-node-add-challenge-response .field-name-title-field input {
+  color: #ffffff;
+  background-color: #7b88a7;
+}
+
+/* Body field. */
+
+.page-node-add-challenge-response .field-name-body .cke_contents {
+  /* Workaround because module ckeditor_divarea does not yet interpret the field's "Rows:" setting. */
+  /* Has to be !important to override the JS-contributed setting on the element. */
+  height: 420px !important;
+}
+.page-node-add-challenge-response .field-name-body .form-textarea-wrapper, 
+.page-node-add-challenge-response .field-name-body .cke_inner,
+.page-node-add-challenge-response .field-name-body .cke_editable,
+.page-node-add-challenge-response .field-name-body .cke_wysiwyg_div {
+  background-color: #7b88a7;
+}
+.page-node-add-challenge-response .field-name-body .cke_editable p,
+.page-node-add-challenge-response .field-name-body .cke_editable div {
+  color: #ffffff;
+}
+.page-node-add-challenge-response .field-name-body .cke_top, 
+.page-node-add-challenge-response .field-name-body .cke_bottom {
+  background-color: #7b88a7;
+  background-image: none;
+}
+
+/* Channels field. */
+
+.page-node-add-challenge-response .field-name-field-channels-form .form-type-checkboxes > label {
+  font-size: 1.6em;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 0;
+}
+
+.page-node-add-challenge-response .field-name-field-channels-form .description {
+  font-size: 1em;
+  margin-bottom: 1em;
+}
+
+.page-node-add-challenge-response .field-name-field-channels-form .form-checkboxes {
+  background-color: #7b88a7;
+  width: 94%; /* 100% together with paddings. */
+  padding: 2em 3%;
+  overflow: hidden; /* To make this box contain its floating children. Via http://stackoverflow.com/a/804936 */
+}
+
+.page-node-add-challenge-response .field-name-field-channels-form .form-checkboxes .form-item {
+  float: left;
+  width: 50%;
+}
+
+.page-node-add-challenge-response .field-name-field-channels-form .form-checkboxes .form-item label {
+  padding-left: 10px;
+}
+
+.page-node-add-challenge-response .field-name-field-channels-form .fieldset-outer-wrapper { /* Clearfix for following elements. */
+  clear: both;
+}
+
+/* Response question, problem, answer text fields. */
+
+.page-node-add-challenge-response .field-name-field-response-question-form input,
+.page-node-add-challenge-response .field-name-field-response-problem-form input, 
+.page-node-add-challenge-response .field-name-field-response-solution-form input {
+  color: #ffffff;
+  background-color: #7b88a7;
+}
+
+/* Audience tagging fields. */
+
+.page-node-add-challenge-response .field-name-field-audience-supporters-form input, 
+.page-node-add-challenge-response .field-name-field-audience-collaborators-form input, 
+.page-node-add-challenge-response .field-name-field-audience-multiplicators-form input {
+  color: #ffffff;
+  background-color: #7b88a7;
+}
+
+/* Comments fields. */
+
+.page-node-add-challenge-response .group-comments .fieldset-wrapper {
+  background-color: #7b88a7;
+  padding: 2em 3%; /* Same as for the Channels field, else just 2em would be better. */
+}
+
+.page-node-add-challenge-response .field-name-field-request-experiences-form, 
+.page-node-add-challenge-response .field-name-field-request-help-form {
+  margin-bottom: 1.3em;
+}
+
+.page-node-add-challenge-response .field-name-field-request-experiences-form label, 
+.page-node-add-challenge-response .field-name-field-request-help-form label {
+  padding-left: 10px;
+}
+
+.page-node-add-challenge-response .field-name-field-request-other-form .form-item {
+  padding-left: 30px;
+  padding-right: 20px;
+  padding-top: 10px;
+  display: flex;
+}
+
+.page-node-add-challenge-response .field-name-field-request-other-form label {
+  display: block;
+  line-height: 1.2em;
+  padding-right: 15px;
+  flex-basis: auto;
+  flex-grow: 0;
+}
+
+.page-node-add-challenge-response .field-name-field-request-other-form input {
+  display: block;
+  width: 100%;
+  flex-grow: 1;
+  color: #ffffff;
+  background-color: #91a0c5;
+}
+
+/* Form Buttons. */
+
+.page-node-add-challenge-response .multipage-controls-list {
+  float: right;
+}
+
+.page-node-add-challenge-response .multipage-controls-list #edit-actions {
+  float: right; /* Hack to reorder the "Save" button to the right. */
+  margin-top: 0;
+}
+
+.page-node-add-challenge-response .multipage-controls-list .multipage-link-previous, 
+.page-node-add-challenge-response .multipage-controls-list .multipage-link-next, 
+.page-node-add-challenge-response .multipage-controls-list #edit-submit {
+  min-width: 250px;
+  border: none;
+  text-shadow: none;
+  text-transform: none;
+  font-size: 1.6em;
+  font-weight: normal;
+  border-radius: 0;
+  padding: 0.8em 0.4em;
+}
+
+.page-node-add-challenge-response .multipage-controls-list .multipage-link-previous:before, 
+.page-node-add-challenge-response .multipage-controls-list .multipage-link-next:before, 
+.page-node-add-challenge-response .multipage-controls-list #edit-submit:before {
+  /* content: '⪫➜➔'; */ /* Does not work yet. */
+}
+
+.page-node-add-challenge-response .multipage-controls-list .multipage-link-previous {
+  background: #f1f1f1;
+  color: #333333;
+}
+.page-node-add-challenge-response .multipage-controls-list .multipage-link-previous:hover {
+  background: #f1f1f1;
+  color: #4d90fe;
+}
+.page-node-add-challenge-response .multipage-controls-list .multipage-link-next, 
+.page-node-add-challenge-response .multipage-controls-list #edit-submit {
+  background: #4d90fe;
+  color: #ffffff;
+}
+.page-node-add-challenge-response .multipage-controls-list .multipage-link-next:hover, 
+.page-node-add-challenge-response .multipage-controls-list #edit-submit:hover { /* "Save" button. */
+  background: #4d90fe;
+  color: #333333;
+}
+

@@ -1,0 +1,140 @@
+
+/* Button to add a response (in header and "no results behavior" areas). */
+
+.view-challenge-responses .new-response-btn {
+  display: block;
+  width: 350px;
+  margin: 10px auto 30px auto; /* auto centers the button in the view header horizontally. */
+  text-align: center;
+  background-color: #354572; /* Dark blue standard color from the "Challenges" section. */
+  padding: 15px;
+  border-radius: 12px;
+  -moz-border-radius: 12px;
+  -webkit-border-radius: 12px;
+}
+
+.view-challenge-responses .new-response-btn a {
+  /* color: #e95c2e; */ /* Normally used as link text color on the site. */
+  font-size: 18pt;
+  font-weight: bold;
+}
+
+.view-challenge-responses .no-results-msg {
+  margin-top: 5em;
+  text-align: center;
+}
+
+/* One-to-four column fluid and responsive grid for the view columns.
+ *
+ * The view formatted here uses the "Responsive Grid" output format provided by https://www.drupal.org/project/views_responsive_grid . It has 
+ * its numbers of columns set to 1 though, since it is a meaningless setting in a fluid layout where the number of columns "happens" because of 
+ * how many elements can float in one row.
+ *
+ * In the media queries, the base style is for a single column (small screens or windows), called "mobile first" in IT bullshitting.
+ *
+ * All node-type-*.css rules relevant for the Challenges feature use 7% left and right paddings on the page. So we have to 
+ * consider that for the media queries: at 250px min column width, we need:
+ * -- for one column: not relevant, we scrap the min width here 
+ * -- for two columns: 250px min column width equates 48% (2% reserved for the margin) of content width, of which 98% (excluding rightmost margin) equates 86% of window width, so 
+ *    minimum page width has to be: (250px / 48 * 98) / 86 * 100 = 594px
+ * -- for three columns (31% each), the equivalent: (250px / 31 * 98) / 86 * 100 = 919px
+ * -- for four columns (23% each), the equivalent: (250px / 23 * 98) / 86 * 100 = 1239px
+ */
+
+.view-challenge-responses .views-responsive-grid .views-row {
+  /* Removing any special formatting, since it disturbs the fluid layout with its variable column counts. */
+  border-width: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* Basic formatting for one views result record block.
+ * (Because in a horizontal aligned layout created by module views_responsive_grid, .views-column is the wrapper around one Views result record.) */
+.view-challenge-responses .views-responsive-grid .views-column {
+  margin-top: 35px;
+  border: 1px solid #dddddd;
+}
+
+/* Image field formatting. */
+.view-challenge-responses .views-responsive-grid .views-field-field-response-image img {
+  width: 100%;
+}
+
+/* Title field formatting. */
+.view-challenge-responses .views-responsive-grid .views-field-title {
+  font-weight: bold;
+  font-size: 125%; /* Should have same apparent size as body field in content type "Challenge". */
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Author name field formatting. */
+.view-challenge-responses .views-responsive-grid .views-field-name {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Creation date field formatting. */
+.view-challenge-responses .views-responsive-grid .views-field-created {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Comment count field formatting. */
+.view-challenge-responses .views-responsive-grid .views-field-comment-count {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Single-column layout as base version ("mobile first"). */
+.pane-challenge-responses-panel-pane-1 {
+  padding-left: 7%;
+  padding-right: 7%;
+}
+.view-challenge-responses .views-responsive-grid .views-column {
+  float: left;
+  width: 100%;
+}
+
+/* Two-column layout. */
+@media only screen and (min-width: 600px) {
+  .view-challenge-responses .views-responsive-grid .views-column {
+    float: left;
+    margin-right: 2%;
+    width: 48%;
+    min-width: 250px;
+  }
+   /* Compensating for margin-right of the rightmost column with page padding reduction. Same for @media section for 3/4 columns, so not repeated there. */
+   /* We cannot use the .view-challenge-responses selector as it comes inside and there is no "has child assertion" CSS selector. But we are lucky that 
+      there is a panel pane named after the challenge responses view it contains. */
+  .pane-challenge-responses-panel-pane-1 {
+    /*
+     Now the left padding is 7% of window width. To make the right padding as wide when including the "2% of view area width" margin configured above, 
+     we need to set it to:  7/100 + (93/100 - x/100) + x/100 = 1, with ((93/100 - x/100) * 2/100) + x/100 = 7/100 <=> 93/100 - x/100 = (7/100 - x/100) * 100/2
+     => 7/100 + ((7/100 - x/100) * 100/2) + x/100 = 1 <=> x = 5.24 as per http://www.wolframalpha.com/input/?i=7%2F100+%2B+%28%287%2F100+-+x%2F100%29+*+100%2F2%29+%2B+x%2F100+%3D+1
+     */
+     padding-right: 5.24%;
+  }
+}
+
+/* Three-column layout. */
+@media only screen and (min-width: 925px) {
+  .view-challenge-responses .views-responsive-grid .views-column {
+    float: left;
+    margin-right: 2%;
+    width: 31%;
+    min-width: 250px;
+  }
+}
+
+/* Four-column layout (can start from 1239px, but for the looks, we rather want 3 columns there). */
+@media only screen and (min-width: 1400px) {
+  .view-challenge-responses .views-responsive-grid .views-column {
+    float: left;
+    margin-right: 2%;
+    width: 23%;
+    min-width: 250px;
+    max-width: 600px;
+  }
+}
+

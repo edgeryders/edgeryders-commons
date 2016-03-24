@@ -1,5 +1,11 @@
 name = Commons Edge
 description = A sub-theme of Commons Origins, used by the edgeryders.
+stylesheets[all][] = css/node-type-challenge-response.css
+stylesheets[all][] = css/node-type-challenge-response-form.css
+stylesheets[all][] = css/node-type-challenge.css
+stylesheets[all][] = css/node-type-challenge-chain.css
+stylesheets[all][] = css/view-challenge-responses.css
+
 core = 7.x
 base theme = commons_origins
 
