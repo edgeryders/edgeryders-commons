@@ -1,0 +1,295 @@
+<?php
+/**
+ * @file
+ * Core functionality for Navbar region module.
+ */
+
+/**
+ * Include additional files.
+ */
+$dirname  = dirname(__FILE__);
+$includes = file_scan_directory("{$dirname}/includes", '/.inc$/');
+foreach (module_list() as $module) {
+  if (isset($includes[$file = "{$dirname}/includes/{$module}.inc"])) {
+    require_once $file;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function navbar_region_menu() {
+  $items['admin/config/user-interface/navbar_region'] = array(
+    'title'            => 'Navbar region settings',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('navbar_region_admin_form'),
+    'access arguments' => array('access navbar_region settings'),
+    'type'             => MENU_NORMAL_ITEM,
+    'file'             => 'navbar_region.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function navbar_region_theme() {
+  $items['navbar_region_admin_form'] = array(
+    'render element' => 'form',
+    'file'           => 'navbar_region.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_system_info_alter().
+ *
+ * Add Navbar region to each theme.
+ */
+function navbar_region_system_info_alter(&$info, $file, $type) {
+  if ($type == 'theme') {
+    // Add the Navbar region.
+    $info['regions'] += array('navbar_region' => t('Navbar'));
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function navbar_region_module_implements_alter(&$implementations, $hook) {
+  // Ensure that Navbar region's hook_navbar_alter() function runs last.
+  if ($hook == 'navbar_alter') {
+    unset($implementations['navbar_region']);
+    $implementations['navbar_region'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function navbar_region_block_info() {
+  $blocks = array();
+
+  // Get navbar items from all modules that implement hook_navbar() and
+  // hook_navbar_alter().
+  $items   = module_invoke_all('navbar');
+  $modules = module_implements('navbar_alter');
+  foreach ($modules as $module) {
+    if ($module != 'navbar_region') {
+      $function = "{$module}_navbar_alter";
+      $function($items);
+    }
+  }
+
+  foreach ($items as $delta => $item) {
+    $blocks[$delta] = array(
+      'info'   => t('Navbar pseudo-block: @title', array(
+        '@title' => $item['tab']['#title'],
+      )),
+      'status' => 1,
+      'region' => 'navbar_region',
+      'weight' => $item['#weight'],
+    );
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_navbar_alter().
+ */
+function navbar_region_navbar_alter(&$items) {
+  module_load_include('module', 'block');
+  $blocks   = navbar_region_get_blocks();
+  $settings = variable_get('navbar_region_settings', array());
+
+  // If no Navbar region blocks are defined, don't do anything.
+  if (empty($blocks)) {
+    return;
+  }
+
+  foreach ($items as $delta => &$item) {
+    // Remove any hook_navbar() and hook_navbar_alter() based items if they are
+    // not placed via Navbar region.
+    if (!isset($blocks["navbar_region-{$delta}"])) {
+      unset($items[$delta]);
+    }
+
+    // Make any requested modifications to existing hook_navbar() and
+    // hook_navbar_alter() based items.
+    else {
+      // Set weight.
+      $item['#weight'] = $blocks["navbar_region-{$delta}"]->weight;
+
+      // Set tab icon classes.
+      if (!empty($settings["navbar_region-{$delta}"]['icon'])) {
+        $item['tab']['#options']['attributes']['class'] = array(
+          'navbar-icon',
+          "navbar-icon-{$settings["navbar_region-{$delta}"]['icon']}"
+        );
+      }
+
+      // Set tab title.
+      if (!empty($settings["navbar_region-{$delta}"]['title'])) {
+        $item['tab']['#title'] = token_replace($settings["navbar_region-{$delta}"]['title']);
+      }
+
+      unset($blocks["navbar_region-{$delta}"]);
+    }
+  }
+
+  // Add additional Navbar region blocks.
+  foreach ($blocks as $block) {
+    $block_view = module_invoke($block->module, 'block_view', $block->delta);
+    $content    = render($block_view);
+
+    // Set tab icon classes.
+    $classes = array('navbar-icon');
+    if (!empty($settings[$block->bid]['icon'])) {
+      $classes[] = "navbar-icon-{$settings[$block->bid]['icon']}";
+    }
+
+    // Set tab title.
+    if (!empty($settings[$block->bid]['title'])) {
+      $block->title = token_replace($settings[$block->bid]['title']);
+    }
+
+    $items[$block->bid] = array(
+      '#attached' => array(
+        'js' => array(
+          drupal_get_path('module', 'navbar_region') . '/js/navbar_region.js',
+        ),
+      ),
+      '#type'     => 'navbar_item',
+      'tab'       => array(
+        '#type'    => 'link',
+        '#title'   => !empty($block->title) ? $block->title : $block->info,
+        '#href'    => '',
+        '#options' => array(
+          'attributes' => array(
+            'title' => !empty($block->title) ? $block->title : $block->info,
+            'class' => $classes,
+          ),
+        ),
+      ),
+      'tray'      => array(
+        '#heading' => $block->info,
+        'block'    => array(
+          '#type'   => 'markup',
+          '#markup' => $content,
+          '#prefix' => '<div class="navbar-region">',
+          '#suffix' => '</div>',
+        ),
+      ),
+      '#weight'   => $block->weight,
+    );
+  }
+}
+
+/**
+ * Build a list of all blocks in the Navbar region.
+ *
+ * @param bool $reset
+ *
+ * @return array
+ */
+function navbar_region_get_blocks($all = FALSE, $reset = FALSE) {
+  $block_info =& drupal_static(__FUNCTION__, array());
+  $theme_key  = variable_get('theme_default', 'garland');
+
+  if (empty($block_info) || $reset) {
+    if (!$reset) {
+      $cache = cache_get('block_info');
+      if (isset($cache->data)) {
+        $block_info = $cache->data;
+      }
+    }
+
+    if (empty($block_info)) {
+      if (module_exists('block')) {
+        $block_blocks = _block_rehash($theme_key);
+        $block_info   = array();
+        // Change from numeric keys to module-delta.
+        foreach ($block_blocks as $block) {
+          $block = (object) $block;
+          unset($block->theme, $block->status, $block->custom, $block->visibility, $block->pages);
+          $block->bid              = "{$block->module}-{$block->delta}";
+          $block_info[$block->bid] = $block;
+        }
+      }
+      else {
+        $block_info = array();
+        foreach (module_implements('block_info') as $module) {
+          $module_blocks = module_invoke($module, 'block_info');
+          if (!empty($module_blocks)) {
+            foreach ($module_blocks as $delta => $block) {
+              $block = (object) $block;
+              unset($block->region);
+              $block->module           = $module;
+              $block->delta            = $delta;
+              $block->bid              = "{$block->module}-{$block->delta}";
+              $block_info[$block->bid] = $block;
+            }
+          }
+        }
+      }
+      cache_set('block_info', $block_info);
+    }
+
+    // Allow other modules that may declare blocks dynamically to alter this
+    // list.
+    drupal_alter('navbar_region_block_info', $block_info);
+
+    // Gather only region info from the database.
+    if (module_exists('block')) {
+      $result = db_select('block')->fields('block')
+        ->condition('theme', $theme_key)->execute()->fetchAllAssoc('bid');
+
+      drupal_alter('block_list', $result);
+      drupal_alter('navbar_region_block_list', $result);
+
+      foreach ($result as $row) {
+        if (isset($block_info["{$row->module}-{$row->delta}"])) {
+          $block_info["{$row->module}-{$row->delta}"] = (object) array_merge((array) $row, (array) $block_info["{$row->module}-{$row->delta}"]);
+          unset($block_info["{$row->module}-{$row->delta}"]->status);
+          unset($block_info["{$row->module}-{$row->delta}"]->visibility);
+        }
+      }
+    }
+  }
+
+  $blocks = array();
+  foreach ($block_info as $bid => $block) {
+    if ((isset($block->region) && $block->region == 'navbar_region') || $all) {
+      $blocks[$bid] = $block;
+    }
+  }
+
+  // Allow other modules to modify the list of blocks.
+  drupal_alter('navbar_region_navbar_region_blocks', $blocks, $block_info);
+
+  return $blocks;
+}
+
+/**
+ * Navbar icons.
+ */
+function navbar_region_navbar_icons() {
+  return array(
+    'appearance'    => t('Appearance'),
+    'configuration' => t('Configuration'),
+    'content'       => t('Content'),
+    'dashboard'     => t('Dashboard'),
+    'help'          => t('Help'),
+    'home'          => t('Home'),
+    'menu'          => t('Menu'),
+    'modules'       => t('Modules'),
+    'people'        => t('People'),
+    'reports'       => t('Reports'),
+    'shortcut'      => t('Shortcut'),
+    'structure'     => t('Structure'),
+    'user'          => t('User'),
+  );
+}
