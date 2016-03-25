@@ -1,0 +1,112 @@
+/* Remove margins around main elements to give a starting position for a borderless layout. */
+
+.node-type-challenge-response:not(.page-node-edit) #page .columns,
+.node-type-challenge-response:not(.page-node-edit) #page #main-content,
+.node-type-challenge-response:not(.page-node-edit) #content .panel-display,
+.node-type-challenge-response:not(.page-node-edit) .pane-node-content.block > div.block-inner {
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+.node-type-challenge-response:not(.page-node-edit) #block-system-main .region-one-main,
+.node-type-challenge-response:not(.page-node-edit) .user-picture-available {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+.node-type-challenge-response:not(.page-node-edit) figure {
+  /* Avoid small gaps after images caused by line height. */
+  font-size: 0;
+}
+
+/* Left and right spacing for everything except the full-width header image. */
+
+.node-type-challenge-response:not(.page-node-edit) #messages, 
+.node-type-challenge-response:not(.page-node-edit) #page-top, 
+.node-type-challenge-response:not(.page-node-edit) .node-challenge-response .submitted,
+.node-type-challenge-response:not(.page-node-edit) .field-name-title-field,
+.node-type-challenge-response:not(.page-node-edit) .field-name-og-challenge-ref,
+.node-type-challenge-response:not(.page-node-edit) .field-name-field-response-question,
+.node-type-challenge-response:not(.page-node-edit) .field-name-field-response-problem,  
+.node-type-challenge-response:not(.page-node-edit) .field-name-field-response-solution,
+.node-type-challenge-response:not(.page-node-edit) .field-name-field-channels,
+.node-type-challenge-response:not(.page-node-edit) .field-name-body {
+  padding-left: 7%;
+  padding-right: 7%;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .pane-node-comment-wrapper {
+  margin-left: 7%;
+  margin-right: 7%;
+}
+
+/* User picture and authoring information. */
+
+.node-type-challenge-response:not(.page-node-edit) .with-user-picture {
+  float: right;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .user-picture {
+  float: none;
+  position: initial;
+  margin: 0;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .author-datetime {
+  margin-bottom: 0;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .author-datetime .node-content-type-challenge-response {
+  /* Hide the "Challenge Response" text, starting the subtitle with "created by …" directly. */
+  display: none;
+}
+
+/* Title. */
+
+.node-type-challenge-response:not(.page-node-edit) .field-name-title-field .field-item {
+  color: #6176bf;
+  font-size: 34pt;
+  font-weight: bold;
+}
+
+/* Header image formatting. */
+
+.node-type-challenge-response:not(.page-node-edit) .field-name-field-response-image img {
+  width: 100%;
+}
+
+/* Metadata field formatting above the body text. */
+
+.node-type-challenge-response:not(.page-node-edit) .group-infobox {
+  background-color: #354572;
+  padding-top:15px;
+  padding-bottom:25px;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .group-infobox .field-items {
+  color: #bec8e1;
+}
+
+/* Body text formatting. */
+
+.node-type-challenge-response:not(.page-node-edit) .field-name-body {
+  margin-top: 3.4em;
+  text-align: justify;
+  text-justify: distribute;
+}
+
+/* Comment form formatting. */
+
+.node-type-challenge-response:not(.page-node-edit) .pane-node-comment-wrapper {
+  margin-left: 20%;
+  margin-right: 20%;
+  padding-top: 35px;
+  padding-left: 35px;
+  padding-right: 95px;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .field-name-comment-body {
+  text-align: justify;
+  text-justify: distribute;
+}
+

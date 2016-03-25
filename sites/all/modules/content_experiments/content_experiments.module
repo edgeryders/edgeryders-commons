@@ -14,12 +14,16 @@ function content_experiments_permission() {
   return array(
     'administer content_experiments' => array(
       'title' => t('Administer Content Experiments module'),
-      'description' => t('Permission to change Content Experiments settings')
+      'description' => t('Permission to change Content Experiments settings'),
     ),
     'use PHP for content experiments visibility' => array(
       'title' => t('Use PHP for content experiments visibility'),
-      'description' => t('Permission to set PHP conditions to customize content experiments visibility on various pages')
-    )
+      'description' => t('Permission to set PHP conditions to customize content experiments visibility on various pages'),
+    ),
+    'use content experiments' => array(
+      'title' => t('Use content experiments field on node add/edit form'),
+      'description' => t('Enable editor to access the content experiments field on a node add/edit form'),
+    ),
   );
 }
 
@@ -55,7 +59,7 @@ function content_experiments_form_alter(&$form, &$form_state, $form_id) {
       '#collapsible' => 1,
       '#collapsed' => 1,
       '#group' => 'additional_settings',
-      '#access' => TRUE,
+      '#access' => user_access('use content experiments'),
       '#attributes' => array(
         'class' => array(
           'node-form-content-experiments',

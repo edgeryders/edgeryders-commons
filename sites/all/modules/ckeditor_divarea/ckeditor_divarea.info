@@ -1,5 +1,6 @@
 name = CKEditor divarea
-description = Provides and enables the divarea CKEditor plugin, which makes CKEditor use a div instead of an iframe for the editable area.
+description = Provides and enables the divarea CKEditor plugin, which makes CKEditor use a div instead of an iframe for the editable area. Do not use together with comment_goodness, it will result in disabled comment buttons until issue #2459631 (https://www.drupal.org/node/2459631) is fixed.
+
 package = User interface
 core = 7.x
 

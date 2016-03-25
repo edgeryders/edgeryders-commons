@@ -69,14 +69,14 @@
         });
       });
     },
-    detach: function (context, settings) {
+    detach: function (context, settings, trigger) {
       var $context = $(context);
       $context.find('.filter-list:input').each(function () {
         var $this = $(this);
         var activeEditor = $this.val();
         var field = $this.closest('.text-format-wrapper').find('textarea').get(-1);
         if (field && Drupal.settings.editor.formats[activeEditor]) {
-          Drupal.editorDetach(field, Drupal.settings.editor.formats[activeEditor]);
+          Drupal.editorDetach(field, Drupal.settings.editor.formats[activeEditor], trigger);
         }
       });
     }
@@ -88,9 +88,9 @@
     }
   };
 
-  Drupal.editorDetach = function(field, format) {
+  Drupal.editorDetach = function(field, format, trigger) {
     if (format.editor && Drupal.editors[format.editor]) {
-      Drupal.editors[format.editor].detach(field, format);
+      Drupal.editors[format.editor].detach(field, format, trigger);
     }
   };
 

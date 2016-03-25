@@ -1,0 +1,108 @@
+
+/* Remove margins around main elements to give a starting position for a borderless layout. */
+
+.node-type-challenge-chain:not(.page-node-edit) #page .columns,
+.node-type-challenge-chain:not(.page-node-edit) #content .panel-display,
+.node-type-challenge-chain:not(.page-node-edit) #page #main-content,
+.node-type-challenge-chain:not(.page-node-edit) .pane-node-content.block > div.block-inner {
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) #block-system-main .region-one-main {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) figure {
+  /* Avoid small gaps after images caused by line height. */
+  font-size: 0;
+}
+
+/* Left and right spacing for everything except the full-width header image. */
+
+.node-type-challenge-chain:not(.page-node-edit) #messages, 
+.node-type-challenge-chain:not(.page-node-edit) #page-top, 
+.node-type-challenge-chain:not(.page-node-edit) .field-name-title-field,
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges,
+.node-type-challenge-chain:not(.page-node-edit) .field-name-body {
+  padding-left: 7%;
+  padding-right: 7%;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .pane-node-comment-wrapper {
+  margin-left: 7%;
+  margin-right: 7%;
+}
+
+/* Title field. */
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-title-field .field-item {
+  color: #6176bf;
+  font-size: 34pt;
+  font-weight: bold;
+}
+
+/* Challenges field (progress bar). */
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .field-item {
+  /* width: 20%; */ /* Makes each progress bar step the same size, but avoided as it breaks titles even if there is whitespace in other steps. */
+  flex-grow: 1; 
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges {
+  margin-top: 4em;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .field-items {
+  display: flex;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .challenge-title {
+  font-size: 1.4em;
+  font-weight: bold;
+  padding: 12px;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .challenge-progressbar {
+  height: 16px;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .challenge-container.state-finished .challenge-progressbar {
+  background-color: #9e9e9e;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .challenge-container.state-previous .challenge-progressbar {
+  background-color: #5b5b5b;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .challenge-container.state-ongoing .challenge-progressbar {
+  background-color: #3d9e9e;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .challenge-container.state-featured .challenge-progressbar {
+  background-color: #ff7800;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .challenge-container.state-featured {
+  background-color: #ebe1d8;
+  border-radius: 12px;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .challenge-container.state-upcoming .challenge-progressbar {
+  background-color: #8bb6c8;
+}
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-field-challenges .challenge-state-label {
+  color: #5b5b5b;
+  padding: 12px;
+}
+
+/* Body field. */
+
+.node-type-challenge-chain:not(.page-node-edit) .field-name-body {
+  margin-top: 3.4em;
+  text-align: justify;
+  text-justify: distribute;
+}
+

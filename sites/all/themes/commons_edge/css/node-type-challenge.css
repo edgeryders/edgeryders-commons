@@ -1,0 +1,66 @@
+
+/* Remove margins around main elements to give a starting position for a borderless layout. */
+
+.node-type-challenge:not(.page-node-edit) #page .columns,
+.node-type-challenge:not(.page-node-edit) #content .panel-display,
+.node-type-challenge:not(.page-node-edit) #page #main-content,
+.node-type-challenge:not(.page-node-edit) .pane-node-content.block > div.block-inner {
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+.node-type-challenge:not(.page-node-edit) #block-system-main .region-one-main,
+.node-type-challenge:not(.page-node-edit) .user-picture-available {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+
+/* Left and right spacing for everything except the full-width header image. 
+ * (Paddings for the Challenge Responses view are set in the view's CSS file however.) */
+
+.node-type-challenge:not(.page-node-edit) #messages, 
+.node-type-challenge:not(.page-node-edit) #page-top, 
+.node-type-challenge:not(.page-node-edit) .node-challenge-response .submitted,
+.node-type-challenge:not(.page-node-edit) .field-name-title-field,
+.node-type-challenge:not(.page-node-edit) .field-name-field-challenge-state,
+.node-type-challenge:not(.page-node-edit) .field-name-body {
+  padding-left: 7%;
+  padding-right: 7%;
+}
+
+
+/* User picture and authoring information. */
+
+.node-type-challenge:not(.page-node-edit) .with-user-picture {
+  display: none;
+}
+
+/* Title. */
+
+.node-type-challenge:not(.page-node-edit) .field-name-title-field .field-item {
+  color: #6176bf;
+  font-size: 34pt;
+  font-weight: bold;
+}
+
+.node-type-challenge:not(.page-node-edit) .author-datetime {
+  margin-bottom: 0;
+}
+
+
+/* Body text formatting. */
+
+.node-type-challenge:not(.page-node-edit) .field-name-body {
+  padding-top: 35px;
+  padding-bottom:25px;
+  background-color: #354572;
+}
+.node-type-challenge:not(.page-node-edit) .field-name-body p, 
+.node-type-challenge:not(.page-node-edit) .field-name-body div {
+  color: #bec8e1;
+  font-size: 115%;
+  text-align: justify;
+  text-justify: distribute;
+}
+

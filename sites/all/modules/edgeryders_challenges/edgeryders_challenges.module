@@ -1,0 +1,286 @@
+<?php
+/**
+ * @file
+ * Code for the edgeryders_challenges feature.
+ */
+
+include_once 'edgeryders_challenges.features.inc';
+
+
+/**
+ * Generate the HTML of a button for adding a Challenge Response node, or a message to log in to do so.
+ * 
+ * @param $challenge Node object of the challenge to which to post a response.
+ * @return String with the HTML for the button / message.
+ */
+function _generateAddResponseHtml($challenge) {
+  // dpm($challenge);
+
+  if (!isset($challenge->field_challenge_state['und'][0]['value'])) {
+    // TODO Make this output configurable, maybe like how it's done for comments.
+    return '<div>Go to the challenge directly to add your response.</div>';
+  }
+
+  global $user;
+  $access = user_access('create challenge_response content', $user);
+
+  // We only have to output prompts to contribute, not messages that this is not possible. That is done independently by the 
+  // og_challenge_ref field rendering.
+
+  if (in_array($challenge->field_challenge_state['und'][0]['value'], array('previous', 'featured', 'ongoing'))) {
+    if ($access) {
+      $add_response_html = 
+        '<div class="new-response-btn">' . 
+        l(t('Add my Story!'), 'node/add/challenge-response', array('query' => array('og_challenge_ref' => $challenge->nid, 'destination' => current_path()) )) . 
+        '</div>';
+      // dpm("\$add_response_html = $add_response_html");
+      return $add_response_html;
+    }
+    else {
+      // TODO Make this output configurable, maybe like how it's done for comments.
+      return '<div>Register of log in to contribute your story.</div>';
+    }
+  }
+
+}
+
+
+/**
+ * Add an "Add challenge response" button to the header area and "no results behavior" of the challenge_responses view.
+ * 
+ * Implements hook_views_pre_render(). Note that view header areas are only rendered if the view has any results. So we have to 
+ * add the same button to the view's "no results behavior".
+ * 
+ * This hook implementation could also be placed in a theme's template.php. Unlike hook_views_pre_view(), where this code would also work.
+ *
+ * @see http://www.drupalcontrib.org/api/drupal/contributions!views!views.api.php/function/hook_views_pre_render/7
+ * @see https://api.drupal.org/api/views/includes!view.inc/function/views_object_types/7 for available types to supply in $view->set_item()
+ */
+function edgeryders_challenges_views_pre_render(&$view) {
+  // dpm("edgeryders_challenge_views_pre_render called");
+  // dpm($view);
+
+  if($view->name != 'challenge_responses') {
+    return;
+  }
+
+  if (isset($view->args[0])) {
+
+    $challenge_nid = $view->args[0];
+    $challenge = node_load($challenge_nid);
+
+    if ($challenge !== FALSE) {
+
+      $add_response_html = _generateAddResponseHtml($challenge);
+
+      // Add button to view header area.
+      $options = array(
+        'id' => 'button1',
+        'table' => 'views',
+        'field' => 'area',
+        'empty' => FALSE,
+        'content' => $add_response_html,
+        'format' => 'filtered_html',
+        'tokenize' => 0,
+      );
+      $view->set_item('default', 'header', 'button1', $options);
+      // For some reason, $view['header'] is still empty in dpm() output, but the header will show.
+      // dpm($view);
+
+      // Add button to view's "no results behavior" text.
+      $options = array(
+        'id' => 'button2',
+        'table' => 'views',
+        'field' => 'area',
+        'empty' => FALSE,
+        'content' => '<div class="no-results-msg">Your story could be the first for this challenge!</div>' . $add_response_html,
+        'format' => 'filtered_html',
+        'tokenize' => 0,
+      );
+      $view->set_item('default', 'empty', 'button2', $options);
+    }
+  }
+
+}
+
+
+/**
+ * Implements hook_field_formatter_info().
+ * 
+ * For a list of available field types see https://groups.drupal.org/node/124289 .
+ */
+function edgeryders_challenges_field_formatter_info() {
+  return array(
+    'progress_bar' => array(
+      'label' => t('Progress Bar'),
+      'description' => t('Renders a series of Challenge references as progress bar.'),
+      'field types' => array('entityreference'), 
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_field_formatter_view().
+ * 
+ * The progress_bar formatter is only called on entityreference type fields, and then $items is:
+ * array(0 => array('target_id' => 1234), 1 => array('target_id' => 2345), …)
+ *
+ * @return A renderable array for the $items, as an array of child elements keyed by numeric indexes starting from 0.
+ *
+ * @see https://api.drupal.org/api/drupal/modules!field!field.api.php/function/hook_field_formatter_view/7
+ */
+function edgeryders_challenges_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  if ($display['type'] != 'progress_bar' or $field['field_name'] != 'field_challenges') {
+    return;
+  }
+
+  // Define the possible field_challenge_state values and how to render them.
+  $challenge_state_labels = array(
+    'finished'  => 'Accomplished',
+    'previous'  => 'Accomplished (still open)',
+    'featured'  => 'Focus – Add your Story below!', // Virtual state applied to the first "ongoing" challenge.
+    'ongoing'   => 'Open',
+    'upcoming'  => 'Launching Soon!',
+  );
+
+  // Load the referenced challenges (so we can access their title etc. data later).
+  $challenge_nids = array();
+  foreach ($items as $delta => $item) {
+    $challenge_nids[] = $item['target_id'];
+  }
+  $challenge_nodes = node_load_multiple($challenge_nids);
+  // dpm($challenge_nodes);
+
+  // Render the referenced challenges, each as part of a progress bar.
+  $render_array = array();
+  $found_featured_challenge = FALSE;
+  foreach ($items as $delta => $item) {
+    $challenge_nid = $item['target_id'];
+    $challenge = $challenge_nodes[$challenge_nid];
+    $challenge_state = $challenge->field_challenge_state['und'][0]['value'];
+    $challenge_state = empty($challenge_state) ? 'upcoming' : $challenge_state; // Should not happen though, since the field is required.
+
+    if (isset($challenge->title_field['und'][0]['safe_value'])) {
+      $challenge_title = $challenge->title_field['und'][0]['safe_value'];
+    } elseif (isset($challenge->title_field['en'][0]['safe_value'])) {
+      $challenge_title = $challenge->title_field['en'][0]['safe_value'];
+    }
+    else {
+      $challenge_title = '[no title]';
+    }
+
+    // Change the state of the first challenge in "ongoing" state to "featured".
+    if (!$found_featured_challenge and $challenge_state == 'ongoing') {
+      $challenge_state = 'featured';
+      $found_featured_challenge = TRUE;
+    }
+
+    // Create a container tag for the challenge.
+    // (Needed because we can't add CSS classes to our enclosing div.field-item easily from here.)
+    $render_array[$delta] = array(
+      '#type' => 'container',
+      '#attributes' => array('class' => array('challenge-container', "state-$challenge_state")),
+      '#weight' => $delta, /* Probably not necessary as array index would serve as ordering property otherwise. */
+    );
+
+    // Add information about the challenge: title, graphical element, textual state description.
+    $render_array[$delta]['title'] = array(
+      '#type' => 'markup',
+      '#markup' => '<div class="challenge-title">' . l($challenge_title, drupal_get_path_alias("node/$challenge_nid")) . '</div>',
+      '#weight' => 0,
+    );
+    $render_array[$delta]['progressbar'] = array(
+      '#type' => 'markup',
+      '#markup' => '<div class="challenge-progressbar"></div>',
+      '#weight' => 1,
+    );
+    $render_array[$delta]['state'] = array(
+      '#type' => 'markup',
+      '#markup' =>  '<div class="challenge-state-label">' . $challenge_state_labels[$challenge_state] . '</div>',
+      '#weight' => 2,
+    );
+
+    // Render the challenge node ID for debugging purposes.
+    // $render_array[$delta]['#markup']['nid'] = "nid: $challenge_nid";
+  }
+
+  return $render_array;
+}
+
+
+/**
+ * Provides information about the [featured_challenge] token implemented here for Challenge Chain nodes.
+ *
+ * Implements hook_tokens().
+ *
+ * @see https://api.drupal.org/api/drupal/includes!token.inc/function/token_info/7
+ */
+function edgeryders_challenges_token_info() {
+
+  $token_info = array();
+
+  $token_info['tokens']['node']['featured_challenge'] = array(
+    'name' => t('Featured Challenge nid'),
+    'description' => t('Node ID of the challenge to be shown as featured in a challenge chain – namely the first one in state "ongoing".'),
+  );
+
+  return $token_info;
+}
+
+
+/**
+ * Determine the node ID of a challenge chain node's featured challenge.
+ * 
+ * The featured challenge is the first one in state "ongoing".
+ *
+ * @param $challenge_nids Array of node IDs of the challenge chain's referenced challenges, from first to last.
+ */
+function _featured_challenge_nid($challenge_nids) {
+  $challenge_nodes = node_load_multiple($challenge_nids);
+
+  foreach ($challenge_nids as $index => $nid) {
+    if ($challenge_nodes[$nid]->field_challenge_state['und'][0]['value'] == 'ongoing') {
+      return $nid;
+    }
+  }
+
+}
+
+
+/**
+ * Provides a value for the [node:featured_challenge] token.
+ *
+ * Implements hook_tokens(). You can test this by writing [node:featured_challenge] in a Challenge Chain body field. It should be 
+ * replaced on node view.
+ *
+ * @see https://api.drupal.org/api/drupal/modules!system!system.api.php/function/hook_tokens/7
+ */
+function edgeryders_challenges_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+
+  if ($type != 'node') {
+    return $replacements;
+  }
+
+  foreach ($tokens as $name => $original) {
+    switch ($name) {
+      case 'featured_challenge':
+        // dpm($tokens);
+        // dpm($data);
+        // dpm($options);
+
+        $challenge_nids = array();
+        foreach ($data['node']->field_challenges['und'] as $index => $value) {
+          $challenge_nids[] = $value['target_id'];
+        }
+        
+        $replacements[$original] = check_plain( _featured_challenge_nid($challenge_nids) );
+        break;
+    }
+  }
+
+  // Return the replacements.
+  return $replacements;
+}
+
