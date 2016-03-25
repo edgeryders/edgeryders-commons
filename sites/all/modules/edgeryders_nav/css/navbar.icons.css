@@ -1,0 +1,21 @@
+/**
+ * @file
+ * Styling for Edgeryders navbar icons.
+ */
+
+/**
+ * Navbar tab icon.
+ */
+.navbar-bar .navbar-icon-edgeryders:before {
+    background-image: url("../misc/icons/edgeryders.svg");
+}
+.no-svg .navbar-bar .navbar-icon-edgeryders:before {
+    background-image: url("../misc/icons/edgeryders.png");
+}
+.navbar-bar .navbar-icon-edgeryders:active:before,
+.navbar-bar .navbar-icon-edgeryders.active:before {
+    background-image: url("../misc/icons/5181c6/edgeryders.svg");
+}
+.no-svg .navbar-bar .navbar-icon-edgeryders:active:before,
+.no-svg .navbar-bar .navbar-icon-edgeryders.active:before {
+    background-image: url("../misc/icons/5181c6/edgeryders.png");
