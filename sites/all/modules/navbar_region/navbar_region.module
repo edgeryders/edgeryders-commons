@@ -293,3 +293,16 @@ function navbar_region_navbar_icons() {
     'user'          => t('User'),
   );
 }
+
+/**
+ * Implements hook_permission().
+ */
+function navbar_region_permission()
+{
+  return array(
+    'access navbar_region settings' => array(
+      'title' => t('Access navbar region settings'),
+      'description' => t('Add custom menus, blocks, regions to the navigation bar'),
+    ),
+  );
+}
