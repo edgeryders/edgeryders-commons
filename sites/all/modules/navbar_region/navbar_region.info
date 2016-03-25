@@ -1,0 +1,12 @@
+name = Navbar region
+description = Adds a region to the Mobile Friendly Navigation Toolbar (navbar).
+core = 7.x
+dependencies[] = navbar
+configure = admin/config/user-interface/navbar_region
+
+; Information added by Drupal.org packaging script on 2014-09-11
+version = "7.x-1.0-beta3"
+core = "7.x"
+project = "navbar_region"
+datestamp = "1410412733"
+
