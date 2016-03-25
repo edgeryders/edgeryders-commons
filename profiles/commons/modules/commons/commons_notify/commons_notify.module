@@ -72,9 +72,11 @@ function commons_notify_send_message_on_shutdown($node) {
 function commons_notify_comment_insert($comment) {
   $account = user_load($comment->uid);
   $node = node_load($comment->nid);
-  $message_type = 'digest_new_comment'; // quick FIX TO BE REVERTED when edgeryders_notify is ready
+  $message_type = 'commons_notify_comment_created';
   $hook = 'comment_insert';
-
+  if (!isset($node->og_group_ref[LANGUAGE_NONE][0]['target_id'])) {
+    $message_type = 'commons_notify_node_created_no_groups';
+  }
   drupal_alter('commons_notify_message_selection', $message_type, $hook, $comment);
   $message = message_create($message_type, array('uid' => $account->uid, 'timestamp' => $comment->created));
   // Save reference to the node in the node reference field, and the
