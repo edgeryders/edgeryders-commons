@@ -104,6 +104,7 @@ function navbar_region_navbar_alter(&$items) {
   module_load_include('module', 'block');
   $blocks   = navbar_region_get_blocks();
   $settings = variable_get('navbar_region_settings', array());
+  $access = navbar_region_block_access();
 
   // If no Navbar region blocks are defined, don't do anything.
   if (empty($blocks)) {
@@ -112,8 +113,8 @@ function navbar_region_navbar_alter(&$items) {
 
   foreach ($items as $delta => &$item) {
     // Remove any hook_navbar() and hook_navbar_alter() based items if they are
-    // not placed via Navbar region.
-    if (!isset($blocks["navbar_region-{$delta}"])) {
+    // not placed via Navbar region and check visibility rules
+    if (!isset($blocks["navbar_region-{$delta}"]) || $access[$delta] != TRUE) {
       unset($items[$delta]);
     }
 
@@ -186,6 +187,21 @@ function navbar_region_navbar_alter(&$items) {
       '#weight'   => $block->weight,
     );
   }
+}
+
+/**
+ * Get data for block role visibility
+ */
+function navbar_region_block_access($module = 'navbar_region') {
+  $block_access = array();
+  if ($result = db_query('SELECT delta, rid FROM {blocks_roles} WHERE module = $module ORDER BY delta, rid')) {
+    while ($row = db_fetch_object($result)) {
+      $delta = {$row->delta};
+      if(user_has_role($rid) = TRUE) $block_access[$delta] = TRUE;
+      else $block_access[$delta] = FALSE;
+    }
+  }
+  return($block_access);
 }
 
 /**
