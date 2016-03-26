@@ -104,7 +104,6 @@ function navbar_region_navbar_alter(&$items) {
   module_load_include('module', 'block');
   $blocks   = navbar_region_get_blocks();
   $settings = variable_get('navbar_region_settings', array());
-  $access = navbar_region_block_access();
 
   // If no Navbar region blocks are defined, don't do anything.
   if (empty($blocks)) {
@@ -113,8 +112,8 @@ function navbar_region_navbar_alter(&$items) {
 
   foreach ($items as $delta => &$item) {
     // Remove any hook_navbar() and hook_navbar_alter() based items if they are
-    // not placed via Navbar region, and check visibility rules for block
-    if (!isset($blocks["navbar_region-{$delta}"]) || $access[$delta] != TRUE) {
+    // not placed via Navbar region
+    if (!isset($blocks["navbar_region-{$delta}"])) {
       unset($items[$delta]);
     }
 
@@ -190,15 +189,13 @@ function navbar_region_navbar_alter(&$items) {
 }
 
 /**
- * Get data for block role visibility
+ * Check whether the current user has access to the block
  */
-function navbar_region_block_access($module = 'navbar_region') {
+function navbar_region_get_block_access() {
   $block_access = array();
-  if($result = db_query("SELECT module, delta, rid FROM {block_role} WHERE module = :module ORDER BY delta, rid", array(':module' => $module))) {
+  if($result = db_query("SELECT delta, rid FROM {block_role} ORDER BY delta, rid")) {
     foreach($result as $row) {
-      $delta = $row->delta;
-      $rid = $row->rid;
-      if(user_has_role($rid) == TRUE) {
+      if(user_has_role($row->rid) == TRUE) {
         $block_access[$delta] = TRUE;
       }
       else {
@@ -282,8 +279,10 @@ function navbar_region_get_blocks($all = FALSE, $reset = FALSE) {
   }
 
   $blocks = array();
+  $access = navbar_region_get_block_access();
+
   foreach ($block_info as $bid => $block) {
-    if ((isset($block->region) && $block->region == 'navbar_region') || $all) {
+    if ((isset($block->region) && $block->region == 'navbar_region' && $access[$block->delta] != FALSE) || $all) {
       $blocks[$bid] = $block;
     }
   }
