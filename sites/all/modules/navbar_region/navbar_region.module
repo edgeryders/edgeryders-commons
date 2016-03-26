@@ -112,7 +112,7 @@ function navbar_region_navbar_alter(&$items) {
 
   foreach ($items as $delta => &$item) {
     // Remove any hook_navbar() and hook_navbar_alter() based items if they are
-    // not placed via Navbar region
+    // not placed via Navbar region.
     if (!isset($blocks["navbar_region-{$delta}"])) {
       unset($items[$delta]);
     }
@@ -280,7 +280,6 @@ function navbar_region_get_blocks($all = FALSE, $reset = FALSE) {
 
   $blocks = array();
   $access = navbar_region_get_block_access();
-  dpm($access);
 
   foreach ($block_info as $bid => $block) {
     if ((isset($block->region) && $block->region == 'navbar_region') || $all) {
