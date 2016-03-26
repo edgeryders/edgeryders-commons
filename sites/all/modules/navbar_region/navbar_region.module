@@ -194,7 +194,7 @@ function navbar_region_navbar_alter(&$items) {
  */
 function navbar_region_block_access($module = 'navbar_region') {
   $block_access = array();
-  if ($result = db_query('SELECT delta, rid FROM {blocks_roles} WHERE module = $module ORDER BY delta, rid')) {
+  if ($result = db_query('SELECT delta, rid FROM {block_role} WHERE module = $module ORDER BY delta, rid')) {
     while ($row = db_fetch_object($result)) {
       $delta = {$row->delta};
       if(user_has_role($rid) = TRUE) $block_access[$delta] = TRUE;
