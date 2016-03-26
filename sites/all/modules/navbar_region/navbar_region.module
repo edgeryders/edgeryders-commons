@@ -113,7 +113,7 @@ function navbar_region_navbar_alter(&$items) {
 
   foreach ($items as $delta => &$item) {
     // Remove any hook_navbar() and hook_navbar_alter() based items if they are
-    // not placed via Navbar region and check visibility rules
+    // not placed via Navbar region, and check visibility rules for block
     if (!isset($blocks["navbar_region-{$delta}"]) || $access[$delta] != TRUE) {
       unset($items[$delta]);
     }
@@ -194,11 +194,16 @@ function navbar_region_navbar_alter(&$items) {
  */
 function navbar_region_block_access($module = 'navbar_region') {
   $block_access = array();
-  if ($result = db_query('SELECT delta, rid FROM {block_role} WHERE module = $module ORDER BY delta, rid')) {
-    while ($row = db_fetch_object($result)) {
-      $delta = {$row->delta};
-      if(user_has_role($rid) = TRUE) $block_access[$delta] = TRUE;
-      else $block_access[$delta] = FALSE;
+  if($result = db_query("SELECT module, delta, rid FROM {block_role} WHERE module = :module ORDER BY delta, rid", array(':module' => $module))) {
+    foreach($result as $row) {
+      $delta = $row->delta;
+      $rid = $row->rid;
+      if(user_has_role($rid) == TRUE) {
+        $block_access[$delta] = TRUE;
+      }
+      else {
+        $block_access[$delta] = FALSE;
+      }
     }
   }
   return($block_access);
