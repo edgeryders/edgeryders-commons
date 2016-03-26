@@ -6,6 +6,7 @@ stylesheets[all][] = css/node-type-challenge.css
 stylesheets[all][] = css/node-type-challenge-chain.css
 stylesheets[all][] = css/view-challenge-responses.css
 stylesheets[all][] = css/header-layout.css
+stylesheets[all][] = css/navbar-layout.css
 
 core = 7.x
 base theme = commons_origins
@@ -20,7 +21,7 @@ regions[secondary_content] = Secondary
 regions[tertiary_content] = Tertiary
 regions[footer] = Footer
 regions[leaderboard] = Leaderboard
-;regions[header] = Header
+regions[header] = Header
 ;regions[menu_bar] = Menu Bar
 regions[help] = Help
 regions[page_top] = Page top
