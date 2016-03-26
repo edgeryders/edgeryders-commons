@@ -196,10 +196,10 @@ function navbar_region_get_block_access() {
   if($result = db_query("SELECT delta, rid FROM {block_role} ORDER BY delta, rid")) {
     foreach($result as $row) {
       if(user_has_role($row->rid) == TRUE) {
-        $block_access[$delta] = TRUE;
+        $block_access[$row->delta] = TRUE;
       }
-      else {
-        $block_access[$delta] = FALSE;
+      elseif($block_access[$row->delta] != TRUE) {
+        $block_access[$row->delta] = FALSE;
       }
     }
   }
@@ -280,10 +280,16 @@ function navbar_region_get_blocks($all = FALSE, $reset = FALSE) {
 
   $blocks = array();
   $access = navbar_region_get_block_access();
+  dpm($access);
 
   foreach ($block_info as $bid => $block) {
-    if ((isset($block->region) && $block->region == 'navbar_region' && $access[$block->delta] != FALSE) || $all) {
-      $blocks[$bid] = $block;
+    if ((isset($block->region) && $block->region == 'navbar_region') || $all) {
+      if(!isset($access[$block->delta])) {
+        $access[$block->delta] = TRUE;
+      }
+      if($access[$block->delta] == TRUE) {
+        $blocks[$bid] = $block;
+      }
     }
   }
 
