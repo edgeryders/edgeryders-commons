@@ -310,6 +310,7 @@ function navbar_region_navbar_icons() {
     'modules'       => t('Modules'),
     'people'        => t('People'),
     'reports'       => t('Reports'),
+    'search'        => t('Search'),
     'shortcut'      => t('Shortcut'),
     'structure'     => t('Structure'),
     'user'          => t('User'),

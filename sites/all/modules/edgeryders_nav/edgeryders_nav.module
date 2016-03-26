@@ -68,3 +68,13 @@ function edgeryders_nav_navbar()
   );
   return $items;
 }
+
+/**
+ * Implements hook_navbar_alter().
+ */
+function edgeryders_nav_navbar_alter(&$items)
+{
+  $items['search']['#attached'] = array(
+    'css' => array(drupal_get_path('module','edgeryders_nav') . '/css/edgeryders_nav.navbar.icons.css'),
+  );
+}
