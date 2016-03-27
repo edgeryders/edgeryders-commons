@@ -1,9 +1,21 @@
-.navbar-bar .navbar-icon-edgeryders {
+#navbar-administration .navbar-bar .navbar-icon::before {
+    width: 32px;
+}
+
+#navbar-administration .navbar-bar .navbar-icon {
+    padding-left: 3.5em;
+    padding-right: 2em;
+    font-size: 1.2em;
+}
+
+/* Fails: attempt to center Edgeryders logo */
+#navbar-administration .navbar-bar .navbar-icon-edgeryders {
     margin: auto;
     width: 15px;
 }
 
-.navbar-bar .navbar-icon-user {
+/* Fails: attempt to float right user profile tab */
+#navbar-administration .navbar-bar .navbar-icon-user {
     float: right;
     width: 15px;
     padding: 10px;
