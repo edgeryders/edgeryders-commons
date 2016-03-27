@@ -195,11 +195,8 @@ function navbar_region_get_block_access() {
   $block_access = array();
   if($result = db_query("SELECT delta, rid FROM {block_role} ORDER BY delta, rid")) {
     foreach($result as $row) {
-      if(user_has_role($row->rid) == TRUE) {
-        $block_access[$row->delta] = TRUE;
-      }
-      elseif($block_access[$row->delta] != TRUE) {
-        $block_access[$row->delta] = FALSE;
+      if(!isset($block_access[$row->delta])) {
+        $block_access[$row->delta] = user_has_role($row->rid);
       }
     }
   }
