@@ -1,0 +1,20 @@
+/**
+ * @file
+ * Styles to be applied globally, not specific to views, content types or other.
+ *
+ * Esp. also includes overwrites for global.*.css styles from the commons_origins base theme.
+ */
+
+html {
+  /* Reset font size to browser's initial size), overwriting "html" selector in global.styles.css. */
+  /* Cannot be overwritten on body instead, since it's a relative size. (Except when using >100% sizes there.) */
+  font-size: 100%;
+}
+
+body {
+  /* Make text color gray also for ul etc. elements, once and for all. Overwriting Commons Origins. */
+  color: #333333;
+
+  background-color: white;
+}
+
