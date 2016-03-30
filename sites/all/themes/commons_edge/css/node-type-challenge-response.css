@@ -19,7 +19,7 @@
   font-size: 0;
 }
 
-/* Left and right spacing for everything except the full-width header image. */
+/* Left and right spacing for everything except the full-width blue infobox. */
 
 .node-type-challenge-response:not(.page-node-edit) #messages, 
 .node-type-challenge-response:not(.page-node-edit) #page-top, 
@@ -30,14 +30,10 @@
 .node-type-challenge-response:not(.page-node-edit) .field-name-field-response-problem,  
 .node-type-challenge-response:not(.page-node-edit) .field-name-field-response-solution,
 .node-type-challenge-response:not(.page-node-edit) .field-name-field-channels,
-.node-type-challenge-response:not(.page-node-edit) .field-name-body {
+.node-type-challenge-response:not(.page-node-edit) .field-name-body,
+.node-type-challenge-response:not(.page-node-edit) .pane-node-comment-wrapper {
   padding-left: 7%;
   padding-right: 7%;
-}
-
-.node-type-challenge-response:not(.page-node-edit) .pane-node-comment-wrapper {
-  margin-left: 7%;
-  margin-right: 7%;
 }
 
 /* User picture and authoring information. */
@@ -50,6 +46,10 @@
   float: none;
   position: initial;
   margin: 0;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .user-picture::after { /* Small speech bubble triangle. */
+  display: none; /* Hide, b/c its negative position gives the page a horizontal scrollbar. */
 }
 
 .node-type-challenge-response:not(.page-node-edit) .author-datetime {
@@ -65,34 +65,62 @@
 
 .node-type-challenge-response:not(.page-node-edit) .field-name-title-field .field-item {
   color: #6176bf;
-  font-size: 34pt;
+  font-size: 24pt;
   font-weight: bold;
 }
 
-/* Header image formatting. */
-
-.node-type-challenge-response:not(.page-node-edit) .field-name-field-response-image img {
-  width: 100%;
-}
-
-/* Metadata field formatting above the body text. */
+/* Blue infobox with metadata, incl. the header image. */
 
 .node-type-challenge-response:not(.page-node-edit) .group-infobox {
   background-color: #354572;
-  padding-top:15px;
-  padding-bottom:25px;
+  padding-top: 35px;
+  padding-bottom: 35px;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .group-infobox section:first-of-type .field-label {
+  margin-top: 0; /* Make first text begin at same position as floated header image. */
 }
 
 .node-type-challenge-response:not(.page-node-edit) .group-infobox .field-items {
   color: #bec8e1;
 }
 
+.node-type-challenge-response:not(.page-node-edit) .group-infobox .field-name-field-channels ul.field-items {
+  margin: 0;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .group-infobox .field-name-field-response-image {
+  float: right;
+  margin-left: 35px;
+  width: 40%;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .group-infobox:after {
+  /* Clearfix code, to make sure this "blue infobox" element contains its floating header image child. */
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .group-infobox .field-name-field-response-image img {
+  width: 100%;
+}
+
 /* Body text formatting. */
 
+.node-type-challenge-response:not(.page-node-edit) .field-name-body:before { /* clearfix */
+  content: "";
+  display: block;
+  clear: both;
+}
+
 .node-type-challenge-response:not(.page-node-edit) .field-name-body {
-  margin-top: 3.4em;
   text-align: justify;
   text-justify: distribute;
+}
+
+.node-type-challenge-response:not(.page-node-edit) .field-name-body .field-items {
+  margin-top: 3em; /* Cannot be applied to parent b/c it creates no space to floating elements before. */
 }
 
 /* Comment form formatting. */

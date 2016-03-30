@@ -109,13 +109,16 @@
 .page-node-add-challenge-response .field-name-field-response-image-form .image-widget-data {
   float: none;
 }
-.page-node-add-challenge-response .droppable .droppable-message span { /* The "drop file here" and "or Browse" messages. */
-  font-size: 3.4em;
+.page-node-add-challenge-response .droppable .droppable-message > span { /* The "drop file here" and "or Browse" messages. */
+  font-size: 3em;
   font-weight: bold;
   color: #5a6b97;
 }
+.page-node-add-challenge-response .field-name-field-response-image-form .description { /* Image requirements list. */
+  display: none; /* We included them into the droppable area text instead. */
+}
 .page-node-add-challenge-response .field-name-field-response-image-form .description br {
-  display: none; /* Make the field requirements list render as a single line. */
+  display: none; /* If displayed, show field requirements list in a single line. */
 }
 .page-node-add-challenge-response .field-name-field-response-image-form .image-preview {
   padding: 0 0 8px 0;

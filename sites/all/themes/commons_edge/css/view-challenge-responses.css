@@ -63,7 +63,7 @@
 /* Title field formatting. */
 .view-challenge-responses .views-responsive-grid .views-field-title {
   font-weight: bold;
-  font-size: 125%; /* Should have same apparent size as body field in content type "Challenge". */
+  font-size: 109%;
   padding-left: 8px;
   padding-right: 8px;
 }

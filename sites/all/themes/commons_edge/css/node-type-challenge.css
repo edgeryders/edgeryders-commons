@@ -40,7 +40,7 @@
 
 .node-type-challenge:not(.page-node-edit) .field-name-title-field .field-item {
   color: #6176bf;
-  font-size: 34pt;
+  font-size: 24pt;
   font-weight: bold;
 }
 
@@ -59,7 +59,6 @@
 .node-type-challenge:not(.page-node-edit) .field-name-body p, 
 .node-type-challenge:not(.page-node-edit) .field-name-body div {
   color: #bec8e1;
-  font-size: 115%;
   text-align: justify;
   text-justify: distribute;
 }
