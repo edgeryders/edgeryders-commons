@@ -92,8 +92,6 @@ class MessageDigest extends MessageNotifierBase {
    */
   public function format($digest, $view_modes) {
     $output_array = array();
-    $footer_text = '';
-    $header_text = '';
     foreach ($digest as $mid) {
       $message = message_load($mid);
       if (empty($message) || !is_object($message)) {
@@ -109,32 +107,7 @@ class MessageDigest extends MessageNotifierBase {
         'plugin' => $this->plugin,
         'message' => $message,
       ));
-
-      // Get header text
-      $langcode = NULL;
-      $options = array(
-        'field name' => 'message_header',
-      );
-      // Overwrite $header_text. We'll just keep the last one.
-      $header_text = $message->getText($langcode, $options);
-
-      // Get footer text
-      $langcode = NULL;
-      $options = array(
-        'field name' => 'message_footer',
-      );
-      // Overwrite $footer_text. We'll just keep the last one.
-      $footer_text = $message->getText($langcode, $options);
     }
-
-    if (!empty($header_text)) {
-      array_unshift($output_array, $header_text);
-    }
-
-    if (!empty($footer_text)) {
-      $output_array[] = $footer_text;
-    }
-
     return theme('message_digest', array(
       'messages' => $output_array,
       'plugin' => $this->plugin,
