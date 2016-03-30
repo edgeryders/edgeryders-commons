@@ -8,18 +8,3 @@
     font-size: 1.2em;
 }
 
-/* Fails: attempt to center Edgeryders logo */
-/*
-#navbar-administration .navbar-bar .navbar-icon-edgeryders {
-    margin: auto;
-    width: 15px;
-}
-*/
-/* Fails: attempt to float right user profile tab */
-/*
-#navbar-administration .navbar-bar .navbar-icon-user {
-    float: right;
-    width: 15px;
-    padding: 10px;
-}
-*/
