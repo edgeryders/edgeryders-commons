@@ -121,9 +121,11 @@ function edgeryders_challenges_field_formatter_info() {
 
 
 /**
+ * Formats a multi-value entity reference field (referring to "Challenge" nodes) as a progress bar.
+ * 
  * Implements hook_field_formatter_view().
  * 
- * The progress_bar formatter is only called on entityreference type fields, and then $items is:
+ * This progress_bar formatter is only called on entityreference type fields, and then $items is:
  * array(0 => array('target_id' => 1234), 1 => array('target_id' => 2345), …)
  *
  * @return A renderable array for the $items, as an array of child elements keyed by numeric indexes starting from 0.
@@ -282,5 +284,25 @@ function edgeryders_challenges_tokens($type, $tokens, array $data = array(), arr
 
   // Return the replacements.
   return $replacements;
+}
+
+
+/**
+ * Add a body CSS class if the og_challenge_ref field is prepopulated via a GET parameter.
+ * 
+ * Needed to allow hiding the field by CSS if it is prepopulated. TODO: Once issue #1958800 
+ * (https://www.drupal.org/node/1958800) is resolved successfully with a patch, implement the 
+ * field hiding with the entityreference_prepopulate actions rather than CSS display:none.
+ *
+ * @see http://drupal.stackexchange.com/q/16714
+ */
+function edgeryders_challenges_preprocess_html(&$vars) {
+  $params = drupal_get_query_parameters();
+
+  if (isset($params['og_challenge_ref']) && is_numeric($params['og_challenge_ref'])) {
+    // TODO Make sure og_challenge_ref points to a challenge node.
+
+    $vars['classes_array'][] = 'challenge-prepopulated';
+  }
 }
 

@@ -83,10 +83,18 @@
 
 /* Challenge field. */
 
-.page-node-add-challenge-response .field-name-og-challenge-ref {
+.page-node-add-challenge-response.challenge-prepopulated .field-name-og-challenge-ref {
   /* We have to hide this field by CSS, because using the "Hide" action in Entity Reference Prepopulate settings is 
-   * blocked by issue https://www.drupal.org/node/1958800 (causing the value to go missing when uploading images). */
+   * blocked by issue https://www.drupal.org/node/1958800 (causing the value to go missing when uploading images). 
+   * The "challenge-prepopulated" class is added to the body element by a hook_preprocess_html() implementation in 
+   * module edgeryders_challenges. */
   display: none;
+}
+
+.page-node-add-challenge-response .field-name-og-challenge-ref select {
+  width: 100%;
+  background-color: #7b88a7;
+  color: white;
 }
 
 /* Image upload field. */
