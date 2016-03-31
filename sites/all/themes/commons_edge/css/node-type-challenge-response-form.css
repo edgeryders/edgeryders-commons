@@ -99,6 +99,10 @@
 
 /* Image upload field. */
 
+.page-node-add-challenge-response .field-name-field-response-image-form {
+  margin-top: 2.5em;
+}
+
 .page-node-add-challenge-response .field-name-field-response-image-form label {
   display: none;
 }
@@ -109,7 +113,7 @@
 .page-node-add-challenge-response .field-name-field-response-image-form .image-widget-data {
   float: none;
 }
-.page-node-add-challenge-response .droppable .droppable-message > span { /* The "drop file here" and "or Browse" messages. */
+.page-node-add-challenge-response .droppable .droppable-message > span { /* "Drop file here" message. */
   font-size: 3em;
   font-weight: bold;
   color: #5a6b97;
@@ -123,9 +127,16 @@
 .page-node-add-challenge-response .field-name-field-response-image-form .image-preview {
   padding: 0 0 8px 0;
   float: none;
+  width: 50%;
+  margin: 0 auto;
 }
 .page-node-add-challenge-response .field-name-field-response-image-form .image-preview img {
   width: 100%;
+}
+/* Select data widget only after an upload (else it contains "Drop file here", which should show full-width.) */
+.page-node-add-challenge-response .field-name-field-response-image-form .image-preview + .image-widget-data {
+  width: 50%;
+  margin: 1em auto;
 }
 
 /* Title field. */
