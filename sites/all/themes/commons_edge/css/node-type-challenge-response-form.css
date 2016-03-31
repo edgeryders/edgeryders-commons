@@ -6,6 +6,10 @@
   margin-right: 0px;
 }
 
+.page-node-add-challenge-response #page-top {
+  margin-top: 0;
+}
+
 /* Left and right spacing for everything except the full-width header image on the first wizard page. */
 
 .page-node-add-challenge-response #messages, 
