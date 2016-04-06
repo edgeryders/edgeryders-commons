@@ -51,7 +51,8 @@ function _generateAddResponseHtml($challenge) {
  * Implements hook_views_pre_render(). Note that view header areas are only rendered if the view has any results. So we have to 
  * add the same button to the view's "no results behavior".
  * 
- * This hook implementation could also be placed in a theme's template.php. Unlike hook_views_pre_view(), where this code would also work.
+ * This hook implementation could also be placed in a theme's template.php. Unlike hook_views_pre_view() – the code from this function 
+ * would also work there, but the hook is not available to themes.
  *
  * @see http://www.drupalcontrib.org/api/drupal/contributions!views!views.api.php/function/hook_views_pre_render/7
  * @see https://api.drupal.org/api/views/includes!view.inc/function/views_object_types/7 for available types to supply in $view->set_item()
@@ -65,8 +66,21 @@ function edgeryders_challenges_views_pre_render(&$view) {
   }
 
   if (isset($view->args[0])) {
-
-    $challenge_nid = $view->args[0];
+    
+    // The view's argument can have multiple OR-connected challenge ID values, like "1+2+3".
+    // If there's only one value, that's the challenge to render the button for (happens on challenge view pages).
+    // If there's more than one value, render the button for the first open challenge (the "featured" one).
+    $challenge_nids = explode('+', $view->args[0]);
+    if (count($challenge_nids) === 1) {
+      $challenge_nid = $challenge_nid[0];
+    }
+    elseif (count($challenge_nids) > 1) {
+      $challenge_nid = _featured_challenge_nid($challenge_nids);
+    }
+    else {
+      return;
+    }
+    
     $challenge = node_load($challenge_nid);
 
     if ($challenge !== FALSE) {
@@ -251,10 +265,14 @@ function _featured_challenge_nid($challenge_nids) {
 
 
 /**
- * Provides a value for the [node:featured_challenge] token.
+ * Provides a value for the [node:featured_challenge] and [node:challenges] tokens.
  *
+ * The [node:featured_challenge] token is evaluated to the node ID of the featured challenge of a challenge chain.
+ * The [node:challenges] token is evaluated to the content of a Challenge Chain's field_challenges, with values connected by "+" so 
+ * that they are applicable for multi-value contextual filters of views (with OR connection).
+ * 
  * Implements hook_tokens(). You can test this by writing [node:featured_challenge] in a Challenge Chain body field. It should be 
- * replaced on node view.
+ * replaced on node view (if you use a text format with token replacement enabled of course).
  *
  * @see https://api.drupal.org/api/drupal/modules!system!system.api.php/function/hook_tokens/7
  */
@@ -264,6 +282,7 @@ function edgeryders_challenges_tokens($type, $tokens, array $data = array(), arr
   if ($type != 'node') {
     return $replacements;
   }
+  // TODO Return if bundle != challenge_chain.
 
   foreach ($tokens as $name => $original) {
     switch ($name) {
@@ -278,6 +297,19 @@ function edgeryders_challenges_tokens($type, $tokens, array $data = array(), arr
         }
         
         $replacements[$original] = check_plain( _featured_challenge_nid($challenge_nids) );
+        break;
+        
+      case 'challenges':
+        // dpm($tokens);
+        // dpm($data);
+        // dpm($options);
+
+        $challenge_nids = array();
+        foreach ($data['node']->field_challenges['und'] as $index => $value) {
+          $challenge_nids[] = $value['target_id'];
+        }
+        
+        $replacements[$original] = check_plain( implode('+', $challenge_nids) );
         break;
     }
   }
