@@ -72,7 +72,7 @@ function edgeryders_challenges_views_pre_render(&$view) {
     // If there's more than one value, render the button for the first open challenge (the "featured" one).
     $challenge_nids = explode('+', $view->args[0]);
     if (count($challenge_nids) === 1) {
-      $challenge_nid = $challenge_nid[0];
+      $challenge_nid = $challenge_nids[0];
     }
     elseif (count($challenge_nids) > 1) {
       $challenge_nid = _featured_challenge_nid($challenge_nids);
