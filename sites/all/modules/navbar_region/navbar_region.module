@@ -189,18 +189,26 @@ function navbar_region_navbar_alter(&$items) {
 }
 
 /**
- * Check whether the current user has access to the block
+ * Check which blocks the current user can see based on per-role block visibility settings.
+ * 
+ * Note that this is not about access permissions: an admin user, who has access to the block 
+ * configuration incl. changing the visibility settings, may not see the block when rendered 
+ * in the frontend due to these visibility settings for her user role.
+ *
+ * If the resulting array does not contain visibility settings for a certain block, it means 
+ * "no restrictions" (any user may see that block).
  */
-function navbar_region_get_block_access() {
-  $block_access = array();
-  if($result = db_query("SELECT delta, rid FROM {block_role} ORDER BY delta, rid")) {
-    foreach($result as $row) {
-      if(!isset($block_access[$row->delta])) {
-        $block_access[$row->delta] = user_has_role($row->rid);
-      }
+function navbar_region_get_block_visibility() {
+  $block_visibility = array();
+
+  if ($result = db_query("SELECT delta, rid FROM {block_role} ORDER BY delta, rid")) {
+    foreach ($result as $row) {
+
+      $block_visibility[$row->delta] = user_has_role($row->rid) ||
+        (isset($block_visibility[$row->delta]) ? $block_visibility[$row->delta] : FALSE);
     }
   }
-  return($block_access);
+  return($block_visibility);
 }
 
 /**
@@ -276,14 +284,17 @@ function navbar_region_get_blocks($all = FALSE, $reset = FALSE) {
   }
 
   $blocks = array();
-  $access = navbar_region_get_block_access();
+  $visibility = navbar_region_get_block_visibility();
 
   foreach ($block_info as $bid => $block) {
-    if ((isset($block->region) && $block->region == 'navbar_region') || $all) {
-      if(!isset($access[$block->delta])) {
-        $access[$block->delta] = TRUE;
+    if ($all) {
+      $blocks[$bid] = $block;
+    }
+    elseif ((isset($block->region) && $block->region == 'navbar_region')) {
+      if(!isset($visibility[$block->delta])) {
+        $visibility[$block->delta] = TRUE;
       }
-      if($access[$block->delta] == TRUE || $all) {
+      if($visibility[$block->delta] == TRUE) {
         $blocks[$bid] = $block;
       }
     }
