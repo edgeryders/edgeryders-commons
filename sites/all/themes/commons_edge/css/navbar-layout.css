@@ -5,7 +5,16 @@
     background-color: #727da4;
 }
 
-#navbar-administration .navbar-oriented .navbar-tray .navbar-toggle-orientation {
+#navbar-administration.navbar-oriented .navbar-tray .navbar-toggle-orientation {
+    display: block;
+    background: #7385c0; /* For browsers that do not support gradients */
+    background: -webkit-linear-gradient(#7385c0, #606674, #63595d); /* For Safari 5.1 to 6.0 */
+    background: -o-linear-gradient(#7385c0, #606674, #63595d); /* For Opera 11.1 to 12.0 */
+    background: -moz-linear-gradient(#7385c0, #606674, #63595d); /* For Firefox 3.6 to 15 */
+    background: linear-gradient(#7385c0, #606674, #63595d); /* Standard syntax */
+}
+
+#navbar-administration .navbar-tray-vertical > .navbar-lining {
     display: block;
     background: #7385c0; /* For browsers that do not support gradients */
     background: -webkit-linear-gradient(#7385c0, #606674, #63595d); /* For Safari 5.1 to 6.0 */
