@@ -1,17 +1,12 @@
-/* Navbar layout and colors */
+/* Navbar global layout and colors */
 
 #navbar-administration .navbar-bar {
     display: block;
     background-color: #727da4;
 }
 
-#navbar-administration.navbar-oriented .navbar-tray .navbar-toggle-orientation {
-    display: block;
-    background: #7385c0; /* For browsers that do not support gradients */
-    background: -webkit-linear-gradient(#7385c0, #606674, #63595d); /* For Safari 5.1 to 6.0 */
-    background: -o-linear-gradient(#7385c0, #606674, #63595d); /* For Opera 11.1 to 12.0 */
-    background: -moz-linear-gradient(#7385c0, #606674, #63595d); /* For Firefox 3.6 to 15 */
-    background: linear-gradient(#7385c0, #606674, #63595d); /* Standard syntax */
+#navbar-administration .navbar-toggle-orientation {
+    display: none;
 }
 
 #navbar-administration .navbar-tray-vertical > .navbar-lining {
@@ -23,11 +18,20 @@
     background: linear-gradient(#7385c0, #606674, #63595d); /* Standard syntax */
 }
 
-#navbar-administration .navbar-icon-edgeryders {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+#navbar-administration .navbar-box {
+    display: block;
+    line-height: 1em;
+    position: relative;
+    width: auto;
+    background-color: #7385c0;
+}
+
+#navbar-administration .navbar-tray-vertical .navbar-menu li + li {
+    border-top: 0;
+}
+
+#navbar-administration .navbar-tray-vertical .navbar-menu li:last-child {
+    border-bottom: 0;
 }
 
 /* Menu items */
@@ -63,4 +67,11 @@
     padding-left: 3.5em;
     padding-right: 2em;
     font-size: 1.2em;
+}
+
+#navbar-administration .navbar-icon-edgeryders {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
