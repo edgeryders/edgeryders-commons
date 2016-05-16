@@ -17,6 +17,11 @@ then
   echo "fixing permissions for edgeryders.eu live site";
   cd /var/www/edgeryders.eu/web/;
   chown_spec="web1:client1";
+elif (echo "$*" | grep -q -e "--dev2")
+then
+  echo "fixing permissions for edgeryders.eu dev2 site";
+  cd /var/www/dev2.edgeryders.eu/web/;
+  chown_spec="web14:client1";
 elif (echo "$*" | grep -q -e "--dev")
 then
   echo "fixing permissions for edgeryders.eu dev site";
