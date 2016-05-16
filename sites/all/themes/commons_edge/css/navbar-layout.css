@@ -5,7 +5,7 @@
     background-color: #727da4;
 }
 
-#navbar-administration.navbar-oriented .navbar-tray .navbar-toggle-orientation {
+#navbar-administration .navbar-oriented .navbar-tray .navbar-toggle-orientation {
     display: block;
     background: #7385c0; /* For browsers that do not support gradients */
     background: -webkit-linear-gradient(#7385c0, #606674, #63595d); /* For Safari 5.1 to 6.0 */
