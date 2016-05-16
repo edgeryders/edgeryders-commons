@@ -283,7 +283,7 @@ function navbar_region_get_blocks($all = FALSE, $reset = FALSE) {
       if(!isset($access[$block->delta])) {
         $access[$block->delta] = TRUE;
       }
-      if($access[$block->delta] == TRUE) {
+      if($access[$block->delta] == TRUE || $all) {
         $blocks[$bid] = $block;
       }
     }
