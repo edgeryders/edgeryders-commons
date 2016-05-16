@@ -5,7 +5,7 @@
     background-color: #727da4;
 }
 
-#navbar-administration .navbar-toggle-orientation {
+#navbar-administration.navbar-oriented .navbar-tray-vertical .navbar-toggle-orientation {
     display: none;
 }
 
