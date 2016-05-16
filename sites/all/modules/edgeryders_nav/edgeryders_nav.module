@@ -55,7 +55,7 @@ function edgeryders_nav_navbar()
     ),
     'tab' => array(
       '#type' => 'link',
-      '#title' => t('Edgeryders'),
+      '#title' => t(''),
       '#href' => '<front>',
       '#options' => array(
         'attributes' => array(
