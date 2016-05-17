@@ -99,6 +99,9 @@ function edgeryders_nav_navbar()
     }
     $items['user'] = array(
       '#type' => 'navbar_item',
+      '#attached' => array(
+        'css' => array(drupal_get_path('module','edgeryders_nav') . '/css/edgeryders_nav.navbar.icons.css'),
+      ),
       'tab' => array(
         '#type' => 'link',
         '#title' => format_username($user),
