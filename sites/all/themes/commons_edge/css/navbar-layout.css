@@ -47,7 +47,7 @@
     cursor: pointer;
     text-decoration: none;
     font-weight: 900;
-    font-variant: all-small-caps;
+    text-transform: uppercase;
     font-size: 1.3em;
 }
 
@@ -59,7 +59,7 @@
     cursor: pointer;
     text-decoration: none;
     font-weight: 900;
-    font-variant: all-small-caps;
+    text-transform: uppercase;
     font-size: 1.3em;
 }
 
@@ -94,7 +94,7 @@
  * Temporary CSS customizations for 2nd header
  */
 .header-color-row-one {
-    border-top: 3em solid #727da4 !important;
+    border-top: 3em solid #727da4;
 }
 .header-wrapper .header-color-row-one {
     background-color: #727da4;
