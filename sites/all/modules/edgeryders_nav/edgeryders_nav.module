@@ -105,8 +105,8 @@ function edgeryders_nav_navbar()
         '#href' => 'user',
         '#options' => array(
           'attributes' => array(
-            'title' => t('My account'),
-            'class' => array('navbar-icon', 'navbar-icon-user',),
+            'title' => t('Profile'),
+            'class' => array('navbar-icon', 'navbar-icon-user'),
           ),
         ),
       ),
