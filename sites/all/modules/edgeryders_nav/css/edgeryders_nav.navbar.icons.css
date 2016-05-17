@@ -30,12 +30,10 @@
 .no-svg .navbar-bar .navbar-icon-configuration:before {
     background-image: url("../misc/icons/edgeryders-logo.png");
 }
-.navbar-bar .navbar-icon-configuration:active:before,
-.navbar-bar .navbar-icon-configuration.active:before {
+.navbar-bar .navbar-icon-configuration.navbar-active::before {
     background-image: url("../misc/icons/edgeryders-logo.svg");
 }
-.no-svg .navbar-bar .navbar-icon-configuration:active:before,
-.no-svg .navbar-bar .navbar-icon-configuration.active:before {
+.no-svg .navbar-bar .navbar-icon-configuration.navbar-active::before {
     background-image: url("../misc/icons/edgeryders-logo.png");
 }
 
@@ -48,11 +46,25 @@
 .no-svg .navbar-bar .navbar-icon-menu:before {
     background-image: url("../misc/icons/edgeryders-logo.png");
 }
-.navbar-bar .navbar-icon-menu:active:before,
-.navbar-bar .navbar-icon-menu.active:before {
+.navbar-bar .navbar-icon-menu.navbar-active::before {
     background-image: url("../misc/icons/edgeryders-logo.svg");
 }
-.no-svg .navbar-bar .navbar-icon-menu:active:before,
-.no-svg .navbar-bar .navbar-icon-menu.active:before {
+.no-svg .navbar-bar .navbar-icon-menu.navbar-active::before {
+    background-image: url("../misc/icons/edgeryders-logo.png");
+}
+
+/**
+ * Expand handles
+ */
+#navbar-administration .navbar-icon.navbar-handle::before {
+    background-image: url(/profiles/commons/modules/contrib/navbar/icons/5181c6/chevron-disc-down.svg);
+}
+#navbar-administration .no-svg .navbar-icon.navbar-handle:before {
+    background-image: url("../misc/icons/edgeryders-logo.png");
+}
+#navbar-administration .navbar-icon.navbar-handle-active::before {
+    background-image: url("../misc/icons/edgeryders-logo.svg");
+}
+#navbar-administration .navbar-icon-menu.navbar-active::before {
     background-image: url("../misc/icons/edgeryders-logo.png");
 }

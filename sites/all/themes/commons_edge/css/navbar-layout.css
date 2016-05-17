@@ -7,20 +7,21 @@
 
 #navbar-administration .navbar-bar {
     display: block;
-    background-color: #727da4;
+    background-color: #7385c0;
 }
 
-#navbar-administration.navbar-oriented .navbar-tray-vertical .navbar-toggle-orientation {
-    display: none;
+#navbar-administration .navbar-toggle-orientation {
+    background-color: transparent;
+    padding: 0.6667em;
 }
 
 #navbar-administration .navbar-tray-vertical > .navbar-lining {
     display: block;
     background: #7385c0; /* For browsers that do not support gradients */
-    background: -webkit-linear-gradient(#7385c0, #606674, #63595d); /* For Safari 5.1 to 6.0 */
-    background: -o-linear-gradient(#7385c0, #606674, #63595d); /* For Opera 11.1 to 12.0 */
-    background: -moz-linear-gradient(#7385c0, #606674, #63595d); /* For Firefox 3.6 to 15 */
-    background: linear-gradient(#7385c0, #606674, #63595d); /* Standard syntax */
+    background: -webkit-linear-gradient(#7385c0, #63595d); /* For Safari 5.1 to 6.0 */
+    background: -o-linear-gradient(#7385c0, #63595d); /* For Opera 11.1 to 12.0 */
+    background: -moz-linear-gradient(#7385c0, #63595d); /* For Firefox 3.6 to 15 */
+    background: linear-gradient(#7385c0, #63595d); /* Standard syntax */
 }
 
 #navbar-administration .navbar-box {
@@ -54,7 +55,7 @@
 #navbar-administration .navbar-tray a:active,
 #navbar-administration .navbar-tray a:focus,
 #navbar-administration .navbar-tray a.navbar-active {
-    color: #727da4;
+    color: #f1472c;
     cursor: pointer;
     text-decoration: none;
     font-weight: 900;
