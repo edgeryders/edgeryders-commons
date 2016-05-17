@@ -43,8 +43,8 @@
 
 function edgeryders_nav_navbar()
 {
+  global $user;
   $items = array();
-
 
   // The 'Home' tab is a simple link, which is wrapped in markup associated
   // with a visual tab styling.
@@ -71,9 +71,6 @@ function edgeryders_nav_navbar()
    * Snippet from
    * http://knackforge.com/blog/sivaji/adding-custom-menu-tabs-and-menu-items-navbar
    */
-
-  global $user;
-  $items = array();
   // Add logout & user account links or login link.
   if (module_exists('user')) {
     if ($user->uid) {
