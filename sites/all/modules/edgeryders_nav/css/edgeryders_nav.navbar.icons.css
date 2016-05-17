@@ -25,36 +25,36 @@
  * Admin icon
  */
 .navbar-bar .navbar-icon-configuration:before {
-    background-image: url("../misc/icons/edgeryders-logo.svg");
+    background-image: url("../misc/icons/ffffff/wrench.svg");
 }
 .no-svg .navbar-bar .navbar-icon-configuration:before {
-    background-image: url("../misc/icons/edgeryders-logo.png");
+    background-image: url("../misc/icons/ffffff/wrench.png");
 }
 .navbar-bar .navbar-icon-configuration.navbar-active::before {
-    background-image: url("../misc/icons/edgeryders-logo.svg");
+    background-image: url("../misc/icons/f1472c/wrench.svg");
 }
 .no-svg .navbar-bar .navbar-icon-configuration.navbar-active::before {
-    background-image: url("../misc/icons/edgeryders-logo.png");
+    background-image: url("../misc/icons/f1472c/wrench.png");
 }
 
 /**
  * Menu icon
  */
 .navbar-bar .navbar-icon-menu:before {
-    background-image: url("../misc/icons/edgeryders-logo.svg");
+    background-image: url("../misc/icons/ffffff/hamburger.svg");
 }
 .no-svg .navbar-bar .navbar-icon-menu:before {
-    background-image: url("../misc/icons/edgeryders-logo.png");
+    background-image: url("../misc/icons/ffffff/hamburger.png");
 }
 .navbar-bar .navbar-icon-menu.navbar-active::before {
-    background-image: url("../misc/icons/edgeryders-logo.svg");
+    background-image: url("../misc/icons/f1472c/hamburger.svg");
 }
 .no-svg .navbar-bar .navbar-icon-menu.navbar-active::before {
-    background-image: url("../misc/icons/edgeryders-logo.png");
+    background-image: url("../misc/icons/f1472c/hamburger.png");
 }
 
 /**
- * Expand handles
+ * TODO: Expand handles
  */
 #navbar-administration .navbar-icon.navbar-handle::before {
     background-image: url(/profiles/commons/modules/contrib/navbar/icons/5181c6/chevron-disc-down.svg);

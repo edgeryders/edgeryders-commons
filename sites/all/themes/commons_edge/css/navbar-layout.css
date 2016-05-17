@@ -63,6 +63,13 @@
     font-size: 1.3em;
 }
 
+#navbar-administration .navbar-icon.navbar-handle:hover,
+#navbar-administration .navbar-icon.navbar-handle:active,
+#navbar-administration .navbar-icon.navbar-handle:focus {
+    outline: none;
+    background-color: transparent;
+}
+
 /* Icons layout */
 
 #navbar-administration .navbar-bar .navbar-icon::before {
