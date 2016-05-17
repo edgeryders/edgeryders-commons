@@ -13,11 +13,15 @@
     background-image: url("../misc/icons/ffffff/pencil.png");
 }
 .navbar-bar .navbar-icon-story:active:before,
-.navbar-bar .navbar-icon-story.active:before {
+.navbar-bar .navbar-icon-story.active:before,
+.navbar-bar .navbar-icon-story:hover:before,
+.navbar-bar .navbar-icon-story.hover:before, {
     background-image: url("../misc/icons/f1472c/pencil.svg");
 }
 .no-svg .navbar-bar .navbar-icon-story:active:before,
-.no-svg .navbar-bar .navbar-icon-story.active:before {
+.no-svg .navbar-bar .navbar-icon-story.active:before,
+.no-svg .navbar-bar .navbar-icon-story:hover:before,
+.no-svg .navbar-bar .navbar-icon-story.hover:before {
     background-image: url("../misc/icons/f1472c/pencil.png");
 }
 
@@ -100,9 +104,9 @@
 #navbar-administration .no-svg .navbar-icon.navbar-handle:before {
     background-image: url("../misc/icons/f1472c/chevron-disc-down.png");
 }
-#navbar-administration .navbar-icon.navbar-handle-active::before {
+#navbar-administration .navbar-icon.navbar-handle.open::before {
     background-image: url("../misc/icons/ffffff/chevron-disc-up.svg");
 }
-#navbar-administration .navbar-icon-menu.navbar-active::before {
+#navbar-administration .navbar-icon-menu.navbar.open::before {
     background-image: url("../misc/icons/ffffff/chevron-disc-up.png");
 }
