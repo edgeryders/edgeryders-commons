@@ -48,7 +48,7 @@
     text-decoration: none;
     font-weight: 900;
     text-transform: uppercase;
-    font-size: 1.3em;
+    font-size: 1.1em;
 }
 
 #navbar-administration .navbar-tray a:hover,
@@ -60,7 +60,7 @@
     text-decoration: none;
     font-weight: 900;
     text-transform: uppercase;
-    font-size: 1.3em;
+    font-size: 1.1em;
 }
 
 #navbar-administration .navbar-icon.navbar-handle:hover,
@@ -79,7 +79,8 @@
 #navbar-administration .navbar-bar .navbar-icon {
     padding-left: 3.5em;
     padding-right: 2em;
-    font-size: 1.2em;
+    font-size: 1.3em;
+
 }
 
 #navbar-administration .navbar-icon-edgeryders {
