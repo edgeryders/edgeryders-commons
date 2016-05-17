@@ -101,14 +101,14 @@
  * Expand handles
  */
 #navbar-administration .navbar-icon.navbar-handle::before {
-    background-image: url("../misc/icons/f1472c/chevron-disc-down.svg");
+    background-image: url("../misc/icons/ffffff/chevron-disc-down.svg");
 }
 #navbar-administration .no-svg .navbar-icon.navbar-handle:before {
-    background-image: url("../misc/icons/f1472c/chevron-disc-down.png");
+    background-image: url("../misc/icons/ffffff/chevron-disc-down.png");
 }
 #navbar-administration .navbar-icon.navbar-handle.open::before {
-    background-image: url("../misc/icons/ffffff/chevron-disc-up.svg");
+    background-image: url("../misc/icons/f1472c/chevron-disc-up.svg");
 }
 #navbar-administration .navbar-icon-menu.navbar.open::before {
-    background-image: url("../misc/icons/ffffff/chevron-disc-up.png");
+    background-image: url("../misc/icons/f1472c/chevron-disc-up.png");
 }
