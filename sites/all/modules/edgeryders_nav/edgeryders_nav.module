@@ -54,12 +54,12 @@ function edgeryders_nav_navbar()
     ),
     'tab' => array(
       '#type' => 'link',
-      '#title' => t('Submit a story'),
+      '#title' => t('Submit your story'),
       '#href' => '/node/add/challenge-response',
       '#options' => array(
         'attributes' => array(
-          'title' => t('Submit a story'),
-          'class' => array('navbar-icon', 'navbar-icon-pencil'),
+          'title' => t('Submit your story'),
+          'class' => array('navbar-icon', 'navbar-icon-story'),
         ),
       ),
     ),
@@ -161,6 +161,6 @@ function edgeryders_nav_navbar()
       '#weight' => 300,
     );
   };
-
+  dpm($items);
   return $items;
 }
