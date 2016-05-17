@@ -4,6 +4,24 @@
  */
 
 /**
+ * Submit story icon
+ */
+.navbar-bar .navbar-icon-story:before {
+    background-image: url("../misc/icons/ffffff/pencil.svg");
+}
+.no-svg .navbar-bar .navbar-icon-story:before {
+    background-image: url("../misc/icons/ffffff/pencil.png");
+}
+.navbar-bar .navbar-icon-story:active:before,
+.navbar-bar .navbar-icon-story.active:before {
+    background-image: url("../misc/icons/f1472c/pencil.svg");
+}
+.no-svg .navbar-bar .navbar-icon-story:active:before,
+.no-svg .navbar-bar .navbar-icon-story.active:before {
+    background-image: url("../misc/icons/f1472c/pencil.png");
+}
+
+/**
  * Edgeryders logo
  */
 .navbar-bar .navbar-icon-edgeryders:before {

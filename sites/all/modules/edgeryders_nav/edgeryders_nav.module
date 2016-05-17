@@ -46,6 +46,26 @@ function edgeryders_nav_navbar()
   global $user;
   $items = array();
 
+  // Submit story
+  $items['story'] = array(
+    '#type' => 'navbar_item',
+    '#attached' => array(
+      'css' => array(drupal_get_path('module','edgeryders_nav') . '/css/edgeryders_nav.navbar.icons.css'),
+    ),
+    'tab' => array(
+      '#type' => 'link',
+      '#title' => t('Submit a story'),
+      '#href' => '/node/add/challenge-response',
+      '#options' => array(
+        'attributes' => array(
+          'title' => t('Submit a story'),
+          'class' => array('navbar-icon', 'navbar-icon-pencil'),
+        ),
+      ),
+    ),
+    '#weight' => 100,
+  );
+
   // The 'Home' tab is a simple link, which is wrapped in markup associated
   // with a visual tab styling.
   $items['edgeryders'] = array(
@@ -67,25 +87,20 @@ function edgeryders_nav_navbar()
     '#weight' => 100,
   );
 
-
   $items['global_search'] = array(
     '#type' => 'navbar_item',
     'tab' => array(
       '#type' => 'search',
       '#attributes' => array(
         'placeholder' => t('Search the site'),
-        'class' => array(drupal_get_path('module','edgeryders_nav') . '/css/edgeryders_nav.navbar.icons.css'),
+        'class' => array('search-global'),
       ),
     ),
     '#weight' => 200,
-    // Custom CSS, JS or a library can be associated with the navbar item.
     '#attached' => array(
-      'css' => array(
-        drupal_get_path('module', 'search') . '/css/search.base.css',
-      ),
+      'css' => array(drupal_get_path('module','edgeryders_nav') . '/css/edgeryders_nav.navbar.icons.css'),
     ),
   );
-
 
   /*
    * Snippet from
@@ -143,7 +158,7 @@ function edgeryders_nav_navbar()
           ),
         ),
       ),
-      '#weight' => 100,
+      '#weight' => 300,
     );
   };
 
