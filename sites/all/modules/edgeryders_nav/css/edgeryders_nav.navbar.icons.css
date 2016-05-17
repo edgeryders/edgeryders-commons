@@ -6,54 +6,56 @@
 /**
  * Submit story icon
  */
-.navbar-bar .navbar-icon-story:before {
+#navbar-administration .navbar-bar .navbar-icon-story:before {
     background-image: url("../misc/icons/ffffff/pencil.svg");
 }
-.no-svg .navbar-bar .navbar-icon-story:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-story:before {
     background-image: url("../misc/icons/ffffff/pencil.png");
 }
-.navbar-bar .navbar-icon-story:active:before,
-.navbar-bar .navbar-icon-story:hover:before,
-.navbar-bar .navbar-icon-story:focus:before {
+#navbar-administration .navbar-bar .navbar-icon-story:active:before,
+#navbar-administration .navbar-bar .navbar-icon-story:hover:before,
+#navbar-administration .navbar-bar .navbar-icon-story:focus:before {
     background-image: url("../misc/icons/f1472c/pencil.svg");
 }
-.no-svg .navbar-bar .navbar-icon-story:active:before,
-.no-svg .navbar-bar .navbar-icon-story:hover:before,
-.no-svg .navbar-bar .navbar-icon-story:focus:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-story:active:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-story:hover:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-story:focus:before {
     background-image: url("../misc/icons/f1472c/pencil.png");
 }
 
 /**
  * Edgeryders logo
  */
-.navbar-bar .navbar-icon-edgeryders:before {
+#navbar-administration .navbar-bar .navbar-icon-edgeryders:before {
     background-image: url("../misc/icons/edgeryders-logo.svg");
 }
-.no-svg .navbar-bar .navbar-icon-edgeryders:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-edgeryders:before {
     background-image: url("../misc/icons/edgeryders-logo.png");
 }
-.navbar-bar .navbar-icon-edgeryders:active:before,
-.navbar-bar .navbar-icon-edgeryders.active:before {
+#navbar-administration .navbar-bar .navbar-icon-edgeryders:focus:before {
     background-image: url("../misc/icons/edgeryders-logo.svg");
 }
-.no-svg .navbar-bar .navbar-icon-edgeryders:active:before,
-.no-svg .navbar-bar .navbar-icon-edgeryders.active:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-edgeryders:focus:before {
     background-image: url("../misc/icons/edgeryders-logo.png");
 }
 
 /**
  * Admin icon
  */
-.navbar-bar .navbar-icon-configuration:before {
+#navbar-administration .navbar-bar .navbar-icon-configuration:before {
     background-image: url("../misc/icons/ffffff/wrench.svg");
 }
-.no-svg .navbar-bar .navbar-icon-configuration:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-configuration:before {
     background-image: url("../misc/icons/ffffff/wrench.png");
 }
-.navbar-bar .navbar-icon-configuration.navbar-active::before {
+#navbar-administration .navbar-bar .navbar-icon-configuration.navbar:active:before,
+#navbar-administration .navbar-bar .navbar-icon-configuration.navbar:hover:before,
+#navbar-administration .navbar-bar .navbar-icon-configuration.navbar:focus:before {
     background-image: url("../misc/icons/f1472c/wrench.svg");
 }
-.no-svg .navbar-bar .navbar-icon-configuration.navbar-active::before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-configuration.navbar:active:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-configuration.navbar:hover:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-configuration.navbar:focus:before {
     background-image: url("../misc/icons/f1472c/wrench.png");
 }
 
@@ -66,30 +68,32 @@
 #navbar-administration .no-svg .navbar-bar .navbar-icon-menu:before {
     background-image: url("../misc/icons/ffffff/hamburger.png");
 }
-#navbar-administration .navbar-bar .navbar-icon-menu.navbar-active::before,
-#navbar-administration .navbar-icon-menu.navbar-active::before {
+#navbar-administration .navbar-icon-menu.navbar:active:before,
+#navbar-administration .navbar-icon-menu.navbar:hover:before,
+#navbar-administration .navbar-icon-menu.navbar:focus:before {
     background-image: url("../misc/icons/f1472c/hamburger.svg");
 }
-#navbar-administration .no-svg .navbar-bar .navbar-icon-menu.navbar-active::before,
-#navbar-administration .no-svg .navbar-icon-menu.navbar-active::before {
+#navbar-administration .no-svg .navbar-icon-menu.navbar:active:before,
+#navbar-administration .no-svg .navbar-icon-menu.navbar:hover:before,
+#navbar-administration .no-svg .navbar-icon-menu.navbar:focus:before {
     background-image: url("../misc/icons/f1472c/hamburger.png");
 }
 
 /**
  * User menu
  */
-.navbar-bar .navbar-icon-user:before {
+#navbar-administration .navbar-bar .navbar-icon-user:before {
     background-image: url("../misc/icons/ffffff/person.svg");
 }
-.no-svg .navbar-bar .navbar-icon-user:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-user:before {
     background-image: url("../misc/icons/ffffff/person.png");
 }
-.navbar-bar .navbar-icon-user:active:before,
-.navbar-bar .navbar-icon-user.navbar-active:before {
+#navbar-administration .navbar-bar .navbar-icon-user:active:before,
+#navbar-administration .navbar-bar .navbar-icon-user.navbar-active:before {
     background-image: url("../misc/icons/f1472c/person.svg");
 }
-.no-svg .navbar-bar .navbar-icon-user:active:before,
-.no-svg .navbar-bar .navbar-icon-user.navbar-active:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-user:active:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-user.navbar-active:before {
     background-image: url("../misc/icons/f1472c/person.png");
 }
 
