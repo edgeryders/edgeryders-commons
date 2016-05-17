@@ -13,15 +13,13 @@
     background-image: url("../misc/icons/ffffff/pencil.png");
 }
 .navbar-bar .navbar-icon-story:active:before,
-.navbar-bar .navbar-icon-story.active:before,
 .navbar-bar .navbar-icon-story:hover:before,
-.navbar-bar .navbar-icon-story.hover:before, {
+.navbar-bar .navbar-icon-story:focus:before {
     background-image: url("../misc/icons/f1472c/pencil.svg");
 }
 .no-svg .navbar-bar .navbar-icon-story:active:before,
-.no-svg .navbar-bar .navbar-icon-story.active:before,
 .no-svg .navbar-bar .navbar-icon-story:hover:before,
-.no-svg .navbar-bar .navbar-icon-story.hover:before {
+.no-svg .navbar-bar .navbar-icon-story:focus:before {
     background-image: url("../misc/icons/f1472c/pencil.png");
 }
 

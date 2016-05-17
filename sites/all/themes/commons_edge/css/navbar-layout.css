@@ -88,3 +88,19 @@
     left: 50%;
     transform: translate(-50%, -50%);
 }
+
+
+/**
+ * Temporary CSS customizations for 2nd header
+ */
+.header-color-row-one {
+    border-top: 3em solid #727da4 !important;
+}
+.header-wrapper .header-color-row-one {
+    background-color: #727da4;
+}
+.boxshadow .palette-gray-lightgray-blue .header-color-row-one {
+    -webkit-box-shadow: #727da4 0px -1px 0px;
+    -moz-box-shadow: #727da4 0px -1px 0px;
+    box-shadow: #727da4 0px -1px 0px;
+}
