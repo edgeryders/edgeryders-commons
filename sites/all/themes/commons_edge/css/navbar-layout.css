@@ -94,10 +94,8 @@
 /**
  * Temporary CSS customizations for 2nd header
  */
-.header-color-row-one {
-    border-top: 3em solid #727da4;
-}
 .header-wrapper .header-color-row-one {
+    border-top: 3em solid #727da4;
     background-color: #727da4;
 }
 .boxshadow .palette-gray-lightgray-blue .header-color-row-one {
