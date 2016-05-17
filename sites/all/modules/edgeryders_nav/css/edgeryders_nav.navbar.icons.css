@@ -40,31 +40,33 @@
 /**
  * Menu icon
  */
-.navbar-bar .navbar-icon-menu:before {
+#navbar-administration .navbar-bar .navbar-icon-menu:before {
     background-image: url("../misc/icons/ffffff/hamburger.svg");
 }
-.no-svg .navbar-bar .navbar-icon-menu:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-menu:before {
     background-image: url("../misc/icons/ffffff/hamburger.png");
 }
-.navbar-bar .navbar-icon-menu.navbar-active::before {
+#navbar-administration .navbar-bar .navbar-icon-menu.navbar-active::before,
+#navbar-administration .navbar-icon-menu.navbar-active::before {
     background-image: url("../misc/icons/f1472c/hamburger.svg");
 }
-.no-svg .navbar-bar .navbar-icon-menu.navbar-active::before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-menu.navbar-active::before,
+#navbar-administration .no-svg .navbar-icon-menu.navbar-active::before {
     background-image: url("../misc/icons/f1472c/hamburger.png");
 }
 
-/**
- * TODO: Expand handles
+ /**
+ * Expand handles
  */
 #navbar-administration .navbar-icon.navbar-handle::before {
-    background-image: url(/profiles/commons/modules/contrib/navbar/icons/5181c6/chevron-disc-down.svg);
+    background-image: url("../misc/icons/f1472c/chevron-disc-down.svg");
 }
 #navbar-administration .no-svg .navbar-icon.navbar-handle:before {
-    background-image: url("../misc/icons/edgeryders-logo.png");
+    background-image: url("../misc/icons/f1472c/chevron-disc-down.png");
 }
 #navbar-administration .navbar-icon.navbar-handle-active::before {
-    background-image: url("../misc/icons/edgeryders-logo.svg");
+    background-image: url("../misc/icons/ffffff/chevron-disc-up.svg");
 }
 #navbar-administration .navbar-icon-menu.navbar-active::before {
-    background-image: url("../misc/icons/edgeryders-logo.png");
+    background-image: url("../misc/icons/ffffff/chevron-disc-up.png");
 }
