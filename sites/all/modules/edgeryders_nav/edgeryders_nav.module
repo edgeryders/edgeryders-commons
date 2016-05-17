@@ -67,6 +67,26 @@ function edgeryders_nav_navbar()
     '#weight' => 100,
   );
 
+
+  $items['global_search'] = array(
+    '#type' => 'navbar_item',
+    'tab' => array(
+      '#type' => 'search',
+      '#attributes' => array(
+        'placeholder' => t('Search the site'),
+        'class' => array(drupal_get_path('module','edgeryders_nav') . '/css/edgeryders_nav.navbar.icons.css'),
+      ),
+    ),
+    '#weight' => 200,
+    // Custom CSS, JS or a library can be associated with the navbar item.
+    '#attached' => array(
+      'css' => array(
+        drupal_get_path('module', 'search') . '/css/search.base.css',
+      ),
+    ),
+  );
+
+
   /*
    * Snippet from
    * http://knackforge.com/blog/sivaji/adding-custom-menu-tabs-and-menu-items-navbar
@@ -125,11 +145,7 @@ function edgeryders_nav_navbar()
       ),
       '#weight' => 100,
     );
-  }
-
-  $items['search']['#attached'] = array(
-    'css' => array(drupal_get_path('module','edgeryders_nav') . '/css/edgeryders_nav.navbar.icons.css'),
-  );
+  };
 
   return $items;
 }
