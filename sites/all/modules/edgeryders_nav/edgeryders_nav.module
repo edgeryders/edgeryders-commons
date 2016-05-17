@@ -66,15 +66,70 @@ function edgeryders_nav_navbar()
     ),
     '#weight' => 100,
   );
-  return $items;
-}
 
-/**
- * Implements hook_navbar_alter().
- */
-function edgeryders_nav_navbar_alter(&$items)
-{
+  /*
+   * Snippet from
+   * http://knackforge.com/blog/sivaji/adding-custom-menu-tabs-and-menu-items-navbar
+   */
+
+  global $user;
+  $items = array();
+  // Add logout & user account links or login link.
+  if (module_exists('user')) {
+    if ($user->uid) {
+      $links = array(
+        'account' => array(
+          'title' => t('View profile'),
+          'href' => 'user',
+          'html' => TRUE,
+          'attributes' => array(
+            'title' => t('User account'),
+          ),
+        ),
+        'logout' => array(
+          'title' => t('Log out'),
+          'href' => 'user/logout',
+        ),
+      );
+    }
+    else {
+      $links = array(
+        'login' => array(
+          'title' => t('Log in'),
+          'href' => 'user',
+        ),
+      );
+    }
+    $items['user'] = array(
+      '#type' => 'navbar_item',
+      'tab' => array(
+        '#type' => 'link',
+        '#title' => format_username($user),
+        '#href' => 'user',
+        '#options' => array(
+          'attributes' => array(
+            'title' => t('My account'),
+            'class' => array('navbar-icon', 'navbar-icon-user',),
+          ),
+        ),
+      ),
+      'tray' => array(
+        '#heading' => t('User account actions'),
+        'user_links' => array(
+          '#theme' => 'links__navbar_user',
+          '#links' => $links,
+          '#attributes' => array(
+            'class' => array('menu', 'navbar-menu-user'),
+          ),
+        ),
+      ),
+      '#weight' => 100,
+    );
+  }
+
   $items['search']['#attached'] = array(
     'css' => array(drupal_get_path('module','edgeryders_nav') . '/css/edgeryders_nav.navbar.icons.css'),
   );
+
+  return $items;
 }
