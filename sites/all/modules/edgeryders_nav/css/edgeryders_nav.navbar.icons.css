@@ -19,3 +19,40 @@
 .no-svg .navbar-bar .navbar-icon-edgeryders:active:before,
 .no-svg .navbar-bar .navbar-icon-edgeryders.active:before {
     background-image: url("../misc/icons/edgeryders-logo.png");
+}
+
+/**
+ * Admin icon
+ */
+.navbar-bar .navbar-icon-configuration:before {
+    background-image: url("../misc/icons/edgeryders-logo.svg");
+}
+.no-svg .navbar-bar .navbar-icon-configuration:before {
+    background-image: url("../misc/icons/edgeryders-logo.png");
+}
+.navbar-bar .navbar-icon-configuration:active:before,
+.navbar-bar .navbar-icon-configuration.active:before {
+    background-image: url("../misc/icons/edgeryders-logo.svg");
+}
+.no-svg .navbar-bar .navbar-icon-configuration:active:before,
+.no-svg .navbar-bar .navbar-icon-configuration.active:before {
+    background-image: url("../misc/icons/edgeryders-logo.png");
+}
+
+/**
+ * Menu icon
+ */
+.navbar-bar .navbar-icon-menu:before {
+    background-image: url("../misc/icons/edgeryders-logo.svg");
+}
+.no-svg .navbar-bar .navbar-icon-menu:before {
+    background-image: url("../misc/icons/edgeryders-logo.png");
+}
+.navbar-bar .navbar-icon-menu:active:before,
+.navbar-bar .navbar-icon-menu.active:before {
+    background-image: url("../misc/icons/edgeryders-logo.svg");
+}
+.no-svg .navbar-bar .navbar-icon-menu:active:before,
+.no-svg .navbar-bar .navbar-icon-menu.active:before {
+    background-image: url("../misc/icons/edgeryders-logo.png");
+}
