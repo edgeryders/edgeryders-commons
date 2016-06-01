@@ -97,9 +97,9 @@
     background-image: url("../misc/icons/f1472c/person.png");
 }
 
- /**
- * Expand handles
- */
+/**
+* Expand handles
+*/
 #navbar-administration .navbar-icon.navbar-handle::before {
     background-image: url("../misc/icons/ffffff/chevron-disc-down.svg");
 }
@@ -111,4 +111,11 @@
 }
 #navbar-administration .navbar-icon-menu.navbar.open::before {
     background-image: url("../misc/icons/f1472c/chevron-disc-up.png");
+}
+
+/**
+* Menu items
+*/
+#navbar-item-tray .menu-item-whats-new::before {
+    background-image: url("../misc/icons/ffffff/hamburger-list.svg")
 }
