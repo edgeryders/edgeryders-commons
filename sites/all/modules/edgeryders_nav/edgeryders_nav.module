@@ -100,11 +100,23 @@ function edgeryders_nav_navbar()
  * @param $items
  *   Associative array of navbar menu definitions returned from hook_navbar().
  */
-function edgeryders_navbar_alter(&$items) {
+function edgeryders_nav_navbar_alter(&$items) {
   // Move the User tab to the right.
   $items['search']['#wrapper-attributes'] = array(
     'attributes' => array(
       'class' => array('pull-right'),
     ),
   );
+}
+
+
+/**
+ * Implements hook_enable()
+ */
+function edgeryders_nav_enable() {
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('type', 'module')
+    ->condition('name', 'YOUR_MODULE')
+    ->execute();
 }
