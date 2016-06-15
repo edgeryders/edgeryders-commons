@@ -88,3 +88,23 @@ function edgeryders_nav_navbar()
   );
   return $items;
 }
+
+/**
+ * Alter the navbar menu after hook_navbar() is invoked.
+ *
+ * This hook is invoked by navbar_view() immediately after hook_navbar(). The
+ * navbar definitions are passed in by reference. Each element of the $items
+ * array is one item returned by a module from hook_navbar(). Additional items
+ * may be added, or existing items altered.
+ *
+ * @param $items
+ *   Associative array of navbar menu definitions returned from hook_navbar().
+ */
+function edgeryders_navbar_alter(&$items) {
+  // Move the User tab to the right.
+  $items['search']['#wrapper-attributes'] = array(
+    'attributes' => array(
+      'class' => array('pull-right'),
+    ),
+  );
+}
