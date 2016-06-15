@@ -103,13 +103,10 @@ function edgeryders_nav_navbar()
 function edgeryders_nav_navbar_alter(&$items) {
   // Move the User tab to the right.
   $items['search']['#wrapper-attributes'] = array(
-    'attributes' => array(
-      'class' => array('pull-right'),
-    ),
+    'class' => array('pull-right'),
   );
   $items['user']['#wrapper-attributes'] = array(
-    'attributes' => array(
-      'class' => array('pull-right'),
-    ),
+    'class' => array('pull-right'),
   );
+  dpm($items);
 }
