@@ -108,15 +108,3 @@ function edgeryders_nav_navbar_alter(&$items) {
     ),
   );
 }
-
-
-/**
- * Implements hook_enable()
- */
-function edgeryders_nav_enable() {
-  db_update('system')
-    ->fields(array('weight' => 1))
-    ->condition('type', 'module')
-    ->condition('name', 'YOUR_MODULE')
-    ->execute();
-}
