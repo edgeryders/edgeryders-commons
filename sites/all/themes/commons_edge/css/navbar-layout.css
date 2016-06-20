@@ -1,3 +1,114 @@
+/**
+ * @file
+ * Layout and colors for Edgeryders navbar.
+ */
+
+/* Navbar global layout and colors */
+
+#navbar-administration .navbar-bar {
+    display: block;
+    background-color: #7385c0;
+}
+
+#navbar-administration .navbar-toggle-orientation {
+    background-color: transparent;
+    padding: 0.6667em;
+}
+
+#navbar-administration .navbar-tray-horizontal > .navbar-lining {
+    background: #7385c0;
+}
+
+#navbar-administration .navbar-tray-vertical > .navbar-lining {
+    display: block;
+    background: #7385c0; /* For browsers that do not support gradients */
+    background: -webkit-linear-gradient(#7385c0, #63595d); /* For Safari 5.1 to 6.0 */
+    background: -o-linear-gradient(#7385c0, #63595d); /* For Opera 11.1 to 12.0 */
+    background: -moz-linear-gradient(#7385c0, #63595d); /* For Firefox 3.6 to 15 */
+    background: linear-gradient(#7385c0, #63595d); /* Standard syntax */
+}
+
+#navbar-administration .navbar-box,
+#navbar-administration .navbar-tray .navbar-region
+{
+    display: block;
+    line-height: 1em;
+    position: relative;
+    width: auto;
+    background-color: #7385c0;
+}
+
+#navbar-administration .navbar-tray-vertical .navbar-menu li + li {
+    border-top: 0;
+}
+
+#navbar-administration .navbar-tray-vertical .navbar-menu li:last-child {
+    border-bottom: 0;
+}
+
+/* Opening Closing */
+#navbar-administration.navbar-oriented .navbar-tray-horizontal .navbar-menu-root > li > ul,
+#navbar-administration.navbar-oriented .navbar-tray-horizontal .navbar-menu-root > li > .navbar-box > button {
+    display: none;
+}
+
+#navbar-administration.navbar-oriented .navbar-tray-vertical .navbar-menu-root > li > ul {
+    display:none;
+}
+
+#navbar-administration.navbar-oriented .navbar-tray-vertical .navbar-menu-root > li > ul a {
+    color: #434343;
+}
+#navbar-administration.navbar-oriented .navbar-tray-vertical .navbar-menu-root > li.open > ul {
+    display:block;
+}
+
+/* Separators and borders */
+#navbar-administration .navbar-tray-vertical .navbar-menu-item hr {
+    /* border-top: 1px solid #dddddd; commented because of double separators when no menu-items */
+}
+
+#navbar-administration .navbar-tray-horizontal .navbar-menu-root li + li a {
+    border-left: 1px solid #dddddd;
+}
+
+/* Menu items */
+
+#navbar-administration .navbar-tray a {
+    color: white;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 1.1em;
+}
+
+#navbar-administration .navbar-tray a:hover,
+#navbar-administration .navbar-tray a:active,
+#navbar-administration .navbar-tray a:focus,
+#navbar-administration .navbar-tray a.navbar-active {
+    color: #f1472c;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 1.1em;
+}
+
+#navbar-administration #navbar-item-tray a.navbar-active {
+    background-color:#8395d0;
+    color:#fff;
+}
+
+#navbar-administration .navbar-icon.navbar-handle:hover,
+#navbar-administration .navbar-icon.navbar-handle:active,
+#navbar-administration .navbar-icon.navbar-handle:focus {
+    outline: none;
+    background-color: transparent;
+}
+
+/* Icons layout */
+
 #navbar-administration .navbar-bar .navbar-icon::before {
     width: 32px;
 }
@@ -5,6 +116,121 @@
 #navbar-administration .navbar-bar .navbar-icon {
     padding-left: 3.5em;
     padding-right: 2em;
-    font-size: 1.2em;
+    font-size: 1.3em;
+
 }
 
+#navbar-administration .navbar-icon-edgeryders {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Was a centered background image for the navbar 
+ * but we are using a block now
+#navbar-administration #navbar-bar {
+  background-position:center center;
+  background-image:url(/sites/all/modules/edgeryders_nav/misc/icons/edgeryders-logo.svg);
+  background-repeat:no-repeat;
+  background-size: 32px;
+}
+*/
+
+/**
+ * Temporary CSS customizations for 2nd header
+ */
+.header-wrapper .header-color-row-one {
+    border-top: 3em solid #727da4;
+    background-color: #727da4;
+}
+.boxshadow .palette-gray-lightgray-blue .header-color-row-one {
+    -webkit-box-shadow: #727da4 0px -1px 0px;
+    -moz-box-shadow: #727da4 0px -1px 0px;
+    box-shadow: #727da4 0px -1px 0px;
+}
+.header-wrapper {display:none;}
+
+/**
+ * Search form, login and language selector in-navbar reset
+ */
+#navbar-administration #navbar-bar .navbar-float-right
+{
+    float:right;
+}
+
+#navbar-administration .form-item input {
+    background-color: #fff;
+    border:1px solid #444;
+    padding:2px;
+}
+
+#navbar-administration .form-actions input {
+    color:#fff;
+    text-shadow: none;
+    font-weight: bold;
+    font-size: 1.3em;
+}
+
+#navbar-administration .navbar-tray .form-item label,
+#navbar-administration .navbar-tray .form-item a
+{
+    color:#fff;
+}
+
+/* Login form */
+#navbar-administration .navbar-tray #user-login-form {
+    padding:6px;
+}
+/* Login with Open ID */
+#navbar-administration .navbar-tray #user-login-form .item-list-openid-links {
+
+  
+}
+/* Create account, request new password */
+#navbar-administration .navbar-tray #user-login-form .item-list li {
+  text-align:right;
+  float:none;
+  max-width:300px;
+}
+#navbar-administration .navbar-tray #user-login-form .item-list a {
+  font-weight:normal;
+  text-transform:none;
+}
+
+/* Language dropdown */
+#navbar-administration .navbar-tab .form-item-lang-dropdown-select #lang-dropdown-select-language_content_msdd {
+    position: relative;
+    background-color: #fff;
+    border:1px solid #444;
+    padding:4px;
+}
+
+#navbar-administration .navbar-tab .form-item-lang-dropdown-select #lang-dropdown-select-language_content_msdd .ddArrow {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    width: 16px;
+    height: 16px;
+    margin-top: -8px;
+    background: url(/sites/all/modules/lang_dropdown/msdropdown/images/msdropdown/ldsDark/dd_arrow.gif) no-repeat;
+}
+
+#navbar-administration .navbar-tab .form-item-lang-dropdown-select #lang-dropdown-select-language_content_child {
+    background-color: #fff;
+    border:1px solid #444;
+    padding:2px!important;
+    margin-top:8px;
+
+    position: absolute;
+    display: none;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    zoom: 1;
+    z-index: 9999;
+}
+
+#navbar-administration .navbar-tab .search-form .form-item-custom-search-types {
+    display:none;
+}

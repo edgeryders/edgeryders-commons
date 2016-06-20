@@ -1,0 +1,364 @@
+<?php
+
+/**
+ * @file
+ * Enhanced control over the HTML attributes of any Block.
+ *
+ * Block Attributes allows users to add HTML attributes to any block through
+ * the block's configuration interface. This implementation is based on an
+ * alteration of the Core block database table to leverage the Core Block API
+ * functions, objects and structure.
+ */
+
+/**
+ * Define the possible scopes where the HTML attributes should be inserted.
+ *
+ * Either at block level, in the Title tag markup or in the markup tag wrapped
+ * around the content. For more information refer to block.tpl.php.
+ */
+define('BLOCK_ATTRIBUTES_BLOCK', 'attributes');
+define('BLOCK_ATTRIBUTES_TITLE', 'title_attributes');
+define('BLOCK_ATTRIBUTES_CONTENT', 'content_attributes');
+
+/**
+ * Implements hook_menu().
+ *
+ * Provide a configuration form to allow users to configure which attributes
+ * should be enabled or disabled and the default values for new blocks.
+ */
+function block_attributes_menu() {
+  $items = array();
+
+  $items['admin/structure/block/attributes'] = array(
+    'title' => 'Block Attributes',
+    'type' => MENU_LOCAL_TASK,
+    'description' => 'Block Attributes configuration settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('block_attributes_settings'),
+    'access arguments' => array('administer block attributes'),
+    'file' => 'block_attributes.admin.inc',
+    // Ensure the tab is displayed in the last position.
+    'weight' => 99,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function block_attributes_permission() {
+  return array(
+    'administer block attributes' => array(
+      'title' => t('Administer block attributes'),
+      'description' => t('Set HTML attributes for blocks.'),
+    ),
+  );
+}
+
+/**
+ * Implements MODULE_preprocess_HOOK().
+ *
+ * Extend block's attributes with any user defined HTML attributes.
+ *
+ * @see theme_preprocess_block()
+ */
+function block_attributes_preprocess_block(&$vars) {
+
+  if (isset($vars['block']->options)) {
+    // Unserialize and load an array containing all of block's attributes.
+    if (is_string($vars['block']->options)) {
+      // Modify the variable so that the data stays an array.
+      $vars['block']->options = unserialize($vars['block']->options);
+    }
+    $block_options = $vars['block']->options;
+
+    // Process block level attributes: scope BLOCK_ATTRIBUTES_BLOCK.
+    if (!empty($block_options[BLOCK_ATTRIBUTES_BLOCK])) {
+      // Specific handling for several template variables as HTML attributes.
+      // Block's HTML ID: block_html_id.
+      if (isset($block_options[BLOCK_ATTRIBUTES_BLOCK]['id'])) {
+        // Overwrite default generated ID with user defined value.
+        $vars['block_html_id'] = $block_options[BLOCK_ATTRIBUTES_BLOCK]['id'];
+        unset($block_options[BLOCK_ATTRIBUTES_BLOCK]['id']);
+      }
+      // Block's HTML classes: classes_array.
+      if (isset($block_options[BLOCK_ATTRIBUTES_BLOCK]['class'])) {
+        // Merge user defined classes with existing ones.
+        $vars['classes_array'] = array_merge($vars['classes_array'], $block_options[BLOCK_ATTRIBUTES_BLOCK]['class']);
+        unset($block_options[BLOCK_ATTRIBUTES_BLOCK]['class']);
+      }
+      // All other block HTML attributes, such as accesskey: attributes_array.
+      // Remaining values for the block scope should all be global attributes.
+      if (isset($block_options[BLOCK_ATTRIBUTES_BLOCK])) {
+        // Merge user defined attributes with existing ones.
+        $vars['attributes_array'] = array_merge($vars['attributes_array'], $block_options[BLOCK_ATTRIBUTES_BLOCK]);
+      }
+    }
+
+    // Process Block Title attributes: scope BLOCK_ATTRIBUTES_TITLE.
+    // All Block Title HTML attributes, such as class: title_attributes_array.
+    if (!empty($block_options[BLOCK_ATTRIBUTES_TITLE])) {
+      // Merge user defined attributes with existing ones.
+      $vars['title_attributes_array'] = array_merge($vars['title_attributes_array'], $block_options[BLOCK_ATTRIBUTES_TITLE]);
+    }
+
+    // Process Block Content attributes: scope BLOCK_ATTRIBUTES_CONTENT.
+    // All Block content HTML attributes, such as ID: content_attributes_array.
+    if (!empty($block_options[BLOCK_ATTRIBUTES_CONTENT])) {
+      // Merge user defined attributes with existing ones.
+      $vars['content_attributes_array'] = array_merge($vars['content_attributes_array'], $block_options[BLOCK_ATTRIBUTES_CONTENT]);
+    }
+  }
+}
+
+/**
+ * Implements hook_block_attribute_info().
+ *
+ * Key function for the declaration of all block attributes.
+ */
+function block_attributes_block_attribute_info() {
+  // Define the accesskey attribute, only for the block level scope.
+  $info['accesskey'] = array(
+    'label' => t('Access Key'),
+    'description' => t('Specifies a <a href="@accesskey">keyboard shortcut</a> to access this block.', array('@accesskey' => url('http://en.wikipedia.org/wiki/Access_keys'))),
+    'form' => array(
+      '#maxlength' => 1,
+      '#size' => 1,
+    ),
+    'scope' => array(BLOCK_ATTRIBUTES_BLOCK),
+  );
+  // Alignment property with the align attribute.
+  $info['align'] = array(
+    'label' => t('Align'),
+    'description' => t('Specifies the alignment of the content inside a &lt;div&gt; element.'),
+    'form' => array(
+      '#type' => 'select',
+      '#options' => array(
+        '' => t('None specified'),
+        'left' => t('Left'),
+        'right' => t('Right'),
+        'center' => t('Center'),
+        'justify' => t('Justify'),
+      ),
+    ),
+    'scope' => array(
+      BLOCK_ATTRIBUTES_BLOCK,
+      BLOCK_ATTRIBUTES_TITLE,
+      BLOCK_ATTRIBUTES_CONTENT,
+    ),
+  );
+  // Define the class attribute for all scopes but content which already has a
+  // fixed class in block.tpl.php called 'content'.
+  $info['class'] = array(
+    'label' => t('CSS class(es)'),
+    'description' => t('Customize the styling of this block by adding CSS classes. Separate multiple classes by spaces.'),
+    'scope' => array(BLOCK_ATTRIBUTES_BLOCK, BLOCK_ATTRIBUTES_TITLE),
+    'form' => array(
+      '#maxlength' => 255,
+    ),
+  );
+  // Define the HTML ID for all scopes.
+  $info['id'] = array(
+    'label' => t('ID'),
+    'description' => t('Specifies a unique HTML ID for the block. It is recommended to avoid having the same HTML ID displaying several times on the same page, it should really be unique for each block.'),
+    'scope' => array(
+      BLOCK_ATTRIBUTES_BLOCK,
+      BLOCK_ATTRIBUTES_TITLE,
+      BLOCK_ATTRIBUTES_CONTENT,
+    ),
+  );
+  // Define the style attribute for all scopes.
+  $info['style'] = array(
+    'label' => t('Style'),
+    'description' => t('Enter additional styles to be applied to the block. For example: <em>font-size:20px;font-weight:bold;</em>'),
+    'scope' => array(
+      BLOCK_ATTRIBUTES_BLOCK,
+      BLOCK_ATTRIBUTES_TITLE,
+      BLOCK_ATTRIBUTES_CONTENT,
+    ),
+  );
+  // Define the title attribute for all scopes.
+  $info['title'] = array(
+    'label' => t('Title'),
+    'description' => t('The description displayed when hovering over the corresponding markup, the block, its markup or its content.'),
+    'form' => array(
+      '#type' => 'textarea',
+      '#rows' => 2,
+    ),
+    'scope' => array(
+      BLOCK_ATTRIBUTES_BLOCK,
+      BLOCK_ATTRIBUTES_TITLE,
+      BLOCK_ATTRIBUTES_CONTENT,
+    ),
+  );
+  return $info;
+}
+
+/**
+ * Fetch an array of block attributes.
+ */
+function block_attributes_get_block_attribute_info() {
+  // Collect an array of all attributes defined in code.
+  $attributes = module_invoke_all('block_attribute_info');
+
+  // Merge in default values.
+  foreach ($attributes as $attribute => &$info) {
+    $info += array(
+      'form' => array(),
+      'enabled' => variable_get("block_attributes_{$attribute}_enable", 1),
+      'default' => '',
+    );
+    // Fields types default to textfield.
+    $info['form'] += array(
+      '#type' => 'textfield',
+      '#title' => $info['label'],
+      '#description' => isset($info['description']) ? $info['description'] : '',
+      // Attempt to use user defined default values in settings form.
+      '#default_value' => variable_get("block_attributes_{$attribute}_default", $info['default']),
+    );
+  }
+  // Allow users to alter block attributes definition from code, see API file.
+  drupal_alter('block_attribute_info', $attributes);
+
+  return $attributes;
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Alter block add and edit forms to add attributes configuration fields.
+ */
+function block_attributes_form_alter(&$form, &$form_state, $form_id) {
+  if (user_access('administer block attributes') && ($form_id == 'block_admin_configure' || $form_id == 'block_add_block_form')) {
+    // Load statically cached block object used to display the form.
+    $block = block_load($form['module']['#value'], $form['delta']['#value']);
+    _block_attributes_form_alter($form, $block);
+  }
+}
+
+/**
+ * Add the block attributes fields to a block add or configuration form.
+ *
+ * @param array $form
+ *   The block's creation or configuration form passed by reference.
+ * @param object $block
+ *   The optional existing block object for context.
+ */
+function _block_attributes_form_alter(array &$form, $block) {
+  // Add the Block Attributes fieldsets in block's settings section before the
+  // regions and visibility sections.
+  // Fieldset to wrap fields related with block level attributes.
+  $form['settings']['options'][BLOCK_ATTRIBUTES_BLOCK] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Block attributes'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    // The tree property is important, otherwise values will not be saved.
+    '#tree' => TRUE,
+  );
+  // Fieldset to wrap fields related with block title attributes.
+  $form['settings']['options'][BLOCK_ATTRIBUTES_TITLE] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Block title attributes'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#tree' => TRUE,
+  );
+  // Fieldset to wrap fields related with block content attributes.
+  $form['settings']['options'][BLOCK_ATTRIBUTES_CONTENT] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Block content attributes'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#tree' => TRUE,
+  );
+  // Hide the serialized value to be compared with new value upon submission
+  // even if it is NULL, it still needs to be defined.
+  $form['settings']['options']['serialized_attributes'] = array(
+    '#type' => 'hidden',
+    '#value' => isset($block->options) ? $block->options : NULL,
+  );
+  // Collect all Block Attributes defined in code.
+  $attributes = block_attributes_get_block_attribute_info();
+  // Unserialize and load an array containing all of block's attributes.
+  $block_options = isset($block->options) ? unserialize($block->options) : array();
+
+  foreach ($attributes as $attribute => $info) {
+    // If no scope is set, this attribute should be available to all scopes.
+    if (!isset($info['scope'])) {
+      $info['scope'] = array(
+        BLOCK_ATTRIBUTES_BLOCK,
+        BLOCK_ATTRIBUTES_TITLE,
+        BLOCK_ATTRIBUTES_CONTENT,
+      );
+    }
+
+    // Define fields for each scope.
+    foreach ($info['scope'] as $group) {
+      // Merge in the proper default value.
+      if (isset($block_options[$group][$attribute])) {
+        // If the block already has this attribute, use it.
+        $info['form']['#default_value'] = $block_options[$group][$attribute];
+      }
+      // Otherwise, if the block already exists use raw defaults.
+      elseif ($form['#form_id'] == 'block_admin_configure') {
+        // If no value was provided, use the raw default (usually empty).
+        $info['form']['#default_value'] = $info['default'];
+      }
+      $form['settings']['options'][$group][$attribute] = $info['form'] + array(
+        '#access' => $info['enabled'],
+      );
+    }
+  }
+
+  // Restrict access to the new form elements.
+  $has_visible_children = (bool) element_get_visible_children($form['settings']['options']['attributes']);
+  $user_has_access = user_access('administer block attributes');
+  $form['settings']['options']['attributes']['#access'] = ($has_visible_children && $user_has_access);
+
+  // Add a submit callback to save submitted attributes values.
+  $form['#submit'][] = 'block_attributes_form_submit';
+}
+
+/**
+ * Helper function: additional submit callback for block configuration pages.
+ *
+ * Save supplied HTML attributes values.
+ */
+function block_attributes_form_submit($form, &$form_state) {
+  // Ensure we're coming from a block creation or configuration form.
+  if ($form_state['values']['form_id'] == 'block_admin_configure' || $form_state['values']['form_id'] == 'block_add_block_form') {
+    $groups = array(
+      BLOCK_ATTRIBUTES_BLOCK,
+      BLOCK_ATTRIBUTES_TITLE,
+      BLOCK_ATTRIBUTES_CONTENT,
+    );
+    $block_attributes = array();
+
+    foreach ($groups as $group) {
+      // Trim values, filter empty ones and check other ones for plain text.
+      $block_attributes[$group] = array_map('check_plain', array_filter(array_map('trim', $form_state['values'][$group])));
+      // Convert multiple CSS classes to be stored as an array.
+      if (!empty($block_attributes[$group]['class'])) {
+        $block_attributes[$group]['class'] = array_filter(explode(' ', $block_attributes[$group]['class']));
+      }
+    }
+    // Filter empty group array values with a call to array_filter.
+    // Preparation of the serialized block attributes to be saved.
+    $block_attributes = serialize(array_filter($block_attributes));
+
+    // Only save if the block attributes values have changed.
+    if ($block_attributes != $form_state['values']['serialized_attributes'] && user_access('administer blocks')) {
+      db_update('block')
+        ->fields(array('options' => $block_attributes))
+        ->condition('module', $form_state['values']['module'])
+        ->condition('delta', $form_state['values']['delta'])
+        ->execute();
+      // Flush all context module cache to use the updated css_class.
+      if (module_exists('context')) {
+        cache_clear_all('context', 'cache', TRUE);
+      }
+    }
+  }
+}

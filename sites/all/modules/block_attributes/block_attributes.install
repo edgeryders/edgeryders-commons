@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the block_attributes module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function block_attributes_install() {
+  $schema['block'] = array();
+  block_attributes_schema_alter($schema);
+  foreach ($schema['block']['fields'] as $field => $spec) {
+    if (db_field_exists('block', $field)) {
+      watchdog('system', 'Module install: Attempt to recreate field: "%field", when it already exists.', array('%field' => $field), WATCHDOG_WARNING);
+    }
+    else {
+      db_add_field('block', $field, $spec);
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function block_attributes_uninstall() {
+  $schema['block'] = array();
+  block_attributes_schema_alter($schema);
+  // Remove any database field added by the module.
+  foreach ($schema['block']['fields'] as $field => $specs) {
+    db_drop_field('block', $field);
+  }
+  // Remove all the configuration variables added by the module.
+  db_delete('variable')
+    ->condition('name', 'block_attributes_%', 'LIKE')
+    ->execute();
+}
+
+/**
+ * Implements hook_schema_alter().
+ *
+ * Other modules, such as i18n_block also modify the block database table.
+ */
+function block_attributes_schema_alter(&$schema) {
+  if (isset($schema['block'])) {
+    $schema['block']['fields']['options'] = array(
+      'description' => 'A serialized array of options to be passed to the block template, such as HTML attributes.',
+      'type' => 'blob',
+      // If we really needed the value to be not null, we could consider
+      // providing a 'default' value as a serialized empty array.
+      'not null' => FALSE,
+      'translatable' => TRUE,
+    );
+  }
+}
