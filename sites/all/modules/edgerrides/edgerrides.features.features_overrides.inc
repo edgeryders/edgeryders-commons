@@ -64,6 +64,9 @@ function edgerrides_features_override_default_overrides() {
   $overrides["field_base.og_roles_permissions.og_roles_permissions"]["DELETED"] = TRUE;
   $overrides["field_base.title_field.settings|entity_translation_sync"] = FALSE;
 
+  // Disable e-mail notifications by default
+  $overrides["field_base.message_subscribe_email.settings|default_value"] = FALSE;
+
   // Exported overrides for: field_instance
   $overrides["field_instance.message-commons_activity_streams_comment_created-field_target_comments.settings|entity_translation_sync"] = FALSE;
   $overrides["field_instance.message-commons_activity_streams_comment_created-field_target_nodes.settings|entity_translation_sync"] = FALSE;
