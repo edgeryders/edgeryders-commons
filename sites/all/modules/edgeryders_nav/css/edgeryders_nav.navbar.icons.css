@@ -4,18 +4,119 @@
  */
 
 /**
- * Navbar tab icon.
+ * Submit story icon
  */
-.navbar-bar .navbar-icon-edgeryders:before {
+#navbar-administration .navbar-bar .navbar-icon-story:before {
+    background-image: url("../misc/icons/ffffff/pencil.svg");
+}
+#navbar-administration .no-svg .navbar-bar .navbar-icon-story:before {
+    background-image: url("../misc/icons/ffffff/pencil.png");
+}
+#navbar-administration .navbar-bar .navbar-icon-story:active:before,
+#navbar-administration .navbar-bar .navbar-icon-story:hover:before,
+#navbar-administration .navbar-bar .navbar-icon-story:focus:before {
+    background-image: url("../misc/icons/e95c2e/pencil.svg");
+}
+#navbar-administration .no-svg .navbar-bar .navbar-icon-story:active:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-story:hover:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-story:focus:before {
+    background-image: url("../misc/icons/e95c2e/pencil.png");
+}
+
+/**
+ * Edgeryders logo
+ */
+#navbar-administration .navbar-bar .navbar-icon-edgeryders:before {
     background-image: url("../misc/icons/edgeryders-logo.svg");
 }
-.no-svg .navbar-bar .navbar-icon-edgeryders:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-edgeryders:before {
     background-image: url("../misc/icons/edgeryders-logo.png");
 }
-.navbar-bar .navbar-icon-edgeryders:active:before,
-.navbar-bar .navbar-icon-edgeryders.active:before {
+#navbar-administration .navbar-bar .navbar-icon-edgeryders:focus:before {
     background-image: url("../misc/icons/edgeryders-logo.svg");
 }
-.no-svg .navbar-bar .navbar-icon-edgeryders:active:before,
-.no-svg .navbar-bar .navbar-icon-edgeryders.active:before {
+#navbar-administration .no-svg .navbar-bar .navbar-icon-edgeryders:focus:before {
     background-image: url("../misc/icons/edgeryders-logo.png");
+}
+
+/**
+ * Admin icon
+ */
+#navbar-administration .navbar-bar .navbar-icon-configuration:before {
+    background-image: url("../misc/icons/ffffff/wrench.svg");
+}
+#navbar-administration .no-svg .navbar-bar .navbar-icon-configuration:before {
+    background-image: url("../misc/icons/ffffff/wrench.png");
+}
+#navbar-administration .navbar-bar .navbar-icon-configuration.navbar:active:before,
+#navbar-administration .navbar-bar .navbar-icon-configuration.navbar:hover:before,
+#navbar-administration .navbar-bar .navbar-icon-configuration.navbar:focus:before {
+    background-image: url("../misc/icons/e95c2e/wrench.svg");
+}
+#navbar-administration .no-svg .navbar-bar .navbar-icon-configuration.navbar:active:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-configuration.navbar:hover:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-configuration.navbar:focus:before {
+    background-image: url("../misc/icons/e95c2e/wrench.png");
+}
+
+/**
+ * Menu icon
+ */
+#navbar-administration .navbar-bar .navbar-icon-menu:before {
+    background-image: url("../misc/icons/ffffff/hamburger.svg");
+}
+#navbar-administration .no-svg .navbar-bar .navbar-icon-menu:before {
+    background-image: url("../misc/icons/ffffff/hamburger.png");
+}
+#navbar-administration .navbar-icon-menu.navbar:active:before,
+#navbar-administration .navbar-icon-menu.navbar:hover:before,
+#navbar-administration .navbar-icon-menu.navbar:focus:before {
+    background-image: url("../misc/icons/e95c2e/hamburger.svg");
+}
+#navbar-administration .no-svg .navbar-icon-menu.navbar:active:before,
+#navbar-administration .no-svg .navbar-icon-menu.navbar:hover:before,
+#navbar-administration .no-svg .navbar-icon-menu.navbar:focus:before {
+    background-image: url("../misc/icons/e95c2e/hamburger.png");
+}
+
+/**
+ * User menu
+ */
+#navbar-administration .navbar-bar .navbar-icon-user:before {
+    background-image: url("../misc/icons/ffffff/person.svg");
+}
+#navbar-administration .no-svg .navbar-bar .navbar-icon-user:before {
+    background-image: url("../misc/icons/ffffff/person.png");
+}
+#navbar-administration .navbar-bar .navbar-icon-user:active:before,
+#navbar-administration .navbar-bar .navbar-icon-user.navbar-active:before {
+    background-image: url("../misc/icons/e95c2e/person.svg");
+}
+#navbar-administration .no-svg .navbar-bar .navbar-icon-user:active:before,
+#navbar-administration .no-svg .navbar-bar .navbar-icon-user.navbar-active:before {
+    background-image: url("../misc/icons/e95c2e/person.png");
+}
+
+/**
+* Expand handles
+*/
+#navbar-administration .navbar-icon.navbar-handle::before {
+    background-image: url("../misc/icons/ffffff/chevron-disc-down.svg");
+}
+#navbar-administration .no-svg .navbar-icon.navbar-handle:before {
+    background-image: url("../misc/icons/ffffff/chevron-disc-down.png");
+}
+#navbar-administration .navbar-icon.navbar-handle.open::before {
+    background-image: url("../misc/icons/e95c2e/chevron-disc-up.svg");
+}
+#navbar-administration .navbar-icon-menu.navbar.open::before {
+    background-image: url("../misc/icons/e95c2e/chevron-disc-up.png");
+}
+
+/**
+* Menu items
+*/
+#navbar-item-tray .menu-item-whats-new::before {
+    background-image: url("../misc/icons/ffffff/hamburger-list.svg")
+}
+

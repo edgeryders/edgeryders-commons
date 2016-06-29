@@ -123,6 +123,15 @@ function navbar_region_navbar_alter(&$items) {
       // Set weight.
       $item['#weight'] = $blocks["navbar_region-{$delta}"]->weight;
 
+      // Title float
+      $float_right = '';
+      if ($settings["navbar_region-{$delta}"]['float_right']) $float_right = 'navbar-float-right';
+      
+      // Custom class navbar-tab-<title>
+      $item['#wrapper_attributes'] = array(
+        'class' => array('navbar-tab-' . $delta, $float_right),
+      );
+      
       // Set tab icon classes.
       if (!empty($settings["navbar_region-{$delta}"]['icon'])) {
         $item['tab']['#options']['attributes']['class'] = array(
@@ -155,36 +164,57 @@ function navbar_region_navbar_alter(&$items) {
     if (!empty($settings[$block->bid]['title'])) {
       $block->title = token_replace($settings[$block->bid]['title']);
     }
-
-    $items[$block->bid] = array(
-      '#attached' => array(
-        'js' => array(
-          drupal_get_path('module', 'navbar_region') . '/js/navbar_region.js',
-        ),
-      ),
-      '#type'     => 'navbar_item',
-      'tab'       => array(
-        '#type'    => 'link',
-        '#title'   => !empty($block->title) ? $block->title : $block->info,
-        '#href'    => '',
-        '#options' => array(
-          'attributes' => array(
-            'title' => !empty($block->title) ? $block->title : $block->info,
-            'class' => $classes,
-          ),
-        ),
-      ),
-      'tray'      => array(
-        '#heading' => $block->info,
+    
+    // Title float
+    $float_right = '';
+    if ($settings[$block->bid]['float_right']) $float_right = 'navbar-float-right';
+    
+    if ($settings[$block->bid]['direct_title_render']) {
+      // Request to render the block in the actual title bar
+      // Note that CSS may be required to make things appear properly
+      $items[$block->bid] = array(
         'block'    => array(
-          '#type'   => 'markup',
+          '#type'   => 'markup', // Direct markup as the #title
           '#markup' => $content,
-          '#prefix' => '<div class="navbar-region">',
+          '#prefix' => '<div class="navbar-tab navbar-tab-' . $block->bid . ' ' . $float_right . '">',
           '#suffix' => '</div>',
         ),
-      ),
-      '#weight'   => $block->weight,
-    );
+      );
+    } else {
+      // Normal title bar => tray opening with resultant block in
+      $items[$block->bid] = array(
+        '#wrapper_attributes' => array(
+          'class' => array('navbar-tab-' . $block->bid, $float_right),
+        ),
+        '#attached' => array(
+          'js' => array(
+            drupal_get_path('module', 'navbar_region') . '/js/navbar_region.js',
+          ),
+        ),
+        '#type'     => 'navbar_item',
+        'tab'       => array(
+          '#type'    => 'link',
+          '#title'   => !empty($block->title) ? $block->title : $block->info,
+          '#href'    => '',
+          '#options' => array(
+            'attributes' => array(
+              'title' => !empty($block->title) ? $block->title : $block->info,
+              'class' => $classes,
+            ),
+          ),
+        ),
+        'tray'      => array(
+          '#heading' => $block->info,
+          'block'    => array(
+            '#type'   => 'markup',
+            '#markup' => $content,
+            '#prefix' => '<div class="navbar-region">',
+            '#suffix' => '</div>',
+          ),
+        ),
+        '#weight'   => $block->weight,
+      );
+    }
   }
 }
 
@@ -321,6 +351,7 @@ function navbar_region_navbar_icons() {
     'modules'       => t('Modules'),
     'people'        => t('People'),
     'reports'       => t('Reports'),
+    'search'        => t('Search'),
     'shortcut'      => t('Shortcut'),
     'structure'     => t('Structure'),
     'user'          => t('User'),

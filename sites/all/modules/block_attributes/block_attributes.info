@@ -1,0 +1,13 @@
+name = Block Attributes
+description = Allows assigning HTML attributes to blocks.
+core = 7.x
+
+dependencies[] = block
+configure = admin/structure/block/attributes
+
+; Information added by Drupal.org packaging script on 2015-03-28
+version = "7.x-1.0"
+core = "7.x"
+project = "block_attributes"
+datestamp = "1427549883"
+

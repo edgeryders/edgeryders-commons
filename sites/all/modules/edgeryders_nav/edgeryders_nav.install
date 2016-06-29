@@ -1,0 +1,16 @@
+<?php
+
+function edgeryders_nav_install() {
+  // Get the weight of the navbar_region module
+  $weight = db_select('system', 's')
+    ->fields('s', array('weight'))
+    ->condition('name', '[navbar_region]', '=')
+    ->execute()
+    ->fetchField();
+
+  // Set our module to a weight 1 heavier, so ours moves lower in execution order
+  db_update('system')
+    ->fields(array('weight' => $weight + 1))
+    ->condition('name', '[edgeryders_nav]', '=')
+    ->execute();
+}

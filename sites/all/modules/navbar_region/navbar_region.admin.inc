@@ -45,6 +45,20 @@ function navbar_region_admin_form($form, &$form_state) {
       '#default_value' => isset($settings[$block->bid]['icon']) ? $settings[$block->bid]['icon'] : '',
     );
 
+    $form['navbar_region_settings'][$block->bid]['direct_title_render'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Render block directly as the title'),
+      '#description'   => t('Block content will appear where the title is and there will be no tray'),
+      '#default_value' => isset($settings[$block->bid]['direct_title_render']) ? $settings[$block->bid]['direct_title_render'] : false,
+    );
+
+    $form['navbar_region_settings'][$block->bid]['float_right'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Render block title on the right hand side'),
+      '#description'   => t('Block content will appear where the title is and floated right'),
+      '#default_value' => isset($settings[$block->bid]['float_right']) ? $settings[$block->bid]['float_right'] : false,
+    );
+
     if ($block->module == 'navbar_region') {
       $form['navbar_region_settings'][$block->bid]['icon']['#empty_option'] = t('- Default -');
     }
