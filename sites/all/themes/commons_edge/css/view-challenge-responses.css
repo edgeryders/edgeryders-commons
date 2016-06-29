@@ -62,10 +62,11 @@
 
 /* Title field formatting. */
 .view-challenge-responses .views-responsive-grid .views-field-title {
-  font-weight: bold;
-  font-size: 109%;
   padding-left: 8px;
   padding-right: 8px;
+  font-weight: bold;
+  font-size: 109%;
+  line-height: 1.2em;
 }
 
 /* Author name field formatting. */
@@ -104,6 +105,11 @@
     width: 48%;
     min-width: 250px;
   }
+  /* Make title always 2 rows high, to prevent misplacing of different-height cards in the fluid layout. */
+  .view-challenge-responses .views-responsive-grid .views-field-title {
+    height: 2.4em; /* Equates 2 lines due to line-height: 1.2em configured above for the title field. */
+  }
+
    /* Compensating for margin-right of the rightmost column with page padding reduction. Same for @media section for 3/4 columns, so not repeated there. */
    /* We cannot use the .view-challenge-responses selector as it comes inside and there is no "has child assertion" CSS selector. But we are lucky that 
       there is a panel pane named after the challenge responses view it contains. */
@@ -124,6 +130,11 @@
     margin-right: 2%;
     width: 31%;
     min-width: 250px;
+  }
+  /* Make title always 3 rows high, to prevent misplacing of different-height cards in the fluid layout. */
+  /* Also applicable to four-column layout below, so not repeated there. */
+  .view-challenge-responses .views-responsive-grid .views-field-title {
+    height: 3.6em; /* Equates 3 lines due to line-height: 1.2em configured above for the title field. */
   }
 }
 
