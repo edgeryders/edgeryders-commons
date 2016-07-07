@@ -2,7 +2,6 @@ name = Commons Edge
 description = A sub-theme of Commons Origins, used by the edgeryders.
 stylesheets[all][] = css/global.css
 stylesheets[all][] = css/header-layout.css
-stylesheets[all][] = css/navbar-layout.css
 stylesheets[all][] = css/node-type-challenge-response.css
 stylesheets[all][] = css/node-type-challenge-response-form.css
 stylesheets[all][] = css/node-type-challenge.css
