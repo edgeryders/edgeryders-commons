@@ -23,16 +23,12 @@
  * Edgeryders logo (used in the center of the navbar)
  */
 #navbar-administration .navbar-bar .navbar-icon-edgeryders:before {
-    background-image: url("../misc/icons/edgeryders-logo.svg");
+    background-image: url("../misc/icons/edgeryders-header.svg");
+    width: 160px !important;
 }
 #navbar-administration .no-svg .navbar-bar .navbar-icon-edgeryders:before {
-    background-image: url("../misc/icons/edgeryders-logo.png");
-}
-#navbar-administration .navbar-bar .navbar-icon-edgeryders:focus:before {
-    background-image: url("../misc/icons/edgeryders-logo.svg");
-}
-#navbar-administration .no-svg .navbar-bar .navbar-icon-edgeryders:focus:before {
-    background-image: url("../misc/icons/edgeryders-logo.png");
+    background-image: url("../misc/icons/edgeryders-header.png");
+    width: 160px !important;
 }
 
 /** 

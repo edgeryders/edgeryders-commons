@@ -81,7 +81,7 @@ function edgeryders_nav_navbar()
     ),
     'tab' => array(
       '#type' => 'link',
-      '#title' => t(''),
+      '#title' => t('&nbsp;'), // &nbsp; empty title needed due to CSS situation, to make the associated item as high as the navbar.
       '#href' => '<front>',
       '#options' => array(
         'attributes' => array(
