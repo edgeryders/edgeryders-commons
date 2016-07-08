@@ -52,19 +52,30 @@ chmod a+r .htaccess* .htpasswd robots.txt* sites/edgeryders.eu/files/.htaccess s
 chmod a+r sites/edgeryders.eu/edgeryders.aliases.drushrc.php;
 chmod u+x scripts.local.x43762539hf2d/fix-permissions.sh;
 
-# Exceptions from file permissions: theme directories for generated files have to be writable by PHP-FPM.
+# Exceptions from file permissions: files that need to be readable by Apache b/c they are served directly.
+# (Includes all public files, media, aggregated and non-aggregated CSS and JS, static HTML.)
+chmod a+r+X sites/ sites/edgeryders.eu/;
+find sites/edgeryders.eu/files/ -type d | xargs -I "{}" chmod a+r+x {};
+chmod -R a+r sites/edgeryders.eu/files/*; # Care: * to avoid making .htaccess* writable.
+# The following use of -prune is based on a tip from http://stackoverflow.com/a/1489405/1270008
+find . -path "./stats" -prune -or \( -name "*.css" -or -name "*.js" -or -name "*.jpg" -or -name "*.png" -or -name "*.gif" -or -name "*.svg" -or -name "*.html" \) -print | xargs -I "{}" chmod a+r {};
+
+# Exceptions from file permission: upload directories and uploaded files must be writable by Drupal.
+find sites/edgeryders.eu/files/ -type d | xargs -I "{}" chmod u+w {};
+find sites/edgeryders.eu/private/ -type d | xargs -I "{}" chmod u+w {};
+chmod -R u+w sites/edgeryders.eu/files/*; # Care: * to avoid making .htaccess* writable.
+
+# Exceptions from file permissions: theme directories for generated files must be writable by PHP-FPM.
 chmod -R u+w profiles/commons/themes/commons/commons_origins/generated_files;
 chmod -R u+w profiles/commons/themes/contrib/adaptivetheme/at_core/generated_files;
 chmod -R u+w profiles/commons/themes/contrib/adaptivetheme/at_admin/generated_files;
 chmod -R u+w sites/all/themes/commons_edge/generated_files;
 
-# Exceptions from file permissions: files that need to be served by Apache directly.
-# (Includes media, aggregated and non-aggregated CSS and JS, static HTML.)
-chmod a+r+X sites/ sites/edgeryders.eu/;
-find sites/edgeryders.eu/files/ -type d | xargs -I "{}" chmod u+w,a+r+x {};
-find sites/edgeryders.eu/private/ -type d | xargs -I "{}" chmod u+w {};
-# Care: * needed to avoid making .htaccess* writable here:
-chmod -R u+w,a+r sites/edgeryders.eu/files/*;
-# The following use of -prune is based on a tip from http://stackoverflow.com/a/1489405/1270008
-find . -path "./stats" -prune -or \( -name "*.css" -or -name "*.js" -or -name "*.jpg" -or -name "*.png" -or -name "*.gif" -or -name "*.svg" -or -name "*.html" \) -print | xargs -I "{}" chmod a+r {};
+# Exceptions from file permissions: Edgesense files must be writable by Drupal.
+# (It is not sufficient for them to be deletable and replacable due to limitations in Edgesense.)
+chmod u+w sites/edgeryders.eu/private/edgesense/script/edgesense.log;
+chmod u+w sites/edgeryders.eu/private/edgesense/script/run.json;
+chmod u+w sites/edgeryders.eu/private/edgesense/site_data/edgesense_comments.json;
+chmod u+w sites/edgeryders.eu/private/edgesense/site_data/edgesense_nodes.json;
+chmod u+w sites/edgeryders.eu/private/edgesense/site_data/edgesense_users.json;
 
