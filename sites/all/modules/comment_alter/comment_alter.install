@@ -10,7 +10,7 @@
  */
 function comment_alter_schema() {
   $schema['comment_alter'] = array(
-    'description' => 'Stores simple site-wide guestbook entries.',
+    'description' => 'Stores {node}.vid changes made by comments.',
     'fields' => array(
       'cid' => array(
         'description' => 'The {comment}.cid this change refers to.',
@@ -38,4 +38,16 @@ function comment_alter_schema() {
     'primary key' => array('cid'),
   );
   return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function comment_alter_uninstall() {
+  $node_types = array_keys(node_type_get_types());
+  foreach ($node_types as $node_type) {
+    variable_del('comment_alter_' . $node_type);
+    variable_del('comment_alter_diff_link_' . $node_type);
+    variable_del('comment_alter_root_only_' . $node_type);
+  }
 }
