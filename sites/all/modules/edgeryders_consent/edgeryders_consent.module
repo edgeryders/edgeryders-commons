@@ -1,0 +1,180 @@
+<?php
+
+/**
+ * @file
+ * Main logic of the Edgeryders Consent module.
+ */
+
+/**
+ * Add a field to the user profile to store that (and when) consent was given.
+ * 
+ * Implements hook_enable().
+ *
+ * @todo TODO Remove elements from the field and instance definitions that correspond to defaults.
+ */
+function edgeryders_consent_enable() {
+
+  $consent_field = array(
+    'translatable' => '0',
+    'settings' => array(
+      'granularity' => array(
+        'month' => 'month',
+        'day' => 'day',
+        'hour' => 'hour',
+        'minute' => 'minute',
+        'second' => 'second',
+        'year' => 'year',
+      ),
+      'tz_handling' => 'site',
+      'timezone_db' => 'UTC',
+      'cache_enabled' => 0,
+      'cache_count' => '4',
+      'todate' => '',
+      'entity_translation_sync' => FALSE,
+    ),
+    'field_name' => 'field_consent_opencare',
+    'type' => 'date',
+    'active' => '1',
+    'locked' => '0',
+    'cardinality' => '1',
+  );
+
+  $consent_field_instance = array(
+    'label' => 'Date of consent for OpenCare',
+    'widget' => array(
+      'weight' => '18',
+      'type' => 'date_text',
+      'active' => 1,
+      'settings' => array(
+        'input_format' => 'Y-m-d H:i:s',
+        'input_format_custom' => '',
+        'year_range' => '-3:+3',
+        'increment' => 15,
+        'label_position' => 'above',
+        'text_parts' => array(),
+        'display_all_day' => 0,
+        'label_help_description' => '',
+        'no_fieldset' => 0,
+      ),
+    ),
+    'settings' => array(
+      'default_value' => 'now',
+      'default_value_code' => '',
+      'default_value2' => 'same',
+      'default_value_code2' => '',
+      'user_register_form' => 0,
+      'entity_translation_sync' => FALSE,
+    ),
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'type' => 'date_default',
+        'settings' => array(
+          'format_type' => 'long',
+          'multiple_number' => '',
+          'multiple_from' => '',
+          'multiple_to' => '',
+          'fromto' => 'both',
+          'show_remaining_days' => FALSE,
+        ),
+        'weight' => 21,
+      ),
+    ),
+    'required' => 0,
+    'description' => 'When you filled the quiz before posting OpenCare content for the first time, showing informed consent on how to use the OpenCare platform.
+      You can revoke your consent by emptying the field, but you can not give consent here. Try posting content to an OpenCare challenge and you will get the little 
+      quiz to give consent!',
+    'display_in_partial_form' => 0,
+    'display_label' => '',
+    'field_name' => 'field_consent_opencare',
+    'entity_type' => 'user',
+    'bundle' => 'user',
+  );
+
+
+  // Create the field and instance if not already there.
+  // TODO If the field exists but the instance not, throw an error message for users to manually resolve the situation. Because we do not know if the field has the 
+  // same definition of the one we want to create here. Deleting the field manually is possible with: drush eval 'field_delete_field("field_consent_opencare")'
+  if (!field_info_field('field_consent_opencare')) {
+    field_create_field($consent_field);
+    field_create_instance($consent_field_instance);
+  }
+}
+
+/** 
+ * Add the OpenCare consent funnel quiz to the "Challenge Response" node creation form. Implements hook_form_FORM_ID_alter().
+ *
+ * The quiz will only be added if the Challenge Response is going to be a response to an OpenCare-related challenge. This is 
+ * determined by the ID of the challenge, handed as og_ref GET parameter in order to pre-fill the Challenge Response form. 
+ * 
+ * TODO Include quizlib from a Drupal-wide installed library instead.
+ * TODO Add the quiz answers as settings inside this function rather than as part of quiz.js. See
+ *   https://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7.x#attached at "Adding settings"
+ */
+function edgeryders_consent_form_challenge_response_node_form_alter(&$form, &$form_state, $form_id) {
+
+  // TODO Instead of the current user $user, look at the author of the node if this form is about editing it.
+  global $user; // Contains just the account fields, so we have to add the profile fields below.
+  $user_profile = user_load($user->uid);
+
+  // Add our custom submit handler to save the "fact of consent" to the user profile.
+  $form['#submit'][] = 'edgeryders_consent_challenge_response_node_form_submit';
+  $form['actions']['submit']['#submit'][] = 'edgeryders_consent_challenge_response_node_form_submit';
+
+  $path = drupal_get_path('module', 'edgeryders_consent');
+
+  $form['#attached']['css'][] = "$path/quiz.css";
+  $form['#attached']['js'][] = "$path/quizlib.1.0.0.min.js";
+  $form['#attached']['js'][] = "$path/quiz.js";
+  
+  $form['html'] = array(
+    '#type' => 'markup',
+    // TODO The following might need file_get_contents(drupal_realpath("$path/quiz.html.inc")), see http://stackoverflow.com/a/4399472
+    '#markup' => file_get_contents("$path/quiz.html.inc"),
+  );
+  
+  // dpm($user_profile);
+  $consent_given = !empty($user_profile->field_consent_opencare);
+  
+  // Add a boolean form field dynamically.
+  // (See https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x#hidden )
+  $form['field_consent_opencare'] = array(
+    '#type'          => 'hidden',
+    '#default_value' => $consent_given ? 1 : 0,
+    // Workaround to make HTML IDs available in hidden fields, see https://www.drupal.org/node/988294#comment-5862764
+    '#attributes' => array('id' => 'edit-consent-opencare'),
+  );
+  
+  // dpm($form);
+}
+
+/**
+ * Save the time of consent to the user profile.
+ * 
+ * Implements a custom form submission handler for the challenge response node add and edit forms.
+ * 
+ * NOTE Do not call dpm($form_state) in here. Due to undetected recursion or something, it will not display any dpm() 
+ * message in Drupal, and will crash this function silently, not executing the rest of it. What works is however: 
+ * dpm($form_state['values']) or dpm(array_keys($form_state)) (and then drilling down from there).
+ */
+function edgeryders_consent_challenge_response_node_form_submit($form, &$form_state) {
+  
+  // If the user answered our OpenCare consent quiz correctly.
+  // (He should have, as else the form would not have passed validation.)
+  if ($form_state['values']['field_consent_opencare'] === '1') {
+  
+    // Save current time as "time of consent" in the user profile, but without overwriting a potentially existing value.
+    $user = user_load($form_state['values']['uid']);
+    $consent_date = format_date(strtotime('now'), 'custom', 'Y-m-d H:i:s', 'UTC');
+    
+    if (empty($user->field_consent_opencare)) {
+      $user->field_consent_opencare[LANGUAGE_NONE][0] = array(
+        'value' => $consent_date,
+        'timezone' => 'UTC',
+        'timezone_db' => 'UTC',
+      );
+      user_save((object) array('uid' => $user->uid), (array) $user);
+    }
+  }
+}
+

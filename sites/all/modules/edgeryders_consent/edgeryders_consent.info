@@ -1,0 +1,13 @@
+name = Edgeryders OpenCare Consent Funnel
+description = Provides a small multi-choice quiz in front of OpenCare Challenge Response creation forms to obtain informed consent from users.
+
+dependencies[] = dialog
+core = 7.x
+
+files[] = quiz.css
+files[] = quiz.html.inc
+files[] = quiz.js
+files[] = quizlib.1.0.0.min.js
+
+configure = admin/config/content/consent
+
