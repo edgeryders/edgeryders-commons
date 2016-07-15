@@ -13,7 +13,7 @@
     <!-- Question 1 -->
     <div class="quizlib-intro">This challenge belongs to the <a href="https://edgeryders.eu/en/op3ncare/home">OpenCare</a> research 
       project. Before you can start contributing, we need your attention this one time so we know you understand how to use this 
-      space. Just answer these two questions until you get them right!</div>
+      space. Just answer these two questions until you get them right! If you have difficulties, <a href="mailto:noemi@edgeryders.eu?subject=Need help for the opencare consent form&body=Sorry you are having trouble. Enter your message or question, if any, then hit Send. We'll get in touch right away.">click here</a> to email us. </div>
     
     <div class="card quizlib-question">
         <div class="quizlib-question-title">1. This platform is only loosely moderated – to avoid harassment and 
@@ -38,11 +38,11 @@
     </div>
     <!-- Question 2 -->
     <div class="card quizlib-question">
-        <div class="quizlib-question-title">2. Is OpenCare offering health care or social care advice?</div>
+        <div class="quizlib-question-title">2. Do you think OpenCare is offering health care or social care advice to you as an individual?</div>
         <div class="quizlib-question-answers">
             <ul>
-                <li><label><input type="radio" name="q1" value="a">Yes</label></li>
-                <li><label><input type="radio" name="q1" value="b">No</label></li>
+                <li><label><input type="radio" name="q1" value="a">Yes. I expect advice on how to best treat my condition and those of my friends. </label></li>
+                <li><label><input type="radio" name="q1" value="b">No. I expect a conversation on how to improve care systems in general, not medical advice.</label></li>
             </ul>
             <div id="quizlib-hint-q1" class="quizlib-hint">OpenCare is a platform for users to freely share their experience with health care and social 
               care, or their ideas to solve related problems. It is by no means a substitution for your doctor, nurse or social assistant 
