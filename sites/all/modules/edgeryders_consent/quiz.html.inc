@@ -1,4 +1,6 @@
 
+<!-- line length: 160 -->
+
 <!-- Quiz Container -->
 <div id="quiz">
     <!-- Quiz Results -->
@@ -13,7 +15,9 @@
     <!-- Question 1 -->
     <div class="quizlib-intro">This challenge belongs to the <a href="https://edgeryders.eu/en/op3ncare/home">OpenCare</a> research 
       project. Before you can start contributing, we need your attention this one time so we know you understand how to use this 
-      space. Just answer these two questions until you get them right! If you have difficulties, <a href="mailto:noemi@edgeryders.eu?subject=Need help for the opencare consent form&body=Sorry you are having trouble. Enter your message or question, if any, then hit Send. We'll get in touch right away.">click here</a> to email us. </div>
+      space. Just answer these two questions until you get them right! If you have difficulties, <a href="mailto:noemi@edgeryders.eu?subject=Need help for the 
+      opencare consent form&body=Sorry you are having trouble. Enter your message or question, if any, then hit Send. We'll get in touch right away.">click 
+      here</a> to email us. </div>
     
     <div class="card quizlib-question">
         <div class="quizlib-question-title">1. This platform is only loosely moderated – to avoid harassment and 
@@ -22,31 +26,33 @@
             <ul>
                 <li>
                     <label><input type="checkbox" name="q0" value="a">I would share my credit card data if asked.</label>
-                    <div id="quizlib-hint-q0-a" class="quizlib-hint">This is seriously the kind of sensitive information that you should only share with 
-                      secure services, when it is fully clear to you what the purpose of the transaction is, namely: purchase of a 
-                      good / service.</div>
+                    <div id="quizlib-hint-q0-a" class="quizlib-hint"><strong>Please correct this answer and try again!</strong> This is seriously the kind of 
+                      sensitive information that you should only share with secure services, when it is fully clear to you what the purpose of the transaction 
+                      is, namely: purchase of a good / service.</div>
                 </li>
                 <li>
                     <label><input type="checkbox" name="q0" value="b">I would engage in a conversation about my last 
                       experience with the National Health Service (or the equivalent in my country).</label>
-                    <div id="quizlib-hint-q0-b" class="quizlib-hint">This platform is explicitly meant to host and facilitate conversations on topics 
-                      akin to this. While you are of course free to avoid engaging in this kind of discourse, we encourage you to reflect 
-                      on the purpose of your joining this community.</div>
+                    <div id="quizlib-hint-q0-b" class="quizlib-hint"><strong>Please correct this answer and try again!</strong> This platform is explicitly 
+                      meant to host and facilitate conversations on topics akin to this. While you are of course free to avoid engaging in this kind of 
+                      discourse, we encourage you to reflect on the purpose of your joining this community.</div>
                 </li>
             </ul>
         </div>
     </div>
+
     <!-- Question 2 -->
     <div class="card quizlib-question">
-        <div class="quizlib-question-title">2. Do you think OpenCare is offering health care or social care advice to you as an individual?</div>
+        <div class="quizlib-question-title">2. Do you think OpenCare is offering health care or social care advice to you?</div>
         <div class="quizlib-question-answers">
             <ul>
-                <li><label><input type="radio" name="q1" value="a">Yes. I expect advice on how to best treat my condition and those of my friends. </label></li>
-                <li><label><input type="radio" name="q1" value="b">No. I expect a conversation on how to improve care systems in general, not medical advice.</label></li>
+                <li><label><input type="radio" name="q1" value="a">Yes. I expect advice on how to best treat my condition and those of my friends.</label></li>
+                <li><label><input type="radio" name="q1" value="b">No. I expect a conversation on how to improve care systems in general, not medical 
+                  advice.</label></li>
             </ul>
-            <div id="quizlib-hint-q1" class="quizlib-hint">OpenCare is a platform for users to freely share their experience with health care and social 
-              care, or their ideas to solve related problems. It is by no means a substitution for your doctor, nurse or social assistant 
-              … although we would love if they could join us too ;)</div>
+            <div id="quizlib-hint-q1" class="quizlib-hint"><strong>Please correct this answer and try again!</strong> OpenCare is a platform for users to 
+              freely share their experience with health care and social care, or their ideas to solve related problems. It is by no means a substitution 
+              for your doctor, nurse or social assistant … although we would love if they could join us too ;)</div>
         </div>
     </div>
 
