@@ -113,6 +113,13 @@ function edgeryders_consent_enable() {
  */
 function edgeryders_consent_form_challenge_response_node_form_alter(&$form, &$form_state, $form_id) {
 
+  // Do not embed the quiz on node edit forms, since edits by admins would then include recording consent from users, which is invalid.
+  // (See http://drupal.stackexchange.com/a/34289 for how to check for an edit form.)
+  $node = $form_state['node'];
+  if (isset($node->nid) and !isset($node->is_new)) {
+    return;
+  }
+
   // TODO Instead of the current user $user, look at the author of the node if this form is about editing it.
   global $user; // Contains just the account fields, so we have to add the profile fields below.
   $user_profile = user_load($user->uid);
@@ -159,9 +166,10 @@ function edgeryders_consent_form_challenge_response_node_form_alter(&$form, &$fo
  */
 function edgeryders_consent_challenge_response_node_form_submit($form, &$form_state) {
   
-  // If the user answered our OpenCare consent quiz correctly.
-  // (He should have, as else the form would not have passed validation.)
-  if ($form_state['values']['field_consent_opencare'] === '1') {
+  // If the field is present and the user answered our OpenCare consent quiz correctly.
+  // (The field is not present on node edit form, only on node add forms.)
+  // (The user can't get out of the quiz and the form can't pass validation without the correct answer. But just to be safe.)
+  if (isset($form_state['values']['field_consent_opencare']) and $form_state['values']['field_consent_opencare'] === '1') {
   
     // Save current time as "time of consent" in the user profile, but without overwriting a potentially existing value.
     $user = user_load($form_state['values']['uid']);
