@@ -49,7 +49,7 @@ function edgeryders_consent_enable() {
         'input_format' => 'Y-m-d H:i:s',
         'input_format_custom' => '',
         'year_range' => '-3:+3',
-        'increment' => 15,
+        'increment' => 1, // Important! If at the default "15", this will round to the closest quarter of an hour. See https://www.drupal.org/node/1549834#comment-7553441
         'label_position' => 'above',
         'text_parts' => array(),
         'display_all_day' => 0,
