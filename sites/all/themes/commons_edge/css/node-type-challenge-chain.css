@@ -35,6 +35,12 @@
   margin-right: 7%;
 }
 
+
+/* Remove user avatar. */
+.node-type-challenge-chain:not(.page-node-edit) footer.with-user-picture {
+  display: none;
+}
+
 /* Title field. */
 
 .node-type-challenge-chain:not(.page-node-edit) .field-name-title-field .field-item {
