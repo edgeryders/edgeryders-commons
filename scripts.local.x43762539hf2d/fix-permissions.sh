@@ -3,9 +3,17 @@
 # Script to fix file permissions for edgeryders.eu Drupal sites 
 # in order to make their hosting with suphp / FastCGI / PHP-FPM secure.
 #
-# NOTE: Do not use "find -print0 | xargs -0" here, as due to a bug it does not process all files. 
-# xargs -I is sufficient as a workaround as it also can handle files with blanks. It cannot handle 
-# files with single quotes in the name though, so make sure you do not have them (check with find . -name "*'*").
+# Implementation note on xargs usage: 
+# Filenames of user-uploaded files will occasionally contain whitespace, quotation characters and other 
+# nonsense. xargs -I can handle whitespace, but not quotation characters. If we use it, the whole 
+# find | xargs command will be without effect, perhaps leaving files unreadable by the webserver. Which 
+# is really bad for a website, to be damaged by an automated command called by cron.
+#   So we need the "find -print0 | xargs -0" construct to also handle quote characters. But that has 
+# kind of a bug: it might silently fail to process some files if the environment size (arguments and 
+# variables) gets too much to pass around. See http://unix.stackexchange.com/a/72822 . It happens in 
+# some obscure cases, and also happens with the commands below. To be on the safe side, we use "xargs -n50" 
+# to limit the number of arguments passed to xargs in one call. This is reported to fix it on 
+# http://unix.stackexchange.com/q/72769#comment105409_72769 but it has to be confirmed for the cases below.
 
 
 #
@@ -40,7 +48,7 @@ fi
 # Set defaults for file ownership rights and permissions.
 chown -R "$chown_spec" * .[a-z]*;
 chmod -R u=r,go= * .[a-z]*;
-find . -type d | xargs -I "{}" chmod u+x,g+x {};
+find . -type d -print0 | xargs -n50 -0 -I "{}" chmod u+x,g+x {};
 
 # Exceptions from file ownership rights.
 chown -R root:root stats;
@@ -55,14 +63,14 @@ chmod u+x scripts.local.x43762539hf2d/fix-permissions.sh;
 # Exceptions from file permissions: files that need to be readable by Apache b/c they are served directly.
 # (Includes all public files, media, aggregated and non-aggregated CSS and JS, static HTML.)
 chmod a+r+X sites/ sites/edgeryders.eu/;
-find sites/edgeryders.eu/files/ -type d | xargs -I "{}" chmod a+r+x {};
+find sites/edgeryders.eu/files/ -type d -print0 | xargs -n50 -0 -I "{}" chmod a+r+x {};
 chmod -R a+r sites/edgeryders.eu/files/*; # Care: * to avoid making .htaccess* writable.
-# The following use of -prune is based on a tip from http://stackoverflow.com/a/1489405/1270008
-find . -path "./stats" -prune -or \( -name "*.css" -or -name "*.js" -or -name "*.jpg" -or -name "*.png" -or -name "*.gif" -or -name "*.svg" -or -name "*.html" \) -print | xargs -I "{}" chmod a+r {};
+# The following use of -prune is based on a tip from http://stackoverflow.com/a/1489405
+find . -path "./stats" -prune -or \( -name "*.css" -or -name "*.js" -or -name "*.jpg" -or -name "*.png" -or -name "*.gif" -or -name "*.svg" -or -name "*.html" \) -print0 | xargs -n50 -0 -I "{}" chmod a+r {};
 
 # Exceptions from file permission: upload directories and uploaded files must be writable by Drupal.
-find sites/edgeryders.eu/files/ -type d | xargs -I "{}" chmod u+w {};
-find sites/edgeryders.eu/private/ -type d | xargs -I "{}" chmod u+w {};
+find sites/edgeryders.eu/files/ -type d -print0 | xargs -n50 -0 -I "{}" chmod u+w {};
+find sites/edgeryders.eu/private/ -type d -print0 | xargs -n50 -0 -I "{}" chmod u+w {};
 chmod -R u+w sites/edgeryders.eu/files/*; # Care: * to avoid making .htaccess* writable.
 
 # Exceptions from file permissions: theme directories for generated files must be writable by PHP-FPM.
