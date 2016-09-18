@@ -59,7 +59,7 @@ body {
 }
 
 /*Small devices*/
-@media screen and (max-width: 30em) {
+@media screen and (max-width: 480px) {
   
   #comments {
     font-size: 90%;
@@ -68,4 +68,4 @@ body {
   #comments .indented {
     margin-left: 20px;
   }
-}
+}	
