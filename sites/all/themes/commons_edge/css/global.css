@@ -59,7 +59,7 @@ body {
 }
 
 /*Small devices*/
-@media screen and (max-width: 480px) {
+@media screen and (max-width: 934px) {
   
   #comments {
     font-size: 90%;
