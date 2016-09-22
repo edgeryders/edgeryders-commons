@@ -148,4 +148,56 @@
     max-width: 600px;
   }
 }
+/*### FIXES*/
+.page-node:not(.page-node-edit) .pane-node-comment-wrapper {
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 35px;
+  padding-left: 35px;
+  padding-right: 35px;
+  max-width: 600px;
+}
 
+#comments .indented {
+  margin-left: 40px;
+}
+
+#comments .comment {
+  padding-left: 0;
+}
+
+#comments .comment-title {
+  line-height: 1.3;
+}
+
+#comments .field-name-comment-body P > SPAN {
+  display: inline-block;
+  line-height: 1.7;
+}
+
+/*Twitter block*/
+.pane-block-15 {
+  max-width: 530px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pane-block-15 IFRAME {
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+/*Small devices*/
+@media screen and (max-width: 934px) {
+  
+  #comments {
+    font-size: 90%;
+  }
+
+  #comments .indented {
+    margin-left: 20px;
+  }
+}	
+Contact GitHub API Training Shop Blog About
+© 2016 GitHub, Inc. Terms Privacy Security Status Help
