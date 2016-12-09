@@ -704,3 +704,15 @@ function comment_alter_form_node_type_form_alter(&$form, &$form_state, $form_id)
     ),
   );
 }
+
+/**
+ * Implements hook_node_revision_delete().
+ */
+function comment_alter_node_revision_delete($node) {
+  db_delete('comment_alter')
+    ->condition(db_or()
+      ->condition('old_vid', $node->vid)
+      ->condition('new_vid', $node->vid)
+    )
+    ->execute();
+}

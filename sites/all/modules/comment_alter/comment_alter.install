@@ -51,3 +51,53 @@ function comment_alter_uninstall() {
     variable_del('comment_alter_root_only_' . $node_type);
   }
 }
+
+/**
+ * Remove {comment_alter} entries referencing deleted node revisions.
+ */
+function comment_alter_update_7000(&$sandbox) {
+  // Prepare the batch process.
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_cid'] = 0;
+    $query = db_select('comment_alter', 'ca');
+    $old_revisions = $query->leftJoin('node_revision', 'nr_old', 'ca.old_vid = %alias.vid');
+    $new_revisions = $query->leftJoin('node_revision', 'nr_new', 'ca.new_vid = %alias.vid');
+    $sandbox['count'] = $query->condition(
+      db_or()
+        ->isNull($old_revisions . '.nid')
+        ->isNull($new_revisions . '.nid')
+      )
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+  }
+  // Handle 25 orphaned entries in a go.
+  $query = db_select('comment_alter', 'ca')
+    ->fields('ca', array('cid'));
+  $old_revisions = $query->leftJoin('node_revision', 'nr_old', 'ca.old_vid = %alias.vid');
+  $new_revisions = $query->leftJoin('node_revision', 'nr_new', 'ca.new_vid = %alias.vid');
+  $result = $query
+    ->condition(
+      db_or()
+        ->isNull($old_revisions . '.nid')
+        ->isNull($new_revisions . '.nid')
+    )
+    ->condition('cid', $sandbox['current_cid'], '>')
+    ->range(0, 25)
+    ->orderBy('cid', 'ASC')
+    ->execute();
+  $cids = array();
+  foreach ($result as $comment) {
+    $cids[$comment->cid] = $comment->cid;
+    $sandbox['progress']++;
+    $sandbox['current_cid'] = $comment->cid;
+  }
+  // Only run a DELETE query if there are entries to remove.
+  if ($cids) {
+    db_delete('comment_alter')
+      ->condition('cid', $cids, 'IN')
+      ->execute();
+  }
+  $sandbox['#finished'] = empty($sandbox['count']) ? 1 : ($sandbox['progress'] / $sandbox['count']);
+}
