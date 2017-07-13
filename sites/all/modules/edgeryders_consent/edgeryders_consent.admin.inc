@@ -2,11 +2,12 @@
 
 /**
  * @file
- * Admin interface for the edgerysders_consent module, found at /admin/config/content/consent.
+ * Admin interface for the edgeryders_consent module, found at /admin/config/content/consent.
  */
 
 /**
  * Form builder.
+ * (Example code only. Currently unused.)
  */
  /*
 function edgeryders_consent_settings_form($form, &$form_state) {
